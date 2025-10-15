@@ -7,6 +7,8 @@ from openai import OpenAI
 import PyPDF2
 import pandas as pd
 from datetime import datetime
+import subprocess
+import platform
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
@@ -126,6 +128,19 @@ def main():
         if 'betrag_brutto' in df.columns:
             total = df['betrag_brutto'].sum()
             print(f"💰 Gesamt: {total:.2f}€")
+        
+        # Excel automatisch öffnen
+        try:
+            if platform.system() == 'Darwin':  # Mac
+                subprocess.run(['open', output])
+            elif platform.system() == 'Windows':
+                os.startfile(output)
+            else:  # Linux
+                subprocess.run(['xdg-open', output])
+            
+            print("📂 Excel wurde geöffnet!")
+        except Exception as e:
+            print(f"⚠️  Excel konnte nicht geöffnet werden: {e}")
         
         print("="*60 + "\n")
     else:
