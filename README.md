@@ -1,5 +1,9 @@
 # 🤖 KI-Rechnungsverarbeitung
 
+## 📖 Dokumentation
+
+**[📄 Vollständige Anleitung (PDF)](Anleitung_Rechnungsverarbeitung.pdf)** - Installation, Nutzung, Troubleshooting & Best Practices (8 Seiten)
+
 Automatische Extraktion von Rechnungsdaten aus PDFs mit ChatGPT API.
 
 ![Status](https://img.shields.io/badge/status-production--ready-green)
