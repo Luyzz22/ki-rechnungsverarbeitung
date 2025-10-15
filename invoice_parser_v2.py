@@ -12,6 +12,8 @@ from openai import OpenAI
 import PyPDF2
 import pandas as pd
 from datetime import datetime
+import subprocess
+import platform
 
 # Rich für schöne CLI
 from rich.console import Console
@@ -207,6 +209,19 @@ def main():
         """
         
         console.print(Panel(summary, title="[bold]Zusammenfassung[/bold]", border_style="green"))
+        
+        # Excel automatisch öffnen
+        try:
+            if platform.system() == 'Darwin':  # Mac
+                subprocess.run(['open', output], check=False)
+            elif platform.system() == 'Windows':
+                os.startfile(output)
+            else:  # Linux
+                subprocess.run(['xdg-open', output], check=False)
+            
+            console.print(f"\n📂 [cyan]Excel wurde automatisch geöffnet![/cyan]\n")
+        except Exception as e:
+            console.print(f"\n⚠️  [yellow]Excel konnte nicht geöffnet werden: {e}[/yellow]\n")
         
     else:
         console.print("\n❌ [red]Keine Rechnungen erfolgreich verarbeitet[/red]\n")
