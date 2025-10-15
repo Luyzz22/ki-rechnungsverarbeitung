@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 KI-Rechnungsverarbeitung - GUI Version v2.0
-Mit Drag & Drop, Fortschrittsbalken und modernem Design
+Mit Drag & Drop, Fortschrittsbalken und Excel-Button
 """
 
 import os
@@ -15,6 +15,8 @@ import PyPDF2
 import pandas as pd
 from datetime import datetime
 import threading
+import subprocess
+import platform
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
@@ -23,7 +25,7 @@ class InvoiceProcessorGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("🤖 KI-Rechnungsverarbeitung v2.0")
-        self.root.geometry("900x700")
+        self.root.geometry("900x750")
         self.root.configure(bg='#1e1e1e')
         
         # Styling
@@ -40,6 +42,7 @@ class InvoiceProcessorGUI:
         self.pdf_files = []
         self.results = []
         self.processing = False
+        self.output_file = "rechnungen_export.xlsx"
         
         self.create_widgets()
         
@@ -110,10 +113,11 @@ class InvoiceProcessorGUI:
         )
         self.file_label.pack(side='left', padx=20, fill='x', expand=True)
         
-        # Process Button Frame
+        # Button Frame
         btn_frame = tk.Frame(self.root, bg='#1e1e1e')
         btn_frame.pack(pady=20)
         
+        # Process Button
         self.process_btn = tk.Button(
             btn_frame,
             text="🚀 JETZT VERARBEITEN",
@@ -130,6 +134,24 @@ class InvoiceProcessorGUI:
             activeforeground='#1e1e1e'
         )
         self.process_btn.pack()
+        
+        # Excel-Button
+        self.open_excel_btn = tk.Button(
+            btn_frame,
+            text="📊 EXCEL ÖFFNEN",
+            command=self.open_excel,
+            font=("Arial", 14, "bold"),
+            bg='#00d4ff',
+            fg='#1e1e1e',
+            padx=40,
+            pady=12,
+            relief='flat',
+            cursor='hand2',
+            state='disabled',
+            activebackground='#00b8d4',
+            activeforeground='#ffffff'
+        )
+        self.open_excel_btn.pack(pady=(10, 0))
         
         # Progress Frame
         progress_frame = tk.Frame(self.root, bg='#1e1e1e')
@@ -227,6 +249,7 @@ class InvoiceProcessorGUI:
         
         self.processing = True
         self.process_btn.config(state='disabled', text="⏳ VERARBEITUNG LÄUFT...")
+        self.open_excel_btn.config(state='disabled')
         self.results_text.delete('1.0', 'end')
         self.results = []
         
@@ -333,8 +356,8 @@ Wenn Info fehlt: null setzen
     def finalize_processing(self, total):
         if self.results:
             df = pd.DataFrame(self.results)
-            output = "rechnungen_export.xlsx"
-            df.to_excel(output, index=False)
+            self.output_file = "rechnungen_export.xlsx"
+            df.to_excel(self.output_file, index=False)
             
             total_amount = df['betrag_brutto'].sum() if 'betrag_brutto' in df.columns else 0
             avg_amount = df['betrag_brutto'].mean() if 'betrag_brutto' in df.columns else 0
@@ -347,9 +370,15 @@ Wenn Info fehlt: null setzen
             self.log_message(f"   • Erfolgreich: {len(self.results)}/{total}", color='#888888')
             self.log_message(f"   • Gesamt: {total_amount:.2f}€", color='#888888')
             self.log_message(f"   • Durchschnitt: {avg_amount:.2f}€", color='#888888')
-            self.log_message(f"\n💾 Export: {output}", color='#00d4ff')
+            self.log_message(f"\n💾 Export: {self.output_file}", color='#00d4ff')
             
             self.status_label.config(text="✅ Verarbeitung abgeschlossen!", fg='#00ff88')
+            
+            # Excel-Button aktivieren
+            self.open_excel_btn.config(state='normal')
+            
+            # Excel automatisch öffnen
+            self.open_excel()
             
             messagebox.showinfo(
                 "✅ Fertig!",
@@ -357,7 +386,8 @@ Wenn Info fehlt: null setzen
                 f"📊 Erfolgreich: {len(self.results)}/{total}\n"
                 f"💰 Gesamt: {total_amount:.2f}€\n"
                 f"📈 Durchschnitt: {avg_amount:.2f}€\n\n"
-                f"💾 Export: {output}"
+                f"💾 Export: {self.output_file}\n"
+                f"📂 Excel wurde geöffnet!"
             )
         else:
             self.log_message(f"\n❌ KEINE RECHNUNGEN VERARBEITET", color='#ff4444')
@@ -374,6 +404,24 @@ Wenn Info fehlt: null setzen
         
         self.process_btn.config(state='normal', text="🚀 JETZT VERARBEITEN")
         self.processing = False
+    
+    def open_excel(self):
+        """Öffnet die Excel-Datei"""
+        if not os.path.exists(self.output_file):
+            messagebox.showerror("Fehler", "Keine Excel-Datei gefunden!\nBitte erst Rechnungen verarbeiten.")
+            return
+        
+        try:
+            if platform.system() == 'Darwin':  # Mac
+                subprocess.run(['open', self.output_file])
+            elif platform.system() == 'Windows':
+                os.startfile(self.output_file)
+            else:  # Linux
+                subprocess.run(['xdg-open', self.output_file])
+            
+            self.log_message(f"\n📂 Excel geöffnet: {self.output_file}", color='#00d4ff')
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Excel konnte nicht geöffnet werden:\n{e}")
 
 def main():
     root = tk.Tk()
