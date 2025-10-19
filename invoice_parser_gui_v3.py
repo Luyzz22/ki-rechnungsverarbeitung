@@ -217,10 +217,10 @@ class InvoiceGUI:
             
             # Process
             if self.parallel_var.get():
-                self.log("⚡ Parallel-Modus aktiviert (4 Threads)")
+                self.log("⚡ Parallel-Modus aktiviert (8 Threads)")
                 from concurrent.futures import ThreadPoolExecutor
                 
-                with ThreadPoolExecutor(max_workers=4) as executor:
+                with ThreadPoolExecutor(max_workers=8) as executor:
                     futures = {executor.submit(self.processor.process_invoice, pdf): pdf for pdf in pdfs}
                     
                     for future in futures:

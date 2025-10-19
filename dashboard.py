@@ -52,12 +52,12 @@ class DashboardGenerator:
         output_file = self.output_dir / f"dashboard_{timestamp}.png"
         
         # Create figure with subplots
-        fig = plt.figure(figsize=(16, 10))
+        fig = plt.figure(figsize=(16, 12))
         fig.suptitle('📊 Rechnungsverarbeitungs-Dashboard', 
                      fontsize=20, fontweight='bold', color=self.colors['primary'])
         
         # Layout: 2x3 grid
-        gs = fig.add_gridspec(3, 3, hspace=0.3, wspace=0.3)
+        gs = fig.add_gridspec(3, 3, hspace=0.5, wspace=0.4)
         
         # 1. Top Suppliers (Bar Chart)
         ax1 = fig.add_subplot(gs[0, :2])

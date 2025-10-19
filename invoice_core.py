@@ -55,7 +55,7 @@ class Config:
             },
             'processing': {
                 'parallel': True,
-                'max_workers': 4,
+                'max_workers': 8,
                 'chunk_size': 3500
             },
             'export': {

@@ -36,7 +36,7 @@ def print_header():
     console.print(header, style="bold cyan")
 
 
-def process_batch_parallel(pdf_files, processor, max_workers=4):
+def process_batch_parallel(pdf_files, processor, max_workers=8):
     """Process PDFs in parallel"""
     results = []
     failed = []
@@ -210,7 +210,7 @@ def main():
         
         # Check if parallel processing is enabled
         parallel = config.get('processing.parallel', True)
-        max_workers = config.get('processing.max_workers', 4)
+        max_workers = config.get('processing.max_workers', 8)
         
         if parallel and len(pdf_files) > 1:
             console.print(f"⚡ [cyan]Parallel-Modus aktiviert ({max_workers} Threads)[/cyan]\n")

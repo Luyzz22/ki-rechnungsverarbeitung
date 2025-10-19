@@ -30,10 +30,10 @@ openai:
 # ║  VERARBEITUNGS-EINSTELLUNGEN                                       ║
 # ╚════════════════════════════════════════════════════════════════════╝
 processing:
-  # Parallel Processing (4x schneller!)
+  # Parallel Processing (8x schneller!)
   # ─────────────────────────────────────────────────────────────────
   parallel: true                   # true = parallel, false = sequentiell
-  max_workers: 4                   # Anzahl paralleler Threads (2-8 empfohlen)
+  max_workers: 8                   # Anzahl paralleler Threads (2-8 empfohlen)
                                    # Mehr Threads = schneller, aber mehr RAM
                                    # Mac M1/M2: 4-8 Threads
                                    # Windows/Intel: 2-4 Threads
