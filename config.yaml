@@ -1,4 +1,10 @@
-# ========================================================================
+version: "3.0"
+
+# AI Configuration
+ai:
+  provider: "openai"
+  model: "gpt-4o"
+
 #  KI-RECHNUNGSVERARBEITUNG v3.0 - KONFIGURATION
 # ========================================================================
 
@@ -11,7 +17,7 @@ openai:
   # gpt-4o-mini:  Schnell & günstig (~0.0005€/Rechnung) - EMPFOHLEN
   # gpt-4o:       Präziser aber teurer (~0.005€/Rechnung)
   # gpt-4-turbo:  Sehr präzise, sehr teuer (~0.01€/Rechnung)
-  model: gpt-4o-mini
+  model: gpt-4-turbo
   
   # Temperature (Kreativität vs. Konsistenz)
   # ─────────────────────────────────────────────────────────────────
@@ -175,7 +181,7 @@ features:
   # ─────────────────────────────────────────────────────────────────
   ocr_fallback: true               # ✅ Jetzt auf true (OCR ist installiert!)
   datev_export: true               # ✅ Jetzt auf true
-  email_notifications: false       # Bleibt false (kommt später)
+  email_notifications: true       # Bleibt false (kommt später)
   dashboard: true                  # ✅ Jetzt auf true  
   # v3.2 Features (geplant)
   # ─────────────────────────────────────────────────────────────────
@@ -196,15 +202,15 @@ notifications:
   # Email-Benachrichtigungen
   # ─────────────────────────────────────────────────────────────────
   email:
-    enabled: false
+    enabled: true
     smtp_server: "smtp.gmail.com"      # SMTP Server
     smtp_port: 587                     # SMTP Port (587 für TLS)
-    username: "deine-email@gmail.com"  # Dein Email-Account
-    password: "dein-app-passwort"      # App-Passwort (nicht normales Passwort!)
-    from_address: "deine-email@gmail.com"
+    username: "luis220195@gmail.com"  # Dein Email-Account
+    password: "kwyr rrfc gcks owjp"      # App-Passwort (nicht normales Passwort!)
+    from_address: "luis220195@gmail.com"
     to_addresses:                      # Empfänger (Liste)
-      - "empfaenger1@example.com"
-      - "empfaenger2@example.com"
+      - "luis@schenk.com.com"
+      - "andreas@schenk.com"
   
   # Slack-Benachrichtigungen
   # ─────────────────────────────────────────────────────────────────
