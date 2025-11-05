@@ -1,0 +1,16 @@
+[0;1;32m●[0m invoice-app.service - Invoice Processing Web Application
+     Loaded: loaded (]8;;file://ubuntu-s-1vcpu-2gb-fra1-01/etc/systemd/system/invoice-app.service\/etc/systemd/system/invoice-app.service]8;;\; [0;1;32menabled[0m; preset: [0;1;32menabled[0m)
+     Active: [0;1;32mactive (running)[0m since Mon 2025-10-20 15:29:03 UTC; 2min 14s ago
+ Invocation: 644fc555e33149a0911fe4fc2e6c37d9
+   Main PID: 26934 (uvicorn)
+      Tasks: 1[0;38;5;245m (limit: 2310)[0m
+     Memory: 113.3M (peak: 113.5M)
+        CPU: 2.708s
+     CGroup: /system.slice/invoice-app.service
+             └─[0;38;5;245m26934 /var/www/invoice-app/venv/bin/python3 /var/www/invoice-app/venv/bin/uvicorn web.app:app --host 0.0.0.0 --port 8000[0m
+
+Oct 20 15:29:03 ubuntu-s-1vcpu-2gb-fra1-01 systemd[1]: Started invoice-app.service - Invoice Processing Web Application.
+Oct 20 15:29:05 ubuntu-s-1vcpu-2gb-fra1-01 uvicorn[26934]: INFO:     Started server process [26934]
+Oct 20 15:29:05 ubuntu-s-1vcpu-2gb-fra1-01 uvicorn[26934]: INFO:     Waiting for application startup.
+Oct 20 15:29:05 ubuntu-s-1vcpu-2gb-fra1-01 uvicorn[26934]: INFO:     Application startup complete.
+Oct 20 15:29:05 ubuntu-s-1vcpu-2gb-fra1-01 uvicorn[26934]: INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)

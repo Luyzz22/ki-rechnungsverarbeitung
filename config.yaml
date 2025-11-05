@@ -1,337 +1,71 @@
-version: "3.0"
+version: "4.1"
 
-# AI Configuration
 ai:
-  provider: "openai"
-  model: "gpt-4o"
-
-#  KI-RECHNUNGSVERARBEITUNG v3.0 - KONFIGURATION
-# ========================================================================
-
-# ╔════════════════════════════════════════════════════════════════════╗
-# ║  OPENAI API EINSTELLUNGEN                                          ║
-# ╚════════════════════════════════════════════════════════════════════╝
-openai:
-  # Modell-Auswahl (Performance vs. Kosten)
-  # ─────────────────────────────────────────────────────────────────
-  # gpt-4o-mini:  Schnell & günstig (~0.0005€/Rechnung) - EMPFOHLEN
-  # gpt-4o:       Präziser aber teurer (~0.005€/Rechnung)
-  # gpt-4-turbo:  Sehr präzise, sehr teuer (~0.01€/Rechnung)
-  model: gpt-4-turbo
-  
-  # Temperature (Kreativität vs. Konsistenz)
-  # ─────────────────────────────────────────────────────────────────
-  # 0.0 = Deterministisch (empfohlen für Datenextraktion)
-  # 0.3 = Leicht variabel
-  # 1.0 = Sehr kreativ (nicht empfohlen)
+  mode: "hybrid"
+  primary_model: "gpt-4o"
+  primary_provider: "openai"
+  fallback_model: "claude-sonnet-4-20250514"
+  fallback_provider: "anthropic"
+  complexity_threshold: 0
   temperature: 0
-  
-  # Fehlerbehandlung
-  # ─────────────────────────────────────────────────────────────────
-  max_retries: 3              # Anzahl Wiederholungsversuche bei API-Fehler
-  timeout: 30                 # Timeout in Sekunden pro Request
-  retry_delay: 2              # Wartezeit zwischen Retries (exponential backoff)
+  max_retries: 3
+  timeout: 30
 
-# ╔════════════════════════════════════════════════════════════════════╗
-# ║  VERARBEITUNGS-EINSTELLUNGEN                                       ║
-# ╚════════════════════════════════════════════════════════════════════╝
 processing:
-  # Parallel Processing (8x schneller!)
-  # ─────────────────────────────────────────────────────────────────
-  parallel: true                   # true = parallel, false = sequentiell
-  max_workers: 8                   # Anzahl paralleler Threads (2-8 empfohlen)
-                                   # Mehr Threads = schneller, aber mehr RAM
-                                   # Mac M1/M2: 4-8 Threads
-                                   # Windows/Intel: 2-4 Threads
-  
-  # Text-Verarbeitung
-  # ─────────────────────────────────────────────────────────────────
-  chunk_size: 3500                 # Max Zeichen pro API-Call (3500-4000)
-  input_dir: test_rechnungen       # Standard Eingabe-Ordner
-  
-  # Performance-Limits
-  # ─────────────────────────────────────────────────────────────────
-  max_pdfs_per_run: 1000          # Sicherheits-Limit
-  max_file_size_mb: 50            # Max PDF-Größe
-  warn_if_above: 100              # Warnung bei mehr als X PDFs
-  skip_encrypted: true            # Verschlüsselte PDFs überspringen?
+  parallel_processing: true
+  max_workers: 4
+  batch_size: 100
+  chunk_size: 3500
+  input_dir: test_rechnungen
+  max_pdfs_per_run: 1000
+  max_file_size_mb: 50
 
-# ╔════════════════════════════════════════════════════════════════════╗
-# ║  EXPORT-EINSTELLUNGEN                                              ║
-# ╚════════════════════════════════════════════════════════════════════╝
-export:
-  # Export-Formate
-  # ─────────────────────────────────────────────────────────────────
-  formats:                         # Welche Formate exportieren?
-    - xlsx                         # Excel (empfohlen)
-    - csv                          # CSV (für DATEV/andere Tools)
-    # - json                       # JSON (nur bei Bedarf)
-  
-  # Datei-Einstellungen
-  # ─────────────────────────────────────────────────────────────────
-  output_dir: output               # Ausgabe-Ordner
-  filename_prefix: rechnungen      # Dateiname-Präfix
-  timestamp_format: '%Y%m%d_%H%M%S' # Zeitstempel-Format
-  
-  # Verhalten
-  # ─────────────────────────────────────────────────────────────────
-  auto_open: true                  # Excel automatisch öffnen? (CLI only)
-  overwrite_existing: false        # Bestehende Dateien überschreiben?
-  include_failed: false            # Fehlgeschlagene PDFs im Export?
-  
-  # Excel-Spezifisch
-  # ─────────────────────────────────────────────────────────────────
-  excel:
-    freeze_panes: true             # Erste Zeile einfrieren?
-    auto_width: true               # Spaltenbreite automatisch?
-    max_column_width: 50           # Max Spaltenbreite
-    
-  # CSV-Spezifisch
-  # ─────────────────────────────────────────────────────────────────
-  csv:
-    delimiter: ';'                 # Trennzeichen (';' für deutsches Excel)
-    encoding: 'utf-8-sig'          # Encoding (mit BOM für Excel)
-
-# ╔════════════════════════════════════════════════════════════════════╗
-# ║  VALIDIERUNGS-EINSTELLUNGEN                                        ║
-# ╚════════════════════════════════════════════════════════════════════╝
-validation:
-  # Haupt-Einstellungen
-  # ─────────────────────────────────────────────────────────────────
-  enabled: true                    # Datenvalidierung aktivieren?
-  strict_mode: false               # Strict = bei Fehler abbrechen
-  
-  # Pflichtfelder
-  # ─────────────────────────────────────────────────────────────────
-  required_fields:                 # Diese Felder MÜSSEN vorhanden sein
-    - rechnungsnummer
-    - datum
-    - lieferant
-    - betrag_brutto
-  
-  # Betrags-Validierung
-  # ─────────────────────────────────────────────────────────────────
-  amount_range:                    # Plausibilitäts-Check für Beträge
-    min: 0.01                      # Mindestbetrag
-    max: 1000000.00                # Maximalbetrag (1 Mio €)
-    tax_tolerance: 0.02            # Toleranz für Steuerberechnung (±2 Cent)
-  
-  # Datums-Validierung
-  # ─────────────────────────────────────────────────────────────────
-  date_range:
-    max_years_past: 10             # Max Jahre in Vergangenheit
-    max_years_future: 1            # Max Jahre in Zukunft
-    
-  # Format-Validierung
-  # ─────────────────────────────────────────────────────────────────
-  formats:
-    iban: true                     # IBAN-Format prüfen?
-    ust_idnr: true                 # USt-IdNr prüfen?
-    email: false                   # E-Mail-Format prüfen?
-    phone: false                   # Telefon-Format prüfen?
-
-# ╔════════════════════════════════════════════════════════════════════╗
-# ║  LOGGING-EINSTELLUNGEN                                             ║
-# ╚════════════════════════════════════════════════════════════════════╝
-logging:
-  # Log-Level
-  # ─────────────────────────────────────────────────────────────────
-  # DEBUG:   Alle Details (für Entwicklung)
-  # INFO:    Normale Informationen (empfohlen)
-  # WARNING: Nur Warnungen und Fehler
-  # ERROR:   Nur Fehler
-  level: INFO
-  
-  # Log-Datei
-  # ─────────────────────────────────────────────────────────────────
-  file: invoice_processing.log     # Log-Datei Name
-  max_file_size: 10485760         # 10 MB Max Größe
-  backup_count: 5                  # Anzahl Backup-Logs
-  
-  # Console-Output
-  # ─────────────────────────────────────────────────────────────────
-  console: true                    # Auch in Console ausgeben?
-  colored: true                    # Farbige Console-Ausgabe? (nur CLI)
-
-# ╔════════════════════════════════════════════════════════════════════╗
-# ║  PERFORMANCE & SICHERHEIT                                          ║
-# ╚════════════════════════════════════════════════════════════════════╝
-performance:
-  # Caching
-  # ─────────────────────────────────────────────────────────────────
-  cache_enabled: false             # Text-Cache aktivieren? (coming soon)
-  cache_ttl: 86400                # Cache-Lebensdauer in Sekunden (24h)
-  
-  # Rate Limiting
-  # ─────────────────────────────────────────────────────────────────
-  rate_limit:
-    enabled: false                 # Rate Limiting aktivieren?
-    requests_per_minute: 60        # Max Requests pro Minute
-    
-  # Memory Management
-  # ─────────────────────────────────────────────────────────────────
-  max_memory_mb: 2048             # Max RAM-Nutzung (2 GB)
-  cleanup_on_exit: true           # Aufräumen beim Beenden?
-
-# ╔════════════════════════════════════════════════════════════════════╗
-# ║  FEATURE-FLAGS (v3.1)                                              ║
-# ╚════════════════════════════════════════════════════════════════════╝
-features:
-  # v3.1 Features (jetzt verfügbar!)
-  # ─────────────────────────────────────────────────────────────────
-  ocr_fallback: true               # ✅ Jetzt auf true (OCR ist installiert!)
-  datev_export: true               # ✅ Jetzt auf true
-  email_notifications: true       # Bleibt false (kommt später)
-  dashboard: true                  # ✅ Jetzt auf true  
-  # v3.2 Features (geplant)
-  # ─────────────────────────────────────────────────────────────────
-  web_dashboard: false            # Web-Dashboard (coming soon)
-  api_server: false               # REST API (coming soon)
-  batch_scheduling: false         # Zeitgesteuerte Verarbeitung (coming soon)
-  
-  # AI Enhancements (geplant)
-  # ─────────────────────────────────────────────────────────────────
-  smart_categorization: false     # Automatische Kategorisierung (coming soon)
-  duplicate_detection: false      # Duplikat-Erkennung (coming soon)
-  anomaly_detection: false        # Anomalie-Erkennung (coming soon)
-
-# ╔════════════════════════════════════════════════════════════════════╗
-# ║  BENACHRICHTIGUNGEN (v3.1)                                         ║
-# ╚════════════════════════════════════════════════════════════════════╝
-notifications:
-  # Email-Benachrichtigungen
-  # ─────────────────────────────────────────────────────────────────
-  email:
-    enabled: true
-    smtp_server: "smtp.gmail.com"      # SMTP Server
-    smtp_port: 587                     # SMTP Port (587 für TLS)
-    username: "luis220195@gmail.com"  # Dein Email-Account
-    password: "kwyr rrfc gcks owjp"      # App-Passwort (nicht normales Passwort!)
-    from_address: "luis220195@gmail.com"
-    to_addresses:                      # Empfänger (Liste)
-      - "luis@schenk.com.com"
-      - "andreas@schenk.com"
-  
-  # Slack-Benachrichtigungen
-  # ─────────────────────────────────────────────────────────────────
-  slack:
-    enabled: false
-    webhook_url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
-  
-  # Telegram-Benachrichtigungen (coming soon)
-  # ─────────────────────────────────────────────────────────────────
-  telegram:
-    enabled: false
-    bot_token: ""
-    chat_id: ""
-
-# ╔════════════════════════════════════════════════════════════════════╗
-# ║  OCR-EINSTELLUNGEN (v3.1)                                          ║
-# ╚════════════════════════════════════════════════════════════════════╝
 ocr:
-  # Sprache
-  # ─────────────────────────────────────────────────────────────────
-  language: "deu"                  # deu, eng, fra, spa, ita, deu+eng
-  
-  # Qualität
-  # ─────────────────────────────────────────────────────────────────
-  dpi: 300                         # Scan-Qualität (300 empfohlen)
-  
-  # Verarbeitung
-  # ─────────────────────────────────────────────────────────────────
-  preprocess: true                 # Bild-Vorverarbeitung?
-  denoise: false                   # Entrauschen? (langsamer)
-  threshold: 128                   # Schwellwert für Binarisierung
-  auto_detect: true                # Automatisch gescannte PDFs erkennen
+  language: "deu"
+  dpi: 300
 
-# ╔════════════════════════════════════════════════════════════════════╗
-# ║  DATEV-INTEGRATION (v3.1)                                          ║
-# ╚════════════════════════════════════════════════════════════════════╝
+paths:
+  input_directory: "test_rechnungen"
+  output_directory: "output"
+
+export:
+  formats:
+    - xlsx
+    - csv
+  create_datev: true
+  create_dashboard: true
+
 datev:
   enabled: true
-  
-  # Stammdaten
-  # ─────────────────────────────────────────────────────────────────
-  client_number: "12345"           # Mandantennummer (von Steuerberater)
-  consultant_number: "1001"        # Beraternummer (von Steuerberater)
-  fiscal_year_start: "0101"        # Wirtschaftsjahr-Beginn (MMDD)
-  account_length: 4                # Kontenlänge (4 oder 5)
-  
-  # Kontenplan
-  # ─────────────────────────────────────────────────────────────────
-  account_plan: "SKR03"            # SKR03 oder SKR04
-  format_version: "7.0"            # DATEV Format-Version
-  
-  # Konten-Zuordnung (mit Steuerberater abstimmen!)
-  # ─────────────────────────────────────────────────────────────────
-  account_mapping:
-    default_revenue: "8400"        # Erlöse 19% USt
-    default_expense: "4400"        # Wareneingang 19% Vorsteuer
-    default_bank: "1200"           # Bank
-    default_debitor: "10000"       # Debitorenkonto
-    default_kreditor: "70000"      # Kreditorenkonto
 
-# ╔════════════════════════════════════════════════════════════════════╗
-# ║  DASHBOARD-EINSTELLUNGEN (v3.1)                                    ║
-# ╚════════════════════════════════════════════════════════════════════╝
 dashboard:
-  output_dir: "output/charts"      # Ausgabe-Ordner für Charts
-  auto_generate: true              # Automatisch nach Verarbeitung erstellen?
-  
-  # Chart-Typen
-  # ─────────────────────────────────────────────────────────────────
-  chart_types:
-    - full_dashboard               # Komplettes Dashboard
-    # - monthly_report             # Monatsbericht (optional)
-    # - supplier_analysis          # Lieferanten-Analyse (coming soon)
-  
-  # Design
-  # ─────────────────────────────────────────────────────────────────
-  theme: "dark"                    # dark oder light
-  dpi: 150                         # Bildqualität
-  format: "png"                    # png, jpg, pdf
+  output_dir: "output/charts"
+  auto_generate: true
+  theme: "dark"
 
-# ========================================================================
-#  ENDE DER KONFIGURATION
-# ========================================================================
-# 
-# 📝 HINWEISE:
-# ────────────────────────────────────────────────────────────────────
-# • Speichere diese Datei als 'config.yaml'
-# • Kommentiere Features mit # aus um sie zu deaktivieren
-# • Ändere Werte nach deinen Bedürfnissen
-# • Bei Fragen: Luis@schenk.com
-# 
-# 🚀 QUICK-CONFIGS:
-# ────────────────────────────────────────────────────────────────────
-# 
-# Schnell & Günstig:
-#   openai.model: gpt-4o-mini
-#   processing.parallel: true
-#   processing.max_workers: 4
-# 
-# Präzise & Teurer:
-#   openai.model: gpt-4o
-#   processing.parallel: true
-#   processing.max_workers: 2
-# 
-# Maximum Performance:
-#   openai.model: gpt-4o-mini
-#   processing.parallel: true
-#   processing.max_workers: 8
-# 
-# Minimum Kosten:
-#   openai.model: gpt-4o-mini
-#   processing.parallel: false
-# 
-# Alle Features aktiviert (v3.1):
-#   features.ocr_fallback: true
-#   features.datev_export: true
-#   features.email_notifications: true
-#   features.dashboard: true
-# 
-# ========================================================================
-# Version: 3.0.0
-# Erstellt: 2025-10-17
-# Autor: Luis Schenk
-# ========================================================================
+notifications:
+  email:
+    enabled: true
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: "luis220195@gmail.com"
+    password: "kwyr rrfc gcks owjp"
+    from_address: "luis220195@gmail.com"
+    to_addresses:
+      - "luis@schenk.com"
+      - "andreas@schenk.com"
+
+validation:
+  enabled: true
+  required_fields:
+    - rechnungsnummer
+    - datum
+    - betrag_brutto
+
+logging:
+  level: INFO
+
+features:
+  ocr_fallback: true
+  datev_export: true
+  dashboard: true

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-KI-Rechnungsverarbeitung - Export Module v3.0
+KI-Rechnungsverarbeitung - Export Module v3.4
 Multi-format export (Excel, CSV, JSON)
+Mit professioneller Spalten-Anordnung und garantierten Feldern
 """
 
 import os
@@ -66,34 +67,71 @@ class ExportManager:
         """Prepare DataFrame with proper column order"""
         df = pd.DataFrame(results)
         
-        # Define preferred column order
+        # Feld-Mapping: lieferant → rechnungsempfänger
+        rename_mapping = {}
+        if 'lieferant' in df.columns:
+            rename_mapping['lieferant'] = 'rechnungsempfänger'
+        if 'lieferant_adresse' in df.columns:
+            rename_mapping['lieferant_adresse'] = 'rechnungsempfänger_adresse'
+        
+        if rename_mapping:
+            df = df.rename(columns=rename_mapping)
+        
+        # Ensure all expected fields exist (add empty if missing)
+        # Diese Felder werden von der KI oft nicht extrahiert, sollen aber als Spalten erscheinen
+        expected_fields = ['zahlungsbedingungen', 'steuernummer', 'ust_idnr']
+        for field in expected_fields:
+            if field not in df.columns:
+                df[field] = ""
+        
+        # Define preferred column order - Professional Standard v4
+        # Based on: SAP, DATEV, Lexoffice best practices
         preferred_order = [
-            'dateiname',
+            # GRUPPE 1: Kern-Identifikation
             'rechnungsnummer',
             'datum',
             'faelligkeitsdatum',
-            'lieferant',
-            'lieferant_adresse',
+            'zahlungsziel_tage',
+            
+            # GRUPPE 2: Rechnungsaussteller (Lieferant)
+            'rechnungsaussteller',
+            'rechnungsaussteller_adresse',
+            
+            # GRUPPE 3: Rechnungsempfänger (Kunde)
+            'rechnungsempfänger',
+            'rechnungsempfänger_adresse',
             'kundennummer',
+            
+            # GRUPPE 4: Finanz-Kerndaten
             'betrag_brutto',
             'betrag_netto',
             'mwst_betrag',
             'mwst_satz',
             'waehrung',
+            
+            # GRUPPE 5: Zahlungsinformationen
             'iban',
             'bic',
+            'zahlungsbedingungen',
+            
+            # GRUPPE 6: Steuer & Compliance
             'steuernummer',
             'ust_idnr',
-            'zahlungsbedingungen',
-            'verarbeitet_am',
-            'text_laenge',
-            'model'
+            
+            # GRUPPE 7: Metadaten & Sonstiges
+            'dateiname',
+            'pdf_filename',
+            'verwendungszweck',
+            'processed_at'
         ]
+        
+        # Entferne unerwünschte Spalten
+        columns_to_drop = ['ai_model_used', 'complexity_score', 'artikel']
+        df = df.drop(columns=[col for col in columns_to_drop if col in df.columns], errors='ignore')
         
         # Reorder columns (only those that exist)
         existing_cols = [col for col in preferred_order if col in df.columns]
-        remaining_cols = [col for col in df.columns if col not in existing_cols]
-        
+        remaining_cols = [col for col in df.columns if col not in existing_cols]        
         df = df[existing_cols + remaining_cols]
         
         return df
@@ -157,7 +195,7 @@ class ExportManager:
             'metadata': {
                 'export_date': datetime.now().isoformat(),
                 'total_invoices': len(results),
-                'version': '3.0'
+                'version': '3.4'
             },
             'invoices': results
         }
@@ -218,10 +256,10 @@ class ReportGenerator:
             
             report_lines.append("💰 TOP 5 HÖCHSTE RECHNUNGEN:")
             for i, invoice in enumerate(sorted_results[:5], 1):
-                lieferant = invoice.get('lieferant', 'N/A')
+                empfaenger = invoice.get('rechnungsempfänger', invoice.get('lieferant', 'N/A'))
                 betrag = invoice.get('betrag_brutto', 0)
                 datum = invoice.get('datum', 'N/A')
-                report_lines.append(f"  {i}. {lieferant:<30} {betrag:>10.2f}€  ({datum})")
+                report_lines.append(f"  {i}. {empfaenger:<30} {betrag:>10.2f}€  ({datum})")
             report_lines.append("")
         
         # Validation summary
