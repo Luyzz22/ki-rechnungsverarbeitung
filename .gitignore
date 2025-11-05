@@ -7,3 +7,6 @@ __pycache__/
 *.pyc
 *.log
 output/
+.env.new
+nohup.out
+*.backup

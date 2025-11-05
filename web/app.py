@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 """
 KI-Rechnungsverarbeitung - Web Interface
 FastAPI Backend v1.0
@@ -20,6 +25,8 @@ import shutil
 from typing import List
 import uuid
 from datetime import datetime
+from datetime import datetime, timedelta
+import asyncio
 
 # Import your existing modules
 from invoice_core import Config, InvoiceProcessor, calculate_statistics
@@ -95,11 +102,12 @@ async def upload_files(files: List[UploadFile] = File(...)):
     }
     
     return {
-        "job_id": job_id,
+        "success": True,
+        "batch_id": job_id,
+        "job_id": job_id,  # Für Kompatibilität behalten
         "files_uploaded": len(uploaded_files),
         "files": uploaded_files
     }
-
 
 @app.post("/api/process/{job_id}")
 async def process_job(job_id: str, background_tasks: BackgroundTasks):
@@ -122,11 +130,11 @@ async def process_job(job_id: str, background_tasks: BackgroundTasks):
     background_tasks.add_task(process_invoices_background, job_id)
     
     return {
+        "success": True,
         "job_id": job_id,
         "status": "processing",
-        "message": "Processing started"
+        "message": "Processing started" 
     }
-
 
 async def process_invoices_background(job_id: str):
     """Background task to process invoices"""
@@ -153,14 +161,37 @@ async def process_invoices_background(job_id: str):
     # Calculate statistics
     stats = calculate_statistics(results) if results else None
     
-    # Export
+    # Füge Rechnungsanzahl hinzu
+    if stats:
+        stats['total_invoices'] = len(results)
+
+    
+    # Export (XLSX, CSV, DATEV)
     exported_files = {}
     if results:
         try:
+            # Standard Exports
             manager = ExportManager()
             exported_files = manager.export_all(results, ['xlsx', 'csv'])
+            
+            # DATEV Export
+            from datev_exporter import export_to_datev
+            datev_config = config.config.get('datev', {})
+            if datev_config.get('enabled', False):
+                datev_file = export_to_datev(results, datev_config)
+                exported_files['datev'] = datev_file
+            
         except Exception as e:
             print(f"Export error: {e}")
+    
+    # Email Notification
+    try:
+        from notifications import send_notifications
+        notification_config = config.config.get('notifications', {})
+        if notification_config.get('email', {}).get('enabled', False):
+            send_notifications(config.config, stats, exported_files)
+    except Exception as e:
+        print(f"Notification error: {e}")
     
     # Update job with results
     processing_jobs[job_id].update({
@@ -171,7 +202,9 @@ async def process_invoices_background(job_id: str):
         "exported_files": exported_files,
         "completed_at": datetime.now().isoformat()
     })
-
+    
+    # Schedule cleanup of uploaded PDFs (nach 60 Minuten)
+    asyncio.create_task(cleanup_uploads(upload_path, delay_minutes=60))
 
 @app.get("/api/status/{job_id}")
 async def get_status(job_id: str):
@@ -268,7 +301,58 @@ async def health_check():
         "version": "1.0.0",
         "jobs_count": len(processing_jobs)
     }
+@app.post("/api/send-email/{job_id}")
+async def send_email_route(job_id: str, request: Request):
+    """Send files via email"""
+    try:
+        body = await request.json()
+        emails = body.get('emails', [])
+        
+        if not emails:
+            return {"success": False, "error": "Keine Email-Adressen angegeben"}
+        
+        if job_id not in processing_jobs:
+            return {"success": False, "error": "Job nicht gefunden"}
+        
+        job = processing_jobs[job_id]
+        
+        if job["status"] != "completed":
+            return {"success": False, "error": "Verarbeitung noch nicht abgeschlossen"}
+        
+        # Email senden
+        
+        stats = job.get("stats")
+        exported_files = job.get("exported_files", {})
+        
+        # Temporäre Email-Config mit Custom-Empfängern
+        email_config = config.config.copy()
+        email_config['notifications']['email']['to_addresses'] = emails
+        
+        # Sende Email
+        from notifications import send_notifications
+        result = send_notifications(email_config, stats, exported_files)
+        
+        if result.get('email'):
+            return {"success": True}
+        else:
+            return {"success": False, "error": "Email konnte nicht gesendet werden"}
+            
+    except Exception as e:
+        print(f"Email error: {e}")
+        return {"success": False, "error": str(e)}
 
+async def cleanup_uploads(upload_path: Path, delay_minutes: int = 60):
+    """
+    Löscht Upload-Ordner nach X Minuten (DSGVO-Compliance)
+    """
+    await asyncio.sleep(delay_minutes * 60)  # Warte X Minuten
+    
+    try:
+        if upload_path.exists():
+            shutil.rmtree(upload_path)
+            print(f"🗑️  Auto-Cleanup: {upload_path} gelöscht (nach {delay_minutes} Min)")
+    except Exception as e:
+        print(f"⚠️  Cleanup-Fehler: {e}")
 
 if __name__ == "__main__":
     import uvicorn
