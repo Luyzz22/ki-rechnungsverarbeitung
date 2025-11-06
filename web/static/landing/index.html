@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBS Deutschland - KI-Rechnungsverarbeitung</title>
+    <meta name="description" content="Automatische Rechnungsverarbeitung mit KI - Sparen Sie 90% Zeit bei der Buchhaltung">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --sbs-blue: #003856;
+            --sbs-yellow: #FFB900;
+            --sbs-light: #F5F5F5;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        /* Header */
+        header {
+            background: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            height:250px;
+        }
+        
+        .cta-button {
+            background: var(--sbs-yellow);
+            color: var(--sbs-blue);
+            padding: 12px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 185, 0, 0.4);
+        }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--sbs-blue) 0%, #004d73 100%);
+            color: white;
+            padding: 100px 0;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        
+        .hero .highlight {
+            color: var(--sbs-yellow);
+        }
+        
+        .hero p {
+            font-size: 1.3em;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn-primary {
+            background: var(--sbs-yellow);
+            color: var(--sbs-blue);
+            padding: 15px 40px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: all 0.3s;
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            padding: 15px 40px;
+            border: 2px solid white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover, .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Features */
+        .features {
+            padding: 80px 0;
+            background: var(--sbs-light);
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2.5em;
+            color: var(--sbs-blue);
+            margin-bottom: 50px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,56,86,0.1);
+            transition: all 0.3s;
+            border-top: 4px solid var(--sbs-yellow);
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,56,86,0.2);
+        }
+        
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        
+        .feature-card h3 {
+            color: var(--sbs-blue);
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        /* Benefits */
+        .benefits {
+            padding: 80px 0;
+            background: white;
+        }
+        
+        .benefits-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+        
+        .benefit-item {
+            display: flex;
+            align-items: start;
+            gap: 15px;
+        }
+        
+        .benefit-item .check {
+            color: var(--sbs-yellow);
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        /* Demo Section */
+        .demo {
+            padding: 80px 0;
+            background: var(--sbs-blue);
+            color: white;
+            text-align: center;
+        }
+        
+        .demo h2 {
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .demo-video {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 10px;
+        }
+        
+        /* Pricing */
+        .pricing {
+            padding: 80px 0;
+            background: var(--sbs-light);
+        }
+        
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+        
+        .pricing-card {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,56,86,0.1);
+            text-align: center;
+        }
+        
+        .pricing-card.featured {
+            border: 3px solid var(--sbs-yellow);
+            transform: scale(1.05);
+        }
+        
+        .pricing-card h3 {
+            color: var(--sbs-blue);
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+        
+        .price {
+            font-size: 3em;
+            color: var(--sbs-blue);
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        
+        .price-note {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 30px;
+        }
+        
+        .pricing-features {
+            list-style: none;
+            margin: 30px 0;
+            text-align: left;
+        }
+        
+        .pricing-features li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .pricing-features li:before {
+            content: "✓ ";
+            color: var(--sbs-yellow);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        /* Contact */
+        .contact {
+            padding: 80px 0;
+            background: white;
+        }
+        
+        .contact-form {
+            max-width: 600px;
+            margin: 50px auto 0;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--sbs-blue);
+            font-weight: bold;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--sbs-yellow);
+        }
+        
+        .submit-btn {
+            background: var(--sbs-blue);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .submit-btn:hover {
+            background: #004d73;
+            transform: translateY(-2px);
+        }
+        
+        /* Footer */
+        footer {
+            background: var(--sbs-blue);
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+        
+        footer a {
+            color: var(--sbs-yellow);
+            text-decoration: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2em;
+            }
+            
+            .hero p {
+                font-size: 1.1em;
+            }
+            
+            .pricing-card.featured {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <img src="/static/sbs-logo.png" alt="SBS Deutschland" class="logo">
+                <a href="http://207.154.200.239/" class="cta-button">🚀 Zur Demo</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Rechnungen verarbeiten in <span class="highlight">Sekunden</span></h1>
+            <p>Automatische KI-gestützte Rechnungsverarbeitung für moderne Unternehmen</p>
+            <div class="hero-buttons">
+                <a href="http://207.154.200.239/" class="btn-primary">Jetzt kostenlos testen</a>
+                <a href="#features" class="btn-secondary">Mehr erfahren</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="container">
+            <h2 class="section-title">Warum SBS KI-Rechnungsverarbeitung?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>Multi-Model KI</h3>
+                    <p>Intelligente Kombination aus GPT-4o und Claude Sonnet 4.5 für höchste Genauigkeit bei jeder Rechnung.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Blitzschnell</h3>
+                    <p>Verarbeiten Sie Hunderte von Rechnungen in Minuten statt Stunden. 90% Zeitersparnis garantiert.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">💼</div>
+                    <h3>DATEV-Ready</h3>
+                    <p>Direkter Export für DATEV, Excel und CSV. Nahtlose Integration in Ihre bestehenden Systeme.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>100% Sicher</h3>
+                    <p>DSGVO-konform, automatische Datenlöschung, höchste Sicherheitsstandards für Ihre sensiblen Daten.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>OCR-Technologie</h3>
+                    <p>Selbst handgeschriebene oder gescannte Rechnungen werden präzise erkannt und verarbeitet.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📧</div>
+                    <h3>Auto-Benachrichtigung</h3>
+                    <p>Erhalten Sie automatische Email-Benachrichtigungen mit allen Exports nach jeder Verarbeitung.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits -->
+    <section class="benefits">
+        <div class="container">
+            <h2 class="section-title">Ihre Vorteile auf einen Blick</h2>
+            <div class="benefits-list">
+                <div class="benefit-item">
+                    <span class="check">✓</span>
+                    <div>
+                        <strong>90% Zeitersparnis</strong>
+                        <p>Stunden manuelle Arbeit werden zu Sekunden</p>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <span class="check">✓</span>
+                    <div>
+                        <strong>99% Genauigkeit</strong>
+                        <p>Höchste Präzision durch Multi-Model KI</p>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <span class="check">✓</span>
+                    <div>
+                        <strong>Keine Installation</strong>
+                        <p>Cloud-basiert, sofort einsatzbereit</p>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <span class="check">✓</span>
+                    <div>
+                        <strong>Skalierbar</strong>
+                        <p>Von 10 bis 10.000 Rechnungen pro Monat</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo -->
+    <section class="demo">
+        <div class="container">
+            <h2>Sehen Sie selbst wie einfach es ist</h2>
+            <div class="demo-video">
+                <h3>🎬 Live-Demo verfügbar</h3>
+                <p style="margin: 30px 0;">Testen Sie unser Tool sofort - kostenlos und ohne Registrierung!</p>
+                <a href="http://207.154.200.239/" class="btn-primary">Zur Live-Demo</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <h2 class="section-title">Transparente Preise</h2>
+            <div class="pricing-cards">
+                <div class="pricing-card">
+                    <h3>Starter</h3>
+                    <div class="price">99€</div>
+                    <div class="price-note">pro Monat</div>
+                    <ul class="pricing-features">
+                        <li>Bis zu 100 Rechnungen/Monat</li>
+                        <li>Excel & CSV Export</li>
+                        <li>DATEV Export</li>
+                        <li>Email-Support</li>
+                        <li>Auto-Löschung</li>
+                    </ul>
+                    <a href="#contact" class="btn-primary">Jetzt starten</a>
+                </div>
+                
+                <div class="pricing-card featured">
+                    <h3>Professional</h3>
+                    <div class="price">249€</div>
+                    <div class="price-note">pro Monat</div>
+                    <ul class="pricing-features">
+                        <li>Bis zu 500 Rechnungen/Monat</li>
+                        <li>Alle Starter-Features</li>
+                        <li>API-Zugang</li>
+                        <li>Priorität-Support</li>
+                        <li>Custom Integration</li>
+                        <li>Dedicated Account Manager</li>
+                    </ul>
+                    <a href="#contact" class="btn-primary">Beliebteste Wahl</a>
+                </div>
+                
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <div class="price">Individuell</div>
+                    <div class="price-note">auf Anfrage</div>
+                    <ul class="pricing-features">
+                        <li>Unbegrenzte Rechnungen</li>
+                        <li>Alle Professional-Features</li>
+                        <li>On-Premise Installation</li>
+                        <li>24/7 Premium Support</li>
+                        <li>SLA-Garantie</li>
+                        <li>Schulungen & Workshops</li>
+                    </ul>
+                    <a href="#contact" class="btn-primary">Kontakt aufnehmen</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact -->
+    <section class="contact" id="contact">
+        <div class="container">
+            <h2 class="section-title">Interesse? Kontaktieren Sie uns!</h2>
+            <form class="contact-form" action="mailto:luis@schenk.com" method="post" enctype="text/plain">
+                <div class="form-group">
+                    <label for="name">Name *</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="company">Firma</label>
+                    <input type="text" id="company" name="company">
+                </div>
+                
+                <div class="form-group">
+                    <label for="message">Nachricht *</label>
+                    <textarea id="message" name="message" rows="5" required></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn">Nachricht senden</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 SBS Deutschland GmbH & Co. KG</p>
+            <p>Entwickelt von <a href="mailto:luis@schenk.com">Luis Schenk</a></p>
+        </div>
+    </footer>
+</body>
+</html>
+```
+
+**Speichern: `Ctrl+O` → `Enter` → `Ctrl+X`**
+
+---
+
+## 🌐 JETZT ERREICHBAR UNTER:
+```
+http://207.154.200.239/static/landing/

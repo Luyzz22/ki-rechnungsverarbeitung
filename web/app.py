@@ -49,6 +49,10 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+@app.get("/landing")
+async def landing_page():
+    """Landing Page für Marketing"""
+    return FileResponse("web/static/landing/index.html")
 
 # Templates
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
