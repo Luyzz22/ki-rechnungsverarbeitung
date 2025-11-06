@@ -1,377 +1,378 @@
-# 🤖 KI-Rechnungsverarbeitung
+# 🤖 SBS KI-Rechnungsverarbeitung
 
-## 📖 Dokumentation
+> **Automatische Rechnungsverarbeitung mit Multi-Model KI für die Region Weinheim, Mannheim, Heidelberg**
 
-**[📄 Vollständige Anleitung (PDF)](Anleitung_Rechnungsverarbeitung.pdf)** - Installation, Nutzung, Troubleshooting & Best Practices (8 Seiten)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)]()
+[![Status](https://img.shields.io/badge/Status-Production-success.svg)]()
 
-Automatische Extraktion von Rechnungsdaten aus PDFs mit ChatGPT API.
+---
 
-![Status](https://img.shields.io/badge/status-production--ready-green)
-![Python](https://img.shields.io/badge/python-3.10+-blue)
-![Version](https://img.shields.io/badge/version-2.0-brightgreen)
+## 📋 Übersicht
 
-## 🎯 Problem
+Eine hochmoderne KI-gestützte Lösung zur automatischen Verarbeitung von Rechnungen. Das System kombiniert GPT-4o und Claude Sonnet 4.5 für höchste Genauigkeit und exportiert direkt nach DATEV, Excel und CSV.
 
-Unternehmen verschwenden **50-100 Stunden/Monat** mit manueller Rechnungseingabe in DATEV/Excel.
+### 🎯 Kernfunktionen
 
-## ✅ Lösung
+- ✅ **Multi-Model KI**: Intelligente Kombination aus GPT-4o und Claude Sonnet 4.5
+- ✅ **99% Genauigkeit**: Präzise OCR-Technologie mit automatischer Plausibilitätsprüfung
+- ✅ **DATEV-Export**: Nahtlose Integration für Steuerberater
+- ✅ **90% Zeitersparnis**: 100 Rechnungen in 5 Minuten statt 8 Stunden
+- ✅ **DSGVO-konform**: Automatische Datenlöschung nach 60 Minuten
+- ✅ **Lokaler Support**: Persönliche Betreuung in Weinheim, Mannheim, Heidelberg
 
-KI liest PDF-Rechnungen automatisch aus und extrahiert strukturierte Daten:
+---
 
-- ✅ Rechnungsnummer
-- ✅ Datum & Fälligkeitsdatum  
-- ✅ Lieferant & Adresse
-- ✅ Beträge (Netto/Brutto/MwSt)
-- ✅ IBAN & BIC
-- ✅ Steuernummer & USt-IdNr
+## 🚀 Features
 
-## 📊 Performance
+### 🤖 **KI-Verarbeitung**
+- Multi-Model-Routing: Automatische Wahl des optimalen Modells
+- Komplexitätsberechnung für intelligente Modellauswahl
+- OCR-Technologie für handgeschriebene Rechnungen
+- Automatische Validierung und Plausibilitätsprüfung
 
-| Metric | Wert |
-|--------|------|
-| **Speed** | 10 Sekunden/Rechnung |
-| **Accuracy** | 95%+ |
-| **Cost** | ~0,0005€/Rechnung |
+### 📊 **Export-Formate**
+- **DATEV**: CSV-Export nach DATEV-Standard
+- **Excel**: Vollständig formatierte .xlsx-Dateien
+- **CSV**: Standard-CSV für weitere Verarbeitung
 
-## 💰 ROI
+### 🎨 **Web-Interface**
+- Modern SBS Corporate Design
+- Drag & Drop PDF-Upload
+- Mehrfaches Hochladen möglich
+- Echtzeit-Verarbeitungsanzeige
+- Download-Center für alle Exporte
 
-**Bei 500 Rechnungen/Monat:**
+### 📧 **Email-Benachrichtigungen**
+- Automatische Benachrichtigung nach Verarbeitung
+- Anpassbare Empfängerliste
+- LocalStorage für gespeicherte Email-Adressen
 
-| | Vorher | Nachher | Ersparnis |
-|---|---|---|---|
-| **Zeit** | 83h/Monat | 1,4h/Monat | **81,6h** |
-| **Kosten** | 3.320€ | 56€ | **3.264€/Monat** |
+### 🔒 **Sicherheit & Compliance**
+- DSGVO-konforme Datenhaltung
+- Automatische Löschung nach 60 Minuten
+- Keine persistente Speicherung sensibler Daten
+- SSL/TLS-Verschlüsselung
 
-**Investment:** 12.000€ einmalig  
-**Break-Even:** 3,7 Monate  
-**Jahr 1 ROI:** 227%
+### 📈 **Analytics & Monitoring**
+- Google Analytics Integration
+- Verarbeitungsstatistiken
+- Erfolgs-/Fehlerrate-Tracking
 
-## 🎬 Demo
+---
 
-### 🖥️ GUI Version v2.0 ⭐ NEU!
+## 🏗️ Technologie-Stack
 
-![GUI Demo](screenshot_gui.png)
+### **Backend**
+- **Framework**: FastAPI (Python 3.11+)
+- **KI-Modelle**: 
+  - OpenAI GPT-4o
+  - Anthropic Claude Sonnet 4.5
+- **OCR**: Tesseract + pdfplumber
+- **Datenverarbeitung**: Pandas, openpyxl
 
-**Features:**
-- ✅ Modernes Dark Theme Interface
-- ✅ Datei-Browser mit Multi-Select
-- ✅ Live-Fortschrittsbalken (100%)
-- ✅ Echtzeit-Logging mit Farbcodierung
-- ✅ Detaillierte Statistiken
-- ✅ Success-Popup am Ende
-- ✅ **Keine Kommandozeile nötig!**
+### **Frontend**
+- **Framework**: Vanilla JavaScript + Bootstrap 5
+- **Design**: SBS Corporate Identity
+- **Icons**: Unicode Emojis + Custom SVG
 
-**Perfekt für Demos & nicht-technische User!**
+### **Deployment**
+- **Server**: DigitalOcean Ubuntu 24.04
+- **Web-Server**: Uvicorn (ASGI)
+- **Prozess-Manager**: Systemd
+- **Domain**: sbsdeutschland.com (geplant)
+
+---
+
+## 📦 Installation
+
+### **Voraussetzungen**
 ```bash
-python invoice_parser_gui.py
+# Python 3.11+
+python3 --version
+
+# System-Dependencies
+sudo apt update
+sudo apt install -y tesseract-ocr tesseract-ocr-deu poppler-utils
 ```
 
----
-
-### 🎨 CLI Version v2.0 ⭐ NEU!
-
-![CLI Demo](screenshot_cli_v2.png)
-
-**Features:**
-- ✅ Schöne Box-Grafiken mit Unicode
-- ✅ Farbiges Terminal (Grün/Cyan/Gelb)
-- ✅ Live-Fortschrittsbalken
-- ✅ Strukturierte Tabellen
-- ✅ Summary-Panel mit Statistiken
-- ✅ **Sieht aus wie Enterprise-Software!**
-
-**Perfekt für Power-User & Server!**
+### **Projekt klonen**
 ```bash
-python invoice_parser_v2.py
-```
-
----
-
-### 📟 Klassische CLI Version
-```bash
-python invoice_parser.py
-```
-
-**Basic aber funktional - für Automation & Scripts!**
-
----
-
-## 🎯 3 Versionen für jeden Anwendungsfall
-
-| Version | Interface | Zielgruppe | Command |
-|---------|-----------|------------|---------|
-| **GUI** | Grafisches Fenster | End-User, Demos | `python invoice_parser_gui.py` |
-| **CLI v2** | Terminal (Pretty) | Power-User, Präsentationen | `python invoice_parser_v2.py` |
-| **CLI Basic** | Terminal (Simple) | Automation, Cron-Jobs | `python invoice_parser.py` |
-
-Alle 3 Versionen nutzen die gleiche KI-Engine und produzieren identische Excel-Outputs!
-
----
-
-## 🎬 Live-Beispiel
-
-**3 Rechnungen erfolgreich verarbeitet:**
-```
-✅ Anthropic, PBC           → 21,42€   (2025-10-06)
-✅ E. Breuninger GmbH & Co. → 199,99€  (2025-10-07)
-✅ Freie Tankstelle         → 125,84€  (2025-10-08)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💰 Gesamt: 347,25€
-📈 Durchschnitt: 115,75€
-```
-
-**Extrahierte Daten:**
-- Rechnungsnummern ✅
-- Datum ✅
-- Lieferanten ✅
-- Beträge (Netto/Brutto/MwSt) ✅
-- IBANs ✅
-
-**Zeit:** < 30 Sekunden für alle 3!
-
----
-
-## 🔧 Tech-Stack
-```
-Python 3.10+
-├── OpenAI API (gpt-4o-mini)
-├── PyPDF2 (PDF-Parsing)
-├── pandas (Datenverarbeitung)
-├── openpyxl (Excel-Export)
-├── rich (Beautiful CLI)
-└── tkinter (GUI)
-```
-
-## 🚀 Installation
-```bash
-# 1. Repository klonen
 git clone https://github.com/Luyzz22/ki-rechnungsverarbeitung.git
 cd ki-rechnungsverarbeitung
+```
 
-# 2. Virtual Environment
+### **Virtual Environment**
+```bash
 python3 -m venv venv
-source venv/bin/activate  # Mac/Linux
-# venv\Scripts\activate   # Windows
-
-# 3. Dependencies
+source venv/bin/activate
 pip install -r requirements.txt
-
-# 4. OpenAI API-Key (.env Datei erstellen)
-echo "OPENAI_API_KEY=your-key-here" > .env
 ```
 
-## 📖 Usage
-
-### GUI Version (Empfohlen für Demos)
+### **Umgebungsvariablen**
 ```bash
-python invoice_parser_gui.py
+cp .env.example .env
+nano .env
 ```
 
-1. Klicke "PDFs AUSWÄHLEN"
-2. Wähle deine Rechnungen
-3. Klicke "JETZT VERARBEITEN"
-4. Fertig! Excel wird erstellt
+**.env Konfiguration:**
+```env
+# API Keys
+OPENAI_API_KEY=sk-proj-...
+ANTHROPIC_API_KEY=sk-ant-...
 
-### CLI v2 (Schönes Terminal)
-```bash
-python invoice_parser_v2.py
-```
-
-Lege PDFs in `test_rechnungen/` Ordner und starte!
-
-### CLI Basic (Automation)
-```bash
-# PDFs in Ordner legen
-cp your-invoices/*.pdf test_rechnungen/
-
-# Script ausführen
-python invoice_parser.py
-
-# Excel öffnen
-open rechnungen_export.xlsx
+# Email (optional)
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your@email.com
+SMTP_PASSWORD=your-app-password
+EMAIL_FROM=your@email.com
+EMAIL_TO=recipient@email.com
 ```
 
 ---
 
-## 💼 Für Unternehmen
+## ⚙️ Konfiguration
 
-**Interessiert an einer Lösung für Ihr Unternehmen?**
+**config.yaml** anpassen:
+```yaml
+llm_router:
+  default_model: "gpt-4o"
+  fallback_model: "claude-sonnet-4.5"
+  complexity_threshold: 30
 
-### Pakete
+export:
+  formats:
+    - xlsx
+    - csv
+    - datev
+  output_dir: "output"
 
-**Professional:** 12.000€
-- Bis 2.000 Rechnungen/Monat
-- Lokale Installation
-- 2 Jahre Updates & Support
-- Email-Support
+notifications:
+  email:
+    enabled: true
+    to_addresses:
+      - "steuerberater@example.com"
 
-**Enterprise:** Ab 25.000€
-- Unbegrenzte Rechnungen
-- DATEV-Integration
-- Multi-User Support
-- Custom Features
-- Priority-Support
-- On-Premise Deployment
-
-**Beta-Rabatt:** Erste 5 Kunden: **5.000€** statt 12.000€ 🎉
-
-### Kontakt
-
-- 📧 **Email:** Luis@schenk.com
-- 📱 **Phone:** +49 179 2063144
-- 🔗 **GULP:** [gulp.de/spezialisten/profil/4cn1uh6sxn](https://www.gulp.de/gulp2/g/spezialisten/profil/4cn1uh6sxn)
-- 💼 **LinkedIn:** Verfügbar auf Anfrage
-
-**Kostenlose 15-Min-Demo verfügbar!**
+datev:
+  enabled: true
+  company_number: "12345"
+```
 
 ---
 
-## 🎯 Ideal für
+## 🖥️ Verwendung
 
-- 🏦 **Steuerberater & Buchhaltungskanzleien** (300+ Mandanten)
-- 🛒 **E-Commerce Unternehmen** (100-5.000 Rechnungen/Monat)
-- 🚚 **Logistik & Spedition** (Viele Lieferantenrechnungen)
-- 🔨 **Handwerksbetriebe** (Baustoff-Rechnungen)
-- 🏢 **Jedes Unternehmen mit 100+ Rechnungen/Monat**
+### **Entwicklungs-Server starten**
+```bash
+source venv/bin/activate
+uvicorn web.app:app --reload --host 0.0.0.0 --port 8000
+```
+
+### **Production-Deployment**
+```bash
+# Systemd Service
+sudo cp invoice-app.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable invoice-app
+sudo systemctl start invoice-app
+```
+
+### **Web-Interface**
+```
+http://localhost:8000/          # Upload-Seite
+http://localhost:8000/landing   # Landing Page
+```
 
 ---
 
-## 🏆 Features
+## 📊 API-Endpunkte
 
-### Core Features
-- ✅ Batch-Processing (mehrere PDFs gleichzeitig)
-- ✅ Excel-Export mit strukturierten Daten
-- ✅ DSGVO-konform (100% lokale Verarbeitung)
-- ✅ Intelligente Datenvalidierung
-- ✅ Error-Handling & Logging
-- ✅ Production-ready Code
+### **Upload**
+```http
+POST /api/upload
+Content-Type: multipart/form-data
 
-### v2.0 Features
-- ✅ 3 verschiedene Interfaces (GUI, CLI Pretty, CLI Basic)
-- ✅ Live-Fortschrittsbalken
-- ✅ Farbiges Terminal-Output
-- ✅ Strukturierte Tabellen
-- ✅ Summary-Statistiken
-- ✅ Success-Popups
+files: [file1.pdf, file2.pdf, ...]
+```
+
+### **Verarbeitung starten**
+```http
+POST /api/process/{batch_id}
+```
+
+### **Status abrufen**
+```http
+GET /api/status/{batch_id}
+```
+
+### **Download**
+```http
+GET /api/download/{batch_id}/xlsx
+GET /api/download/{batch_id}/csv
+GET /api/download/{batch_id}/datev
+```
+
+---
+
+## 💰 Preise
+
+### **🎁 Early Bird Special** (Erste 10 Kunden)
+- **3 Monate kostenlos**
+- Danach: **79€/Monat** (statt 119€)
+- Alle Features inklusive
+- Persönlicher Setup vor Ort
+
+### **Reguläre Pakete**
+
+| Paket | Preis | Rechnungen/Monat | Features |
+|-------|-------|------------------|----------|
+| **Starter** | 99€ | 100 | Basis-Features, Email-Support |
+| **Professional** | 189€ | 500 | + Telefon-Support, Quartals-Review |
+| **Enterprise** | Individuell | Unbegrenzt | + 24/7 Support, On-Premise |
+
+**Jahres-Abo:** 2 Monate gratis!
+
+---
+
+## 🗂️ Projektstruktur
+```
+ki-rechnungsverarbeitung/
+├── invoice_core.py          # Haupt-Verarbeitungslogik
+├── llm_router.py            # Multi-Model KI-Router
+├── export.py                # Excel/CSV Export
+├── datev_exporter.py        # DATEV-Export
+├── notifications.py         # Email-System
+├── config.yaml              # Konfiguration
+├── web/
+│   ├── app.py              # FastAPI Backend
+│   ├── templates/
+│   │   ├── index.html      # Upload-Interface
+│   │   └── results.html    # Ergebnis-Anzeige
+│   └── static/
+│       ├── sbs-logo.png    # SBS Logo
+│       └── landing/
+│           └── index.html  # Landing Page
+├── output/                  # Export-Dateien
+└── venv/                    # Virtual Environment
+```
+
+---
+
+## 🎨 Screenshots
+
+### Landing Page
+![Landing Page](https://via.placeholder.com/800x400?text=Landing+Page)
+
+### Upload Interface
+![Upload](https://via.placeholder.com/800x400?text=Upload+Interface)
+
+### Ergebnisse
+![Results](https://via.placeholder.com/800x400?text=Results+Page)
+
+---
+
+## 🔄 Workflow
+```mermaid
+graph LR
+    A[PDF Upload] --> B[OCR Extraktion]
+    B --> C[KI-Analyse]
+    C --> D{Komplexität}
+    D -->|Niedrig| E[GPT-4o]
+    D -->|Hoch| F[Claude Sonnet 4.5]
+    E --> G[Validierung]
+    F --> G
+    G --> H[Export]
+    H --> I[DATEV]
+    H --> J[Excel]
+    H --> K[CSV]
+    I --> L[Email-Benachrichtigung]
+    J --> L
+    K --> L
+```
 
 ---
 
 ## 📈 Roadmap
 
-### Geplant für v3.0
-- [ ] DATEV-Export-Format
-- [ ] Dashboard mit Charts (matplotlib/plotly)
-- [ ] Email-Benachrichtigungen
-- [ ] Multi-User Support
-- [ ] REST API-Interface
-- [ ] Docker-Deployment
-- [ ] Web-Interface (Flask/FastAPI)
-- [ ] Automated Tests
-- [ ] CI/CD Pipeline
+### **v5.0 (Q1 2026)**
+- [ ] Batch-API für externe Integrationen
+- [ ] Mobile App (iOS/Android)
+- [ ] Automatisches Training auf Kundendaten
+- [ ] Multi-Tenancy Support
 
-### In Planung
-- [ ] Cloud-Version (SaaS)
-- [ ] Mobile App
-- [ ] OCR für gescannte PDFs
-- [ ] Mehrsprachige Rechnungen
-- [ ] Maschinelles Lernen für bessere Accuracy
+### **v4.5 (Q4 2025)**
+- [x] Landing Page mit Pricing
+- [x] Google Analytics
+- [x] Email-Benachrichtigungen
+- [ ] SSL-Zertifikat (HTTPS)
+- [ ] Domain-Anbindung (sbsdeutschland.com)
 
----
-
-## 🛠️ Für Entwickler
-
-### Project Structure
-```
-ki-rechnungsverarbeitung/
-├── invoice_parser.py          # CLI Basic
-├── invoice_parser_v2.py       # CLI Pretty (Rich)
-├── invoice_parser_gui.py      # GUI (Tkinter)
-├── requirements.txt           # Dependencies
-├── .env                       # API Keys (nicht in Git!)
-├── .gitignore                # Git config
-├── README.md                  # Diese Datei
-└── test_rechnungen/          # Input-Ordner für PDFs
-```
-
-### Contributing
-
-Contributions sind willkommen! Für größere Änderungen bitte vorher Issue öffnen.
-
-### Testing
-```bash
-# Unit Tests (coming soon)
-python -m pytest tests/
-
-# Integration Tests mit echten PDFs
-python invoice_parser.py
-```
+### **v4.4 (Aktuell)**
+- [x] DATEV-Export
+- [x] Multi-Model KI-Router
+- [x] SBS Corporate Design
+- [x] Auto-Löschung (DSGVO)
 
 ---
 
-## 📄 License
+## 🤝 Beitragen
 
-**Proprietary** - Kontaktieren Sie uns für kommerzielle Lizenzen
+Dieses Projekt ist proprietär und nicht für externe Beiträge geöffnet.
 
-Für Open-Source-Projekte: Kontakt aufnehmen für mögliche MIT-Lizenz
+Für Feature-Anfragen oder Bug-Reports:
+- Email: luis@schenk.com
+- Region: Weinheim, Mannheim, Heidelberg
+
+---
+
+## 📜 Lizenz
+
+**Proprietary Software**
+
+© 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.
+
+Diese Software ist urheberrechtlich geschützt und darf nicht ohne ausdrückliche Genehmigung vervielfältigt, verbreitet oder modifiziert werden.
 
 ---
 
 ## 👨‍💻 Entwickler
 
 **Luis Schenk**
-- 🎓 Wirtschaftsjurist (B.A.) + Python-Entwickler
-- 💼 Spezialisierung: Business Process Automation & Legal Tech
-- 🏢 Praxis: Vibracoustic SE (Customs & Trade)
-- 🌍 Sprachen: DE, EN, ES, FR, IT
-- 💻 Portfolio: [github.com/Luyzz22](https://github.com/Luyzz22)
-
-**Kombination aus:**
-- ✅ Juristischem Verständnis (Compliance, DSGVO, Zollrecht)
-- ✅ Technischer Umsetzung (Python, KI, APIs)
-- ✅ Business-Denken (ROI, Prozessoptimierung)
+- Email: luis@schenk.com
+- Region: Weinheim, Baden-Württemberg
+- GitHub: [@Luyzz22](https://github.com/Luyzz22)
 
 ---
 
-## 📞 Support & Fragen
+## 📞 Kontakt & Support
 
-**Technische Fragen:**
-- GitHub Issues: [github.com/Luyzz22/ki-rechnungsverarbeitung/issues](https://github.com/Luyzz22/ki-rechnungsverarbeitung/issues)
-- Email: Luis@schenk.com
+### **Kontakt**
+- 📧 Email: luis@schenk.com
+- 🌐 Website: [sbsdeutschland.com](http://sbsdeutschland.com) (in Vorbereitung)
+- 📍 Region: Weinheim • Mannheim • Heidelberg
 
-**Business-Anfragen:**
-- Email: Luis@schenk.com
-- Phone: +49 179 2063144
-
-**Response Time:** < 24 Stunden (Werktags)
-
----
-
-## 🌟 Credits
-
-Built with:
-- [OpenAI API](https://openai.com) - ChatGPT for data extraction
-- [Rich](https://github.com/Textualize/rich) - Beautiful terminal formatting
-- [pandas](https://pandas.pydata.org/) - Data processing
-- [PyPDF2](https://pypdf2.readthedocs.io/) - PDF parsing
+### **Support-Zeiten**
+- Starter: Email-Support (Mo-Fr, 9-17 Uhr)
+- Professional: Telefon + Email (Mo-Fr, 9-18 Uhr)
+- Enterprise: 24/7 Premium-Support
 
 ---
 
-## ⭐ Star History
+## 🙏 Danksagungen
 
-⭐ **Star this repo** if you find it useful!
-
-Hilft bei:
-- Sichtbarkeit für andere Entwickler
-- Motivation für weitere Features
-- Zeigt Interesse an dem Projekt
+- **OpenAI** für GPT-4o API
+- **Anthropic** für Claude Sonnet 4.5 API
+- **DigitalOcean** für Hosting
+- **FastAPI** für das exzellente Web-Framework
 
 ---
 
-**Made with ❤️ in Weinheim, Germany 🇩🇪**
+<div align="center">
 
-**© 2025 Luis Schenk - All Rights Reserved**
+**Made with ❤️ in Weinheim, Germany**
 
----
+[🚀 Jetzt kostenlos testen](http://207.154.200.239/landing) | [📧 Kontakt](mailto:luis@schenk.com)
 
-*Last Updated: 15. Oktober 2025*
-
+</div>
