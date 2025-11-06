@@ -3,8 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SBS Deutschland - KI-Rechnungsverarbeitung</title>
-    <meta name="description" content="Automatische Rechnungsverarbeitung mit KI - Sparen Sie 90% Zeit bei der Buchhaltung">
+    <title>SBS Deutschland - KI-Rechnungsverarbeitung | Weinheim • Mannheim • Heidelberg</title>
+    <meta name="description" content="Automatische Rechnungsverarbeitung mit Multi-Model KI für die Region Weinheim, Mannheim, Heidelberg. 3 Monate kostenlos testen - Erste 10 Kunden!">
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-BGH25VL1L6"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-BGH25VL1L6');
+    </script>
     <style>
         * {
             margin: 0;
@@ -16,12 +24,37 @@
             --sbs-blue: #003856;
             --sbs-yellow: #FFB900;
             --sbs-light: #F5F5F5;
+            --sbs-red: #E74C3C;
         }
         
         body {
             font-family: 'Arial', sans-serif;
             line-height: 1.6;
             color: #333;
+        }
+        
+        /* Early Bird Banner */
+        .early-bird-banner {
+            background: linear-gradient(135deg, var(--sbs-red) 0%, #C0392B 100%);
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-weight: bold;
+            position: relative;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.95; }
+        }
+        
+        .early-bird-banner .highlight {
+            background: white;
+            color: var(--sbs-red);
+            padding: 2px 10px;
+            border-radius: 5px;
+            font-size: 1.1em;
         }
         
         /* Header */
@@ -44,7 +77,7 @@
         }
         
         .logo {
-            height:250px;
+            height: 150px;
         }
         
         .cta-button {
@@ -66,12 +99,12 @@
         .hero {
             background: linear-gradient(135deg, var(--sbs-blue) 0%, #004d73 100%);
             color: white;
-            padding: 100px 0;
+            padding: 80px 0;
             text-align: center;
         }
         
         .hero h1 {
-            font-size: 3em;
+            font-size: 2.8em;
             margin-bottom: 20px;
         }
         
@@ -80,9 +113,18 @@
         }
         
         .hero p {
-            font-size: 1.3em;
-            margin-bottom: 40px;
+            font-size: 1.2em;
+            margin-bottom: 30px;
             opacity: 0.9;
+        }
+        
+        .hero .region-badge {
+            display: inline-block;
+            background: rgba(255, 185, 0, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            border: 2px solid var(--sbs-yellow);
         }
         
         .hero-buttons {
@@ -118,6 +160,22 @@
         .btn-primary:hover, .btn-secondary:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Trust Badges */
+        .trust-badges {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .trust-badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 0.9em;
         }
         
         /* Features */
@@ -164,61 +222,15 @@
             font-size: 1.5em;
         }
         
-        /* Benefits */
-        .benefits {
+        /* Pricing */
+        .pricing {
             padding: 80px 0;
             background: white;
         }
         
-        .benefits-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            margin-top: 50px;
-        }
-        
-        .benefit-item {
-            display: flex;
-            align-items: start;
-            gap: 15px;
-        }
-        
-        .benefit-item .check {
-            color: var(--sbs-yellow);
-            font-size: 1.5em;
-            font-weight: bold;
-        }
-        
-        /* Demo Section */
-        .demo {
-            padding: 80px 0;
-            background: var(--sbs-blue);
-            color: white;
-            text-align: center;
-        }
-        
-        .demo h2 {
-            color: white;
-            margin-bottom: 30px;
-        }
-        
-        .demo-video {
-            max-width: 800px;
-            margin: 0 auto;
-            background: rgba(255,255,255,0.1);
-            padding: 40px;
-            border-radius: 10px;
-        }
-        
-        /* Pricing */
-        .pricing {
-            padding: 80px 0;
-            background: var(--sbs-light);
-        }
-        
         .pricing-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 30px;
             margin-top: 50px;
         }
@@ -229,6 +241,7 @@
             border-radius: 10px;
             box-shadow: 0 5px 20px rgba(0,56,86,0.1);
             text-align: center;
+            position: relative;
         }
         
         .pricing-card.featured {
@@ -236,10 +249,27 @@
             transform: scale(1.05);
         }
         
+        .pricing-card .badge {
+            position: absolute;
+            top: -15px;
+            right: 20px;
+            background: var(--sbs-red);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .pricing-card.featured .badge {
+            background: var(--sbs-yellow);
+            color: var(--sbs-blue);
+        }
+        
         .pricing-card h3 {
             color: var(--sbs-blue);
             font-size: 1.8em;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         
         .price {
@@ -247,6 +277,13 @@
             color: var(--sbs-blue);
             font-weight: bold;
             margin: 20px 0;
+        }
+        
+        .price-old {
+            text-decoration: line-through;
+            color: #999;
+            font-size: 0.5em;
+            display: block;
         }
         
         .price-note {
@@ -273,10 +310,45 @@
             margin-right: 10px;
         }
         
+        /* Early Bird Section */
+        .early-bird {
+            background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
+            color: white;
+            padding: 60px 0;
+            text-align: center;
+        }
+        
+        .early-bird h2 {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        
+        .early-bird .offer-box {
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 800px;
+            margin: 30px auto;
+            border: 3px solid white;
+        }
+        
+        .early-bird .big-number {
+            font-size: 4em;
+            font-weight: bold;
+            color: var(--sbs-yellow);
+            margin: 20px 0;
+        }
+        
+        .early-bird .countdown {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+        
         /* Contact */
         .contact {
             padding: 80px 0;
-            background: white;
+            background: var(--sbs-light);
         }
         
         .contact-form {
@@ -346,23 +418,28 @@
                 font-size: 2em;
             }
             
-            .hero p {
-                font-size: 1.1em;
-            }
-            
             .pricing-card.featured {
                 transform: scale(1);
+            }
+            
+            .logo {
+                height: 80px;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Early Bird Banner -->
+    <div class="early-bird-banner">
+        🚀 LAUNCH-ANGEBOT: <span class="highlight">3 MONATE KOSTENLOS</span> für die ersten 10 Kunden! ⏰ Nur noch 7 Plätze frei!
+    </div>
+
     <!-- Header -->
     <header>
         <div class="container">
             <div class="header-content">
                 <img src="/static/sbs-logo.png" alt="SBS Deutschland" class="logo">
-                <a href="http://207.154.200.239/" class="cta-button">🚀 Zur Demo</a>
+                <a href="http://207.154.200.239/" class="cta-button">🚀 Kostenlos testen</a>
             </div>
         </div>
     </header>
@@ -370,11 +447,21 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="container">
+            <div class="region-badge">
+                📍 Weinheim • Mannheim • Heidelberg
+            </div>
             <h1>Rechnungen verarbeiten in <span class="highlight">Sekunden</span></h1>
-            <p>Automatische KI-gestützte Rechnungsverarbeitung für moderne Unternehmen</p>
+            <p>Multi-Model KI-Rechnungsverarbeitung made in Weinheim</p>
             <div class="hero-buttons">
-                <a href="http://207.154.200.239/" class="btn-primary">Jetzt kostenlos testen</a>
+                <a href="#early-bird" class="btn-primary">Jetzt 3 Monate gratis testen</a>
                 <a href="#features" class="btn-secondary">Mehr erfahren</a>
+            </div>
+            
+            <div class="trust-badges">
+                <div class="trust-badge">✅ DSGVO-konform</div>
+                <div class="trust-badge">🏆 Made in Germany</div>
+                <div class="trust-badge">⚡ 99% Genauigkeit</div>
+                <div class="trust-badge">🔒 Lokaler Support</div>
             </div>
         </div>
     </section>
@@ -387,90 +474,60 @@
                 <div class="feature-card">
                     <div class="feature-icon">🤖</div>
                     <h3>Multi-Model KI</h3>
-                    <p>Intelligente Kombination aus GPT-4o und Claude Sonnet 4.5 für höchste Genauigkeit bei jeder Rechnung.</p>
+                    <p>Intelligente Kombination aus GPT-4o und Claude Sonnet 4.5 für höchste Genauigkeit bei jeder Rechnung. Besser als Single-Model-Systeme!</p>
                 </div>
                 
                 <div class="feature-card">
                     <div class="feature-icon">⚡</div>
-                    <h3>Blitzschnell</h3>
-                    <p>Verarbeiten Sie Hunderte von Rechnungen in Minuten statt Stunden. 90% Zeitersparnis garantiert.</p>
+                    <h3>90% Zeitersparnis</h3>
+                    <p>Verarbeiten Sie 100 Rechnungen in 5 Minuten statt 8 Stunden. Ihre Mitarbeiter fokussieren sich auf wertschöpfende Tätigkeiten.</p>
                 </div>
                 
                 <div class="feature-card">
                     <div class="feature-icon">💼</div>
                     <h3>DATEV-Ready</h3>
-                    <p>Direkter Export für DATEV, Excel und CSV. Nahtlose Integration in Ihre bestehenden Systeme.</p>
+                    <p>Direkter Export für DATEV, Excel und CSV. Nahtlose Integration in Ihre bestehenden Systeme. Perfekt für Steuerberater-Kanzleien!</p>
                 </div>
                 
                 <div class="feature-card">
                     <div class="feature-icon">🔒</div>
-                    <h3>100% Sicher</h3>
-                    <p>DSGVO-konform, automatische Datenlöschung, höchste Sicherheitsstandards für Ihre sensiblen Daten.</p>
+                    <h3>Lokaler Support</h3>
+                    <p>Persönliche Betreuung vor Ort in Weinheim, Mannheim, Heidelberg. DSGVO-konform, automatische Datenlöschung nach 60 Minuten.</p>
                 </div>
                 
                 <div class="feature-card">
                     <div class="feature-icon">📊</div>
                     <h3>OCR-Technologie</h3>
-                    <p>Selbst handgeschriebene oder gescannte Rechnungen werden präzise erkannt und verarbeitet.</p>
+                    <p>Selbst handgeschriebene oder gescannte Rechnungen werden präzise erkannt. Keine manuelle Nachbearbeitung nötig.</p>
                 </div>
                 
                 <div class="feature-card">
-                    <div class="feature-icon">📧</div>
-                    <h3>Auto-Benachrichtigung</h3>
-                    <p>Erhalten Sie automatische Email-Benachrichtigungen mit allen Exports nach jeder Verarbeitung.</p>
+                    <div class="feature-icon">💰</div>
+                    <h3>ROI in 1 Monat</h3>
+                    <p>Bei 500 Rechnungen/Monat sparen Sie 1.500€ an Arbeitskosten. Das Tool zahlt sich vom ersten Monat an aus!</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Benefits -->
-    <section class="benefits">
+    <!-- Early Bird Offer -->
+    <section class="early-bird" id="early-bird">
         <div class="container">
-            <h2 class="section-title">Ihre Vorteile auf einen Blick</h2>
-            <div class="benefits-list">
-                <div class="benefit-item">
-                    <span class="check">✓</span>
-                    <div>
-                        <strong>90% Zeitersparnis</strong>
-                        <p>Stunden manuelle Arbeit werden zu Sekunden</p>
-                    </div>
+            <h2>🎁 EARLY BIRD SPECIAL</h2>
+            <div class="offer-box">
+                <h3>Seien Sie einer der ersten 10!</h3>
+                <div class="big-number">3 Monate</div>
+                <h3>VÖLLIG KOSTENLOS</h3>
+                <p style="font-size: 1.2em; margin: 20px 0;">✅ Alle Features inklusive<br>
+                ✅ Persönlicher Setup vor Ort<br>
+                ✅ Keine Vertragsbindung<br>
+                ✅ Danach nur 79€/Monat statt 119€</p>
+                
+                <div class="countdown">
+                    ⏰ Nur noch <strong>7 Plätze</strong> verfügbar!
                 </div>
                 
-                <div class="benefit-item">
-                    <span class="check">✓</span>
-                    <div>
-                        <strong>99% Genauigkeit</strong>
-                        <p>Höchste Präzision durch Multi-Model KI</p>
-                    </div>
-                </div>
-                
-                <div class="benefit-item">
-                    <span class="check">✓</span>
-                    <div>
-                        <strong>Keine Installation</strong>
-                        <p>Cloud-basiert, sofort einsatzbereit</p>
-                    </div>
-                </div>
-                
-                <div class="benefit-item">
-                    <span class="check">✓</span>
-                    <div>
-                        <strong>Skalierbar</strong>
-                        <p>Von 10 bis 10.000 Rechnungen pro Monat</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Demo -->
-    <section class="demo">
-        <div class="container">
-            <h2>Sehen Sie selbst wie einfach es ist</h2>
-            <div class="demo-video">
-                <h3>🎬 Live-Demo verfügbar</h3>
-                <p style="margin: 30px 0;">Testen Sie unser Tool sofort - kostenlos und ohne Registrierung!</p>
-                <a href="http://207.154.200.239/" class="btn-primary">Zur Live-Demo</a>
+                <a href="#contact" class="btn-primary" style="display: inline-block; margin-top: 20px;">Jetzt sichern - Kostenlos starten!</a>
             </div>
         </div>
     </section>
@@ -478,51 +535,79 @@
     <!-- Pricing -->
     <section class="pricing" id="pricing">
         <div class="container">
-            <h2 class="section-title">Transparente Preise</h2>
+            <h2 class="section-title">Transparente Preise für jede Unternehmensgröße</h2>
+            <p style="text-align: center; color: #666; margin-bottom: 30px;">Launch-Rabatt: Alle Preise reduziert! ⚡</p>
+            
             <div class="pricing-cards">
                 <div class="pricing-card">
+                    <div class="badge">LAUNCH -17%</div>
                     <h3>Starter</h3>
-                    <div class="price">99€</div>
+                    <div class="price">
+                        <span class="price-old">119€</span>
+                        99€
+                    </div>
                     <div class="price-note">pro Monat</div>
                     <ul class="pricing-features">
                         <li>Bis zu 100 Rechnungen/Monat</li>
-                        <li>Excel & CSV Export</li>
-                        <li>DATEV Export</li>
+                        <li>Multi-Model KI (GPT-4 + Claude)</li>
+                        <li>99% Genauigkeit</li>
+                        <li>Excel, CSV, DATEV Export</li>
                         <li>Email-Support</li>
-                        <li>Auto-Löschung</li>
+                        <li>DSGVO-konform</li>
+                        <li>Auto-Löschung nach 60 Min</li>
                     </ul>
                     <a href="#contact" class="btn-primary">Jetzt starten</a>
+                    <p style="margin-top: 15px; font-size: 0.9em; color: #666;">💡 Ideal für: Kleinunternehmen, Freelancer</p>
                 </div>
                 
                 <div class="pricing-card featured">
+                    <div class="badge">EMPFOHLEN -24%</div>
                     <h3>Professional</h3>
-                    <div class="price">249€</div>
+                    <div class="price">
+                        <span class="price-old">249€</span>
+                        189€
+                    </div>
                     <div class="price-note">pro Monat</div>
                     <ul class="pricing-features">
                         <li>Bis zu 500 Rechnungen/Monat</li>
                         <li>Alle Starter-Features</li>
-                        <li>API-Zugang</li>
-                        <li>Priorität-Support</li>
+                        <li>Prioritäts-Support</li>
+                        <li>Telefon-Support</li>
+                        <li>Persönlicher Ansprechpartner</li>
+                        <li>Quartals-Review vor Ort</li>
+                        <li>API-Zugang (optional)</li>
                         <li>Custom Integration</li>
-                        <li>Dedicated Account Manager</li>
                     </ul>
                     <a href="#contact" class="btn-primary">Beliebteste Wahl</a>
+                    <p style="margin-top: 15px; font-size: 0.9em; color: #666;">🏆 Ideal für: KMUs, Steuerberater-Kanzleien</p>
                 </div>
                 
                 <div class="pricing-card">
+                    <div class="badge">ENTERPRISE</div>
                     <h3>Enterprise</h3>
-                    <div class="price">Individuell</div>
-                    <div class="price-note">auf Anfrage</div>
+                    <div class="price">
+                        Individuell
+                    </div>
+                    <div class="price-note">ab 349€/Monat</div>
                     <ul class="pricing-features">
                         <li>Unbegrenzte Rechnungen</li>
                         <li>Alle Professional-Features</li>
-                        <li>On-Premise Installation</li>
-                        <li>24/7 Premium Support</li>
+                        <li>Dedicated Account Manager</li>
+                        <li>24/7 Premium-Support</li>
+                        <li>On-Premise Installation möglich</li>
+                        <li>Schulungen & Workshops vor Ort</li>
                         <li>SLA-Garantie</li>
-                        <li>Schulungen & Workshops</li>
+                        <li>White-Label-Option</li>
                     </ul>
                     <a href="#contact" class="btn-primary">Kontakt aufnehmen</a>
+                    <p style="margin-top: 15px; font-size: 0.9em; color: #666;">💼 Ideal für: Große Kanzleien, Konzerne</p>
                 </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 50px; padding: 30px; background: var(--sbs-light); border-radius: 10px;">
+                <h3 style="color: var(--sbs-blue); margin-bottom: 15px;">💰 Jahres-Abo Sonderangebot</h3>
+                <p style="font-size: 1.1em;"><strong>2 Monate GRATIS</strong> bei Jahres-Zahlung!</p>
+                <p style="color: #666; margin-top: 10px;">Starter: 990€/Jahr (statt 1.188€) • Professional: 1.890€/Jahr (statt 2.268€)</p>
             </div>
         </div>
     </section>
@@ -530,7 +615,9 @@
     <!-- Contact -->
     <section class="contact" id="contact">
         <div class="container">
-            <h2 class="section-title">Interesse? Kontaktieren Sie uns!</h2>
+            <h2 class="section-title">Jetzt Early Bird Platz sichern!</h2>
+            <p style="text-align: center; color: #666; margin-bottom: 30px;">⏰ Nur noch 7 von 10 Plätzen verfügbar</p>
+            
             <form class="contact-form" action="mailto:luis@schenk.com" method="post" enctype="text/plain">
                 <div class="form-group">
                     <label for="name">Name *</label>
@@ -548,11 +635,30 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="message">Nachricht *</label>
-                    <textarea id="message" name="message" rows="5" required></textarea>
+                    <label for="phone">Telefon</label>
+                    <input type="tel" id="phone" name="phone">
                 </div>
                 
-                <button type="submit" class="submit-btn">Nachricht senden</button>
+                <div class="form-group">
+                    <label for="package">Interessiert an:</label>
+                    <select id="package" name="package" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px;">
+                        <option value="earlybird">🎁 Early Bird - 3 Monate kostenlos</option>
+                        <option value="starter">Starter - 99€/Monat</option>
+                        <option value="professional">Professional - 189€/Monat</option>
+                        <option value="enterprise">Enterprise - Individuell</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="message">Nachricht</label>
+                    <textarea id="message" name="message" rows="5" placeholder="Wie viele Rechnungen verarbeiten Sie pro Monat?"></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn">🚀 Jetzt kostenlos starten!</button>
+                
+                <p style="text-align: center; margin-top: 20px; color: #666; font-size: 0.9em;">
+                    ✅ Keine Kreditkarte erforderlich • Keine Vertragsbindung • Lokaler Support
+                </p>
             </form>
         </div>
     </section>
@@ -560,18 +666,13 @@
     <!-- Footer -->
     <footer>
         <div class="container">
-            <p>&copy; 2025 SBS Deutschland GmbH & Co. KG</p>
-            <p>Entwickelt von <a href="mailto:luis@schenk.com">Luis Schenk</a></p>
+            <p style="margin-bottom: 10px;"><strong>SBS Deutschland GmbH & Co. KG</strong></p>
+            <p>📍 Region Weinheim • Mannheim • Heidelberg</p>
+            <p style="margin-top: 20px;">&copy; 2025 SBS Deutschland | Made with ❤️ in Weinheim</p>
+            <p style="margin-top: 10px;">Entwickelt von <a href="mailto:luis@schenk.com">Luis Schenk</a></p>
         </div>
     </footer>
 </body>
 </html>
 ```
 
-**Speichern: `Ctrl+O` → `Enter` → `Ctrl+X`**
-
----
-
-## 🌐 JETZT ERREICHBAR UNTER:
-```
-http://207.154.200.239/static/landing/
