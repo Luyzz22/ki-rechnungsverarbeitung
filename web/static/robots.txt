@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /landing
+Allow: /static/
+
+Disallow: /admin/
+Disallow: /api/
+Disallow: /tmp/
+
+Sitemap: http://sbsdeutschland.com/sitemap.xml
