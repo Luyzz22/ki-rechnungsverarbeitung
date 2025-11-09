@@ -17,6 +17,38 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
+import logging
+from logging.handlers import RotatingFileHandler
+import sys
+
+# Logging Setup
+log_formatter = logging.Formatter(
+    '%(asctime)s | %(levelname)s | %(name)s | %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+# File Handler
+file_handler = RotatingFileHandler(
+    '/var/www/invoice-app/logs/app.log',
+    maxBytes=10*1024*1024,  # 10MB
+    backupCount=5
+)
+file_handler.setFormatter(log_formatter)
+file_handler.setLevel(logging.INFO)
+
+# Console Handler
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(log_formatter)
+console_handler.setLevel(logging.INFO)
+
+# Root Logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+# App Logger
+app_logger = logging.getLogger('invoice_app')
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -41,6 +73,13 @@ app = FastAPI(
     description="Automatische Rechnungsverarbeitung mit KI",
     version="1.0.0"
 )
+@app.middleware("http")
+async def log_requests(request, call_next):
+    """Log alle HTTP Requests"""
+    app_logger.info(f"Request: {request.method} {request.url.path} from {request.client.host}")
+    response = await call_next(request)
+    app_logger.info(f"Response: {response.status_code}")
+    return response
 
 # Setup directories
 BASE_DIR = Path(__file__).parent

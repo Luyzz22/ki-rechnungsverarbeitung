@@ -1,12 +1,109 @@
+# Environment & Secrets
 .env
+.env.*
+*.env
+.env.new
+.env.local
+.env.production
+
+# Virtual Environment
 venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Documents & Uploads
 *.pdf
 *.xlsx
-__pycache__/
-.DS_Store
-*.pyc
+*.xls
+*.csv
+*.docx
+*.doc
+
+# Images
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.ico
+*.svg
+*.webp
+
+# Temporary & Cache
 *.log
-output/
-.env.new
-nohup.out
+*.tmp
+*.temp
+*.bak
 *.backup
+*.swp
+*.swo
+*~
+nohup.out
+
+# Output & Batch Files
+output/
+outputs/
+batch_*
+temp_*
+tmp_*
+
+# Logs
+logs/
+*.log.*
+log_*
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+*.swp
+*.swo
+
+# Testing
+.tox/
+.nox/
+.hypothesis/
+pytestdebug.log
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# Database (falls später)
+*.db
+*.sqlite
+*.sqlite3
+
+# Temp directories
+/tmp/
+/temp/
+/cache/
