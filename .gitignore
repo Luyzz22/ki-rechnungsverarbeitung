@@ -107,3 +107,7 @@ pytestdebug.log
 /tmp/
 /temp/
 /cache/
+
+# --- Custom exceptions ---
+# Allow SBS logo to be tracked even though /web/static is ignored
+!web/static/sbs-logo-new.png
