@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>SBS Deutschland GmbH &amp; Co. KG – KI-Rechnungsverarbeitung & Consulting aus Weinheim</title>
+  <link rel="stylesheet" href="/static/sbs-theme.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="SBS Deutschland GmbH &amp; Co. KG aus Weinheim – Ihr Partner für KI-Rechnungsverarbeitung, IT Consulting, Quality & Risk Management und SAP Consulting im Rhein-Neckar- und Odenwald-Raum." />
+  <style>
+    :root {
+      --navy: #003856;
+      --gold: #FFB900;
+      --white: #ffffff;
+      --grey-bg: #f4f7fa;
+      --grey-text: #6b7280;
+      --it: #FFB900;
+      --qr: #9ca3af;
+      --sap: #215E9E;
+      --met: #E0392B;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--white);
+      color: #111827;
+      line-height: 1.6;
+    }
+
+    a { color: inherit; }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(255,255,255,0.98);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      gap: 24px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo img {
+      height: 34px;
+    }
+
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+
+    .logo-text span:first-child {
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--navy);
+    }
+
+    .logo-text span:last-child {
+      font-size: 10px;
+      color: var(--grey-text);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 13px;
+      color: #111827;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      padding: 4px 0;
+      border-bottom: 2px solid transparent;
+    }
+
+    .nav-links a:hover {
+      border-color: var(--gold);
+      color: var(--navy);
+    }
+
+    .nav-cta {
+      padding: 7px 16px;
+      background: var(--gold);
+      color: #111827;
+      border-radius: 999px;
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 12px;
+      margin-left: 8px;
+    }
+
+    /* Hero */
+    .hero {
+      background:
+        radial-gradient(circle at top left, rgba(255,185,0,0.16), transparent),
+        radial-gradient(circle at bottom right, rgba(224,57,43,0.04), transparent),
+        var(--navy);
+      color: var(--white);
+      padding: 60px 0 52px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      left: -120px;
+      top: 40px;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      border: 14px solid rgba(255,255,255,0.04);
+      border-top-color: var(--gold);
+      border-left-color: #215E9E;
+      border-bottom-color: #E0392B;
+      opacity: 0.9;
+      z-index: 0;
+    }
+
+    .hero-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 2.2fr) minmax(260px, 1.5fr);
+      gap: 40px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .hero h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .hero p {
+      font-size: 14px;
+      max-width: 560px;
+      margin-bottom: 20px;
+      opacity: 0.98;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      color: #111827;
+      padding: 9px 22px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .btn-secondary {
+      border: 1px solid rgba(255,255,255,0.38);
+      padding: 9px 18px;
+      border-radius: 999px;
+      font-size: 12px;
+      text-decoration: none;
+      color: var(--white);
+    }
+
+    .hero-note {
+      font-size: 10px;
+      opacity: 0.8;
+    }
+
+    .hero-panel {
+      background: rgba(0,0,0,0.16);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.16);
+      padding: 16px 16px 14px;
+      font-size: 11px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .hero-panel h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 2px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .pill {
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.26);
+      font-size: 9px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .pill span.dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--gold);
+    }
+
+    section {
+      padding: 42px 0;
+    }
+
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 8px;
+    }
+
+    .muted {
+      font-size: 13px;
+      color: var(--grey-text);
+      max-width: 720px;
+      margin-bottom: 20px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--grey-bg);
+      border-radius: 14px;
+      padding: 14px 14px 13px;
+      border: 1px solid #e5e7eb;
+      font-size: 12px;
+    }
+
+    .card h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 4px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 9px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--white);
+      border: 1px solid #e5e7eb;
+      color: var(--grey-text);
+      margin-bottom: 5px;
+    }
+
+    .badge span {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .badge.it span { background: var(--it); }
+    .badge.qr span { background: var(--qr); }
+    .badge.sap span { background: var(--sap); }
+    .badge.met span { background: var(--met); }
+
+    .highlight {
+      background: var(--navy);
+      color: var(--white);
+      border-color: var(--navy);
+    }
+
+    .highlight h3 {
+      color: var(--gold);
+    }
+
+    .highlight p {
+      color: #e5e7eb;
+    }
+
+    .cta-band {
+      background: var(--navy);
+      color: var(--white);
+      text-align: center;
+      padding: 32px 0 38px;
+    }
+
+    .cta-band h2 {
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    .cta-band p {
+      font-size: 12px;
+      margin-bottom: 12px;
+      opacity: 0.9;
+    }
+
+    footer {
+      background: #0b1820;
+      color: #9ca3af;
+      font-size: 10px;
+      padding: 16px 0 22px;
+    }
+
+    .foot {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .foot a {
+      color: #9ca3af;
+      text-decoration: none;
+    }
+
+    @media (max-width: 860px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="nav">
+      <div class="logo">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo">
+        <div class="logo-text">
+          <span>SBS Deutschland GmbH &amp; Co. KG</span>
+          <span>Smart Business Service · Weinheim</span>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="/">Startseite</a>
+        <a href="/ki-rechnungsverarbeitung">KI-Rechnungsverarbeitung</a>
+        <a href="#leistungen">Leistungen</a>
+        <a href="#about">Über uns</a>
+        <a href="#kontakt" class="nav-cta">Kontakt</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<section class="hero" id="start">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">KI aus Weinheim · Rhein-Neckar & Odenwald</div>
+      <h1>KI-Rechnungsverarbeitung für Unternehmen & Kanzleien.</h1>
+      <p>
+        Die SBS Deutschland GmbH &amp; Co. KG automatisiert Ihren Rechnungseingang:
+        Belege erkennen, Daten extrahieren, prüfen und direkt in Ihr ERP- oder Buchhaltungssystem überführen.
+        Schnell, sicher und entwickelt für den Mittelstand.
+      </p>
+      <div class="hero-actions">
+        <a href="#kontakt" class="btn-primary">Live-Demo vereinbaren</a>
+        <a href="/ki-rechnungsverarbeitung" class="btn-secondary">Mehr erfahren</a>
+      </div>
+      <div class="hero-note">
+        Standort: In der Dell 19, 69469 Weinheim · Tel. +49 6201 80 6109 · info@sbsdeutschland.com
+      </div>
+    </div>
+    <div class="hero-panel">
+      <h3>Wie unsere KI arbeitet</h3>
+      <p>Von der Eingangsmail bis zur Buchung – intelligent vernetzt:</p>
+      <div class="pill-row">
+        <div class="pill"><span class="dot"></span>PDF & Scan-Erkennung</div>
+        <div class="pill"><span class="dot"></span>XRechnung & ZUGFeRD</div>
+        <div class="pill"><span class="dot"></span>Kreditoren- & Betragsprüfung</div>
+        <div class="pill"><span class="dot"></span>Mehrstufige Freigaben</div>
+        <div class="pill"><span class="dot"></span>Export zu FiBu / ERP</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="leistungen">
+  <div class="wrap">
+    <h2 class="section-title">Unsere Leistungen</h2>
+    <p class="muted">
+      Neben der KI-Rechnungsverarbeitung bieten wir ein breites Portfolio an Beratungs- und IT-Dienstleistungen
+      für Unternehmen und Organisationen im Rhein-Neckar- und Odenwald-Raum.
+    </p>
+    <div class="grid-3">
+      <div class="card highlight">
+        <div class="badge it"><span></span>IT Consulting / Programming</div>
+        <h3>IT Consulting & Development</h3>
+        <p>Entwicklung individueller Softwarelösungen, Prozessautomatisierung und Systemintegration.</p>
+      </div>
+      <div class="card">
+        <div class="badge qr"><span></span>Q&amp;R Management</div>
+        <h3>Quality & Risk Management</h3>
+        <p>Prozessoptimierung, Dokumentation, Audits und Qualitätssicherung nach höchsten Standards.</p>
+      </div>
+      <div class="card">
+        <div class="badge sap"><span></span>SAP Consulting</div>
+        <h3>SAP Consulting & Reporting</h3>
+        <p>Beratung, Reporting und Integration in bestehende SAP-Umgebungen – für transparente Finanzprozesse.</p>
+      </div>
+      <div class="card">
+        <div class="badge met"><span></span>MET / PMO</div>
+        <h3>Metrologie & PMO</h3>
+        <p>Projektmanagement und technische Messdienstleistungen für Industrie- und Technologieunternehmen.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap">
+    <h2 class="section-title">Über uns</h2>
+    <p class="muted">
+      Die SBS Deutschland GmbH &amp; Co. KG ist Ihr Partner für digitale Prozesslösungen, IT-Consulting und
+      KI-gestützte Rechnungsverarbeitung. Wir verbinden Technologie, Beratung und regionale Nähe – mit Sitz in Weinheim,
+      im Herzen der Metropolregion Rhein-Neckar.
+    </p>
+  </div>
+</section>
+
+<section id="kontakt" class="cta-band">
+  <div class="wrap">
+    <h2>Kontakt</h2>
+    <p>Sie haben Fragen oder möchten eine Demo anfordern? Kontaktieren Sie uns:</p>
+    <p>
+      <strong>SBS Deutschland GmbH &amp; Co. KG</strong><br>
+      In der Dell 19, 69469 Weinheim<br>
+      Tel: +49 6201 80 6109 ·
+      <a href="mailto:info@sbsdeutschland.com" style="color:#FFB900;">info@sbsdeutschland.com</a><br>
+      Web: <a href="http://www.sbsdeutschland.com" style="color:#FFB900;">www.SBSDeutschland.com</a>
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <div>© <span id="year"></span> SBS Deutschland GmbH &amp; Co. KG, In der Dell 19, 69469 Weinheim · Alle Rechte vorbehalten.</div>
+    <div><a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a></div>
+  </div>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</footer>
+
+</body>
+</html>
