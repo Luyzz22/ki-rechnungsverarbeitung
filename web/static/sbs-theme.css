@@ -1,0 +1,106 @@
+:root {
+  --sbs-navy: #003856;
+  --sbs-gold: #FFB900;
+  --sbs-bg: #f5f7fa;
+  --sbs-text: #111827;
+  --sbs-border: #e5e7eb;
+}
+
+/* Global Reset-ish */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Basislayout */
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  background-color: var(--sbs-bg) !important;
+  color: var(--sbs-text) !important;
+}
+
+/* Links */
+a {
+  color: var(--sbs-navy);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--sbs-gold);
+}
+
+/* Buttons & Primary Actions */
+button,
+.btn,
+input[type="submit"],
+input[type="button"],
+.button {
+  background-color: var(--sbs-gold) !important;
+  color: var(--sbs-navy) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 10px 20px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+button:hover,
+.btn:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover,
+.button:hover {
+  background-color: var(--sbs-navy) !important;
+  color: #ffffff !important;
+}
+
+/* Cards / Boxen (Upload, Content) */
+.card,
+.panel,
+.box,
+.upload-box,
+.container-box {
+  background-color: #ffffff !important;
+  border-radius: 14px !important;
+  padding: 24px 24px 20px !important;
+  border: 1px solid var(--sbs-border) !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Tabellen & Inputs etwas moderner */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--sbs-border);
+}
+
+input[type="file"],
+input[type="text"],
+input[type="email"],
+select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--sbs-border);
+  font-family: inherit;
+}
+
+/* Einfacher, dunkler Footer */
+footer {
+  background-color: var(--sbs-navy) !important;
+  color: #ffffff !important;
+  text-align: center;
+  padding: 16px 10px;
+  font-size: 13px;
+}
+footer a {
+  color: var(--sbs-gold) !important;
+}

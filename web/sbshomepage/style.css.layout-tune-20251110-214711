@@ -1,0 +1,653 @@
+/* =====================================
+   SBS Deutschland GmbH & Co. KG – Global Styles
+   ===================================== */
+
+:root {
+  --navy: #003856;
+  --gold: #FFB900;
+  --white: #ffffff;
+  --grey-bg: #f4f7fa;
+  --grey-text: #6b7280;
+  --border: #e5e7eb;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--white);
+  color: #111827;
+  line-height: 1.6;
+  padding-bottom: 60px;
+}
+
+.wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+h1, h2, h3 {
+  color: var(--navy);
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+h1 {
+  font-size: 28px;
+  margin-top: 20px;
+}
+
+h2 {
+  font-size: 22px;
+}
+
+p {
+  margin-bottom: 12px;
+  font-size: 15px;
+  color: #1f2937;
+}
+
+a {
+  color: var(--navy);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--gold);
+}
+
+/* Buttons */
+.btn-primary {
+  display: inline-block;
+  background: var(--gold);
+  color: #111827;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.btn-primary:hover {
+  background: #ffd352;
+}
+
+.btn-secondary {
+  display: inline-block;
+  border: 1px solid var(--navy);
+  color: var(--navy);
+  padding: 9px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.btn-secondary:hover {
+  background: var(--navy);
+  color: var(--white);
+}
+
+/* Footer */
+footer {
+  background: #0b1820;
+  color: #9ca3af;
+  font-size: 12px;
+  padding: 20px 0;
+  text-align: center;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+footer a {
+  color: #9ca3af;
+  text-decoration: none;
+}
+
+footer a:hover {
+  color: var(--gold);
+}
+/* Header / Navigation für SBS-Seiten */
+
+header {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.nav {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo img {
+  height: 26px;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.logo-text span:first-child {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #003856;
+}
+
+.logo-text span:last-child {
+  font-size: 9px;
+  color: #6b7280;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+}
+
+.nav-links a {
+  color: #111827;
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-links a:hover {
+  color: #003856;
+  border-color: #FFB900;
+}
+
+/* === Header (vergrößert & optimiert) === */
+
+header {
+  background: #ffffff;
+  border-bottom: 1px solid #d1d5db;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.nav {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo img {
+  height: 48px; /* Logo deutlich größer */
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.logo-text span:first-child {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  font-size: 14px; /* größer */
+  text-transform: uppercase;
+  color: #003856;
+}
+
+.logo-text span:last-child {
+  font-size: 12px; /* größer */
+  color: #6b7280;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 14px; /* größere Schrift */
+}
+
+.nav-links a {
+  color: #111827;
+  text-decoration: none;
+  padding-bottom: 3px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.nav-links a:hover {
+  color: #003856;
+  border-color: #FFB900;
+  transform: translateY(-1px);
+}
+
+/* === Header Optimierung (Override) === */
+
+header {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.nav {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.logo img {
+  height: 38px; /* etwas größer, aber nicht übertrieben */
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.logo-text span:first-child {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #003856;
+  white-space: nowrap; /* in einer Zeile halten */
+}
+
+.logo-text span:last-child {
+  font-size: 9px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-size: 13px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.nav-links a {
+  color: #111827;
+  text-decoration: none;
+  padding-bottom: 3px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.nav-links a:hover {
+  color: #003856;
+  border-color: #FFB900;
+  transform: translateY(-1px);
+}
+
+/* Inhalt oben nicht zu nah an den Header kleben lassen */
+.wrap h1 {
+  margin-top: 40px;
+}
+
+/* === Header/Logo – vergrößert und optisch ausbalanciert === */
+
+header {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.nav {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.logo img {
+  height: 64px; /* deutlich größer, sichtbar */
+  width: auto;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.logo-text span:first-child {
+  font-weight: 800;
+  font-size: 16px; /* größer & stärker */
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #003856;
+}
+
+.logo-text span:last-child {
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  font-size: 15px;
+}
+
+.nav-links a {
+  color: #111827;
+  text-decoration: none;
+  padding-bottom: 4px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.25s ease;
+}
+
+.nav-links a:hover {
+  color: #003856;
+  border-color: #FFB900;
+  transform: translateY(-1px);
+}
+
+/* Abstand für den Seiteninhalt unter dem Header */
+body {
+  scroll-behavior: smooth;
+}
+
+/* === Header & Logo – große Variante === */
+
+header {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.nav {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 28px 48px; /* Header deutlich höher */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.logo img {
+  height: 88px; /* großes Logo, endlich sichtbar */
+  width: auto;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.logo-text span:first-child {
+  font-weight: 800;
+  font-size: 20px; /* größer, kräftig */
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #003856;
+}
+
+.logo-text span:last-child {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.nav-links a {
+  color: #111827;
+  text-decoration: none;
+  padding-bottom: 5px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.25s ease;
+}
+
+.nav-links a:hover {
+  color: #003856;
+  border-color: #FFB900;
+  transform: translateY(-1px);
+}
+
+/* Damit Inhalt nicht zu nah am Header klebt */
+main, .wrap, .content {
+  margin-top: 40px;
+}
+
+/* === Dynamische Header-Größe je nach Seite === */
+
+/* Standardgröße für alle Seiten (kompakter Header) */
+header {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.nav {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.logo img {
+  height: 48px;
+  width: auto;
+}
+
+.logo-text span:first-child {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+}
+
+.logo-text span:last-child {
+  font-size: 11px;
+  color: #4b5563;
+}
+
+/* === NUR auf der Startseite (sbshomepage/index.html) Header größer === */
+body.home header .nav {
+  padding: 28px 48px;
+}
+
+body.home .logo img {
+  height: 88px;
+}
+
+body.home .logo-text span:first-child {
+  font-size: 20px;
+}
+
+body.home .logo-text span:last-child {
+  font-size: 14px;
+}
+
+/* ===== SBS Subpage Layout Fix (global) ===== */
+
+/* Basis-Hintergrund wie Startseite */
+body {
+  background-color: #f5f7fa;
+  color: #0f172a;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", -system, sans-serif;
+}
+
+/* Einheitlicher Wrapper für Unterseiten:
+   Greift für alle bestehenden Strukturen ohne HTML umzubauen. */
+main,
+.page-content,
+.content,
+.section-wrapper {
+  max-width: 1100px;
+  margin: 0 auto 80px;
+  padding: 40px 32px 0;
+}
+
+/* Abstand unterhalb des Headers für alle sbshomepage-Seiten */
+body > header {
+  margin-bottom: 0;
+}
+body > main,
+body > .page-content,
+body > .content {
+  padding-top: 40px;
+}
+
+/* Headline-Styling wie sbshomepage Hero */
+main h1,
+.page-content h1,
+.content h1 {
+  font-size: 32px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #003856;
+  margin: 0 0 18px;
+}
+
+/* Subheadline / Einleitungstext */
+main p,
+.page-content p,
+.content p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+/* Abschnittsüberschriften */
+main h2,
+.page-content h2,
+.content h2 {
+  margin-top: 32px;
+  margin-bottom: 12px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #003856;
+}
+
+/* Listen sauber einrücken */
+main ul,
+.page-content ul,
+.content ul {
+  margin: 0 0 16px 20px;
+  padding: 0;
+}
+main li,
+.page-content li,
+.content li {
+  margin-bottom: 6px;
+}
+
+/* Call-to-Action Buttons auf Unterseiten */
+a.btn-primary,
+.button-primary,
+.subpage-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 26px;
+  border-radius: 999px;
+  background-color: #FFB900;
+  color: #003856;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(148,163,253,0.18);
+  border: none;
+  transition: all .2s ease;
+}
+a.btn-primary:hover,
+.button-primary:hover,
+.subpage-cta:hover {
+  background-color: #ffcb3b;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(15,23,42,0.16);
+}
+
+/* Kleiner Footer-Abstand, falls vorhanden */
+footer {
+  margin-top: 40px;
+}
+
+/* ===== Ende Layout Fix ===== */
