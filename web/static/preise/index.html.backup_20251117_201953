@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preise – KI-Rechnungsverarbeitung | SBS Deutschland</title>
+  <meta name="description" content="Transparente Preise für KI-Rechnungsverarbeitung. Von 69€/Monat für 100 Rechnungen bis Enterprise-Lösungen. DSGVO-konform, Made in Germany.">
+  <link rel="icon" href="/static/favicon.ico">
+  
+  <style>
+    /* ================================================
+       VARIABLES & RESET
+       ================================================ */
+    :root {
+      --sbs-bg: #f5f6f8;
+      --sbs-white: #ffffff;
+      --sbs-dark: #003856;
+      --sbs-dark-soft: #0b2435;
+      --sbs-accent: #ffb400;
+      --sbs-text: #17212b;
+      --sbs-muted: #6b7280;
+      --sbs-gradient: linear-gradient(135deg, #003856 0%, #005a8a 100%);
+      --transition: all 0.3s ease;
+    }
+    
+    [data-theme="dark"] {
+      --sbs-bg: #0f172a;
+      --sbs-white: #1e293b;
+      --sbs-dark: #60a5fa;
+      --sbs-dark-soft: #e2e8f0;
+      --sbs-text: #e2e8f0;
+      --sbs-muted: #94a3b8;
+      --sbs-gradient: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--sbs-bg);
+      color: var(--sbs-text);
+      line-height: 1.6;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* ================================================
+       HEADER (dein vorhandener Code)
+       ================================================ */
+    .sbs-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--sbs-white);
+      box-shadow: 0 1px 12px rgba(15,23,42,0.06);
+      transition: var(--transition);
+    }
+
+    .sbs-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .sbs-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+
+    .sbs-logo-img {
+      height: 40px;
+      width: auto;
+    }
+
+    .sbs-logo-text {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      line-height: 1.25;
+      color: var(--sbs-dark-soft);
+    }
+
+    .sbs-logo-text strong {
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .burger-menu {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      z-index: 1001;
+    }
+
+    .burger-menu span {
+      width: 25px;
+      height: 3px;
+      background: var(--sbs-dark-soft);
+      border-radius: 3px;
+      transition: var(--transition);
+    }
+
+    .sbs-nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 14px;
+    }
+
+    .sbs-nav a {
+      position: relative;
+      padding-bottom: 4px;
+      opacity: 0.85;
+      transition: var(--transition);
+      text-decoration: none;
+      color: var(--sbs-text);
+      font-weight: 500;
+    }
+
+    .sbs-nav a:hover {
+      opacity: 1;
+    }
+
+    .sbs-nav a.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--sbs-accent);
+    }
+
+    .sbs-nav-cta {
+      padding: 9px 18px !important;
+      border-radius: 999px !important;
+      background: var(--sbs-accent) !important;
+      color: #111827 !important;
+      font-weight: 600 !important;
+      box-shadow: 0 4px 12px rgba(255,180,0,0.3) !important;
+      opacity: 1 !important;
+    }
+
+    .sbs-nav-cta::after {
+      display: none !important;
+    }
+
+    .sbs-nav-cta:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 6px 16px rgba(255,180,0,0.4) !important;
+    }
+
+    .dark-mode-toggle {
+      background: var(--sbs-white);
+      border: 2px solid rgba(15,23,42,0.12);
+      border-radius: 999px;
+      width: 50px;
+      height: 28px;
+      cursor: pointer;
+      transition: var(--transition);
+      padding: 0 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .dark-mode-toggle:hover {
+      border-color: var(--sbs-accent);
+      transform: scale(1.05);
+    }
+
+    .sun-icon, .moon-icon {
+      font-size: 14px;
+      transition: var(--transition);
+    }
+
+    [data-theme="dark"] .sun-icon { opacity: 0.3; }
+    [data-theme="light"] .moon-icon { opacity: 0.3; }
+
+    /* ================================================
+       HERO SECTION
+       ================================================ */
+    .hero {
+      background: var(--sbs-gradient);
+      padding: 80px 24px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 0.4;
+    }
+
+    .hero-content {
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      padding: 8px 18px;
+      border-radius: 999px;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      color: white;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-subtitle {
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .hero-features {
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .hero-feature {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .hero-feature i {
+      color: var(--sbs-accent);
+      font-size: 1.1rem;
+    }
+
+    /* ================================================
+       USP SECTION (NEU)
+       ================================================ */
+    .usp-section {
+      background: var(--sbs-bg);
+      padding: 60px 24px;
+      border-bottom: 3px solid var(--sbs-accent);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .usp-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .usp-card {
+      background: var(--sbs-white);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      transition: var(--transition);
+    }
+
+    .usp-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+
+    .usp-icon {
+      font-size: 2rem;
+      min-width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 180, 0, 0.15);
+      border-radius: 12px;
+      flex-shrink: 0;
+    }
+
+    .usp-content h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--sbs-dark);
+    }
+
+    .usp-content p {
+      font-size: 0.9rem;
+      color: var(--sbs-muted);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* ================================================
+       PRICING SECTION
+       ================================================ */
+    .pricing {
+      padding: 80px 24px;
+      background: var(--sbs-white);
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .section-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      background: rgba(255, 180, 0, 0.1);
+      color: var(--sbs-accent);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+    }
+
+    .section-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--sbs-dark);
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .section-subtitle {
+      font-size: 1.1rem;
+      color: var(--sbs-muted);
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 32px;
+      margin-top: 60px;
+    }
+
+    .pricing-card {
+      background: var(--sbs-bg);
+      border-radius: 20px;
+      padding: 40px 32px;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+      transition: var(--transition);
+      border: 2px solid transparent;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 50px rgba(0,0,0,0.15);
+    }
+
+    .pricing-card.featured {
+      background: var(--sbs-white);
+      border-color: var(--sbs-accent);
+      box-shadow: 0 8px 40px rgba(255,180,0,0.25);
+    }
+
+    .pricing-card.featured::before {
+      content: '⭐ FÜR DIE MEISTEN DIE BESTE WAHL';
+      position: absolute;
+      top: 24px;
+      right: -68px;
+      background: var(--sbs-accent);
+      color: #111827;
+      padding: 6px 80px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      transform: rotate(45deg);
+      box-shadow: 0 4px 12px rgba(255,180,0,0.3);
+    }
+
+    .plan-name {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--sbs-dark);
+      margin-bottom: 8px;
+    }
+
+    .plan-description {
+      color: var(--sbs-muted);
+      margin-bottom: 28px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .plan-price {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .price-amount {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: var(--sbs-dark);
+      line-height: 1;
+    }
+
+    .price-currency {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--sbs-muted);
+    }
+
+    .price-period {
+      font-size: 1rem;
+      color: var(--sbs-muted);
+      margin-bottom: 4px;
+    }
+
+    .price-note {
+      font-size: 0.85rem;
+      color: var(--sbs-muted);
+      margin-bottom: 24px;
+    }
+
+    .pricing-volume {
+      background: rgba(255, 180, 0, 0.1);
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+      margin: 20px 0;
+      border-left: 4px solid var(--sbs-accent);
+    }
+
+    .pricing-volume strong {
+      display: block;
+      font-size: 1.2rem;
+      color: var(--sbs-dark);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .pricing-volume small {
+      font-size: 0.85rem;
+      color: var(--sbs-muted);
+    }
+
+    .plan-features {
+      list-style: none;
+      margin: 24px 0;
+      flex-grow: 1;
+    }
+
+    .plan-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      font-size: 0.95rem;
+    }
+
+    .feature-icon {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      background: rgba(16, 185, 129, 0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .feature-icon.check {
+      color: #10b981;
+    }
+
+    .feature-icon.cross {
+      opacity: 0.3;
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+    }
+
+    .plan-features li.disabled {
+      opacity: 0.5;
+    }
+
+    .plan-cta {
+      display: block;
+      width: 100%;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: center;
+      text-decoration: none;
+      transition: var(--transition);
+      cursor: pointer;
+      border: 2px solid var(--sbs-dark);
+      background: transparent;
+      color: var(--sbs-dark);
+      margin-top: auto;
+    }
+
+    .plan-cta:hover {
+      background: var(--sbs-dark);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 56, 86, 0.3);
+    }
+
+    .pricing-card.featured .plan-cta {
+      background: var(--sbs-accent);
+      color: #111827;
+      border-color: var(--sbs-accent);
+      box-shadow: 0 4px 20px rgba(255,180,0,0.3);
+    }
+
+    .pricing-card.featured .plan-cta:hover {
+      box-shadow: 0 8px 30px rgba(255,180,0,0.4);
+      transform: translateY(-2px);
+    }
+
+    /* ================================================
+       FAQ SECTION
+       ================================================ */
+    .faq {
+      padding: 80px 24px;
+      background: var(--sbs-bg);
+    }
+
+    .faq-list {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .faq-item {
+      background: var(--sbs-white);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 16px;
+      transition: var(--transition);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+
+    .faq-item:hover {
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+
+    .faq-question {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--sbs-dark);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .faq-question::before {
+      content: "❓";
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .faq-answer {
+      color: var(--sbs-muted);
+      line-height: 1.7;
+      padding-left: 32px;
+    }
+
+    /* ================================================
+       CTA SECTION
+       ================================================ */
+    .cta-section {
+      padding: 100px 24px;
+      background: var(--sbs-gradient);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 0.3;
+    }
+
+    .cta-content {
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-section h2 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 20px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+
+    .cta-section p {
+      font-size: 1.25rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 40px;
+      line-height: 1.6;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: var(--transition);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .btn-primary {
+      background: var(--sbs-accent);
+      color: #111827;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(255,180,0,0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .hero-cta-group {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* ================================================
+       FOOTER (NEU)
+       ================================================ */
+    .footer {
+      background: var(--sbs-dark);
+      color: rgba(255,255,255,0.8);
+      padding: 60px 24px 24px;
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .footer-section h4 {
+      color: white;
+      font-weight: 700;
+      margin-bottom: 16px;
+      font-size: 1rem;
+    }
+
+    .footer-section p {
+      line-height: 1.7;
+      font-size: 0.9rem;
+    }
+
+    .footer-section ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .footer-section ul li {
+      margin-bottom: 10px;
+    }
+
+    .footer-section ul li a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      transition: color 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .footer-section ul li a:hover {
+      color: var(--sbs-accent);
+    }
+
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 0 auto;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.85rem;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .footer-links a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .footer-links a:hover {
+      color: var(--sbs-accent);
+    }
+
+    /* ================================================
+       RESPONSIVE
+       ================================================ */
+    @media (max-width: 768px) {
+      .burger-menu { display: flex; }
+      
+      .sbs-nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 280px;
+        height: 100vh;
+        background: var(--sbs-white);
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 80px 24px 24px;
+        gap: 20px;
+        box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+        transition: right 0.3s ease;
+      }
+      
+      .sbs-nav.active { right: 0; }
+      
+      .hero h1 { font-size: 2rem; }
+      .section-title { font-size: 2rem; }
+      .cta-section h2 { font-size: 2rem; }
+      
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .usp-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-features {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="sbs-header" id="main-header">
+    <div class="sbs-header-inner">
+      <a href="/sbshomepage/" class="sbs-logo-wrap">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="sbs-logo-img" />
+        <div class="sbs-logo-text">
+          <strong>SBS Deutschland GmbH &amp; Co. KG</strong>
+          <span>Smart Business Service · Weinheim</span>
+        </div>
+      </a>
+      
+      <button class="burger-menu" id="burger-menu" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <nav class="sbs-nav" id="main-nav">
+        <a href="/sbshomepage/">Startseite</a>
+        <a href="/landing">KI-Rechnungsverarbeitung</a>
+        <a href="/preise" class="active">Preise</a>
+        <a href="/sbshomepage/unternehmen.html">Über uns</a>
+        <a href="/sbshomepage/kontakt.html">Kontakt</a>
+        <a href="https://app.sbsdeutschland.com/" class="sbs-nav-cta">Upload / Demo</a>
+        
+        <button class="dark-mode-toggle" id="dark-mode-toggle" aria-label="Dark Mode">
+          <span class="sun-icon">☀️</span>
+          <span class="moon-icon">🌙</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">
+        💰 TRANSPARENTE PREISE
+      </div>
+      
+      <h1>Faire Preise für jede Unternehmensgröße</h1>
+      
+      <p class="hero-subtitle">
+        Von Einzelunternehmen bis zum Konzern. Transparente Preise ohne versteckte Kosten. 
+        Jederzeit kündbar. 30 Tage Geld-zurück-Garantie.
+      </p>
+
+      <div class="hero-features">
+        <div class="hero-feature">
+          <i>✓</i>
+          <span>Keine Setup-Gebühren</span>
+        </div>
+        <div class="hero-feature">
+          <i>✓</i>
+          <span>Monatlich kündbar</span>
+        </div>
+        <div class="hero-feature">
+          <i>✓</i>
+          <span>30 Tage Geld-zurück</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- USP SECTION -->
+  <section class="usp-section">
+    <div class="container">
+      <div class="usp-grid">
+        <div class="usp-card">
+          <div class="usp-icon">⚡</div>
+          <div class="usp-content">
+            <h3>8-Thread Parallel-Verarbeitung</h3>
+            <p>Bis zu 8x schneller als Standard-Lösungen durch intelligente Multi-Threading-Architektur</p>
+          </div>
+        </div>
+        
+        <div class="usp-card">
+          <div class="usp-icon">🇩🇪</div>
+          <div class="usp-content">
+            <h3>Made in Germany</h3>
+            <p>DSGVO-konform, Server in Deutschland, keine Datenweitergabe an Dritte</p>
+          </div>
+        </div>
+        
+        <div class="usp-card">
+          <div class="usp-icon">📊</div>
+          <div class="usp-content">
+            <h3>DATEV-Integration</h3>
+            <p>Perfekt für Steuerberater & Buchhaltung - direkter Export in DATEV-Format</p>
+          </div>
+        </div>
+        
+        <div class="usp-card">
+          <div class="usp-icon">✅</div>
+          <div class="usp-content">
+            <h3>Produktionsreif getestet</h3>
+            <p>Version 4.0 - erfolgreich getestet mit 1,2 Mio. € Rechnungsvolumen, 100% Erfolgsrate</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-badge">PREISMODELLE</span>
+        <h2 class="section-title">Wählen Sie den passenden Plan</h2>
+        <p class="section-subtitle">Alle Pläne beinhalten unsere leistungsstarke 8-Thread-KI-Engine und deutschen Support</p>
+      </div>
+      
+      <div class="pricing-grid">
+        
+        <!-- STARTER -->
+        <div class="pricing-card">
+          <h3 class="plan-name">Starter</h3>
+          <p class="plan-description">Perfekt für kleine Unternehmen und Freiberufler</p>
+          
+          <div class="plan-price">
+            <span class="price-currency">€</span>
+            <span class="price-amount">69</span>
+          </div>
+          <p class="price-period">pro Monat</p>
+          <p class="price-note">zzgl. MwSt.</p>
+
+          <div class="pricing-volume">
+            <strong>Bis zu 100 Rechnungen/Monat</strong>
+            <small>Jede weitere Rechnung nur 0,70€</small>
+          </div>
+          
+          <ul class="plan-features">
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>Multi-Model KI-Verarbeitung (8-Thread-Engine)</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>DATEV & CSV Export</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>E-Mail-Benachrichtigungen</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>DSGVO-konform, Deutschland-Hosting</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>E-Mail-Support (Reaktionszeit: 24h)</span>
+            </li>
+            <li class="disabled">
+              <span class="feature-icon cross">✗</span>
+              <span>Excel Export</span>
+            </li>
+            <li class="disabled">
+              <span class="feature-icon cross">✗</span>
+              <span>API-Zugang</span>
+            </li>
+            <li class="disabled">
+              <span class="feature-icon cross">✗</span>
+              <span>Priority Support</span>
+            </li>
+          </ul>
+          
+          <a href="https://app.sbsdeutschland.com/" class="plan-cta">Jetzt starten</a>
+        </div>
+
+        <!-- PROFESSIONAL (Featured) -->
+        <div class="pricing-card featured">
+          <h3 class="plan-name">Professional</h3>
+          <p class="plan-description">Ideal für wachsende Unternehmen und Steuerkanzleien</p>
+          
+          <div class="plan-price">
+            <span class="price-currency">€</span>
+            <span class="price-amount">179</span>
+          </div>
+          <p class="price-period">pro Monat</p>
+          <p class="price-note">zzgl. MwSt.</p>
+
+          <div class="pricing-volume">
+            <strong>Bis zu 600 Rechnungen/Monat</strong>
+            <small>Jede weitere Rechnung nur 0,30€</small>
+          </div>
+          
+          <ul class="plan-features">
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span><strong>Alles aus Starter, plus:</strong></span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>Excel-Export zusätzlich</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>API-Zugang für ERP/DMS-Integration</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>Priority E-Mail & Chat-Support (4h)</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>Monatliche Analytics & Reports</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>Dublettenprüfung & erweiterte Validierung</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>Multi-User-Zugang</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>Priorisierte Verarbeitung</span>
+            </li>
+          </ul>
+          
+          <a href="https://app.sbsdeutschland.com/" class="plan-cta">Jetzt starten</a>
+        </div>
+
+        <!-- ENTERPRISE -->
+        <div class="pricing-card">
+          <h3 class="plan-name">Enterprise</h3>
+          <p class="plan-description">Für große Unternehmen mit individuellen Anforderungen</p>
+          
+          <div class="plan-price">
+            <span class="price-amount" style="font-size: 2.5rem;">ab <span class="price-currency" style="font-size: 1.2rem;">€</span>449</span>
+          </div>
+          <p class="price-period">pro Monat</p>
+          <p class="price-note">Preis abhängig von Volumen & Anforderungen</p>
+
+          <div class="pricing-volume">
+            <strong>Unbegrenzte Rechnungen</strong>
+            <small>oder ab 2.500 Rechnungen inklusive</small>
+          </div>
+          
+          <ul class="plan-features">
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span><strong>Alles aus Professional, plus:</strong></span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>Custom KI-Modelle (kundenspezifisch trainiert)</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>Dedicated Server / eigene Instanz</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>Full API + Webhooks</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>On-Premise oder VPN-Anbindung möglich</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>24/7 Premium Support (Telefon + vor Ort)</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>Persönlicher Account Manager</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>SLA-Garantien (99,5% Uptime)</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>Custom Exporte & Integrationen</span>
+            </li>
+            <li>
+              <span class="feature-icon check">✓</span>
+              <span>Team-Schulungen vor Ort</span>
+            </li>
+          </ul>
+          
+          <a href="/sbshomepage/kontakt.html" class="plan-cta">Beratungstermin vereinbaren</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-badge">HÄUFIGE FRAGEN</span>
+        <h2 class="section-title">Fragen zu den Preisen?</h2>
+      </div>
+      
+      <div class="faq-list">
+        <div class="faq-item">
+          <h3 class="faq-question">Was passiert, wenn ich mehr Rechnungen verarbeiten möchte?</h3>
+          <p class="faq-answer">
+            Kein Problem! Sie können jederzeit auf einen höheren Plan upgraden. Alternativ können 
+            zusätzliche Rechnungen einzeln hinzugebucht werden: Starter 0,70€/Rechnung, Professional 
+            0,30€/Rechnung. Bei Enterprise-Plänen gibt es keine Begrenzung oder wir erstellen ein 
+            individuelles Volumenmodell.
+          </p>
+        </div>
+        
+        <div class="faq-item">
+          <h3 class="faq-question">Gibt es eine Vertragsbindung?</h3>
+          <p class="faq-answer">
+            Nein, alle Pläne sind monatlich kündbar. Sie haben volle Flexibilität und können jederzeit 
+            upgraden, downgraden oder kündigen. Wir bieten auch optionale Jahresverträge mit 10% Rabatt 
+            an (entspricht 2 Monaten gratis).
+          </p>
+        </div>
+        
+        <div class="faq-item">
+          <h3 class="faq-question">Kann ich die Software vorher testen?</h3>
+          <p class="faq-answer">
+            Ja! Wir bieten eine 30-tägige Geld-zurück-Garantie. Außerdem können Sie mit unserem 
+            kostenlosen Demo-Zugang die KI-Verarbeitung ohne Anmeldung testen. Einfach auf "Upload / Demo" 
+            klicken und sofort loslegen.
+          </p>
+        </div>
+        
+        <div class="faq-item">
+          <h3 class="faq-question">Welche Zahlungsmethoden werden akzeptiert?</h3>
+          <p class="faq-answer">
+            Wir akzeptieren Kreditkarte, Lastschrift (SEPA), PayPal und Rechnung (ab Professional-Plan). 
+            Für Enterprise-Kunden sind auch individuelle Zahlungsbedingungen möglich, wie z.B. 
+            Quartalsrechnungen oder jährliche Abrechnung.
+          </p>
+        </div>
+        
+        <div class="faq-item">
+          <h3 class="faq-question">Wie sicher sind meine Daten?</h3>
+          <p class="faq-answer">
+            Höchste Sicherheit! Alle Daten werden ausschließlich in Deutschland gehostet, SSL-verschlüsselt 
+            übertragen und DSGVO-konform verarbeitet. Keine Weitergabe an Dritte. Wir verwenden dedizierte 
+            Server mit regelmäßigen Backups und Sicherheits-Audits.
+          </p>
+        </div>
+        
+        <div class="faq-item">
+          <h3 class="faq-question">Gibt es deutschen Support?</h3>
+          <p class="faq-answer">
+            Ja! Unser gesamtes Team sitzt in Weinheim (Rhein-Neckar-Region) und bietet deutschsprachigen 
+            Support per E-Mail, Chat und Telefon (je nach Plan). Persönlich, kompetent und schnell. Bei 
+            Enterprise-Plänen steht Ihnen ein dedizierter Account Manager zur Verfügung.
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <h3 class="faq-question">Was macht eure 8-Thread-Verarbeitung besonders?</h3>
+          <p class="faq-answer">
+            Unsere proprietäre 8-Thread-Parallel-Engine verarbeitet mehrere Rechnungen gleichzeitig und 
+            ist damit bis zu 8x schneller als herkömmliche Lösungen. In Tests haben wir 100 Rechnungen 
+            mit 1,2 Mio. € Volumen mit 100% Erfolgsrate verarbeitet. Das bedeutet: schnellere Ergebnisse, 
+            höhere Durchsatzraten und optimale Performance auch bei großen Mengen.
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <h3 class="faq-question">Kann ich zwischen den Plänen wechseln?</h3>
+          <p class="faq-answer">
+            Ja, jederzeit! Ein Upgrade ist sofort möglich, ein Downgrade wird zum nächsten 
+            Abrechnungszeitraum wirksam. Alle Ihre Daten und Einstellungen bleiben dabei erhalten. 
+            Kontaktieren Sie einfach unser Support-Team für einen nahtlosen Wechsel.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="cta-content">
+      <h2>Bereit, Ihre Rechnungsverarbeitung zu automatisieren?</h2>
+      <p>
+        Wählen Sie Ihren Plan und starten Sie noch heute. 30 Tage Geld-zurück-Garantie. 
+        Keine Kreditkarte für den Test erforderlich.
+      </p>
+      <div class="hero-cta-group">
+        <a href="https://app.sbsdeutschland.com/" class="btn btn-primary" style="box-shadow: 0 8px 30px rgba(0,0,0,0.25);">
+          🚀 Jetzt kostenlos testen
+        </a>
+        <a href="/sbshomepage/kontakt.html" class="btn btn-secondary">
+          💬 Beratungsgespräch vereinbaren
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h4>SBS Deutschland</h4>
+          <p>Ihr Partner für intelligente Rechnungsverarbeitung aus der Rhein-Neckar-Region. Made in Germany, DSGVO-konform, leistungsstark.</p>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Produkt</h4>
+          <ul>
+            <li><a href="/preise">Preise</a></li>
+            <li><a href="https://app.sbsdeutschland.com/">Demo</a></li>
+            <li><a href="/landing">Features</a></li>
+            <li><a href="/sbshomepage/kontakt.html">Support</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Unternehmen</h4>
+          <ul>
+            <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+            <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+            <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+            <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Kontakt</h4>
+          <p>
+            <strong>SBS Deutschland GmbH & Co. KG</strong><br>
+            In der Dell 19<br>
+            69469 Weinheim<br>
+            Deutschland
+          </p>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <div>
+          © 2024 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten. Made with ❤️ in Weinheim.
+        </div>
+        <div class="footer-links">
+          <a href="/sbshomepage/impressum.html">Impressum</a>
+          <a href="/sbshomepage/datenschutz.html">Datenschutz</a>
+          <a href="/sbshomepage/agb.html">AGB</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+  (function() {
+    'use strict';
+    
+    // Dark Mode
+    const savedTheme = localStorage.getItem('sbs-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    if (document.body) {
+      document.body.setAttribute('data-theme', savedTheme);
+    }
+    
+    // Burger Menu
+    const burgerMenu = document.getElementById('burger-menu');
+    const mainNav = document.getElementById('main-nav');
+    
+    if (burgerMenu && mainNav) {
+      burgerMenu.addEventListener('click', function() {
+        burgerMenu.classList.toggle('active');
+        mainNav.classList.toggle('active');
+      });
+    }
+    
+    // Dark Mode Toggle
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    
+    if (darkModeToggle) {
+      darkModeToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        if (document.body) {
+          document.body.setAttribute('data-theme', newTheme);
+        }
+        localStorage.setItem('sbs-theme', newTheme);
+      });
+    }
+    
+  })();
+  </script>
+
+</body>
+</html>

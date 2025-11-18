@@ -1,236 +1,883 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <title>Allgemeine Geschäftsbedingungen – SBS Deutschland GmbH &amp; Co. KG</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style id="sbs-shared-layout">
-:root{
-  --sbs-bg:#f5f6f8;
-  --sbs-white:#ffffff;
-  --sbs-dark:#003856;
-  --sbs-dark-soft:#0b2435;
-  --sbs-accent:#ffb400;
-  --sbs-border-soft:rgba(15,23,42,0.08);
-  --font-sans:-apple-system,BlinkMacSystemFont,system-ui,-system-ui,-system,sans-serif;
-  --transition-fast:all .25s ease;
-}
-*{box-sizing:border-box;}
-body{
-  margin:0;
-  padding:0;
-  font-family:var(--font-sans);
-  background:var(--sbs-bg);
-  color:#17212b;
-  -webkit-font-smoothing:antialiased;
-}
-a{text-decoration:none;color:inherit;}
-.page-wrap{
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-}
-main.sbs-page-main{
-  flex:1;
-  padding:56px 0 40px;
-}
-.container{
-  max-width:1200px;
-  margin:0 auto;
-  padding:0 24px;
-}
-.sbs-page-content{
-  max-width:900px;
-  margin:0 auto;
-  background:#ffffff;
-  padding:32px 28px 28px;
-  border-radius:24px;
-  box-shadow:0 10px 30px rgba(15,23,42,0.06);
-}
-.sbs-page-content h1,
-.sbs-page-content h2,
-.sbs-page-content h3{
-  color:var(--sbs-dark);
-}
-.sbs-header{
-  position:sticky;
-  top:0;
-  z-index:50;
-  background:#fff;
-  box-shadow:0 1px 12px rgba(15,23,42,.06);
-}
-.sbs-header-inner{
-  max-width:1200px;
-  margin:0 auto;
-  padding:14px 24px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:32px;
-}
-.sbs-logo-wrap{
-  display:flex;
-  align-items:center;
-  gap:14px;
-}
-.sbs-logo-img{
-  height:46px;
-  width:auto;
-  display:block;
-}
-.sbs-logo-text{
-  display:flex;
-  flex-direction:column;
-  font-size:13px;
-  line-height:1.25;
-  color:var(--sbs-dark-soft);
-}
-.sbs-logo-text strong{
-  font-size:14px;
-  letter-spacing:.03em;
-  text-transform:uppercase;
-}
-.sbs-nav{
-  display:flex;
-  align-items:center;
-  gap:26px;
-  font-size:15px;
-  color:var(--sbs-dark-soft);
-}
-.sbs-nav a{
-  position:relative;
-  padding-bottom:4px;
-  opacity:.85;
-  transition:var(--transition-fast);
-}
-.sbs-nav a:hover{
-  opacity:1;
-}
-.sbs-nav a.active::after,
-.sbs-nav a:hover::after{
-  content:"";
-  position:absolute;
-  left:0;
-  bottom:0;
-  width:100%;
-  height:2px;
-  border-radius:999px;
-  background:var(--sbs-accent);
-}
-.sbs-nav-cta{
-  padding:9px 16px;
-  border-radius:999px;
-  background:var(--sbs-accent);
-  color:#111827;
-  font-weight:600;
-  box-shadow:0 8px 18px rgba(255,180,0,.32);
-}
-.sbs-nav-cta:hover{
-  transform:translateY(-1px);
-  box-shadow:0 12px 26px rgba(255,180,0,.4);
-}
-#sbs-footer-global{
-  border-top:1px solid rgba(148,163,253,.16);
-  background:#fff;
-  padding:16px 24px 18px;
-  font-size:12px;
-  color:#4b5563;
-  margin-top:40px;
-}
-#sbs-footer-global .footer-inner{
-  max-width:1200px;
-  margin:0 auto;
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-#sbs-footer-global .footer-links{
-  display:flex;
-  flex-wrap:wrap;
-  gap:14px;
-}
-#sbs-footer-global a{
-  color:#111827;
-  opacity:.9;
-  transition:var(--transition-fast);
-}
-#sbs-footer-global a:hover{
-  opacity:1;
-  color:var(--sbs-accent);
-}
-@media(max-width:640px){
-  .sbs-header-inner{
-    flex-direction:column;
-    align-items:flex-start;
-    gap:10px;
-  }
-  .sbs-nav{
-    flex-wrap:wrap;
-    gap:16px;
-    padding-bottom:4px;
-  }
-  .sbs-page-content{
-    padding:24px 18px 22px;
-  }
-}
-</style>
+  <meta charset="UTF-8">
+  <title>AGB – SBS Deutschland</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/static/favicon.ico">
+  <style>
+    :root {
+      --sbs-bg: #f5f6f8;
+      --sbs-white: #ffffff;
+      --sbs-dark: #003856;
+      --sbs-accent: #ffb400;
+      --sbs-text: #17212b;
+      --sbs-muted: #6b7280;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: system-ui, sans-serif;
+      background: var(--sbs-bg);
+      color: var(--sbs-text);
+      line-height: 1.7;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+    
+    h1 {
+      font-size: 2.2rem;
+      color: var(--sbs-dark);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    
+    h2 {
+      font-size: 1.4rem;
+      color: var(--sbs-dark);
+      margin: 36px 0 14px;
+      font-weight: 600;
+    }
+    
+    h3 {
+      font-size: 1.15rem;
+      color: var(--sbs-dark);
+      margin: 26px 0 12px;
+      font-weight: 600;
+    }
+    
+    p, ul {
+      margin-bottom: 18px;
+      font-size: 1rem;
+    }
+    
+    ul {
+      padding-left: 28px;
+    }
+    
+    li {
+      margin-bottom: 8px;
+    }
+    
+    strong {
+      color: var(--sbs-dark);
+      font-weight: 600;
+    }
+    
+    a {
+      color: var(--sbs-accent);
+      text-decoration: none;
+    }
+    
+    a:hover {
+      text-decoration: underline;
+    }
+    
+    .back-link {
+      display: inline-block;
+      margin-bottom: 24px;
+      color: var(--sbs-muted);
+      font-size: 0.95rem;
+    }
+  
+    /* ================================================
+       UNIFIED DESIGN - ALLE SEITEN GLEICH
+       ================================================ */
+
+    :root {
+      --sbs-bg: #f5f6f8;
+      --sbs-white: #ffffff;
+      --sbs-dark: #003856;
+      --sbs-dark-soft: #0b2435;
+      --sbs-accent: #ffb400;
+      --sbs-text: #17212b;
+      --sbs-muted: #6b7280;
+      --transition-fast: all 0.25s ease;
+    }
+
+    [data-theme="dark"] {
+      --sbs-bg: #0f172a;
+      --sbs-white: #1e293b;
+      --sbs-dark: #60a5fa;
+      --sbs-dark-soft: #e2e8f0;
+      --sbs-text: #e2e8f0;
+      --sbs-muted: #94a3b8;
+    }
+
+    body {
+      background: var(--sbs-bg);
+      color: var(--sbs-text);
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* HEADER - EXAKT GLEICH AUF ALLEN SEITEN */
+    .sbs-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--sbs-white);
+      box-shadow: 0 1px 12px rgba(15,23,42,0.06);
+      transition: all 0.3s ease;
+    }
+
+    .sbs-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .sbs-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+
+    .sbs-logo-img {
+      height: 40px;
+      width: auto;
+      display: block;
+      transition: height 0.3s ease;
+    }
+
+    .sbs-logo-text {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      line-height: 1.25;
+      color: var(--sbs-dark-soft);
+    }
+
+    .sbs-logo-text strong {
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    /* Navigation */
+    .sbs-nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 14px;
+    }
+
+    .sbs-nav a {
+      position: relative;
+      padding-bottom: 4px;
+      opacity: 0.85;
+      transition: var(--transition-fast);
+      text-decoration: none;
+      color: var(--sbs-text);
+      font-weight: 500;
+    }
+
+    .sbs-nav a:hover {
+      opacity: 1;
+    }
+
+    .sbs-nav a.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--sbs-accent);
+    }
+
+    /* Upload/Demo Button - IMMER GLEICH */
+    .sbs-nav-cta {
+      padding: 9px 18px !important;
+      border-radius: 999px !important;
+      background: var(--sbs-accent) !important;
+      color: #111827 !important;
+      font-weight: 600 !important;
+      box-shadow: 0 4px 12px rgba(255,180,0,0.3) !important;
+      opacity: 1 !important;
+    }
+
+    .sbs-nav-cta::after {
+      display: none !important;
+    }
+
+    .sbs-nav-cta:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 6px 16px rgba(255,180,0,0.4) !important;
+    }
+
+    /* Burger Menu */
+    .burger-menu {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      z-index: 1001;
+    }
+
+    .burger-menu span {
+      width: 25px;
+      height: 3px;
+      background: var(--sbs-dark-soft);
+      border-radius: 3px;
+      transition: all 0.3s ease;
+    }
+
+    .burger-menu.active span:nth-child(1) {
+      transform: rotate(45deg) translate(8px, 8px);
+    }
+
+    .burger-menu.active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .burger-menu.active span:nth-child(3) {
+      transform: rotate(-45deg) translate(7px, -7px);
+    }
+
+    /* Dark Mode Toggle - EINHEITLICH MIT BEIDEN ICONS */
+    .dark-mode-toggle {
+      background: var(--sbs-white);
+      border: 2px solid rgba(15,23,42,0.12);
+      border-radius: 999px;
+      width: 50px;
+      height: 28px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s ease;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      overflow: visible;
+    }
+
+    .dark-mode-toggle:hover {
+      border-color: var(--sbs-accent);
+      transform: scale(1.05);
+    }
+
+    .sun-icon,
+    .moon-icon {
+      font-size: 14px;
+      transition: all 0.3s ease;
+      opacity: 1;
+    }
+
+    /* Dark Mode: Mond hell, Sonne dunkel */
+    [data-theme="dark"] .sun-icon {
+      opacity: 0.3;
+    }
+
+    [data-theme="dark"] .moon-icon {
+      opacity: 1;
+    }
+
+    /* Light Mode: Sonne hell, Mond dunkel */
+    [data-theme="light"] .sun-icon {
+      opacity: 1;
+    }
+
+    [data-theme="light"] .moon-icon {
+      opacity: 0.3;
+    }
+
+    /* FOOTER */
+    #sbs-footer-global {
+      border-top: 1px solid rgba(148,163,253,0.1);
+      background: var(--sbs-white);
+      padding: 16px 24px 18px;
+      font-size: 12px;
+      color: var(--sbs-muted);
+    }
+
+    #sbs-footer-global .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    #sbs-footer-global .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    #sbs-footer-global a {
+      color: var(--sbs-text);
+      text-decoration: none;
+      opacity: 0.8;
+      transition: var(--transition-fast);
+    }
+
+    #sbs-footer-global a:hover {
+      opacity: 1;
+      color: var(--sbs-accent);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .burger-menu {
+        display: flex;
+      }
+
+      .sbs-nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 280px;
+        height: 100vh;
+        background: var(--sbs-white);
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 80px 24px 24px;
+        gap: 20px;
+        box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+        transition: right 0.3s ease;
+        overflow-y: auto;
+      }
+
+      .sbs-nav.active {
+        right: 0;
+      }
+
+      .sbs-nav a {
+        width: 100%;
+        padding: 12px 0;
+        font-size: 16px;
+      }
+
+      .sbs-nav-cta {
+        width: 100%;
+        text-align: center;
+        display: block !important;
+      }
+
+      .dark-mode-toggle {
+        width: 100%;
+      }
+    }
+
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .mobile-overlay.active {
+      display: block;
+      opacity: 1;
+    }
+
+  </style>
 </head>
 <body>
-<div class="page-wrap">
-<header class="sbs-header">
-  <div class="sbs-header-inner">
-    <a href="/sbshomepage/" class="sbs-logo-wrap">
-      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="sbs-logo-img" />
-      <div class="sbs-logo-text">
-        <strong>SBS Deutschland GmbH &amp; Co. KG</strong>
-        <span>Smart Business Service · Weinheim</span>
-      </div>
-    </a>
-    <nav class="sbs-nav">
-      <a href="/sbshomepage/">Startseite</a>
-      <a href="/landing">KI-Rechnungsverarbeitung</a>
-      <a href="/sbshomepage/unternehmen.html">Über uns</a>
-      <a href="/sbshomepage/kontakt.html">Kontakt</a>
-      <a href="https://app.sbsdeutschland.com/" class="sbs-nav-cta">Login / Demo</a>
-    </nav>
-  </div>
-</header>
-<main class="sbs-page-main">
-  <div class="container sbs-page-content">
-    <div class="sbs-main">
-      <div class="wrap">
-        <h1>Allgemeine Geschäftsbedingungen (AGB)</h1>
-        <p>
-          Hinweis: Dieser Text ist ein Platzhalter. Bitte durch Ihre rechtlich geprüften AGB ersetzen.
-        </p>
-        <p>
-          1. Geltungsbereich<br>
-          2. Vertragsgegenstand<br>
-          3. Leistungen der SBS Deutschland GmbH &amp; Co. KG<br>
-          4. Pflichten des Kunden<br>
-          5. Vergütung &amp; Zahlungsbedingungen<br>
-          6. Laufzeit &amp; Kündigung<br>
-          7. Haftung<br>
-          8. Datenschutz<br>
-          9. Gerichtsstand &amp; anwendbares Recht
-        </p>
-        <p><a href="/sbshomepage/">← Zurück zur Unternehmens-Startseite</a></p>
-      </div>
-    </div>
-  </div>
-</main>
-<footer id="sbs-footer-global">
-  <div class="footer-inner">
-    <div>© SBS Deutschland GmbH &amp; Co. KG · In der Dell 19, 69469 Weinheim</div>
-    <div class="footer-links">
-      <a href="/sbshomepage/impressum.html">Impressum</a>
-      <a href="/sbshomepage/datenschutz.html">Datenschutz</a>
-      <a href="/sbshomepage/agb.html">AGB</a>
-    </div>
-  </div>
-</footer>
+
+<div class="container">
+  <a href="/sbshomepage/" class="back-link">← Zurück zur Startseite</a>
+  
+  <h1>Allgemeine Geschäftsbedingungen (AGB)</h1>
+  
+  <p><strong>Stand: November 2025</strong></p>
+  
+  <p>
+    Für alle Geschäftsbeziehungen zwischen der SBS Deutschland GmbH & Co. KG 
+    (nachfolgend "Auftragnehmer") und ihren Auftraggebern (nachfolgend "Auftraggeber") 
+    gelten ausschließlich die nachfolgenden Allgemeinen Geschäftsbedingungen.
+  </p>
+  
+  <h2>§ 1 Geltungsbereich</h2>
+  <p>
+    Diese Allgemeinen Geschäftsbedingungen gelten für alle Verträge über die Erbringung von 
+    Dienstleistungen im Bereich:
+  </p>
+  <ul>
+    <li>KI-Rechnungsverarbeitung</li>
+    <li>IT-Consulting und Softwareentwicklung</li>
+    <li>Quality & Risk Management</li>
+    <li>SAP-Consulting und Reporting</li>
+    <li>Metrologie und Projektmanagement-Office (PMO)</li>
+  </ul>
+  <p>
+    Entgegenstehende oder abweichende Bedingungen des Auftraggebers werden nur dann Vertragsbestandteil, 
+    wenn der Auftragnehmer diesen ausdrücklich schriftlich zugestimmt hat.
+  </p>
+  
+  <h2>§ 2 Vertragsschluss</h2>
+  <p>
+    Angebote des Auftragnehmers sind freibleibend und unverbindlich, sofern sie nicht ausdrücklich 
+    als verbindlich gekennzeichnet sind. Der Vertrag kommt durch schriftliche Auftragsbestätigung 
+    des Auftragnehmers oder durch Beginn der Leistungserbringung zustande.
+  </p>
+  
+  <h2>§ 3 Leistungsumfang</h2>
+  <p>
+    Der Umfang der zu erbringenden Leistungen ergibt sich aus der Leistungsbeschreibung im 
+    jeweiligen Angebot bzw. Vertrag. Änderungen und Ergänzungen des Leistungsumfangs bedürfen 
+    der Schriftform und werden gesondert vergütet.
+  </p>
+  
+  <h2>§ 4 Mitwirkungspflichten des Auftraggebers</h2>
+  <p>
+    Der Auftraggeber verpflichtet sich:
+  </p>
+  <ul>
+    <li>Alle für die Leistungserbringung erforderlichen Informationen, Daten und Unterlagen 
+    rechtzeitig zur Verfügung zu stellen</li>
+    <li>Ansprechpartner zu benennen und verfügbar zu halten</li>
+    <li>Erforderliche Zugänge zu Systemen und Räumlichkeiten bereitzustellen</li>
+    <li>Entscheidungen zeitnah zu treffen</li>
+  </ul>
+  <p>
+    Verzögerungen durch fehlende oder unzureichende Mitwirkung gehen zu Lasten des Auftraggebers 
+    und berechtigen den Auftragnehmer zur Anpassung von Terminen und Vergütung.
+  </p>
+  
+  <h2>§ 5 Vergütung und Zahlungsbedingungen</h2>
+  <p>
+    Die Vergütung richtet sich nach der jeweiligen Vereinbarung (Festpreis, Stunden- oder Tagessatz). 
+    Sofern nicht anders vereinbart:
+  </p>
+  <ul>
+    <li>Rechnungen sind innerhalb von 14 Tagen nach Rechnungsdatum ohne Abzug zur Zahlung fällig</li>
+    <li>Bei Zahlungsverzug gelten die gesetzlichen Verzugszinsen</li>
+    <li>Alle Preise verstehen sich zuzüglich der gesetzlichen Umsatzsteuer</li>
+  </ul>
+  
+  <h2>§ 6 Vertraulichkeit</h2>
+  <p>
+    Beide Parteien verpflichten sich zur Vertraulichkeit über alle im Rahmen der Zusammenarbeit 
+    bekannt gewordenen Informationen, insbesondere Geschäfts- und Betriebsgeheimnisse. Diese 
+    Verpflichtung besteht auch nach Beendigung des Vertragsverhältnisses fort.
+  </p>
+  
+  <h2>§ 7 Datenschutz</h2>
+  <p>
+    Die Verarbeitung personenbezogener Daten erfolgt gemäß den Bestimmungen der 
+    Datenschutz-Grundverordnung (DSGVO) und des Bundesdatenschutzgesetzes (BDSG). 
+    Details regelt unsere separate <a href="/sbshomepage/datenschutz.html">Datenschutzerklärung</a>.
+  </p>
+  
+  <h2>§ 8 Gewährleistung</h2>
+  <p>
+    Der Auftragnehmer erbringt seine Leistungen mit der im Verkehr erforderlichen Sorgfalt und 
+    unter Einhaltung anerkannter Regeln der Technik. Bei Mängeln ist dem Auftragnehmer zunächst 
+    innerhalb angemessener Frist Gelegenheit zur Nachbesserung zu geben.
+  </p>
+  <p>
+    Die Gewährleistungsfrist beträgt 12 Monate ab Abnahme, soweit nicht gesetzlich längere Fristen 
+    vorgeschrieben sind.
+  </p>
+  
+  <h2>§ 9 Haftung</h2>
+  <p>
+    Der Auftragnehmer haftet unbeschränkt:
+  </p>
+  <ul>
+    <li>Bei Vorsatz und grober Fahrlässigkeit</li>
+    <li>Bei Verletzung von Leben, Körper oder Gesundheit</li>
+    <li>Nach den Vorschriften des Produkthaftungsgesetzes</li>
+    <li>Im Umfang einer übernommenen Garantie</li>
+  </ul>
+  <p>
+    Bei leichter Fahrlässigkeit haftet der Auftragnehmer nur bei Verletzung wesentlicher 
+    Vertragspflichten (Kardinalpflichten). In diesem Fall ist die Haftung der Höhe nach auf den 
+    vertragstypischen, vorhersehbaren Schaden begrenzt.
+  </p>
+  
+  <h2>§ 10 Urheberrechte und Nutzungsrechte</h2>
+  <p>
+    Alle vom Auftragnehmer erstellten Arbeitsergebnisse (Dokumentationen, Software, Konzepte etc.) 
+    bleiben bis zur vollständigen Bezahlung Eigentum des Auftragnehmers. Nach vollständiger Zahlung 
+    erhält der Auftraggeber die vereinbarten Nutzungsrechte.
+  </p>
+  
+  <h2>§ 11 Laufzeit und Kündigung</h2>
+  <p>
+    Die Vertragslaufzeit und Kündigungsfristen ergeben sich aus der jeweiligen Vereinbarung. 
+    Projektbezogene Verträge enden mit Abschluss des Projekts. Dauerschuldverhältnisse können 
+    mit einer Frist von 3 Monaten zum Quartalsende gekündigt werden, sofern nichts anderes 
+    vereinbart wurde.
+  </p>
+  <p>
+    Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt unberührt.
+  </p>
+  
+  <h2>§ 12 Abtretung und Aufrechnung</h2>
+  <p>
+    Die Abtretung von Rechten und Pflichten aus diesem Vertrag bedarf der vorherigen schriftlichen 
+    Zustimmung der anderen Partei. Der Auftraggeber kann nur mit unbestrittenen oder rechtskräftig 
+    festgestellten Forderungen aufrechnen.
+  </p>
+  
+  <h2>§ 13 Salvatorische Klausel</h2>
+  <p>
+    Sollten einzelne Bestimmungen dieser AGB unwirksam sein oder werden, bleibt die Wirksamkeit 
+    der übrigen Bestimmungen hiervon unberührt. Die Parteien verpflichten sich, anstelle der 
+    unwirksamen Bestimmung eine rechtlich zulässige Regelung zu treffen, die dem wirtschaftlichen 
+    Zweck der unwirksamen Bestimmung am nächsten kommt.
+  </p>
+  
+  <h2>§ 14 Anwendbares Recht und Gerichtsstand</h2>
+  <p>
+    Für alle Rechtsbeziehungen zwischen dem Auftragnehmer und dem Auftraggeber gilt ausschließlich 
+    das Recht der Bundesrepublik Deutschland unter Ausschluss des UN-Kaufrechts.
+  </p>
+  <p>
+    Gerichtsstand für alle Streitigkeiten aus diesem Vertrag ist Mannheim, sofern der Auftraggeber 
+    Kaufmann, juristische Person des öffentlichen Rechts oder öffentlich-rechtliches Sondervermögen ist.
+  </p>
+  
+  <p style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+    <strong>Kontakt bei Fragen:</strong><br>
+    SBS Deutschland GmbH & Co. KG<br>
+    In der Dell 19, 69469 Weinheim<br>
+    Telefon: +49 6201 80 6109<br>
+    E-Mail: <a href="mailto:info@sbsdeutschland.com">info@sbsdeutschland.com</a>
+  </p>
 </div>
+
+
+  
+  <script>
+  (function() {
+    'use strict';
+    
+    console.log('🎨 Design Script loaded');
+    
+    // ========================================
+    // DARK MODE - LADEN & SETZEN
+    // ========================================
+    const savedTheme = localStorage.getItem('sbs-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    
+    // Body theme auch setzen
+    if (document.body) {
+      document.body.setAttribute('data-theme', savedTheme);
+    }
+    
+    console.log('📱 Theme:', savedTheme);
+    
+    // ========================================
+    // BURGER MENU
+    // ========================================
+    const burgerMenu = document.getElementById('burger-menu');
+    const mainNav = document.getElementById('main-nav');
+    
+    if (burgerMenu && mainNav) {
+      let overlay = document.querySelector('.mobile-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'mobile-overlay';
+        document.body.appendChild(overlay);
+      }
+      
+      burgerMenu.addEventListener('click', function() {
+        burgerMenu.classList.toggle('active');
+        mainNav.classList.toggle('active');
+        overlay.classList.toggle('active');
+        document.body.style.overflow = mainNav.classList.contains('active') ? 'hidden' : '';
+      });
+      
+      overlay.addEventListener('click', function() {
+        burgerMenu.classList.remove('active');
+        mainNav.classList.remove('active');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+      });
+      
+      mainNav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', function() {
+          burgerMenu.classList.remove('active');
+          mainNav.classList.remove('active');
+          overlay.classList.remove('active');
+          document.body.style.overflow = '';
+        });
+      });
+    }
+    
+    // ========================================
+    // ACTIVE STATES - NUR EINE SEITE AKTIV
+    // ========================================
+    function setActiveNavLink() {
+      const currentPath = window.location.pathname;
+      const navLinks = document.querySelectorAll('.sbs-nav a[data-page]');
+      
+      // ALLE active entfernen
+      navLinks.forEach(link => link.classList.remove('active'));
+      
+      // NUR die aktuelle Seite markieren
+      if (currentPath.includes('/landing')) {
+        const landingLink = document.querySelector('a[data-page="landing"]');
+        if (landingLink) landingLink.classList.add('active');
+      } else if (currentPath.includes('/unternehmen')) {
+        const aboutLink = document.querySelector('a[data-page="unternehmen"]');
+        if (aboutLink) aboutLink.classList.add('active');
+      } else if (currentPath.includes('/kontakt')) {
+        const contactLink = document.querySelector('a[data-page="kontakt"]');
+        if (contactLink) contactLink.classList.add('active');
+      } else if (currentPath.includes('/sbshomepage') || currentPath === '/') {
+        const homeLink = document.querySelector('a[data-page="home"]');
+        if (homeLink) homeLink.classList.add('active');
+      }
+    }
+    
+    setActiveNavLink();
+    
+    // ========================================
+    // SCROLL ANIMATION
+    // ========================================
+    const header = document.getElementById('main-header');
+    if (header) {
+      window.addEventListener('scroll', function() {
+        if (window.pageYOffset > 80) {
+          header.classList.add('scrolled');
+        } else {
+          header.classList.remove('scrolled');
+        }
+      });
+    }
+    
+    // ========================================
+    // DARK MODE TOGGLE
+    // ========================================
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    
+    if (darkModeToggle) {
+      console.log('🌙 Dark mode button ready');
+      
+      darkModeToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        console.log('🔄 Switching to', newTheme);
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        if (document.body) {
+          document.body.setAttribute('data-theme', newTheme);
+        }
+        localStorage.setItem('sbs-theme', newTheme);
+        
+        // Animation
+        darkModeToggle.style.transform = 'rotate(180deg)';
+        setTimeout(() => {
+          darkModeToggle.style.transform = '';
+        }, 300);
+      });
+    }
+    
+  })();
+  </script>
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-content">
+        <div class="footer-section footer-main">
+          <div class="footer-logo">
+            <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="footer-logo-img" />
+            <div class="footer-brand">
+              <strong>SBS Deutschland</strong>
+              <span>Smart Business Service</span>
+            </div>
+          </div>
+          <p class="footer-tagline">Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.</p>
+          <div class="footer-location">
+            <i>📍</i>
+            <span>In der Dell 19, 69469 Weinheim</span>
+          </div>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Produkte</h4>
+          <ul>
+            <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+            <li><a href="/preise">Preise & Pakete</a></li>
+            <li><a href="https://app.sbsdeutschland.com/">Demo & Upload</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Unternehmen</h4>
+          <ul>
+            <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+            <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+            <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+            <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Rechtliches</h4>
+          <ul>
+            <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+            <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+            <li><a href="/sbshomepage/agb.html">AGB</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
+        <p class="footer-made">Made with ❤️ in Weinheim</p>
+      </div>
+    </div>
+  </footer>
+
+  <style>
+    .footer {
+      background: linear-gradient(135deg, #001f2e 0%, #003856 100%);
+      color: rgba(255, 255, 255, 0.85);
+      padding: 60px 24px 24px;
+      margin-top: auto;
+    }
+
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+
+    .footer-section h4 {
+      color: #FFB900;
+      font-weight: 700;
+      margin-bottom: 16px;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-section ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .footer-section ul li {
+      margin-bottom: 10px;
+    }
+
+    .footer-section ul li a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: color 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .footer-section ul li a:hover {
+      color: #FFB900;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .footer-logo-img {
+      height: 36px;
+      width: auto;
+    }
+
+    .footer-brand {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .footer-brand strong {
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-brand span {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-tagline {
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+
+    .footer-location {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.85rem;
+    }
+
+    .footer-location i {
+      font-style: normal;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-made {
+      margin: 0;
+    }
+
+    @media (max-width: 768px) {
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+  </style>
+
 </body>
 </html>
