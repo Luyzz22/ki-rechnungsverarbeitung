@@ -1,251 +1,799 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <title>Über uns – SBS Deutschland GmbH &amp; Co. KG</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style id="sbs-shared-layout">
-:root{
-  --sbs-bg:#f5f6f8;
-  --sbs-white:#ffffff;
-  --sbs-dark:#003856;
-  --sbs-dark-soft:#0b2435;
-  --sbs-accent:#ffb400;
-  --sbs-border-soft:rgba(15,23,42,0.08);
-  --font-sans:-apple-system,BlinkMacSystemFont,system-ui,-system-ui,-system,sans-serif;
-  --transition-fast:all .25s ease;
-}
-*{box-sizing:border-box;}
-body{
-  margin:0;
-  padding:0;
-  font-family:var(--font-sans);
-  background:var(--sbs-bg);
-  color:#17212b;
-  -webkit-font-smoothing:antialiased;
-}
-a{text-decoration:none;color:inherit;}
-.page-wrap{
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-}
-main.sbs-page-main{
-  flex:1;
-  padding:56px 0 40px;
-}
-.container{
-  max-width:1200px;
-  margin:0 auto;
-  padding:0 24px;
-}
-.sbs-page-content{
-  max-width:900px;
-  margin:0 auto;
-  background:#ffffff;
-  padding:32px 28px 28px;
-  border-radius:24px;
-  box-shadow:0 10px 30px rgba(15,23,42,0.06);
-}
-.sbs-page-content h1,
-.sbs-page-content h2,
-.sbs-page-content h3{
-  color:var(--sbs-dark);
-}
-.sbs-header{
-  position:sticky;
-  top:0;
-  z-index:50;
-  background:#fff;
-  box-shadow:0 1px 12px rgba(15,23,42,.06);
-}
-.sbs-header-inner{
-  max-width:1200px;
-  margin:0 auto;
-  padding:14px 24px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:32px;
-}
-.sbs-logo-wrap{
-  display:flex;
-  align-items:center;
-  gap:14px;
-}
-.sbs-logo-img{
-  height:46px;
-  width:auto;
-  display:block;
-}
-.sbs-logo-text{
-  display:flex;
-  flex-direction:column;
-  font-size:13px;
-  line-height:1.25;
-  color:var(--sbs-dark-soft);
-}
-.sbs-logo-text strong{
-  font-size:14px;
-  letter-spacing:.03em;
-  text-transform:uppercase;
-}
-.sbs-nav{
-  display:flex;
-  align-items:center;
-  gap:26px;
-  font-size:15px;
-  color:var(--sbs-dark-soft);
-}
-.sbs-nav a{
-  position:relative;
-  padding-bottom:4px;
-  opacity:.85;
-  transition:var(--transition-fast);
-}
-.sbs-nav a:hover{
-  opacity:1;
-}
-.sbs-nav a.active::after,
-.sbs-nav a:hover::after{
-  content:"";
-  position:absolute;
-  left:0;
-  bottom:0;
-  width:100%;
-  height:2px;
-  border-radius:999px;
-  background:var(--sbs-accent);
-}
-.sbs-nav-cta{
-  padding:9px 16px;
-  border-radius:999px;
-  background:var(--sbs-accent);
-  color:#111827;
-  font-weight:600;
-  box-shadow:0 8px 18px rgba(255,180,0,.32);
-}
-.sbs-nav-cta:hover{
-  transform:translateY(-1px);
-  box-shadow:0 12px 26px rgba(255,180,0,.4);
-}
-#sbs-footer-global{
-  border-top:1px solid rgba(148,163,253,.16);
-  background:#fff;
-  padding:16px 24px 18px;
-  font-size:12px;
-  color:#4b5563;
-  margin-top:40px;
-}
-#sbs-footer-global .footer-inner{
-  max-width:1200px;
-  margin:0 auto;
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-#sbs-footer-global .footer-links{
-  display:flex;
-  flex-wrap:wrap;
-  gap:14px;
-}
-#sbs-footer-global a{
-  color:#111827;
-  opacity:.9;
-  transition:var(--transition-fast);
-}
-#sbs-footer-global a:hover{
-  opacity:1;
-  color:var(--sbs-accent);
-}
-@media(max-width:640px){
-  .sbs-header-inner{
-    flex-direction:column;
-    align-items:flex-start;
-    gap:10px;
-  }
-  .sbs-nav{
-    flex-wrap:wrap;
-    gap:16px;
-    padding-bottom:4px;
-  }
-  .sbs-page-content{
-    padding:24px 18px 22px;
-  }
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Über uns | SBS Deutschland</title>
+  <meta name="description" content="SBS Deutschland - Ihr Partner für Smart Business Services in der Rhein-Neckar-Region. KI-Technologie, IT Consulting und SAP-Expertise.">
+  <link rel="icon" href="/static/favicon.ico">
+  
+  <style>
+    :root {
+      --sbs-bg: #f5f6f8;
+      --sbs-white: #ffffff;
+      --sbs-dark: #003856;
+      --sbs-dark-soft: #0b2435;
+      --sbs-accent: #ffb400;
+      --sbs-text: #17212b;
+      --sbs-muted: #6b7280;
+      --sbs-gradient: linear-gradient(135deg, #003856 0%, #005a8a 100%);
+      --transition: all 0.3s ease;
+    }
+    
+    [data-theme="dark"] {
+      --sbs-bg: #0f172a;
+      --sbs-white: #1e293b;
+      --sbs-dark: #60a5fa;
+      --sbs-dark-soft: #e2e8f0;
+      --sbs-text: #e2e8f0;
+      --sbs-muted: #94a3b8;
+      --sbs-gradient: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--sbs-bg);
+      color: var(--sbs-text);
+      line-height: 1.6;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* HEADER */
+    .sbs-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--sbs-white);
+      box-shadow: 0 1px 12px rgba(15,23,42,0.06);
+      transition: var(--transition);
+    }
+
+    .sbs-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .sbs-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+
+    .sbs-logo-img {
+      height: 40px;
+      width: auto;
+    }
+
+    .sbs-logo-text {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      line-height: 1.25;
+      color: var(--sbs-dark-soft);
+    }
+
+    .sbs-logo-text strong {
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .burger-menu {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      z-index: 1001;
+    }
+
+    .burger-menu span {
+      width: 25px;
+      height: 3px;
+      background: var(--sbs-dark-soft);
+      border-radius: 3px;
+      transition: var(--transition);
+    }
+
+    .sbs-nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 14px;
+    }
+
+    .sbs-nav a {
+      position: relative;
+      padding-bottom: 4px;
+      opacity: 0.85;
+      transition: var(--transition);
+      text-decoration: none;
+      color: var(--sbs-text);
+      font-weight: 500;
+    }
+
+    .sbs-nav a:hover {
+      opacity: 1;
+    }
+
+    .sbs-nav a.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--sbs-accent);
+    }
+
+    .sbs-nav-cta {
+      padding: 9px 18px !important;
+      border-radius: 999px !important;
+      background: var(--sbs-accent) !important;
+      color: #111827 !important;
+      font-weight: 600 !important;
+      box-shadow: 0 4px 12px rgba(255,180,0,0.3) !important;
+      opacity: 1 !important;
+    }
+
+    .sbs-nav-cta::after {
+      display: none !important;
+    }
+
+    .sbs-nav-cta:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 6px 16px rgba(255,180,0,0.4) !important;
+    }
+
+    .dark-mode-toggle {
+      background: var(--sbs-white);
+      border: 2px solid rgba(15,23,42,0.12);
+      border-radius: 999px;
+      width: 50px;
+      height: 28px;
+      cursor: pointer;
+      transition: var(--transition);
+      padding: 0 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .dark-mode-toggle:hover {
+      border-color: var(--sbs-accent);
+      transform: scale(1.05);
+    }
+
+    .sun-icon, .moon-icon {
+      font-size: 14px;
+      transition: var(--transition);
+    }
+
+    [data-theme="dark"] .sun-icon { opacity: 0.3; }
+    [data-theme="light"] .moon-icon { opacity: 0.3; }
+
+    /* HERO */
+    .hero {
+      background: var(--sbs-gradient);
+      padding: 80px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 0.4;
+    }
+
+    .hero-content {
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      padding: 8px 18px;
+      border-radius: 999px;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      color: white;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-subtitle {
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.6;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    /* MAIN CONTENT */
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 80px 24px;
+    }
+
+    .section-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--sbs-dark);
+      margin-bottom: 16px;
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+
+    .section-subtitle {
+      font-size: 1.1rem;
+      color: var(--sbs-muted);
+      text-align: center;
+      margin-bottom: 60px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* FEATURE CARDS */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+      margin-top: 48px;
+    }
+
+    .feature-card {
+      background: var(--sbs-white);
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      transition: var(--transition);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+    }
+
+    .feature-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .feature-card h3 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--sbs-dark);
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: var(--sbs-muted);
+      line-height: 1.7;
+    }
+
+    .feature-card ul {
+      margin-top: 16px;
+      padding-left: 20px;
+    }
+
+    .feature-card ul li {
+      color: var(--sbs-muted);
+      margin-bottom: 8px;
+      line-height: 1.6;
+    }
+
+    /* CONTACT CARDS */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 32px;
+      margin-top: 48px;
+    }
+
+    .contact-card {
+      background: var(--sbs-white);
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+
+    .contact-card .icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .contact-card h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--sbs-dark);
+      margin-bottom: 8px;
+    }
+
+    .contact-card p {
+      color: var(--sbs-muted);
+      margin-bottom: 8px;
+    }
+
+    .contact-card a {
+      color: var(--sbs-accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .contact-card a:hover {
+      text-decoration: underline;
+    }
+
+    /* CTA SECTION */
+    .cta-section {
+      background: var(--sbs-gradient);
+      padding: 80px 24px;
+      text-align: center;
+      border-radius: 20px;
+      margin: 80px 0;
+    }
+
+    .cta-section h2 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 16px;
+    }
+
+    .cta-section p {
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 32px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: var(--transition);
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--sbs-accent);
+      color: #111827;
+      box-shadow: 0 4px 20px rgba(255,180,0,0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(255,180,0,0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
+    /* FOOTER */
+    .footer {
+      background: linear-gradient(135deg, #001f2e 0%, #003856 100%);
+      color: rgba(255, 255, 255, 0.85);
+      padding: 60px 24px 24px;
+      margin-top: auto;
+    }
+
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+
+    .footer-section h4 {
+      color: #FFB900;
+      font-weight: 700;
+      margin-bottom: 16px;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-section ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .footer-section ul li {
+      margin-bottom: 10px;
+    }
+
+    .footer-section ul li a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: color 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .footer-section ul li a:hover {
+      color: #FFB900;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .footer-logo-img {
+      height: 36px;
+      width: auto;
+    }
+
+    .footer-brand {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .footer-brand strong {
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-brand span {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-tagline {
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+
+    .footer-location {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.85rem;
+    }
+
+    .footer-location i {
+      font-style: normal;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-made {
+      margin: 0;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .burger-menu { display: flex; }
+      
+      .sbs-nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 280px;
+        height: 100vh;
+        background: var(--sbs-white);
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 80px 24px 24px;
+        gap: 20px;
+        box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+        transition: right 0.3s ease;
+      }
+      
+      .sbs-nav.active { right: 0; }
+      
+      .hero h1 { font-size: 2rem; }
+      .section-title { font-size: 1.8rem; }
+      .cta-section h2 { font-size: 2rem; }
+      
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+  </style>
 </head>
 <body>
-<div class="page-wrap">
-<header class="sbs-header">
-  <div class="sbs-header-inner">
-    <a href="/sbshomepage/" class="sbs-logo-wrap">
-      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="sbs-logo-img" />
-      <div class="sbs-logo-text">
-        <strong>SBS Deutschland GmbH &amp; Co. KG</strong>
-        <span>Smart Business Service · Weinheim</span>
+
+  <!-- HEADER -->
+  <header class="sbs-header">
+    <div class="sbs-header-inner">
+      <a href="/sbshomepage/" class="sbs-logo-wrap">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="sbs-logo-img" />
+        <div class="sbs-logo-text">
+          <strong>SBS Deutschland GmbH & Co. KG</strong>
+          <span>Smart Business Service · Weinheim</span>
+        </div>
+      </a>
+      
+      <button class="burger-menu" id="burger-menu" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <nav class="sbs-nav" id="main-nav">
+        <a href="/sbshomepage/">Startseite</a>
+        <a href="/landing">KI-Rechnungsverarbeitung</a>
+        <a href="/preise">Preise</a>
+        <a href="/sbshomepage/unternehmen.html" class="active">Über uns</a>
+        <a href="/sbshomepage/kontakt.html" >Kontakt</a>
+        <a href="https://app.sbsdeutschland.com/" class="sbs-nav-cta">Upload / Demo</a>
+        
+        <button class="dark-mode-toggle" id="dark-mode-toggle" aria-label="Dark Mode">
+          <span class="sun-icon">☀️</span>
+          <span class="moon-icon">🌙</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">🏢 ÜBER UNS</div>
+      <h1>Smart Business Services aus Weinheim</h1>
+      <p class="hero-subtitle">Die SBS Deutschland GmbH & Co. KG steht für moderne KI-Technologie, praktische Beratung und tiefes Prozessverständnis - regional verankert, technologisch führend.</p>
+    </div>
+  </section>
+
+  <div class="main-content">
+    <h2 class="section-title">Unsere Kompetenzen</h2>
+    <p class="section-subtitle">Vier Säulen, ein Ziel: Ihre Geschäftsprozesse effizienter, sicherer und zukunftssicher zu gestalten.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feature-icon">💻</span>
+        <h3>IT Consulting & Softwareentwicklung</h3>
+        <p>Moderne Architektur, intelligente Schnittstellen und nahtlose Automatisierung - inklusive KI-Integration in Ihre bestehenden Systeme.</p>
       </div>
-    </a>
-    <nav class="sbs-nav">
-      <a href="/sbshomepage/">Startseite</a>
-      <a href="/landing">KI-Rechnungsverarbeitung</a>
-      <a href="/sbshomepage/unternehmen.html">Über uns</a>
-      <a href="/sbshomepage/kontakt.html">Kontakt</a>
-      <a href="https://app.sbsdeutschland.com/" class="sbs-nav-cta">Login / Demo</a>
-    </nav>
-  </div>
-</header>
-<main class="sbs-page-main">
-  <div class="container sbs-page-content">
-    <div class="sbs-main">
-      <div class="wrap">
-        <h1>Über SBS Deutschland GmbH &amp; Co. KG</h1>
-        <p>
-          Die SBS Deutschland GmbH &amp; Co. KG mit Sitz in Weinheim steht für Smart Business Services:
-          Wir verbinden moderne KI-Technologie mit praktischer Beratung und tiefem Prozessverständnis.
-        </p>
 
-        <h2>Wer wir sind</h2>
-        <ul>
-          <li>IT Consulting &amp; Softwareentwicklung</li>
-          <li>Quality &amp; Risk Management</li>
-          <li>SAP Consulting &amp; Reporting</li>
-          <li>Metrologie &amp; Projektmanagement-Office</li>
-        </ul>
-
-        <h2>Regionale Verankerung</h2>
-        <p>
-          Mit unserem Standort in Weinheim verstehen wir die Anforderungen von Unternehmen
-          in der Metropolregion Rhein-Neckar und im Odenwald. Persönliche Ansprechpartner,
-          deutschsprachiger Support und kurze Wege sind fester Bestandteil unseres Selbstverständnisses.
-        </p>
-
-        <h2>Fokus: KI-Rechnungsverarbeitung</h2>
-        <p>
-          Unser Leitprodukt ist die KI-gestützte Rechnungsverarbeitung, die wir kontinuierlich
-          weiterentwickeln. Ziel ist es, Finanz- und Dokumentenprozesse effizienter, sicherer
-          und transparenter zu gestalten.
-        </p>
-
-        <a href="/landing" class="btn-primary">Zur KI-Rechnungsverarbeitung</a>
-        <p><a href="/sbshomepage/">← Zurück zur Unternehmens-Startseite</a></p>
+      <div class="feature-card">
+        <span class="feature-icon">🎯</span>
+        <h3>Quality & Risk Management</h3>
+        <p>Qualitätsstandards, Risikomanagement und Auditfähigkeit für Ihre digitalen Finanz- und Dokumentenprozesse.</p>
       </div>
 
+      <div class="feature-card">
+        <span class="feature-icon">📊</span>
+        <h3>SAP Consulting & Reporting</h3>
+        <p>Integration moderner Lösungen in SAP-Landschaften - für durchgängige, transparente Finanzprozesse.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">📐</span>
+        <h3>Metrologie & PMO</h3>
+        <p>Messmitteldokumentation, Prüfabläufe und professionelles Projektmanagement für technisch anspruchsvolle Branchen.</p>
+      </div>
+    </div>
+
+    <div style="margin-top: 100px;">
+      <h2 class="section-title">Regionale Verankerung, globale Standards</h2>
+      <p class="section-subtitle">Mit unserem Standort in Weinheim verstehen wir die Anforderungen von Unternehmen in der Metropolregion Rhein-Neckar und im Odenwald.</p>
+
+      <div class="feature-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+        <div class="feature-card">
+          <span class="feature-icon">🤝</span>
+          <h3>Persönlich</h3>
+          <p>Direkter Ansprechpartner vor Ort, kurze Wege und schnelle Reaktionszeiten.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🇩🇪</span>
+          <h3>Deutschsprachig</h3>
+          <p>Kompetenter Support in deutscher Sprache - klar, verständlich, lösungsorientiert.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🔒</span>
+          <h3>DSGVO-konform</h3>
+          <p>Alle Daten bleiben in Deutschland, höchste Sicherheitsstandards inklusive.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🚀</span>
+          <h3>Innovativ</h3>
+          <p>Modernste KI-Technologie, kontinuierlich weiterentwickelt und produktionsreif.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-section">
+      <h2>Unser Leitprodukt: KI-Rechnungsverarbeitung</h2>
+      <p>Wir entwickeln kontinuierlich unsere KI-gestützte Rechnungsverarbeitung weiter, um Ihre Finanz- und Dokumentenprozesse effizienter, sicherer und transparenter zu gestalten.</p>
+      <a href="/landing" class="btn btn-primary">🤖 Mehr zur KI-Rechnungsverarbeitung</a>
     </div>
   </div>
-</main>
-<footer id="sbs-footer-global">
-  <div class="footer-inner">
-    <div>© SBS Deutschland GmbH &amp; Co. KG · In der Dell 19, 69469 Weinheim</div>
-    <div class="footer-links">
-      <a href="/sbshomepage/impressum.html">Impressum</a>
-      <a href="/sbshomepage/datenschutz.html">Datenschutz</a>
-      <a href="/sbshomepage/agb.html">AGB</a>
+
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-content">
+        <div class="footer-section footer-main">
+          <div class="footer-logo">
+            <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="footer-logo-img" />
+            <div class="footer-brand">
+              <strong>SBS Deutschland</strong>
+              <span>Smart Business Service</span>
+            </div>
+          </div>
+          <p class="footer-tagline">Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.</p>
+          <div class="footer-location">
+            <i>📍</i>
+            <span>In der Dell 19, 69469 Weinheim</span>
+          </div>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Produkte</h4>
+          <ul>
+            <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+            <li><a href="/preise">Preise & Pakete</a></li>
+            <li><a href="https://app.sbsdeutschland.com/">Demo & Upload</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Unternehmen</h4>
+          <ul>
+            <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+            <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+            <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+            <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Rechtliches</h4>
+          <ul>
+            <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+            <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+            <li><a href="/sbshomepage/agb.html">AGB</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
+        <p class="footer-made">Made with ❤️ in Weinheim</p>
+      </div>
     </div>
-  </div>
-</footer>
-</div>
+  </footer>
+
+  <script>
+  (function() {
+    'use strict';
+    
+    // Dark Mode
+    const savedTheme = localStorage.getItem('sbs-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    if (document.body) {
+      document.body.setAttribute('data-theme', savedTheme);
+    }
+    
+    // Burger Menu
+    const burgerMenu = document.getElementById('burger-menu');
+    const mainNav = document.getElementById('main-nav');
+    
+    if (burgerMenu && mainNav) {
+      burgerMenu.addEventListener('click', function() {
+        burgerMenu.classList.toggle('active');
+        mainNav.classList.toggle('active');
+      });
+    }
+    
+    // Dark Mode Toggle
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    
+    if (darkModeToggle) {
+      darkModeToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        if (document.body) {
+          document.body.setAttribute('data-theme', newTheme);
+        }
+        localStorage.setItem('sbs-theme', newTheme);
+      });
+    }
+  })();
+  </script>
+
 </body>
 </html>

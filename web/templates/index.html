@@ -1,373 +1,1157 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<style>
-/* sbs-page-flex-layout */
-body {
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, -system-ui, -system, sans-serif;
-  background: #f5f6f8;
-  color: #0f172a;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-#sbs-footer-global {
-  margin-top: auto;
-  padding: 18px 24px;
-  font-size: 14px;
-  color: #0f172a;
-  background: #ffffff;
-  border-top: 1px solid rgba(148,163,253,0.15);
-}
-#sbs-footer-global a {
-  color: #0f172a;
-  text-decoration: none;
-  margin: 0 4px;
-}
-#sbs-footer-global a:hover {
-  text-decoration: underline;
-}
-/* /sbs-page-flex-layout */
-</style>
+  <meta charset="UTF-8" />
+  <title>SBS Deutschland - Upload</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-<meta charset="UTF-8"/>
-<title>SBS Deutschland - Upload</title>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <link rel="stylesheet" href="/static/app-theme.css">
-<link rel="icon" href="/static/favicon.ico">
+  <!-- Globales SBS-Design + Upload-spezifische Styles -->
   <link rel="stylesheet" href="/static/sbs-global.css">
+  <link rel="stylesheet" href="/static/upload.css">
+  <link rel="icon" href="/static/favicon.ico">
+  <style>
+    /* ================================================
+       PREMIUM HEADER/FOOTER CSS
+       Features: Burger Menu, Scroll Animation, Dark Mode
+       ================================================ */
+
+    :root {
+      --sbs-bg: #f5f6f8;
+      --sbs-white: #ffffff;
+      --sbs-dark: #003856;
+      --sbs-dark-soft: #0b2435;
+      --sbs-accent: #ffb400;
+      --sbs-accent-soft: rgba(255,180,0,0.14);
+      --sbs-border-soft: rgba(15,23,42,0.08);
+      --sbs-text: #17212b;
+      --sbs-muted: #6b7280;
+      --transition-fast: all 0.25s ease;
+    }
+
+    /* Dark Mode Variables */
+    [data-theme="dark"] {
+      --sbs-bg: #0f172a;
+      --sbs-white: #1e293b;
+      --sbs-dark: #60a5fa;
+      --sbs-dark-soft: #e2e8f0;
+      --sbs-text: #e2e8f0;
+      --sbs-muted: #94a3b8;
+      --sbs-border-soft: rgba(148,163,253,0.1);
+    }
+
+    body {
+      background: var(--sbs-bg);
+      color: var(--sbs-text);
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    
+    
+
+    /* Scroll Animation - kleinerer Header */
+    .sbs-header.scrolled {
+      padding: 4px 0;
+      box-shadow: 0 4px 20px rgba(15,23,42,0.12);
+    }
+
+    .sbs-header.scrolled .sbs-logo-img {
+      height: 38px;
+    }
+
+    
+
+    .sbs-header.scrolled 
+
+    .sbs-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+
+    .sbs-logo-img {
+      height: 46px;
+      width: auto;
+      display: block;
+      transition: height 0.3s ease;
+    }
+
+    .sbs-logo-text {
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+      line-height: 1.25;
+      color: var(--sbs-dark-soft);
+    }
+
+    .sbs-logo-text strong {
+      font-size: 14px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    /* Navigation */
+    .sbs-nav {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 15px;
+      color: var(--sbs-dark-soft);
+    }
+
+    .sbs-nav a {
+      position: relative;
+      padding-bottom: 4px;
+      opacity: 0.85;
+      transition: var(--transition-fast);
+      text-decoration: none;
+      color: var(--sbs-text);
+    }
+
+    .sbs-nav a:hover {
+      opacity: 1;
+    }
+
+    /* Active State - automatisch gesetzt */
+    .sbs-nav a.active::after,
+    .sbs-nav a:hover::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--sbs-accent);
+    }
+
+    .sbs-nav-cta {
+      padding: 9px 16px !important;
+      border-radius: 999px;
+      background: var(--sbs-accent) !important;
+      color: #111827 !important;
+      font-weight: 600;
+      box-shadow: 0 8px 18px rgba(255,180,0,0.32);
+    }
+
+    .sbs-nav-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 26px rgba(255,180,0,0.4);
+    }
+
+    /* Burger Menu */
+    .burger-menu {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      z-index: 1001;
+    }
+
+    .burger-menu span {
+      width: 25px;
+      height: 3px;
+      background: var(--sbs-dark-soft);
+      border-radius: 3px;
+      transition: all 0.3s ease;
+    }
+
+    .burger-menu.active span:nth-child(1) {
+      transform: rotate(45deg) translate(8px, 8px);
+    }
+
+    .burger-menu.active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .burger-menu.active span:nth-child(3) {
+      transform: rotate(-45deg) translate(7px, -7px);
+    }
+
+    /* Dark Mode Toggle */
+    
+
+    .dark-mode-toggle:hover {
+      border-color: var(--sbs-accent);
+    }
+
+    .sun-icon,
+    .moon-icon {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .sun-icon {
+      left: 4px;
+    }
+
+    .moon-icon {
+      right: 4px;
+      opacity: 0;
+    }
+
+    [data-theme="dark"] .sun-icon {
+      opacity: 0;
+      left: -20px;
+    }
+
+    [data-theme="dark"] .moon-icon {
+      opacity: 1;
+      right: 4px;
+    }
+
+    /* FOOTER */
+    #sbs-footer-global {
+      border-top: 1px solid var(--sbs-border-soft);
+      background: var(--sbs-white);
+      padding: 16px 24px 18px;
+      font-size: 12px;
+      color: var(--sbs-muted);
+    }
+
+    #sbs-footer-global .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    #sbs-footer-global .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    #sbs-footer-global a {
+      color: var(--sbs-text);
+      text-decoration: none;
+      opacity: 0.9;
+      transition: var(--transition-fast);
+    }
+
+    #sbs-footer-global a:hover {
+      opacity: 1;
+      color: var(--sbs-accent);
+    }
+
+    /* ================================================
+       RESPONSIVE - MOBILE
+       ================================================ */
+    @media (max-width: 768px) {
+      .burger-menu {
+        display: flex;
+      }
+
+      .sbs-nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 280px;
+        height: 100vh;
+        background: var(--sbs-white);
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 80px 24px 24px;
+        gap: 20px;
+        box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+        transition: right 0.3s ease;
+        overflow-y: auto;
+      }
+
+      .sbs-nav.active {
+        right: 0;
+      }
+
+      .sbs-nav a {
+        width: 100%;
+        padding: 12px 0;
+        font-size: 16px;
+      }
+
+      .sbs-nav-cta {
+        width: 100%;
+        text-align: center;
+        display: block !important;
+      }
+
+      
+
+      
+
+      .sbs-logo-img {
+        height: 38px;
+      }
+
+      .sbs-logo-text {
+        font-size: 11px;
+      }
+
+      .sbs-logo-text strong {
+        font-size: 12px;
+      }
+    }
+
+    /* Mobile Overlay */
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .mobile-overlay.active {
+      display: block;
+      opacity: 1;
+    }
+
+  
+    /* ================================================
+       EINHEITLICHES HEADER/FOOTER DESIGN
+       ================================================ */
+
+    :root {
+      --sbs-bg: #f5f6f8;
+      --sbs-white: #ffffff;
+      --sbs-dark: #003856;
+      --sbs-dark-soft: #0b2435;
+      --sbs-accent: #ffb400;
+      --sbs-text: #17212b;
+      --sbs-muted: #6b7280;
+      --transition-fast: all 0.25s ease;
+    }
+
+    [data-theme="dark"] {
+      --sbs-bg: #0f172a;
+      --sbs-white: #1e293b;
+      --sbs-dark: #60a5fa;
+      --sbs-dark-soft: #e2e8f0;
+      --sbs-text: #e2e8f0;
+      --sbs-muted: #94a3b8;
+    }
+
+    /* HEADER - Einheitliche Größe */
+    
+
+    .sbs-header.scrolled {
+      box-shadow: 0 4px 20px rgba(15,23,42,0.12);
+    }
+
+    
+
+    .sbs-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+
+    .sbs-logo-img {
+      height: 40px;
+      width: auto;
+      display: block;
+      transition: height 0.3s ease;
+    }
+
+    .sbs-logo-text {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      line-height: 1.25;
+      color: var(--sbs-dark-soft);
+    }
+
+    .sbs-logo-text strong {
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    /* Navigation */
+    .sbs-nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 14px;
+    }
+
+    .sbs-nav a {
+      position: relative;
+      padding-bottom: 4px;
+      opacity: 0.85;
+      transition: var(--transition-fast);
+      text-decoration: none;
+      color: var(--sbs-text);
+      font-weight: 500;
+    }
+
+    .sbs-nav a:hover {
+      opacity: 1;
+    }
+
+    .sbs-nav a.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--sbs-accent);
+    }
+
+    /* Upload/Demo Button - IMMER GELB */
+    .sbs-nav-cta {
+      padding: 9px 18px !important;
+      border-radius: 999px !important;
+      background: var(--sbs-accent) !important;
+      color: #111827 !important;
+      font-weight: 600 !important;
+      box-shadow: 0 4px 12px rgba(255,180,0,0.3) !important;
+      opacity: 1 !important;
+    }
+
+    .sbs-nav-cta::after {
+      display: none !important;
+    }
+
+    .sbs-nav-cta:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 6px 16px rgba(255,180,0,0.4) !important;
+    }
+
+    /* Burger Menu */
+    .burger-menu {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      z-index: 1001;
+    }
+
+    .burger-menu span {
+      width: 25px;
+      height: 3px;
+      background: var(--sbs-dark-soft);
+      border-radius: 3px;
+      transition: all 0.3s ease;
+    }
+
+    .burger-menu.active span:nth-child(1) {
+      transform: rotate(45deg) translate(8px, 8px);
+    }
+
+    .burger-menu.active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .burger-menu.active span:nth-child(3) {
+      transform: rotate(-45deg) translate(7px, -7px);
+    }
+
+    /* Dark Mode Toggle - EINHEITLICH */
+    
+
+    .dark-mode-toggle:hover {
+      border-color: var(--sbs-accent);
+    }
+
+    .sun-icon,
+    .moon-icon {
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    [data-theme="dark"] .sun-icon {
+      opacity: 0.3;
+    }
+
+    [data-theme="light"] .moon-icon {
+      opacity: 0.3;
+    }
+
+    /* FOOTER */
+    #sbs-footer-global {
+      border-top: 1px solid rgba(148,163,253,0.1);
+      background: var(--sbs-white);
+      padding: 16px 24px 18px;
+      font-size: 12px;
+      color: var(--sbs-muted);
+    }
+
+    #sbs-footer-global .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    #sbs-footer-global .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    #sbs-footer-global a {
+      color: var(--sbs-text);
+      text-decoration: none;
+      opacity: 0.8;
+      transition: var(--transition-fast);
+    }
+
+    #sbs-footer-global a:hover {
+      opacity: 1;
+      color: var(--sbs-accent);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .burger-menu {
+        display: flex;
+      }
+
+      .sbs-nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 280px;
+        height: 100vh;
+        background: var(--sbs-white);
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 80px 24px 24px;
+        gap: 20px;
+        box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+        transition: right 0.3s ease;
+        overflow-y: auto;
+      }
+
+      .sbs-nav.active {
+        right: 0;
+      }
+
+      .sbs-nav a {
+        width: 100%;
+        padding: 12px 0;
+        font-size: 16px;
+      }
+
+      .sbs-nav-cta {
+        width: 100%;
+        text-align: center;
+        display: block !important;
+      }
+
+      
+    }
+
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .mobile-overlay.active {
+      display: block;
+      opacity: 1;
+    }
+
+  
+    /* ================================================
+       UNIFIED DESIGN - ALLE SEITEN GLEICH
+       ================================================ */
+
+    :root {
+      --sbs-bg: #f5f6f8;
+      --sbs-white: #ffffff;
+      --sbs-dark: #003856;
+      --sbs-dark-soft: #0b2435;
+      --sbs-accent: #ffb400;
+      --sbs-text: #17212b;
+      --sbs-muted: #6b7280;
+      --transition-fast: all 0.25s ease;
+    }
+
+    [data-theme="dark"] {
+      --sbs-bg: #0f172a;
+      --sbs-white: #1e293b;
+      --sbs-dark: #60a5fa;
+      --sbs-dark-soft: #e2e8f0;
+      --sbs-text: #e2e8f0;
+      --sbs-muted: #94a3b8;
+    }
+
+    body {
+      background: var(--sbs-bg);
+      color: var(--sbs-text);
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* HEADER - EXAKT GLEICH AUF ALLEN SEITEN */
+    .sbs-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--sbs-white);
+      box-shadow: 0 1px 12px rgba(15,23,42,0.06);
+      transition: all 0.3s ease;
+    }
+
+    .sbs-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .sbs-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+
+    .sbs-logo-img {
+      height: 40px;
+      width: auto;
+      display: block;
+      transition: height 0.3s ease;
+    }
+
+    .sbs-logo-text {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      line-height: 1.25;
+      color: var(--sbs-dark-soft);
+    }
+
+    .sbs-logo-text strong {
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    /* Navigation */
+    .sbs-nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 14px;
+    }
+
+    .sbs-nav a {
+      position: relative;
+      padding-bottom: 4px;
+      opacity: 0.85;
+      transition: var(--transition-fast);
+      text-decoration: none;
+      color: var(--sbs-text);
+      font-weight: 500;
+    }
+
+    .sbs-nav a:hover {
+      opacity: 1;
+    }
+
+    .sbs-nav a.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--sbs-accent);
+    }
+
+    /* Upload/Demo Button - IMMER GLEICH */
+    .sbs-nav-cta {
+      padding: 9px 18px !important;
+      border-radius: 999px !important;
+      background: var(--sbs-accent) !important;
+      color: #111827 !important;
+      font-weight: 600 !important;
+      box-shadow: 0 4px 12px rgba(255,180,0,0.3) !important;
+      opacity: 1 !important;
+    }
+
+    .sbs-nav-cta::after {
+      display: none !important;
+    }
+
+    .sbs-nav-cta:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 6px 16px rgba(255,180,0,0.4) !important;
+    }
+
+    /* Burger Menu */
+    .burger-menu {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      z-index: 1001;
+    }
+
+    .burger-menu span {
+      width: 25px;
+      height: 3px;
+      background: var(--sbs-dark-soft);
+      border-radius: 3px;
+      transition: all 0.3s ease;
+    }
+
+    .burger-menu.active span:nth-child(1) {
+      transform: rotate(45deg) translate(8px, 8px);
+    }
+
+    .burger-menu.active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .burger-menu.active span:nth-child(3) {
+      transform: rotate(-45deg) translate(7px, -7px);
+    }
+
+    /* Dark Mode Toggle - EINHEITLICH MIT BEIDEN ICONS */
+    .dark-mode-toggle {
+      background: var(--sbs-white);
+      border: 2px solid rgba(15,23,42,0.12);
+      border-radius: 999px;
+      width: 50px;
+      height: 28px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s ease;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      overflow: visible;
+    }
+
+    .dark-mode-toggle:hover {
+      border-color: var(--sbs-accent);
+      transform: scale(1.05);
+    }
+
+    .sun-icon,
+    .moon-icon {
+      font-size: 14px;
+      transition: all 0.3s ease;
+      opacity: 1;
+    }
+
+    /* Dark Mode: Mond hell, Sonne dunkel */
+    [data-theme="dark"] .sun-icon {
+      opacity: 0.3;
+    }
+
+    [data-theme="dark"] .moon-icon {
+      opacity: 1;
+    }
+
+    /* Light Mode: Sonne hell, Mond dunkel */
+    [data-theme="light"] .sun-icon {
+      opacity: 1;
+    }
+
+    [data-theme="light"] .moon-icon {
+      opacity: 0.3;
+    }
+
+    /* FOOTER */
+    #sbs-footer-global {
+      border-top: 1px solid rgba(148,163,253,0.1);
+      background: var(--sbs-white);
+      padding: 16px 24px 18px;
+      font-size: 12px;
+      color: var(--sbs-muted);
+    }
+
+    #sbs-footer-global .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    #sbs-footer-global .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    #sbs-footer-global a {
+      color: var(--sbs-text);
+      text-decoration: none;
+      opacity: 0.8;
+      transition: var(--transition-fast);
+    }
+
+    #sbs-footer-global a:hover {
+      opacity: 1;
+      color: var(--sbs-accent);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .burger-menu {
+        display: flex;
+      }
+
+      .sbs-nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 280px;
+        height: 100vh;
+        background: var(--sbs-white);
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 80px 24px 24px;
+        gap: 20px;
+        box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+        transition: right 0.3s ease;
+        overflow-y: auto;
+      }
+
+      .sbs-nav.active {
+        right: 0;
+      }
+
+      .sbs-nav a {
+        width: 100%;
+        padding: 12px 0;
+        font-size: 16px;
+      }
+
+      .sbs-nav-cta {
+        width: 100%;
+        text-align: center;
+        display: block !important;
+      }
+
+      .dark-mode-toggle {
+        width: 100%;
+      }
+    }
+
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .mobile-overlay.active {
+      display: block;
+      opacity: 1;
+    }
+
+  </style>
 </head>
 <body>
-<header><div class="wrap"><div class="nav">
-<div class="logo">
-<img src="/static/sbs-logo-new.png" alt="SBS">
-<div class="logo-text">
-<span>SBS Deutschland GmbH & Co. KG</span>
-<span>Smart Business Service · Weinheim</span>
-</div>
-</div>
-<nav class="nav-links">
-<a href="https://sbsdeutschland.com/sbshomepage/">Startseite</a>
-<a href="https://sbsdeutschland.com/landing">KI-Rechnungsverarbeitung</a>
-<a href="/" class="active">Upload</a>
-<a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
-</nav>
-</div></div></header>
-<section class="hero"><div class="wrap hero-content">
-<div class="eyebrow">KI-gestützte Automatisierung</div>
-<h1>🚀 Rechnungen hochladen & verarbeiten</h1>
-<p>Laden Sie Ihre PDF-Rechnungen hoch und lassen Sie unsere KI sie automatisch verarbeiten.</p>
-</div></section>
-<section><div class="wrap"><div class="upload-card">
-<div class="drop-zone" id="dropZone">
-<h3>📄 PDF-Rechnungen hochladen</h3>
-<p>Drag & Drop oder klicken</p>
-<input type="file" id="fileInput" multiple accept=".pdf,.png,.jpg,.jpeg" style="display:none">
-</div>
-<div id="fileList" class="file-list"></div>
-<div style="text-align:center">
-<button class="btn-process" id="processBtn">⚡ Jetzt verarbeiten</button>
-</div>
-<div id="status"></div>
-</div></div></section>
-<script>
-document.getElementById('year').textContent=new Date().getFullYear();
-const dropZone=document.getElementById('dropZone'),fileInput=document.getElementById('fileInput'),fileList=document.getElementById('fileList'),processBtn=document.getElementById('processBtn'),status=document.getElementById('status');
-let selectedFiles=[];
-dropZone.onclick=()=>fileInput.click();
-dropZone.ondragover=e=>{e.preventDefault();dropZone.classList.add('dragover')};
-dropZone.ondragleave=()=>dropZone.classList.remove('dragover');
-dropZone.ondrop=e=>{e.preventDefault();dropZone.classList.remove('dragover');handleFiles(e.dataTransfer.files)};
-fileInput.onchange=e=>handleFiles(e.target.files);
-function handleFiles(files){
-Array.from(files).filter(f=>f.name.match(/\.(pdf|png|jpe?g)$/i)).forEach(f=>{if(!selectedFiles.some(x=>x.name===f.name))selectedFiles.push(f)});
-updateFileList();
-processBtn.style.display=selectedFiles.length?'inline-block':'none';
-}
-function updateFileList(){
-fileList.innerHTML='';
-selectedFiles.forEach((f,i)=>{
-const d=document.createElement('div');
-d.className='file-item';
-d.innerHTML='<span>'+(f.name.endsWith('.pdf')?'📄':'🖼️')+' '+f.name+' <span style="color:var(--text)">('+( f.size/1024).toFixed(1)+' KB)</span></span><button class="btn-remove" onclick="removeFile('+i+')">✕</button>';
-fileList.appendChild(d);
-});
-}
-function removeFile(i){selectedFiles.splice(i,1);updateFileList();processBtn.style.display=selectedFiles.length?'inline-block':'none'}
-processBtn.onclick=async()=>{
-if(!selectedFiles.length)return;
-processBtn.disabled=true;
-status.innerHTML='<div class="alert alert-info"><div class="processing-spinner"></div><p style="margin-top:10px">Upload...</p></div>';
-const fd=new FormData();
-selectedFiles.forEach(f=>fd.append('files',f));
-try{
-const r=await fetch('/api/upload',{method:'POST',body:fd}),d=await r.json();
-if(d.success){
-status.innerHTML='<div class="alert alert-info"><div class="processing-spinner"></div><p style="margin-top:10px">KI-Verarbeitung...</p></div>';
-const pr=await fetch('/api/process/'+d.batch_id,{method:'POST'}),pd=await pr.json();
-if(pd.success)checkStatus(d.batch_id);
-else{status.innerHTML='<div class="alert alert-danger">❌ Fehler</div>';processBtn.disabled=false}
-}
-}catch{status.innerHTML='<div class="alert alert-danger">❌ Fehler</div>';processBtn.disabled=false}
-};
-async function checkStatus(id){
-try{
-const r=await fetch('/api/status/'+id),d=await r.json();
-if(d.status==='processing')setTimeout(()=>checkStatus(id),2000);
-else if(d.status==='completed'){
-status.innerHTML='<div class="alert alert-success"><h4>✅ Fertig!</h4><a href="/results/'+id+'" class="btn-results">📊 Ergebnisse</a></div>';
-processBtn.disabled=false;selectedFiles=[];updateFileList();processBtn.style.display='none';
-}
-}catch{setTimeout(()=>checkStatus(id),3000)}
-}
-</script>
-<footer id="sbs-footer-global">
-  <div class="inner" style="max-width:1200px;margin:0 auto;padding:18px 20px;font-size:13px;color:#4b5b6a;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">
-    <span>© SBS Deutschland GmbH &amp; Co. KG · In der Dell 19, 69469 Weinheim</span>
-    <span>·</span>
-    <a href="/static/landing/impressum.html" style="color:#003856;text-decoration:none;">Impressum</a>
-    <span>·</span>
-    <a href="/static/landing/datenschutz.html" style="color:#003856;text-decoration:none;">Datenschutz</a>
-    <span>·</span>
-    <a href="/static/landing/agb.html" style="color:#003856;text-decoration:none;">AGB</a>
-  </div>
-</footer>
+
+  <!-- HEADER wie Unternehmensseite -->
+    <!-- HEADER -->
+    <!-- HEADER (APP Domain) -->
+    <!-- HEADER (APP Domain) -->
+          <header class="sbs-header" id="main-header">
+    <div class="sbs-header-inner">
+      <a href="https://sbsdeutschland.com/sbshomepage/" class="sbs-logo-wrap">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="sbs-logo-img" />
+        <div class="sbs-logo-text">
+          <strong>SBS Deutschland GmbH &amp; Co. KG</strong>
+          <span>Smart Business Service · Weinheim</span>
+        </div>
+      </a>
+      
+      <button class="burger-menu" id="burger-menu" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <nav class="sbs-nav" id="main-nav">
+        <a href="https://sbsdeutschland.com/sbshomepage/">Startseite</a>
+        <a href="https://sbsdeutschland.com/landing">KI-Rechnungsverarbeitung</a>
+        <a href="https://sbsdeutschland.com/preise">Preise</a>
+        <a href="https://sbsdeutschland.com/sbshomepage/unternehmen.html">Über uns</a>
+        <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
+        <a href="https://app.sbsdeutschland.com/" class="sbs-nav-cta active">Upload / Demo</a>
+        
+        <button class="dark-mode-toggle" id="dark-mode-toggle" aria-label="Dark Mode">
+          <span class="sun-icon">☀️</span>
+          <span class="moon-icon">🌙</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero-Bereich wie Landing -->
+    <section class="hero">
+      <div class="wrap hero-content">
+        <div class="eyebrow">KI-gestützte Automatisierung</div>
+        <h1>🚀 Rechnungen hochladen &amp; verarbeiten</h1>
+        <p>Laden Sie Ihre PDF-Rechnungen hoch und lassen Sie unsere KI sie automatisch verarbeiten.</p>
+      </div>
+    </section>
+
+    <!-- Upload-Karte -->
+    <section>
+      <div class="wrap">
+        <div class="upload-card">
+          <div class="drop-zone" id="dropZone">
+            <h3>📄 PDF-Rechnungen hochladen</h3>
+            <p>Drag &amp; Drop oder klicken</p>
+            <input type="file" id="fileInput" multiple accept=".pdf,.png,.jpg,.jpeg" style="display:none">
+          </div>
+
+          <div id="fileList" class="file-list"></div>
+
+          <div style="text-align:center">
+            <button class="btn-process" id="processBtn">⚡ Jetzt verarbeiten</button>
+          </div>
+
+          <div id="status"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER wie Unternehmensseite -->
+    <!-- FOOTER (global) -->
+    <!-- FOOTER (global) -->
+    <!-- FOOTER (global) -->
+        <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-content">
+        <div class="footer-section footer-main">
+          <div class="footer-logo">
+            <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="footer-logo-img" />
+            <div class="footer-brand">
+              <strong>SBS Deutschland</strong>
+              <span>Smart Business Service</span>
+            </div>
+          </div>
+          <p class="footer-tagline">Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.</p>
+          <div class="footer-location">
+            <i>📍</i>
+            <span>In der Dell 19, 69469 Weinheim</span>
+          </div>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Produkte</h4>
+          <ul>
+            <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+            <li><a href="/preise">Preise & Pakete</a></li>
+            <li><a href="https://app.sbsdeutschland.com/">Demo & Upload</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Unternehmen</h4>
+          <ul>
+            <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+            <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+            <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+            <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Rechtliches</h4>
+          <ul>
+            <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+            <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+            <li><a href="/sbshomepage/agb.html">AGB</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
+        <p class="footer-made">Made with ❤️ in Weinheim</p>
+      </div>
+    </div>
+  </footer>
+
+  <style>
+    .footer {
+      background: linear-gradient(135deg, #001f2e 0%, #003856 100%);
+      color: rgba(255, 255, 255, 0.85);
+      padding: 60px 24px 24px;
+      margin-top: auto;
+    }
+
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+
+    .footer-section h4 {
+      color: #FFB900;
+      font-weight: 700;
+      margin-bottom: 16px;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-section ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .footer-section ul li {
+      margin-bottom: 10px;
+    }
+
+    .footer-section ul li a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: color 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .footer-section ul li a:hover {
+      color: #FFB900;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .footer-logo-img {
+      height: 36px;
+      width: auto;
+    }
+
+    .footer-brand {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .footer-brand strong {
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-brand span {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-tagline {
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+
+    .footer-location {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.85rem;
+    }
+
+    .footer-location i {
+      font-style: normal;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-made {
+      margin: 0;
+    }
+
+    @media (max-width: 768px) {
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+  </style>
+
 </body>
 </html>
-
-<!-- SBS Upload Init v2 -->
-<script id="sbs-upload-init-v2">
-document.addEventListener('DOMContentLoaded', () => {
-  const dropZone   = document.getElementById('dropZone');
-  const fileInput  = document.getElementById('fileInput');
-  const fileListEl = document.getElementById('fileList');
-  const processBtn = document.getElementById('processBtn');
-
-  // Wenn Struktur nicht da ist: nichts tun
-  if (!dropZone || !fileInput || !fileListEl || !processBtn) {
-    return;
-  }
-
-  let files = [];
-
-  function renderFiles() {
-    if (!files.length) {
-      fileListEl.innerHTML = '';
-      return;
-    }
-    fileListEl.innerHTML = files.map((f, i) => `
-      <div class="file-pill">
-        <span>${f.name}</span>
-        <button type="button" class="remove-file" data-index="${i}">×</button>
-      </div>
-    `).join('');
-    fileListEl.querySelectorAll('.remove-file').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.getAttribute('data-index'), 10);
-        files.splice(idx, 1);
-        renderFiles();
-      });
-    });
-  }
-
-  function addFiles(newFiles) {
-    for (const f of newFiles) {
-      if (f && f.name) {
-        files.push(f);
-      }
-    }
-    renderFiles();
-  }
-
-  // Klick auf Dropzone öffnet Dateidialog
-  dropZone.addEventListener('click', () => {
-    fileInput.click();
-  });
-
-  // Drag & Drop
-  dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
-  });
-
-  dropZone.addEventListener('dragleave', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-  });
-
-  dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-    if (e.dataTransfer && e.dataTransfer.files) {
-      addFiles(e.dataTransfer.files);
-    }
-  });
-
-  // Auswahl über verstecktes FileInput
-  fileInput.addEventListener('change', (e) => {
-    if (e.target.files) {
-      addFiles(e.target.files);
-      fileInput.value = ''; // reset
-    }
-  });
-
-  // Jetzt verarbeiten Button
-  processBtn.addEventListener('click', async () => {
-    if (!files.length) {
-      alert('Bitte wählen Sie mindestens eine Datei aus.');
-      return;
-    }
-
-    const formData = new FormData();
-    files.forEach(f => formData.append('files', f));
-
-    processBtn.disabled = true;
-    const originalText = processBtn.textContent;
-    processBtn.textContent = 'Wird verarbeitet...';
-
-    try {
-      // HIER: an dein bestehendes Backend anpassen.
-      // Falls dein FastAPI Endpoint anders heißt, NUR diese URL tauschen.
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!res.ok) {
-        throw new Error('Upload fehlgeschlagen');
-      }
-
-      // Wenn dein Backend eine Ziel-URL zurückgibt, hier auswerten.
-      // Platzhalter: Nach erfolgreichem Upload ggf. Ergebnisseite laden.
-      // const data = await res.json();
-      // if (data.redirect_url) window.location.href = data.redirect_url;
-
-      alert('Upload erfolgreich übermittelt.');
-      files = [];
-      renderFiles();
-    } catch (err) {
-      console.error(err);
-      alert('Fehler beim Hochladen der Dateien. Bitte erneut versuchen.');
-    } finally {
-      processBtn.disabled = false;
-      processBtn.textContent = originalText;
-    }
-  });
-});
-</script>
-
-<style id="sbs-upload-design-v3">
-/* Grundlayout: Footer ans Seitenende, helles Layout wie sbshomepage */
-html, body {
-  margin: 0;
-  padding: 0;
-}
-body {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: #f5f6f8;
-  font-family: -apple-system, BlinkMacSystemFont, -system-ui, -system, sans-serif;
-}
-
-/* Hauptbereich soll wachsen, Footer rutscht nach unten */
-main.sbs-main,
-.sbs-main,
-main {
-  flex: 1;
-}
-
-/* Globaler Footer */
-footer#sbs-footer-global {
-  margin-top: auto;
-}
-
-/* Upload-Karte */
-.upload-card {
-  max-width: 1200px;
-  margin: 40px auto 40px;
-  padding: 40px 40px 32px;
-  background: #ffffff;
-  border-radius: 24px;
-  box-shadow: 0 18px 60px rgba(0,0,0,0.06);
-  border: 1px solid rgba(0,0,0,0.03);
-}
-
-/* Dropzone größer & mittig */
-#dropZone {
-  border: 2px dashed rgba(0,56,86,0.26);
-  border-radius: 18px;
-  padding: 38px 24px;
-  background: #fafbff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: center;
-}
-
-#dropZone h3 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #003856;
-}
-
-#dropZone p {
-  margin: 2px 0 0;
-  font-size: 15px;
-  color: #6b7280;
-}
-
-/* Hover/Drag-Optik */
-#dropZone.dragover {
-  background: #fdf7e6;
-  border-color: #ffb900;
-  box-shadow: 0 10px 30px rgba(255,185,0,0.18);
-  transform: translateY(-1px);
-}
-
-/* Datei-Badges unter der Dropzone */
-.file-list {
-  margin-top: 18px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.file-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: #f3f4ff;
-  color: #003856;
-  font-size: 13px;
-}
-
-.file-pill .remove-file {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 15px;
-  line-height: 1;
-  color: #9ca3af;
-}
-
-.file-pill .remove-file:hover {
-  color: #ef4444;
-}
-
-/* "Jetzt verarbeiten" Button etwas Abstand nach oben */
-#processBtn,
-.btn-process,
-.upload-card button.btn-process {
-  margin-top: 24px;
-}
-</style>
