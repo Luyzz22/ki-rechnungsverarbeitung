@@ -211,6 +211,35 @@ async function checkLoginStatus() {
     
     if (u.logged_in) {
       document.getElementById('accountName').textContent = u.name;
+      // Update logout link with current page
+      const logoutLink = menu.querySelector('a[href*="logout"]');
+      if (logoutLink) {
+        logoutLink.href = 'https://app.sbsdeutschland.com/logout?next=' + encodeURIComponent(window.location.href);
+      }
+    } else {
+      // Show login link with return URL
+      const currentUrl = encodeURIComponent(window.location.href);
+      toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+      if (menu) menu.style.display = 'none';
+    }
+  } catch(e) {
+    const toggle = document.querySelector('.account-toggle');
+    const currentUrl = encodeURIComponent(window.location.href);
+    if (toggle) toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+  }
+}
+document.addEventListener('DOMContentLoaded', checkLoginStatus);
+</script>
+<script>
+async function checkLoginStatus() {
+  try {
+    const r = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
+    const u = await r.json();
+    const toggle = document.querySelector('.account-toggle');
+    const menu = document.querySelector('.account-menu');
+    
+    if (u.logged_in) {
+      document.getElementById('accountName').textContent = u.name;
     } else {
       toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
       if (menu) menu.style.display = 'none';
