@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IT Consulting | SBS Deutschland</title>
+  <meta name="description" content="IT Consulting & Programming von SBS Deutschland. Softwarearchitektur, APIs, KI-Integration.">
+  <link rel="icon" href="/static/favicon.ico">
+  <style>
+/* ===========================================
+   SBS DEUTSCHLAND DESIGN SYSTEM 2025
+   Basierend auf empirischer UX-Forschung
+   =========================================== */
+
+:root {
+  /* PRIMARY - Blau für Trust & Professionalität
+     Research: 57% der Menschen bevorzugen Blau (Hallock Study)
+     Blau = Trust, Reliability, Intelligence */
+  --sbs-blue: #003856;
+  --sbs-blue-light: #005a8a;
+  --sbs-blue-dark: #001f2e;
+  
+  /* ACCENT - Gelb für CTAs & Highlights
+     Research: Höchste Aufmerksamkeit, Optimismus
+     Kontrastiert perfekt mit Blau (Komplementärfarbe) */
+  --sbs-yellow: #FFB900;
+  --sbs-yellow-hover: #e6a800;
+  
+  /* NEUTRALS - Clean & Professional */
+  --sbs-bg: #f8fafc;
+  --sbs-white: #ffffff;
+  --sbs-text: #1e293b;
+  --sbs-muted: #64748b;
+  --sbs-border: rgba(0, 56, 86, 0.08);
+  
+  /* SEMANTIC */
+  --sbs-success: #10b981;
+  --sbs-error: #ef4444;
+  
+  /* GRADIENTS */
+  --sbs-gradient: linear-gradient(135deg, #003856 0%, #005a8a 100%);
+  --sbs-gradient-dark: linear-gradient(135deg, #001f2e 0%, #003856 100%);
+  
+  /* SHADOWS - Subtle, Professional */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+  
+  /* TRANSITIONS */
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* DARK MODE - Reduced Eye Strain (Research-backed) */
+[data-theme="dark"] {
+  --sbs-bg: #0f172a;
+  --sbs-white: #1e293b;
+  --sbs-blue: #60a5fa;
+  --sbs-text: #e2e8f0;
+  --sbs-muted: #94a3b8;
+  --sbs-border: rgba(148, 163, 184, 0.1);
+  --sbs-gradient: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  --sbs-gradient-dark: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+}
+
+/* ===========================================
+   BASE STYLES
+   =========================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Research: Smooth scrolling improves UX */
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--sbs-bg);
+  color: var(--sbs-text);
+  /* Research: 16px minimum für Body-Text (USWDS) */
+  font-size: 16px;
+  /* Research: Line-Height 1.5-1.6 für optimale Lesbarkeit */
+  line-height: 1.6;
+  transition: background 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===========================================
+   TYPOGRAPHY - Research-based
+   Research: 45-75 Zeichen/Zeile optimal
+   =========================================== */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: clamp(2.25rem, 5vw, 3.25rem); }
+h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.125rem; }
+
+p {
+  /* Research: Max 75 Zeichen für optimale Lesbarkeit */
+  max-width: 75ch;
+}
+
+/* ===========================================
+   HEADER - Sticky, Clean, Accessible
+   Research: Navigation 5-8 Items optimal
+   =========================================== */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--sbs-white);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  text-decoration: none;
+  color: var(--sbs-text);
+}
+
+.logo-img {
+  height: 40px;
+  width: auto;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+
+.logo-text strong {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.logo-text span {
+  color: var(--sbs-muted);
+}
+
+/* Navigation */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+}
+
+.nav a {
+  position: relative;
+  color: var(--sbs-text);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.25rem 0;
+  opacity: 0.85;
+  transition: var(--transition);
+}
+
+.nav a:hover {
+  opacity: 1;
+  color: var(--sbs-blue);
+}
+
+.nav a.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--sbs-yellow);
+  border-radius: 2px;
+}
+
+/* CTA Button - Research: Gelb für höchste Aufmerksamkeit */
+.nav-cta {
+  padding: 0.625rem 1.25rem !important;
+  background: var(--sbs-yellow) !important;
+  color: #111827 !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(255, 185, 0, 0.25) !important;
+  opacity: 1 !important;
+}
+
+.nav-cta:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(255, 185, 0, 0.35) !important;
+}
+
+.nav-cta::after {
+  display: none !important;
+}
+
+/* Dark Mode Toggle */
+.theme-toggle {
+  background: var(--sbs-bg);
+  border: 2px solid var(--sbs-border);
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+.theme-toggle:hover {
+  border-color: var(--sbs-yellow);
+  transform: scale(1.05);
+}
+
+.theme-toggle .sun { display: block; }
+.theme-toggle .moon { display: none; }
+[data-theme="dark"] .theme-toggle .sun { display: none; }
+[data-theme="dark"] .theme-toggle .moon { display: block; }
+
+/* Burger Menu */
+.burger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.burger span {
+  width: 22px;
+  height: 2px;
+  background: var(--sbs-text);
+  border-radius: 2px;
+  transition: var(--transition);
+}
+
+/* ===========================================
+   HERO SECTION - Above the Fold Critical
+   Research: 57% Viewing-Time, 80% Attention
+   =========================================== */
+.hero {
+  background: var(--sbs-gradient);
+  /* Research: Optimal padding für Hero-Sections */
+  padding: 5rem 1.5rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.hero-content {
+  max-width: 850px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.hero h1 {
+  color: white;
+  margin-bottom: 1.25rem;
+  letter-spacing: -0.03em;
+}
+
+.hero-subtitle {
+  font-size: 1.125rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.7;
+  max-width: 650px;
+  margin: 0 auto 2rem;
+}
+
+/* Single CTA - Research: Multiple CTAs = Confusion */
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  background: var(--sbs-yellow);
+  color: #111827;
+  text-decoration: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 8px 30px rgba(255, 185, 0, 0.35);
+  transition: var(--transition);
+}
+
+.hero-cta:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(255, 185, 0, 0.45);
+}
+
+/* ===========================================
+   TRUST BAR - Social Proof
+   Research: Trust-Signale above-the-fold erhöhen Conversion
+   =========================================== */
+.trust-bar {
+  background: var(--sbs-white);
+  padding: 2.5rem 1.5rem;
+  border-bottom: 1px solid var(--sbs-border);
+}
+
+.trust-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  flex-wrap: wrap;
+}
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--sbs-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.trust-item strong {
+  color: var(--sbs-blue);
+  font-size: 1.375rem;
+  font-weight: 800;
+}
+
+/* ===========================================
+   SECTIONS & CONTAINERS
+   =========================================== */
+.section {
+  padding: 5rem 1.5rem;
+}
+
+.section-alt {
+  background: var(--sbs-white);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 3.5rem;
+}
+
+.section-badge {
+  display: inline-block;
+  background: rgba(0, 56, 86, 0.06);
+  color: var(--sbs-blue);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.75px;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+}
+
+[data-theme="dark"] .section-badge {
+  background: rgba(96, 165, 250, 0.12);
+}
+
+.section-title {
+  color: var(--sbs-blue);
+  margin-bottom: 1rem;
+}
+
+[data-theme="dark"] .section-title {
+  color: var(--sbs-text);
+}
+
+.section-subtitle {
+  font-size: 1.0625rem;
+  color: var(--sbs-muted);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* ===========================================
+   FEATURE GRID - Card-based Layout
+   =========================================== */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.feature-card {
+  background: var(--sbs-white);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--sbs-border);
+  transition: var(--transition);
+}
+
+.feature-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.feature-card h3 {
+  color: var(--sbs-text);
+  margin-bottom: 0.75rem;
+}
+
+.feature-card p {
+  color: var(--sbs-muted);
+  line-height: 1.7;
+  margin-bottom: 1rem;
+  font-size: 0.9375rem;
+}
+
+.feature-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.feature-card ul li {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--sbs-muted);
+  font-size: 0.875rem;
+}
+
+.feature-card ul li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--sbs-yellow);
+  font-weight: 700;
+}
+
+/* ===========================================
+   USP GRID - Key Benefits
+   =========================================== */
+.usp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+}
+
+.usp-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--sbs-white);
+  border-radius: 10px;
+  border: 1px solid var(--sbs-border);
+}
+
+.usp-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.usp-item h4 {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--sbs-text);
+  margin-bottom: 0.25rem;
+}
+
+.usp-item p {
+  font-size: 0.8125rem;
+  color: var(--sbs-muted);
+  line-height: 1.6;
+}
+
+/* ===========================================
+   STEPS / PROCESS
+   =========================================== */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 2rem;
+  counter-reset: step;
+}
+
+.step-card {
+  position: relative;
+  background: var(--sbs-white);
+  padding: 2.5rem 2rem 2rem;
+  border-radius: 12px;
+  border: 1px solid var(--sbs-border);
+  text-align: center;
+}
+
+.step-card::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  top: -1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2rem;
+  height: 2rem;
+  background: var(--sbs-yellow);
+  color: #111827;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.875rem;
+}
+
+.step-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.step-card h3 {
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem;
+  color: var(--sbs-text);
+}
+
+.step-card p {
+  color: var(--sbs-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* ===========================================
+   PRICING - 3 Tiers (Research: Optimal)
+   Research: Harvard Business Review
+   =========================================== */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.pricing-card {
+  background: var(--sbs-white);
+  border-radius: 16px;
+  padding: 2.5rem;
+  border: 2px solid var(--sbs-border);
+  transition: var(--transition);
+  position: relative;
+}
+
+.pricing-card.featured {
+  border-color: var(--sbs-yellow);
+  transform: scale(1.02);
+  box-shadow: 0 12px 40px rgba(255, 185, 0, 0.15);
+}
+
+.pricing-badge {
+  position: absolute;
+  top: -0.875rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--sbs-yellow);
+  color: #111827;
+  padding: 0.375rem 1rem;
+  border-radius: 20px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.pricing-header {
+  text-align: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--sbs-border);
+  margin-bottom: 1.5rem;
+}
+
+.pricing-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--sbs-text);
+  margin-bottom: 0.5rem;
+}
+
+.pricing-price {
+  font-size: 2.75rem;
+  font-weight: 800;
+  color: var(--sbs-blue);
+}
+
+[data-theme="dark"] .pricing-price {
+  color: var(--sbs-text);
+}
+
+.pricing-price span {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--sbs-muted);
+}
+
+.pricing-desc {
+  font-size: 0.8125rem;
+  color: var(--sbs-muted);
+  margin-top: 0.5rem;
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 2rem;
+}
+
+.pricing-features li {
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--sbs-border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--sbs-text);
+}
+
+.pricing-features li:last-child {
+  border-bottom: none;
+}
+
+.pricing-features .check {
+  color: var(--sbs-yellow);
+  font-weight: 700;
+}
+
+.pricing-cta {
+  display: block;
+  width: 100%;
+  padding: 0.875rem;
+  text-align: center;
+  background: var(--sbs-blue);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  transition: var(--transition);
+}
+
+.pricing-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 56, 86, 0.25);
+}
+
+.pricing-card.featured .pricing-cta {
+  background: var(--sbs-yellow);
+  color: #111827;
+}
+
+.pricing-card.featured .pricing-cta:hover {
+  box-shadow: 0 8px 20px rgba(255, 185, 0, 0.35);
+}
+
+/* ===========================================
+   FAQ - Accordion Style
+   =========================================== */
+.faq-list {
+  max-width: 750px;
+  margin: 0 auto;
+}
+
+.faq-item {
+  background: var(--sbs-white);
+  border: 1px solid var(--sbs-border);
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.faq-question {
+  width: 100%;
+  padding: 1.25rem 1.5rem;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--sbs-text);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.faq-question:hover {
+  background: var(--sbs-bg);
+}
+
+.faq-icon {
+  font-size: 1.25rem;
+  color: var(--sbs-yellow);
+  transition: var(--transition);
+}
+
+.faq-item.active .faq-icon {
+  transform: rotate(45deg);
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.faq-item.active .faq-answer {
+  max-height: 400px;
+}
+
+.faq-answer p {
+  padding: 0 1.5rem 1.25rem;
+  color: var(--sbs-muted);
+  line-height: 1.7;
+  font-size: 0.9375rem;
+}
+
+/* ===========================================
+   CTA SECTION
+   =========================================== */
+.cta-section {
+  background: var(--sbs-gradient);
+  padding: 4rem 2rem;
+  text-align: center;
+  border-radius: 16px;
+  margin: 4rem auto;
+  max-width: 900px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.cta-section > * {
+  position: relative;
+  z-index: 1;
+}
+
+.cta-section h2 {
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.cta-section p {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 2rem;
+  max-width: 550px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cta-section .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1.75rem;
+  background: var(--sbs-yellow);
+  color: #111827;
+  text-decoration: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  box-shadow: 0 8px 30px rgba(255, 185, 0, 0.35);
+  transition: var(--transition);
+}
+
+.cta-section .btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(255, 185, 0, 0.45);
+}
+
+/* ===========================================
+   CONTACT FORM
+   Research: Minimale Felder = Höhere Conversion
+   =========================================== */
+.contact-form-wrap {
+  max-width: 650px;
+  margin: 0 auto;
+  background: var(--sbs-white);
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--sbs-text);
+  font-size: 0.875rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--sbs-border);
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  background: var(--sbs-bg);
+  color: var(--sbs-text);
+  transition: var(--transition);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--sbs-yellow);
+  box-shadow: 0 0 0 3px rgba(255, 185, 0, 0.1);
+}
+
+.form-group select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23003856' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 3rem;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.form-checkbox input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.form-checkbox label {
+  margin-bottom: 0;
+  font-weight: 400;
+  font-size: 0.8125rem;
+  color: var(--sbs-muted);
+  cursor: pointer;
+}
+
+.form-checkbox a {
+  color: var(--sbs-yellow);
+  text-decoration: none;
+}
+
+.form-checkbox a:hover {
+  text-decoration: underline;
+}
+
+/* Research: Custom CTA-Text performt besser als "Submit" */
+.form-submit {
+  width: 100%;
+  padding: 0.875rem;
+  background: var(--sbs-yellow);
+  color: #111827;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.form-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 185, 0, 0.35);
+}
+
+.form-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.form-message {
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  display: none;
+}
+
+.form-success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid rgba(16, 185, 129, 0.25);
+  color: #059669;
+}
+
+.form-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid rgba(239, 68, 68, 0.25);
+  color: #dc2626;
+}
+
+/* ===========================================
+   CONTACT CARDS
+   =========================================== */
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.contact-card {
+  background: var(--sbs-white);
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid var(--sbs-border);
+  transition: var(--transition);
+}
+
+.contact-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.contact-card .icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.contact-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: var(--sbs-text);
+}
+
+.contact-card p {
+  color: var(--sbs-muted);
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.contact-card a {
+  color: var(--sbs-yellow);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.contact-card a:hover {
+  text-decoration: underline;
+}
+
+/* ===========================================
+   FOOTER
+   =========================================== */
+.footer {
+  background: var(--sbs-gradient-dark);
+  color: rgba(255, 255, 255, 0.85);
+  padding: 4rem 1.5rem 2rem;
+}
+
+.footer-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 3rem;
+  margin-bottom: 3rem;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.footer-brand img {
+  height: 32px;
+}
+
+.footer-brand-text {
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+
+.footer-brand-text strong {
+  display: block;
+  font-size: 0.8125rem;
+  color: white;
+}
+
+.footer-tagline {
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+}
+
+.footer-location {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+}
+
+.footer h4 {
+  color: var(--sbs-yellow);
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.footer ul {
+  list-style: none;
+  padding: 0;
+}
+
+.footer ul li {
+  margin-bottom: 0.625rem;
+}
+
+.footer ul a {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  transition: color 0.3s ease;
+}
+
+.footer ul a:hover {
+  color: var(--sbs-yellow);
+}
+
+.footer-bottom {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ===========================================
+   RESPONSIVE - Mobile First
+   Research: 61% verlassen nicht-optimierte Sites
+   =========================================== */
+@media (max-width: 768px) {
+  .burger {
+    display: flex;
+  }
+
+  .nav {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 280px;
+    height: 100vh;
+    background: var(--sbs-white);
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 5rem 1.5rem 1.5rem;
+    gap: 1.25rem;
+    box-shadow: -4px 0 30px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease;
+    z-index: 999;
+  }
+
+  .nav.active {
+    right: 0;
+  }
+
+  .hero {
+    padding: 3rem 1.5rem;
+  }
+
+  .section {
+    padding: 3rem 1.5rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .pricing-card.featured {
+    transform: none;
+  }
+
+  .contact-form-wrap {
+    padding: 1.5rem;
+  }
+
+  .trust-inner {
+    gap: 1.5rem;
+  }
+
+  .trust-item {
+    font-size: 0.75rem;
+  }
+
+  .trust-item strong {
+    font-size: 1.125rem;
+  }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img">
+      <div class="logo-text">
+        <strong>SBS Deutschland</strong>
+        <span>Smart Business Service · Weinheim</span>
+      </div>
+    </a>
+    
+    <button class="burger" id="burger" aria-label="Menü öffnen">
+      <span></span><span></span><span></span>
+    </button>
+    
+    <nav class="nav" id="nav">
+      <a href="/landing" >KI-Rechnungen</a>
+      <a href="/preise" >Preise</a>
+      <a href="/sbshomepage/unternehmen.html" >Über uns</a>
+      <a href="/sbshomepage/kontakt.html" >Kontakt</a>
+      <a href="https://app.sbsdeutschland.com/" class="nav-cta">Demo starten</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Theme wechseln">
+        <span class="sun">☀️</span>
+        <span class="moon">🌙</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">💻 IT CONSULTING</div>
+    <h1>IT Consulting &<br>Programming</h1>
+    <p class="hero-subtitle">Moderne Softwarearchitektur, intelligente APIs und nahtlose Automatisierung – maßgeschneidert für Ihre Geschäftsprozesse.</p>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-badge">LEISTUNGEN</div>
+      <h2 class="section-title">Unsere IT-Expertise</h2>
+      <p class="section-subtitle">Von der Beratung bis zur Implementierung – alles aus einer Hand.</p>
+    </div>
+    
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feature-icon">🏗️</span>
+        <h3>Software-Architektur</h3>
+        <p>Skalierbare, wartbare Systeme nach aktuellen Best Practices und Clean-Code-Prinzipien.</p>
+      </div>
+      
+      <div class="feature-card">
+        <span class="feature-icon">🔌</span>
+        <h3>API-Entwicklung</h3>
+        <p>RESTful APIs und Integrationen für nahtlose Kommunikation zwischen Ihren Systemen.</p>
+      </div>
+      
+      <div class="feature-card">
+        <span class="feature-icon">⚙️</span>
+        <h3>Prozessautomatisierung</h3>
+        <p>Automatisierung repetitiver Aufgaben für höhere Effizienz und weniger Fehler.</p>
+      </div>
+      
+      <div class="feature-card">
+        <span class="feature-icon">🤖</span>
+        <h3>KI-Integration</h3>
+        <p>Machine Learning und KI-Modelle in Ihre bestehenden Workflows integriert.</p>
+      </div>
+      
+      <div class="feature-card">
+        <span class="feature-icon">🛠️</span>
+        <h3>Custom Development</h3>
+        <p>Individuelle Softwarelösungen, exakt auf Ihre Anforderungen zugeschnitten.</p>
+      </div>
+      
+      <div class="feature-card">
+        <span class="feature-icon">🔐</span>
+        <h3>Security & Compliance</h3>
+        <p>Sichere Entwicklung nach OWASP-Standards mit DSGVO-Konformität.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section">
+  <div class="cta-section">
+    <h2>Projekt besprechen?</h2>
+    <p>Lassen Sie uns über Ihre IT-Herausforderungen sprechen.</p>
+    <a href="/sbshomepage/kontakt.html" class="btn">
+      Kontakt aufnehmen →
+    </a>
+  </div>
+</section>
+
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland">
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.</p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+    </div>
+    
+    <div>
+      <h4>Produkte</h4>
+      <ul>
+        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="/preise">Preise & Pakete</a></li>
+        <li><a href="https://app.sbsdeutschland.com/">Demo & Upload</a></li>
+      </ul>
+    </div>
+    
+    <div>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+      </ul>
+    </div>
+    
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="footer-bottom">
+    <p>© 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
+  </div>
+</footer>
+
+
+<script>
+(function() {
+  'use strict';
+  
+  // Initialize theme from localStorage
+  const savedTheme = localStorage.getItem('sbs-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const burger = document.getElementById('burger');
+    const nav = document.getElementById('nav');
+    
+    if (themeToggle) {
+      themeToggle.addEventListener('click', function() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('sbs-theme', next);
+      });
+    }
+    
+    // Mobile navigation
+    if (burger && nav) {
+      burger.addEventListener('click', function() {
+        nav.classList.toggle('active');
+      });
+      
+      // Close nav when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!nav.contains(e.target) && !burger.contains(e.target)) {
+          nav.classList.remove('active');
+        }
+      });
+    }
+    
+    // FAQ Accordion
+    document.querySelectorAll('.faq-question').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const item = this.parentElement;
+        const wasActive = item.classList.contains('active');
+        
+        // Close all other items
+        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
+        
+        // Toggle current
+        if (!wasActive) {
+          item.classList.add('active');
+        }
+      });
+    });
+    
+    // Contact Form with validation
+    const form = document.getElementById('contact-form');
+    if (form) {
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = this.querySelector('.form-submit');
+        const success = document.getElementById('form-success');
+        const error = document.getElementById('form-error');
+        const originalText = btn.textContent;
+        
+        btn.disabled = true;
+        btn.textContent = 'Wird gesendet...';
+        success.style.display = 'none';
+        error.style.display = 'none';
+        
+        const data = Object.fromEntries(new FormData(this));
+        
+        try {
+          const res = await fetch('/api/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          
+          if (res.ok) {
+            success.style.display = 'block';
+            this.reset();
+          } else {
+            throw new Error('Server error');
+          }
+        } catch (err) {
+          error.style.display = 'block';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      });
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Datenschutzerklärung – SBS Deutschland</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/static/favicon.ico">
+  <style>
+    :root {
+      --sbs-bg: #f5f6f8;
+      --sbs-white: #ffffff;
+      --sbs-dark: #003856;
+      --sbs-accent: #ffb400;
+      --sbs-text: #17212b;
+      --sbs-muted: #6b7280;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: system-ui, sans-serif;
+      background: var(--sbs-bg);
+      color: var(--sbs-text);
+      line-height: 1.7;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+    
+    h1 {
+      font-size: 2.2rem;
+      color: var(--sbs-dark);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    
+    h2 {
+      font-size: 1.4rem;
+      color: var(--sbs-dark);
+      margin: 36px 0 14px;
+      font-weight: 600;
+    }
+    
+    h3 {
+      font-size: 1.15rem;
+      color: var(--sbs-dark);
+      margin: 26px 0 12px;
+      font-weight: 600;
+    }
+    
+    p, ul {
+      margin-bottom: 18px;
+      font-size: 1rem;
+    }
+    
+    ul {
+      padding-left: 28px;
+    }
+    
+    li {
+      margin-bottom: 8px;
+    }
+    
+    strong {
+      color: var(--sbs-dark);
+      font-weight: 600;
+    }
+    
+    a {
+      color: var(--sbs-accent);
+      text-decoration: none;
+    }
+    
+    a:hover {
+      text-decoration: underline;
+    }
+    
+    .back-link {
+      display: inline-block;
+      margin-bottom: 24px;
+      color: var(--sbs-muted);
+      font-size: 0.95rem;
+    }
+    
+    .info-box {
+      background: rgba(255, 180, 0, 0.1);
+      border-left: 4px solid var(--sbs-accent);
+      padding: 16px;
+      margin: 24px 0;
+      border-radius: 6px;
+    }
+  
+    /* ================================================
+       UNIFIED DESIGN - ALLE SEITEN GLEICH
+       ================================================ */
+
+    :root {
+      --sbs-bg: #f5f6f8;
+      --sbs-white: #ffffff;
+      --sbs-dark: #003856;
+      --sbs-dark-soft: #0b2435;
+      --sbs-accent: #ffb400;
+      --sbs-text: #17212b;
+      --sbs-muted: #6b7280;
+      --transition-fast: all 0.25s ease;
+    }
+
+    [data-theme="dark"] {
+      --sbs-bg: #0f172a;
+      --sbs-white: #1e293b;
+      --sbs-dark: #60a5fa;
+      --sbs-dark-soft: #e2e8f0;
+      --sbs-text: #e2e8f0;
+      --sbs-muted: #94a3b8;
+    }
+
+    body {
+      background: var(--sbs-bg);
+      color: var(--sbs-text);
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* HEADER - EXAKT GLEICH AUF ALLEN SEITEN */
+    .sbs-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--sbs-white);
+      box-shadow: 0 1px 12px rgba(15,23,42,0.06);
+      transition: all 0.3s ease;
+    }
+
+    .sbs-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .sbs-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+
+    .sbs-logo-img {
+      height: 40px;
+      width: auto;
+      display: block;
+      transition: height 0.3s ease;
+    }
+
+    .sbs-logo-text {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      line-height: 1.25;
+      color: var(--sbs-dark-soft);
+    }
+
+    .sbs-logo-text strong {
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    /* Navigation */
+    .sbs-nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 14px;
+    }
+
+    .sbs-nav a {
+      position: relative;
+      padding-bottom: 4px;
+      opacity: 0.85;
+      transition: var(--transition-fast);
+      text-decoration: none;
+      color: var(--sbs-text);
+      font-weight: 500;
+    }
+
+    .sbs-nav a:hover {
+      opacity: 1;
+    }
+
+    .sbs-nav a.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--sbs-accent);
+    }
+
+    /* Upload/Demo Button - IMMER GLEICH */
+    .sbs-nav-cta {
+      padding: 9px 18px !important;
+      border-radius: 999px !important;
+      background: var(--sbs-accent) !important;
+      color: #111827 !important;
+      font-weight: 600 !important;
+      box-shadow: 0 4px 12px rgba(255,180,0,0.3) !important;
+      opacity: 1 !important;
+    }
+
+    .sbs-nav-cta::after {
+      display: none !important;
+    }
+
+    .sbs-nav-cta:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 6px 16px rgba(255,180,0,0.4) !important;
+    }
+
+    /* Burger Menu */
+    .burger-menu {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      z-index: 1001;
+    }
+
+    .burger-menu span {
+      width: 25px;
+      height: 3px;
+      background: var(--sbs-dark-soft);
+      border-radius: 3px;
+      transition: all 0.3s ease;
+    }
+
+    .burger-menu.active span:nth-child(1) {
+      transform: rotate(45deg) translate(8px, 8px);
+    }
+
+    .burger-menu.active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .burger-menu.active span:nth-child(3) {
+      transform: rotate(-45deg) translate(7px, -7px);
+    }
+
+    /* Dark Mode Toggle - EINHEITLICH MIT BEIDEN ICONS */
+    .dark-mode-toggle {
+      background: var(--sbs-white);
+      border: 2px solid rgba(15,23,42,0.12);
+      border-radius: 999px;
+      width: 50px;
+      height: 28px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s ease;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      overflow: visible;
+    }
+
+    .dark-mode-toggle:hover {
+      border-color: var(--sbs-accent);
+      transform: scale(1.05);
+    }
+
+    .sun-icon,
+    .moon-icon {
+      font-size: 14px;
+      transition: all 0.3s ease;
+      opacity: 1;
+    }
+
+    /* Dark Mode: Mond hell, Sonne dunkel */
+    [data-theme="dark"] .sun-icon {
+      opacity: 0.3;
+    }
+
+    [data-theme="dark"] .moon-icon {
+      opacity: 1;
+    }
+
+    /* Light Mode: Sonne hell, Mond dunkel */
+    [data-theme="light"] .sun-icon {
+      opacity: 1;
+    }
+
+    [data-theme="light"] .moon-icon {
+      opacity: 0.3;
+    }
+
+    /* FOOTER */
+    #sbs-footer-global {
+      border-top: 1px solid rgba(148,163,253,0.1);
+      background: var(--sbs-white);
+      padding: 16px 24px 18px;
+      font-size: 12px;
+      color: var(--sbs-muted);
+    }
+
+    #sbs-footer-global .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    #sbs-footer-global .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    #sbs-footer-global a {
+      color: var(--sbs-text);
+      text-decoration: none;
+      opacity: 0.8;
+      transition: var(--transition-fast);
+    }
+
+    #sbs-footer-global a:hover {
+      opacity: 1;
+      color: var(--sbs-accent);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .burger-menu {
+        display: flex;
+      }
+
+      .sbs-nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 280px;
+        height: 100vh;
+        background: var(--sbs-white);
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 80px 24px 24px;
+        gap: 20px;
+        box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+        transition: right 0.3s ease;
+        overflow-y: auto;
+      }
+
+      .sbs-nav.active {
+        right: 0;
+      }
+
+      .sbs-nav a {
+        width: 100%;
+        padding: 12px 0;
+        font-size: 16px;
+      }
+
+      .sbs-nav-cta {
+        width: 100%;
+        text-align: center;
+        display: block !important;
+      }
+
+      .dark-mode-toggle {
+        width: 100%;
+      }
+    }
+
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .mobile-overlay.active {
+      display: block;
+      opacity: 1;
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <a href="/sbshomepage/" class="back-link">← Zurück zur Startseite</a>
+  
+  <h1>Datenschutzerklärung</h1>
+  
+  <p><strong>Stand: November 2025</strong></p>
+  
+  <div class="info-box">
+    <p style="margin: 0;">
+      <strong>Zusammenfassung:</strong> Wir nehmen den Schutz Ihrer persönlichen Daten sehr ernst 
+      und behandeln Ihre personenbezogenen Daten vertraulich und entsprechend der gesetzlichen 
+      Datenschutzvorschriften sowie dieser Datenschutzerklärung.
+    </p>
+  </div>
+  
+  <h2>1. Verantwortlicher</h2>
+  <p>
+    Verantwortlich für die Datenverarbeitung auf dieser Website ist:
+  </p>
+  <address>
+    <strong>SBS Deutschland GmbH & Co. KG</strong><br>
+    In der Dell 19<br>
+    69469 Weinheim<br>
+    Deutschland<br><br>
+    <strong>Telefon:</strong> +49 6201 80 6109<br>
+    <strong>E-Mail:</strong> <a href="mailto:info@sbsdeutschland.com">info@sbsdeutschland.com</a><br>
+    <strong>Website:</strong> <a href="https://www.sbsdeutschland.com">www.sbsdeutschland.com</a>
+  </address>
+  
+  <p style="margin-top: 16px;">
+    <strong>Geschäftsführer:</strong> Andreas Schenk<br>
+    <strong>Datenschutzanfragen:</strong> <a href="mailto:info@sbsdeutschland.com">info@sbsdeutschland.com</a>
+  </p>
+  
+  <h2>2. Allgemeines zur Datenverarbeitung</h2>
+  
+  <h3>2.1 Umfang der Verarbeitung personenbezogener Daten</h3>
+  <p>
+    Wir erheben und verwenden personenbezogene Daten unserer Nutzer grundsätzlich nur, soweit 
+    dies zur Bereitstellung einer funktionsfähigen Website sowie unserer Inhalte und Leistungen 
+    erforderlich ist. Die Erhebung und Verwendung personenbezogener Daten unserer Nutzer erfolgt 
+    regelmäßig nur nach Einwilligung des Nutzers.
+  </p>
+  
+  <h3>2.2 Rechtsgrundlage für die Verarbeitung personenbezogener Daten</h3>
+  <p>
+    Soweit wir für Verarbeitungsvorgänge personenbezogener Daten eine Einwilligung der betroffenen 
+    Person einholen, dient Art. 6 Abs. 1 lit. a EU-Datenschutzgrundverordnung (DSGVO) als Rechtsgrundlage.
+  </p>
+  <p>
+    Bei der Verarbeitung von personenbezogenen Daten, die zur Erfüllung eines Vertrages, dessen 
+    Vertragspartei die betroffene Person ist, erforderlich ist, dient Art. 6 Abs. 1 lit. b DSGVO 
+    als Rechtsgrundlage.
+  </p>
+  <p>
+    Soweit eine Verarbeitung personenbezogener Daten zur Erfüllung einer rechtlichen Verpflichtung 
+    erforderlich ist, dient Art. 6 Abs. 1 lit. c DSGVO als Rechtsgrundlage.
+  </p>
+  <p>
+    Ist die Verarbeitung zur Wahrung eines berechtigten Interesses unseres Unternehmens oder eines 
+    Dritten erforderlich und überwiegen die Interessen, Grundrechte und Grundfreiheiten des Betroffenen 
+    das erstgenannte Interesse nicht, so dient Art. 6 Abs. 1 lit. f DSGVO als Rechtsgrundlage für die 
+    Verarbeitung.
+  </p>
+  
+  <h3>2.3 Datenlöschung und Speicherdauer</h3>
+  <p>
+    Die personenbezogenen Daten der betroffenen Person werden gelöscht oder gesperrt, sobald der Zweck 
+    der Speicherung entfällt. Eine Speicherung kann darüber hinaus erfolgen, wenn dies durch den 
+    europäischen oder nationalen Gesetzgeber in unionsrechtlichen Verordnungen, Gesetzen oder sonstigen 
+    Vorschriften vorgesehen wurde. Eine Sperrung oder Löschung der Daten erfolgt auch dann, wenn eine 
+    durch die genannten Normen vorgeschriebene Speicherfrist abläuft, es sei denn, dass eine 
+    Erforderlichkeit zur weiteren Speicherung der Daten für einen Vertragsabschluss oder eine 
+    Vertragserfüllung besteht.
+  </p>
+  
+  <h2>3. Bereitstellung der Website und Erstellung von Logfiles</h2>
+  
+  <h3>3.1 Beschreibung und Umfang der Datenverarbeitung</h3>
+  <p>
+    Bei jedem Aufruf unserer Internetseite erfasst unser System automatisiert Daten und Informationen 
+    vom Computersystem des aufrufenden Rechners. Folgende Daten werden hierbei erhoben:
+  </p>
+  <ul>
+    <li>IP-Adresse des Nutzers</li>
+    <li>Datum und Uhrzeit des Zugriffs</li>
+    <li>Aufgerufene Seite / Referrer URL</li>
+    <li>Browsertyp und Browserversion</li>
+    <li>Verwendetes Betriebssystem</li>
+    <li>Hostname des zugreifenden Rechners</li>
+  </ul>
+  <p>
+    Die Daten werden in den Logfiles unseres Systems gespeichert. Eine Speicherung dieser Daten zusammen 
+    mit anderen personenbezogenen Daten des Nutzers findet nicht statt.
+  </p>
+  
+  <h3>3.2 Rechtsgrundlage</h3>
+  <p>
+    Rechtsgrundlage für die vorübergehende Speicherung der Daten und der Logfiles ist Art. 6 Abs. 1 lit. f 
+    DSGVO (berechtigtes Interesse).
+  </p>
+  
+  <h3>3.3 Zweck der Datenverarbeitung</h3>
+  <p>
+    Die vorübergehende Speicherung der IP-Adresse durch das System ist notwendig, um eine Auslieferung 
+    der Website an den Rechner des Nutzers zu ermöglichen. Hierfür muss die IP-Adresse des Nutzers für 
+    die Dauer der Sitzung gespeichert bleiben. Die Speicherung in Logfiles erfolgt, um die 
+    Funktionsfähigkeit der Website sicherzustellen. Zudem dienen uns die Daten zur Optimierung der 
+    Website und zur Sicherstellung der Sicherheit unserer informationstechnischen Systeme.
+  </p>
+  
+  <h3>3.4 Dauer der Speicherung</h3>
+  <p>
+    Die Daten werden gelöscht, sobald sie für die Erreichung des Zweckes ihrer Erhebung nicht mehr 
+    erforderlich sind. Im Falle der Erfassung der Daten zur Bereitstellung der Website ist dies der Fall, 
+    wenn die jeweilige Sitzung beendet ist. Im Falle der Speicherung der Daten in Logfiles ist dies nach 
+    spätestens sieben Tagen der Fall.
+  </p>
+  
+  <h2>4. Verwendung von Cookies und Local Storage</h2>
+  
+  <h3>4.1 Beschreibung und Umfang der Datenverarbeitung</h3>
+  <p>
+    Unsere Website verwendet technisch notwendige Cookies und Local Storage. Cookies sind Textdateien, 
+    die im Internetbrowser bzw. vom Internetbrowser auf dem Computersystem des Nutzers gespeichert werden. 
+    Local Storage funktioniert ähnlich, speichert jedoch Daten im Browser des Nutzers.
+  </p>
+  <p>
+    Wir verwenden:
+  </p>
+  <ul>
+    <li><strong>Session-Cookies:</strong> Zur Verwaltung der Benutzersitzung</li>
+    <li><strong>Local Storage:</strong> Zur Speicherung der Dark-Mode-Einstellung</li>
+  </ul>
+  
+  <h3>4.2 Rechtsgrundlage</h3>
+  <p>
+    Die Rechtsgrundlage für die Verarbeitung personenbezogener Daten unter Verwendung technisch 
+    notwendiger Cookies ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Funktionsfähigkeit 
+    der Website).
+  </p>
+  
+  <h3>4.3 Widerspruchs- und Beseitigungsmöglichkeit</h3>
+  <p>
+    Cookies und Local Storage können jederzeit über die Einstellungen des Browsers gelöscht werden. 
+    Bitte beachten Sie, dass die Website dann möglicherweise nicht mehr vollständig funktioniert.
+  </p>
+  
+  <h2>5. KI-Rechnungsverarbeitung</h2>
+  
+  <h3>5.1 Beschreibung und Umfang</h3>
+  <p>
+    Bei Nutzung unserer KI-Rechnungsverarbeitungs-Dienste verarbeiten wir:
+  </p>
+  <ul>
+    <li>Hochgeladene PDF-Dateien und Bilddateien</li>
+    <li>Extrahierte Rechnungsdaten (Rechnungsnummer, Beträge, Lieferantendaten, etc.)</li>
+    <li>Verarbeitungsprotokolle und Metadaten</li>
+    <li>Exportdateien (DATEV, CSV, Excel)</li>
+  </ul>
+  
+  <h3>5.2 Rechtsgrundlage</h3>
+  <p>
+    Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung) in Verbindung mit Art. 28 DSGVO 
+    (Auftragsverarbeitung), sofern die Verarbeitung im Auftrag eines Kunden erfolgt.
+  </p>
+  
+  <h3>5.3 Speicherdauer</h3>
+  <p>
+    Die hochgeladenen Dateien und verarbeiteten Daten werden nach Abschluss der Verarbeitung und 
+    erfolgtem Export gelöscht, sofern keine gesetzlichen Aufbewahrungspflichten bestehen oder eine 
+    längere Speicherung vertraglich vereinbart wurde.
+  </p>
+  
+  <h3>5.4 Hosting und Serverstandort</h3>
+  <p>
+    Unsere Dienste werden ausschließlich in Deutschland gehostet. Alle Datenverarbeitungen erfolgen 
+    DSGVO-konform innerhalb der EU. Es findet keine Übermittlung in Drittländer statt.
+  </p>
+  
+  <h2>6. Kontaktformular und E-Mail-Kontakt</h2>
+  
+  <h3>6.1 Beschreibung und Umfang</h3>
+  <p>
+    Bei Kontaktaufnahme per E-Mail oder über ein Kontaktformular werden die übermittelten Daten 
+    (Name, E-Mail-Adresse, Telefonnummer, Nachricht) gespeichert.
+  </p>
+  
+  <h3>6.2 Rechtsgrundlage</h3>
+  <p>
+    Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Anfragenbearbeitung im Rahmen vorvertraglicher 
+    Maßnahmen) bzw. Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Beantwortung von Anfragen).
+  </p>
+  
+  <h3>6.3 Dauer der Speicherung</h3>
+  <p>
+    Die Daten werden gelöscht, sobald sie für die Erreichung des Zweckes ihrer Erhebung nicht mehr 
+    erforderlich sind. Für die personenbezogenen Daten aus der Eingabemaske des Kontaktformulars und 
+    diejenigen, die per E-Mail übersandt wurden, ist dies dann der Fall, wenn die jeweilige Konversation 
+    mit dem Nutzer beendet ist.
+  </p>
+  
+  <h2>7. SSL/TLS-Verschlüsselung</h2>
+  <p>
+    Diese Website nutzt aus Sicherheitsgründen und zum Schutz der Übertragung vertraulicher Inhalte, 
+    wie zum Beispiel Anfragen, die Sie an uns als Seitenbetreiber senden, eine SSL/TLS-Verschlüsselung. 
+    Eine verschlüsselte Verbindung erkennen Sie daran, dass die Adresszeile des Browsers von "http://" 
+    auf "https://" wechselt und an dem Schloss-Symbol in Ihrer Browserzeile.
+  </p>
+  
+  <h2>8. Ihre Rechte als betroffene Person</h2>
+  <p>
+    Werden personenbezogene Daten von Ihnen verarbeitet, sind Sie Betroffener i.S.d. DSGVO und es stehen 
+    Ihnen folgende Rechte gegenüber dem Verantwortlichen zu:
+  </p>
+  
+  <h3>8.1 Auskunftsrecht (Art. 15 DSGVO)</h3>
+  <p>
+    Sie können von uns eine Bestätigung darüber verlangen, ob personenbezogene Daten, die Sie betreffen, 
+    von uns verarbeitet werden.
+  </p>
+  
+  <h3>8.2 Recht auf Berichtigung (Art. 16 DSGVO)</h3>
+  <p>
+    Sie haben ein Recht auf Berichtigung und/oder Vervollständigung gegenüber dem Verantwortlichen, sofern 
+    die verarbeiteten personenbezogenen Daten, die Sie betreffen, unrichtig oder unvollständig sind.
+  </p>
+  
+  <h3>8.3 Recht auf Löschung (Art. 17 DSGVO)</h3>
+  <p>
+    Sie haben das Recht, von uns zu verlangen, dass die Sie betreffenden personenbezogenen Daten 
+    unverzüglich gelöscht werden.
+  </p>
+  
+  <h3>8.4 Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO)</h3>
+  <p>
+    Sie haben das Recht, von uns die Einschränkung der Verarbeitung zu verlangen.
+  </p>
+  
+  <h3>8.5 Recht auf Datenübertragbarkeit (Art. 20 DSGVO)</h3>
+  <p>
+    Sie haben das Recht, die Sie betreffenden personenbezogenen Daten, die Sie uns bereitgestellt haben, 
+    in einem strukturierten, gängigen und maschinenlesbaren Format zu erhalten.
+  </p>
+  
+  <h3>8.6 Widerspruchsrecht (Art. 21 DSGVO)</h3>
+  <p>
+    Sie haben das Recht, aus Gründen, die sich aus Ihrer besonderen Situation ergeben, jederzeit gegen 
+    die Verarbeitung der Sie betreffenden personenbezogenen Daten, die aufgrund von Art. 6 Abs. 1 lit. f 
+    DSGVO erfolgt, Widerspruch einzulegen.
+  </p>
+  
+  <h3>8.7 Recht auf Widerruf der datenschutzrechtlichen Einwilligungserklärung (Art. 7 Abs. 3 DSGVO)</h3>
+  <p>
+    Sie haben das Recht, Ihre datenschutzrechtliche Einwilligungserklärung jederzeit zu widerrufen. 
+    Durch den Widerruf der Einwilligung wird die Rechtmäßigkeit der aufgrund der Einwilligung bis zum 
+    Widerruf erfolgten Verarbeitung nicht berührt.
+  </p>
+  
+  <h3>8.8 Recht auf Beschwerde bei einer Aufsichtsbehörde (Art. 77 DSGVO)</h3>
+  <p>
+    Unbeschadet eines anderweitigen verwaltungsrechtlichen oder gerichtlichen Rechtsbehelfs steht Ihnen 
+    das Recht auf Beschwerde bei einer Aufsichtsbehörde zu.
+  </p>
+  <p>
+    <strong>Zuständige Aufsichtsbehörde:</strong><br>
+    Der Landesbeauftragte für den Datenschutz und die Informationsfreiheit Baden-Württemberg<br>
+    Königstraße 10a<br>
+    70173 Stuttgart<br>
+    Telefon: 0711/61 55 41-0<br>
+    E-Mail: poststelle@lfdi.bwl.de
+  </p>
+  
+  <h2>9. Ausübung Ihrer Rechte</h2>
+  <p>
+    Zur Ausübung Ihrer Rechte oder bei Fragen zum Datenschutz wenden Sie sich bitte an:
+  </p>
+  <p>
+    <strong>SBS Deutschland GmbH & Co. KG</strong><br>
+    z.Hd. Datenschutz<br>
+    In der Dell 19<br>
+    69469 Weinheim<br>
+    E-Mail: <a href="mailto:info@sbsdeutschland.com">info@sbsdeutschland.com</a><br>
+    Telefon: +49 6201 80 6109
+  </p>
+  
+  <h2>10. Änderungen der Datenschutzerklärung</h2>
+  <p>
+    Wir behalten uns vor, diese Datenschutzerklärung anzupassen, damit sie stets den aktuellen rechtlichen 
+    Anforderungen entspricht oder um Änderungen unserer Leistungen in der Datenschutzerklärung umzusetzen. 
+    Für Ihren erneuten Besuch gilt dann die neue Datenschutzerklärung. Der Stand wird jeweils oben in der 
+    Erklärung angegeben.
+  </p>
+  
+  <div class="info-box" style="margin-top: 40px;">
+    <p style="margin: 0;">
+      <strong>Bei Fragen kontaktieren Sie uns gerne:</strong><br>
+      E-Mail: <a href="mailto:info@sbsdeutschland.com">info@sbsdeutschland.com</a><br>
+      Telefon: +49 6201 80 6109<br>
+      Geschäftszeiten: Mo–Fr, 9:00 – 18:00 Uhr
+    </p>
+  </div>
+</div>
+
+
+  
+  <script>
+  (function() {
+    'use strict';
+    
+    console.log('🎨 Design Script loaded');
+    
+    // ========================================
+    // DARK MODE - LADEN & SETZEN
+    // ========================================
+    const savedTheme = localStorage.getItem('sbs-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    
+    // Body theme auch setzen
+    if (document.body) {
+      document.body.setAttribute('data-theme', savedTheme);
+    }
+    
+    console.log('📱 Theme:', savedTheme);
+    
+    // ========================================
+    // BURGER MENU
+    // ========================================
+    const burgerMenu = document.getElementById('burger-menu');
+    const mainNav = document.getElementById('main-nav');
+    
+    if (burgerMenu && mainNav) {
+      let overlay = document.querySelector('.mobile-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'mobile-overlay';
+        document.body.appendChild(overlay);
+      }
+      
+      burgerMenu.addEventListener('click', function() {
+        burgerMenu.classList.toggle('active');
+        mainNav.classList.toggle('active');
+        overlay.classList.toggle('active');
+        document.body.style.overflow = mainNav.classList.contains('active') ? 'hidden' : '';
+      });
+      
+      overlay.addEventListener('click', function() {
+        burgerMenu.classList.remove('active');
+        mainNav.classList.remove('active');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+      });
+      
+      mainNav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', function() {
+          burgerMenu.classList.remove('active');
+          mainNav.classList.remove('active');
+          overlay.classList.remove('active');
+          document.body.style.overflow = '';
+        });
+      });
+    }
+    
+    // ========================================
+    // ACTIVE STATES - NUR EINE SEITE AKTIV
+    // ========================================
+    function setActiveNavLink() {
+      const currentPath = window.location.pathname;
+      const navLinks = document.querySelectorAll('.sbs-nav a[data-page]');
+      
+      // ALLE active entfernen
+      navLinks.forEach(link => link.classList.remove('active'));
+      
+      // NUR die aktuelle Seite markieren
+      if (currentPath.includes('/landing')) {
+        const landingLink = document.querySelector('a[data-page="landing"]');
+        if (landingLink) landingLink.classList.add('active');
+      } else if (currentPath.includes('/unternehmen')) {
+        const aboutLink = document.querySelector('a[data-page="unternehmen"]');
+        if (aboutLink) aboutLink.classList.add('active');
+      } else if (currentPath.includes('/kontakt')) {
+        const contactLink = document.querySelector('a[data-page="kontakt"]');
+        if (contactLink) contactLink.classList.add('active');
+      } else if (currentPath.includes('/sbshomepage') || currentPath === '/') {
+        const homeLink = document.querySelector('a[data-page="home"]');
+        if (homeLink) homeLink.classList.add('active');
+      }
+    }
+    
+    setActiveNavLink();
+    
+    // ========================================
+    // SCROLL ANIMATION
+    // ========================================
+    const header = document.getElementById('main-header');
+    if (header) {
+      window.addEventListener('scroll', function() {
+        if (window.pageYOffset > 80) {
+          header.classList.add('scrolled');
+        } else {
+          header.classList.remove('scrolled');
+        }
+      });
+    }
+    
+    // ========================================
+    // DARK MODE TOGGLE
+    // ========================================
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    
+    if (darkModeToggle) {
+      console.log('🌙 Dark mode button ready');
+      
+      darkModeToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        console.log('🔄 Switching to', newTheme);
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        if (document.body) {
+          document.body.setAttribute('data-theme', newTheme);
+        }
+        localStorage.setItem('sbs-theme', newTheme);
+        
+        // Animation
+        darkModeToggle.style.transform = 'rotate(180deg)';
+        setTimeout(() => {
+          darkModeToggle.style.transform = '';
+        }, 300);
+      });
+    }
+    
+  })();
+  </script>
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-content">
+        <div class="footer-section footer-main">
+          <div class="footer-logo">
+            <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="footer-logo-img" />
+            <div class="footer-brand">
+              <strong>SBS Deutschland</strong>
+              <span>Smart Business Service</span>
+            </div>
+          </div>
+          <p class="footer-tagline">Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.</p>
+          <div class="footer-location">
+            <i>📍</i>
+            <span>In der Dell 19, 69469 Weinheim</span>
+          </div>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Produkte</h4>
+          <ul>
+            <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+            <li><a href="/preise">Preise & Pakete</a></li>
+            <li><a href="https://app.sbsdeutschland.com/">Demo & Upload</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Unternehmen</h4>
+          <ul>
+            <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+            <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+            <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+            <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h4>Rechtliches</h4>
+          <ul>
+            <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+            <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+            <li><a href="/sbshomepage/agb.html">AGB</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
+        <p class="footer-made">Made with ❤️ in Weinheim</p>
+      </div>
+    </div>
+  </footer>
+
+  <style>
+    .footer {
+      background: linear-gradient(135deg, #001f2e 0%, #003856 100%);
+      color: rgba(255, 255, 255, 0.85);
+      padding: 60px 24px 24px;
+      margin-top: auto;
+    }
+
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+
+    .footer-section h4 {
+      color: #FFB900;
+      font-weight: 700;
+      margin-bottom: 16px;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-section ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .footer-section ul li {
+      margin-bottom: 10px;
+    }
+
+    .footer-section ul li a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: color 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .footer-section ul li a:hover {
+      color: #FFB900;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .footer-logo-img {
+      height: 36px;
+      width: auto;
+    }
+
+    .footer-brand {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .footer-brand strong {
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-brand span {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-tagline {
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+
+    .footer-location {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.85rem;
+    }
+
+    .footer-location i {
+      font-style: normal;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-made {
+      margin: 0;
+    }
+
+    @media (max-width: 768px) {
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+  </style>
+
+</body>
+</html>

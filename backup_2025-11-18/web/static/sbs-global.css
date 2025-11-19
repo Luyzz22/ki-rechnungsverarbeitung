@@ -1,0 +1,175 @@
+:root {
+  --sbs-blue: #003856;
+  --sbs-yellow: #FFB900;
+  --sbs-text: #111827;
+  --sbs-muted: #6B7280;
+  --sbs-bg: #F9FAFB;
+  --sbs-font: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", -system-ui, sans-serif;
+}
+
+/* Basis */
+html, body {
+  font-family: var(--sbs-font);
+  color: var(--sbs-text);
+}
+
+/* ===== HEADER ===== */
+
+header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+header .wrap,
+header > .container,
+header > div {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+header .nav,
+header .header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  min-height: 92px;
+}
+
+/* Logo links */
+header .logo,
+header .logo-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+header .logo img,
+header .logo-block img,
+header img.sbs-logo {
+  height: 70px !important;   /* größer, aber Header bleibt gleich hoch */
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+header .logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  font-size: 14px;
+}
+
+header .logo-text span:first-child {
+  font-weight: 600;
+  color: var(--sbs-blue);
+}
+
+header .logo-text span:last-child {
+  color: var(--sbs-muted);
+}
+
+/* Navigation rechts */
+header .nav-links,
+header nav,
+header .main-nav {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  margin-left: auto;
+}
+
+header .nav-links a,
+header nav a,
+header .main-nav a {
+  color: var(--sbs-blue);
+  font-weight: 500;
+  text-decoration: none;
+  padding: 0 4px 18px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.18s ease;
+  font-size: 15px;
+}
+
+header .nav-links a:hover,
+header nav a:hover,
+header .main-nav a:hover {
+  color: #111827;
+  border-bottom-color: rgba(255,185,0,0.55);
+}
+
+header .nav-links a.active,
+header nav a.active,
+header .main-nav a.active,
+header .nav-links a[aria-current="page"],
+header nav a[aria-current="page"] {
+  color: var(--sbs-blue);
+  font-weight: 600;
+  border-bottom-color: var(--sbs-yellow);
+}
+
+/* ===== PAGE LAYOUT ===== */
+
+main,
+.page-content,
+section.content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 32px 64px;
+}
+
+/* Speziell für SBS-Unterseiten (SAP, IT, Q&R, MET, Unternehmen, Kontakt etc.) */
+.sbs-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 32px 72px;
+}
+
+.sbs-page h1,
+.sbs-page h2 {
+  color: var(--sbs-blue);
+  margin-bottom: 18px;
+}
+
+.sbs-page p {
+  margin-bottom: 10px;
+  color: #374151;
+}
+
+/* ===== FOOTER (Landing-Stil) ===== */
+
+#sbs-footer,
+footer#sbs-footer-global {
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 26px 0 30px;
+  margin-top: 40px;
+}
+
+#sbs-footer .inner,
+footer#sbs-footer-global .inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #6B7280;
+}
+
+#sbs-footer a,
+footer#sbs-footer-global a {
+  color: #1f2937;
+  text-decoration: none;
+  margin: 0 6px;
+}
+
+#sbs-footer a:hover,
+footer#sbs-footer-global a:hover {
+  color: var(--sbs-blue);
+  text-decoration: underline;
+}

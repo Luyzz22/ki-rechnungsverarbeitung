@@ -1,0 +1,145 @@
+/* Grundlayout nur für Upload-Seite */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #f5f6f8;
+  font-family: var(--sbs-font, system-ui, -apple-system, BlinkMacSystemFont, sans-serif);
+  color: #0f172a;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+/* Hero wie Landing */
+.hero {
+  background: linear-gradient(135deg,#003856,#005891);
+  color: #ffffff;
+  padding: 80px 0 90px;
+}
+
+.hero .wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.hero .eyebrow {
+  color: #ffb900;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.hero h1 {
+  color: #ffffff;
+  font-size: 44px;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+
+.hero p {
+  color: rgba(255,255,255,0.9);
+  font-size: 17px;
+}
+
+/* Upload-Karte */
+.upload-card {
+  max-width: 1200px;
+  margin: -40px auto 40px;
+  padding: 40px 40px 32px;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 18px 60px rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+/* Dropzone */
+.drop-zone {
+  border: 2px dashed rgba(0,56,86,0.26);
+  border-radius: 18px;
+  padding: 38px 24px;
+  background: #fafbff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.drop-zone h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #003856;
+}
+
+.drop-zone p {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: #6b7280;
+}
+
+.drop-zone.dragover {
+  background: #fdf7e6;
+  border-color: #ffb900;
+  box-shadow: 0 10px 30px rgba(255,185,0,0.18);
+  transform: translateY(-1px);
+}
+
+/* Datei-Liste */
+.file-list {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.file-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #f3f4ff;
+  color: #003856;
+  font-size: 13px;
+}
+
+.btn-remove {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  color: #9ca3af;
+}
+
+.btn-remove:hover {
+  color: #ef4444;
+}
+
+/* Button-Verarbeitung */
+.btn-process {
+  margin-top: 24px;
+}
+
+/* Aktiver Link in der Navigation */
+header .nav-links a.active {
+  color: #ffb900;
+  border-bottom: 2px solid #ffb900;
+}
+
+/* Footer-Feintuning */
+footer#sbs-footer-global {
+  margin-top: 0;
+}
