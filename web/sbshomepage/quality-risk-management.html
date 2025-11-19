@@ -1,819 +1,170 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
   <title>Quality & Risk Management | SBS Deutschland</title>
-  <meta name="description" content="Quality & Risk Management von SBS Deutschland. Qualitätsstandards, Risikomanagement und Auditfähigkeit für digitale Prozesse.">
-  <link rel="icon" href="/static/favicon.ico">
-  
-  <style>
-    :root {
-      --sbs-bg: #f5f6f8;
-      --sbs-white: #ffffff;
-      --sbs-dark: #003856;
-      --sbs-dark-soft: #0b2435;
-      --sbs-accent: #ffb400;
-      --sbs-text: #17212b;
-      --sbs-muted: #6b7280;
-      --sbs-gradient: linear-gradient(135deg, #003856 0%, #005a8a 100%);
-      --transition: all 0.3s ease;
-    }
-    
-    [data-theme="dark"] {
-      --sbs-bg: #0f172a;
-      --sbs-white: #1e293b;
-      --sbs-dark: #60a5fa;
-      --sbs-dark-soft: #e2e8f0;
-      --sbs-text: #e2e8f0;
-      --sbs-muted: #94a3b8;
-      --sbs-gradient: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--sbs-bg);
-      color: var(--sbs-text);
-      line-height: 1.6;
-      transition: background 0.3s ease, color 0.3s ease;
-    }
-
-    /* HEADER */
-    .sbs-header {
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      background: var(--sbs-white);
-      box-shadow: 0 1px 12px rgba(15,23,42,0.06);
-      transition: var(--transition);
-    }
-
-    .sbs-header-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 14px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 32px;
-    }
-
-    .sbs-logo-wrap {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      text-decoration: none;
-    }
-
-    .sbs-logo-img {
-      height: 40px;
-      width: auto;
-    }
-
-    .sbs-logo-text {
-      display: flex;
-      flex-direction: column;
-      font-size: 12px;
-      line-height: 1.25;
-      color: var(--sbs-dark-soft);
-    }
-
-    .sbs-logo-text strong {
-      font-size: 13px;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      font-weight: 700;
-    }
-
-    .burger-menu {
-      display: none;
-      flex-direction: column;
-      gap: 5px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 8px;
-      z-index: 1001;
-    }
-
-    .burger-menu span {
-      width: 25px;
-      height: 3px;
-      background: var(--sbs-dark-soft);
-      border-radius: 3px;
-      transition: var(--transition);
-    }
-
-    .sbs-nav {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      font-size: 14px;
-    }
-
-    .sbs-nav a {
-      position: relative;
-      padding-bottom: 4px;
-      opacity: 0.85;
-      transition: var(--transition);
-      text-decoration: none;
-      color: var(--sbs-text);
-      font-weight: 500;
-    }
-
-    .sbs-nav a:hover {
-      opacity: 1;
-    }
-
-    .sbs-nav a.active::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      bottom: 0;
-      width: 100%;
-      height: 2px;
-      border-radius: 999px;
-      background: var(--sbs-accent);
-    }
-
-    .sbs-nav-cta {
-      padding: 9px 18px !important;
-      border-radius: 999px !important;
-      background: var(--sbs-accent) !important;
-      color: #111827 !important;
-      font-weight: 600 !important;
-      box-shadow: 0 4px 12px rgba(255,180,0,0.3) !important;
-      opacity: 1 !important;
-    }
-
-    .sbs-nav-cta::after {
-      display: none !important;
-    }
-
-    .sbs-nav-cta:hover {
-      transform: translateY(-1px) !important;
-      box-shadow: 0 6px 16px rgba(255,180,0,0.4) !important;
-    }
-
-    .dark-mode-toggle {
-      background: var(--sbs-white);
-      border: 2px solid rgba(15,23,42,0.12);
-      border-radius: 999px;
-      width: 50px;
-      height: 28px;
-      cursor: pointer;
-      transition: var(--transition);
-      padding: 0 6px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .dark-mode-toggle:hover {
-      border-color: var(--sbs-accent);
-      transform: scale(1.05);
-    }
-
-    .sun-icon, .moon-icon {
-      font-size: 14px;
-      transition: var(--transition);
-    }
-
-    [data-theme="dark"] .sun-icon { opacity: 0.3; }
-    [data-theme="light"] .moon-icon { opacity: 0.3; }
-
-    /* HERO */
-    .hero {
-      background: var(--sbs-gradient);
-      padding: 80px 24px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hero::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-      opacity: 0.4;
-    }
-
-    .hero-content {
-      max-width: 900px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 1;
-    }
-
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(10px);
-      padding: 8px 18px;
-      border-radius: 999px;
-      color: white;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      margin-bottom: 24px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .hero h1 {
-      font-size: 3rem;
-      font-weight: 800;
-      color: white;
-      line-height: 1.2;
-      margin-bottom: 20px;
-      letter-spacing: -0.02em;
-    }
-
-    .hero-subtitle {
-      font-size: 1.2rem;
-      color: rgba(255, 255, 255, 0.9);
-      line-height: 1.6;
-      max-width: 700px;
-      margin: 0 auto;
-    }
-
-    /* MAIN CONTENT */
-    .main-content {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 80px 24px;
-    }
-
-    .section-title {
-      font-size: 2.2rem;
-      font-weight: 800;
-      color: var(--sbs-dark);
-      margin-bottom: 16px;
-      text-align: center;
-      letter-spacing: -0.02em;
-    }
-
-    .section-subtitle {
-      font-size: 1.1rem;
-      color: var(--sbs-muted);
-      text-align: center;
-      margin-bottom: 60px;
-      max-width: 700px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    /* FEATURE CARDS */
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 32px;
-      margin-top: 48px;
-    }
-
-    .feature-card {
-      background: var(--sbs-white);
-      padding: 32px;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-      transition: var(--transition);
-    }
-
-    .feature-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
-    }
-
-    .feature-icon {
-      font-size: 3rem;
-      margin-bottom: 16px;
-      display: block;
-    }
-
-    .feature-card h3 {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: var(--sbs-dark);
-      margin-bottom: 12px;
-    }
-
-    .feature-card p {
-      color: var(--sbs-muted);
-      line-height: 1.7;
-    }
-
-    .feature-card ul {
-      margin-top: 16px;
-      padding-left: 20px;
-    }
-
-    .feature-card ul li {
-      color: var(--sbs-muted);
-      margin-bottom: 8px;
-      line-height: 1.6;
-    }
-
-    /* CONTACT CARDS */
-    .contact-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 32px;
-      margin-top: 48px;
-    }
-
-    .contact-card {
-      background: var(--sbs-white);
-      padding: 32px;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-      text-align: center;
-    }
-
-    .contact-card .icon {
-      font-size: 3rem;
-      margin-bottom: 16px;
-      display: block;
-    }
-
-    .contact-card h3 {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: var(--sbs-dark);
-      margin-bottom: 8px;
-    }
-
-    .contact-card p {
-      color: var(--sbs-muted);
-      margin-bottom: 8px;
-    }
-
-    .contact-card a {
-      color: var(--sbs-accent);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .contact-card a:hover {
-      text-decoration: underline;
-    }
-
-    /* CTA SECTION */
-    .cta-section {
-      background: var(--sbs-gradient);
-      padding: 80px 24px;
-      text-align: center;
-      border-radius: 20px;
-      margin: 80px 0;
-    }
-
-    .cta-section h2 {
-      font-size: 2.5rem;
-      font-weight: 800;
-      color: white;
-      margin-bottom: 16px;
-    }
-
-    .cta-section p {
-      font-size: 1.2rem;
-      color: rgba(255, 255, 255, 0.9);
-      margin-bottom: 32px;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 16px 32px;
-      border-radius: 12px;
-      font-size: 1rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: var(--transition);
-      cursor: pointer;
-      border: none;
-    }
-
-    .btn-primary {
-      background: var(--sbs-accent);
-      color: #111827;
-      box-shadow: 0 4px 20px rgba(255,180,0,0.3);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(255,180,0,0.4);
-    }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(10px);
-      color: white;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.25);
-      transform: translateY(-2px);
-    }
-
-    /* FOOTER */
-    .footer {
-      background: linear-gradient(135deg, #001f2e 0%, #003856 100%);
-      color: rgba(255, 255, 255, 0.85);
-      padding: 60px 24px 24px;
-      margin-top: auto;
-    }
-
-    .footer-container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .footer-content {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
-      gap: 48px;
-      margin-bottom: 48px;
-    }
-
-    .footer-section h4 {
-      color: #FFB900;
-      font-weight: 700;
-      margin-bottom: 16px;
-      font-size: 1rem;
-      letter-spacing: 0.5px;
-    }
-
-    .footer-section ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .footer-section ul li {
-      margin-bottom: 10px;
-    }
-
-    .footer-section ul li a {
-      color: rgba(255, 255, 255, 0.7);
-      text-decoration: none;
-      transition: color 0.3s ease;
-      font-size: 0.9rem;
-    }
-
-    .footer-section ul li a:hover {
-      color: #FFB900;
-    }
-
-    .footer-logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .footer-logo-img {
-      height: 36px;
-      width: auto;
-    }
-
-    .footer-brand {
-      display: flex;
-      flex-direction: column;
-      font-size: 12px;
-      line-height: 1.3;
-    }
-
-    .footer-brand strong {
-      font-size: 14px;
-      font-weight: 700;
-      color: white;
-      letter-spacing: 0.5px;
-    }
-
-    .footer-brand span {
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    .footer-tagline {
-      color: rgba(255, 255, 255, 0.7);
-      line-height: 1.6;
-      margin-bottom: 16px;
-      font-size: 0.9rem;
-    }
-
-    .footer-location {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 0.85rem;
-    }
-
-    .footer-location i {
-      font-style: normal;
-    }
-
-    .footer-bottom {
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      padding-top: 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 16px;
-      font-size: 0.85rem;
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    .footer-made {
-      margin: 0;
-    }
-
-    /* RESPONSIVE */
-    @media (max-width: 768px) {
-      .burger-menu { display: flex; }
-      
-      .sbs-nav {
-        position: fixed;
-        top: 0;
-        right: -100%;
-        width: 280px;
-        height: 100vh;
-        background: var(--sbs-white);
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 80px 24px 24px;
-        gap: 20px;
-        box-shadow: -4px 0 20px rgba(0,0,0,0.1);
-        transition: right 0.3s ease;
-      }
-      
-      .sbs-nav.active { right: 0; }
-      
-      .hero h1 { font-size: 2rem; }
-      .section-title { font-size: 1.8rem; }
-      .cta-section h2 { font-size: 2rem; }
-      
-      .feature-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .contact-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .footer-content {
-        grid-template-columns: 1fr;
-        gap: 32px;
-      }
-
-      .footer-bottom {
-        flex-direction: column;
-        text-align: center;
-      }
-    }
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Quality & Risk Management von SBS Deutschland. Aufbau und Optimierung von Qualitäts- und Risikostrukturen." />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/main.css" />
 </head>
 <body>
+<header class="header">
+  <div class="header-inner">
+    <a href="/sbshomepage/index.html" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text">
+        <strong>SBS Deutschland</strong>
+        <span>Smart Business Service · Weinheim</span>
+      </div>
+    </a>
 
-  <!-- HEADER -->
-  <header class="sbs-header">
-    <div class="sbs-header-inner">
-      <a href="/sbshomepage/" class="sbs-logo-wrap">
-        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="sbs-logo-img" />
-        <div class="sbs-logo-text">
-          <strong>SBS Deutschland GmbH & Co. KG</strong>
-          <span>Smart Business Service · Weinheim</span>
-        </div>
-      </a>
-      
-      <button class="burger-menu" id="burger-menu" aria-label="Menu">
-        <span></span>
-        <span></span>
-        <span></span>
+    <button class="burger" id="burger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav" id="nav">
+      <a href="/landing">KI-Rechnungen</a>
+      <a href="/preise">Preise</a>
+      <a href="/sbshomepage/unternehmen.html">Über uns</a>
+      <a href="/sbshomepage/kontakt.html">Kontakt</a>
+      <a href="https://app.sbsdeutschland.com/" class="nav-cta">Demo starten</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Theme">
+        <span class="sun">☀️</span>
+        <span class="moon">🌙</span>
       </button>
-      
-      <nav class="sbs-nav" id="main-nav">
-        <a href="/sbshomepage/">Startseite</a>
-        <a href="/landing">KI-Rechnungsverarbeitung</a>
-        <a href="/preise">Preise</a>
-        <a href="/sbshomepage/unternehmen.html" >Über uns</a>
-        <a href="/sbshomepage/kontakt.html" >Kontakt</a>
-        <a href="https://app.sbsdeutschland.com/" class="sbs-nav-cta">Upload / Demo</a>
-        
-        <button class="dark-mode-toggle" id="dark-mode-toggle" aria-label="Dark Mode">
-          <span class="sun-icon">☀️</span>
-          <span class="moon-icon">🌙</span>
-        </button>
-      </nav>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">🎯 QUALITY & RISK</div>
+    <h1>Qualität sichern,<br>Risiken steuern</h1>
+    <p class="hero-subtitle">
+      Wir unterstützen Sie beim Aufbau tragfähiger Qualitäts- und Risikostrukturen – mit Blick auf Prozesse,
+      Organisation und Dokumentation.
+    </p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-badge">SCHWERPUNKTE</div>
+      <h2 class="section-title">Quality &amp; Risk Management in der Praxis</h2>
+      <p class="section-subtitle">
+        Unser Ansatz: pragmatisch, auditfest und auf Ihre Branche zugeschnitten.
+      </p>
     </div>
-  </header>
-
-
-  <section class="hero">
-    <div class="hero-content">
-      <div class="hero-badge">🎯 QUALITY & RISK</div>
-      <h1>Quality & Risk Management</h1>
-      <p class="hero-subtitle">Wir unterstützen bei Qualitätsstandards, Risikomanagement, Dokumentation und Auditfähigkeit - insbesondere in digitalen Finanz- und Dokumentenprozessen.</p>
-    </div>
-  </section>
-
-  <div class="main-content">
-    <h2 class="section-title">Unsere Leistungen</h2>
-    <p class="section-subtitle">Qualität und Compliance als Fundament erfolgreicher digitaler Transformation.</p>
 
     <div class="feature-grid">
       <div class="feature-card">
         <span class="feature-icon">📋</span>
-        <h3>Qualitätsmanagement</h3>
-        <p>Aufbau und Optimierung von Qualitätsmanagementsystemen für digitale Prozesse.</p>
+        <h3>Prozess- &amp; Risikoanalysen</h3>
+        <p>Identifikation wesentlicher Risiken und Ableitung sinnvoller Maßnahmen.</p>
         <ul>
-          <li>ISO 9001 Implementierung</li>
-          <li>Prozessdokumentation</li>
-          <li>Kontinuierliche Verbesserung (KVP)</li>
-          <li>Qualitätskennzahlen & Monitoring</li>
-        </ul>
-      </div>
-
-      <div class="feature-card">
-        <span class="feature-icon">⚠️</span>
-        <h3>Risikomanagement</h3>
-        <p>Identifikation, Bewertung und Steuerung von Risiken in Geschäftsprozessen.</p>
-        <ul>
-          <li>Risikoanalysen & Assessments</li>
-          <li>Risiko-Controlling</li>
-          <li>Business Continuity Planning</li>
-          <li>Compliance-Management</li>
+          <li>Prozessaufnahme &amp; -bewertung</li>
+          <li>Risikomatrix &amp; Maßnahmenplanung</li>
+          <li>Dokumentation der Ergebnisse</li>
         </ul>
       </div>
 
       <div class="feature-card">
         <span class="feature-icon">✅</span>
         <h3>Audit-Vorbereitung</h3>
-        <p>Sicherstellung der Auditfähigkeit Ihrer digitalen Prozesse und Dokumentationen.</p>
+        <p>Vorbereitung auf interne und externe Audits.</p>
         <ul>
-          <li>Interne Audits</li>
-          <li>GoBD-Compliance</li>
-          <li>Revisionssichere Archivierung</li>
-          <li>Audit-Trail & Nachvollziehbarkeit</li>
+          <li>Review bestehender Dokumentation</li>
+          <li>Audit-Simulation &amp; Interviews</li>
+          <li>Nachverfolgung von Findings</li>
         </ul>
       </div>
 
       <div class="feature-card">
-        <span class="feature-icon">📄</span>
-        <h3>Dokumentenmanagement</h3>
-        <p>Strukturierte Verwaltung und Archivierung digitaler Dokumente.</p>
+        <span class="feature-icon">📊</span>
+        <h3>Kennzahlen &amp; Monitoring</h3>
+        <p>Aufbau eines Kennzahlensystems zur Steuerung Ihrer Qualität.</p>
         <ul>
-          <li>Dokumenten-Workflows</li>
-          <li>Versionierung & Freigaben</li>
-          <li>Rechtssichere Archivierung</li>
-          <li>Automatische Klassifizierung</li>
+          <li>Definition sinnvoller KPIs</li>
+          <li>Reporting &amp; Dashboards</li>
+          <li>Verknüpfung mit IT-/SAP-Systemen</li>
         </ul>
       </div>
 
       <div class="feature-card">
-        <span class="feature-icon">🔒</span>
-        <h3>Datenschutz & Security</h3>
-        <p>DSGVO-konforme Gestaltung Ihrer Prozesse und IT-Systeme.</p>
+        <span class="feature-icon">🤝</span>
+        <h3>Begleitung im Alltag</h3>
+        <p>Unterstützung bei der Umsetzung im operativen Geschäft.</p>
         <ul>
-          <li>DSGVO-Compliance</li>
-          <li>Datenschutz-Folgenabschätzung</li>
-          <li>Security Assessments</li>
-          <li>Schulungen & Awareness</li>
+          <li>Workshops &amp; Schulungen</li>
+          <li>Coaching von Verantwortlichen</li>
+          <li>Laufende Beratung nach Bedarf</li>
         </ul>
-      </div>
-
-      <div class="feature-card">
-        <span class="feature-icon">🔍</span>
-        <h3>KI-Qualitätssicherung</h3>
-        <p>Besondere Expertise in der Qualitätssicherung KI-gestützter Prozesse.</p>
-        <ul>
-          <li>KI-Modell-Validierung</li>
-          <li>Accuracy & Performance Testing</li>
-          <li>Bias-Detection & Fairness</li>
-          <li>Explainability & Transparenz</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="cta-section">
-      <h2>Qualität trifft auf KI-Innovation</h2>
-      <p>Unsere Expertise in Quality & Risk Management kombiniert mit modernster KI-Technologie - für sichere, compliant und effiziente Prozesse.</p>
-      <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-        <a href="/landing" class="btn btn-primary">🤖 Zur KI-Rechnungsverarbeitung</a>
-        <a href="/sbshomepage/kontakt.html" class="btn btn-secondary">💬 Beratung anfragen</a>
       </div>
     </div>
   </div>
+</section>
 
+<section class="section">
+  <div class="cta-section">
+    <h2>Quality- oder Risiko-Themen auf dem Tisch?</h2>
+    <p>Gerne schauen wir gemeinsam auf Ihre aktuelle Situation und definieren die nächsten sinnvollen Schritte.</p>
+    <a href="/sbshomepage/kontakt.html" class="btn">Unverbindliches Gespräch →</a>
+  </div>
+</section>
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="footer-container">
-      <div class="footer-content">
-        <div class="footer-section footer-main">
-          <div class="footer-logo">
-            <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="footer-logo-img" />
-            <div class="footer-brand">
-              <strong>SBS Deutschland</strong>
-              <span>Smart Business Service</span>
-            </div>
-          </div>
-          <p class="footer-tagline">Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.</p>
-          <div class="footer-location">
-            <i>📍</i>
-            <span>In der Dell 19, 69469 Weinheim</span>
-          </div>
-        </div>
-        
-        <div class="footer-section">
-          <h4>Produkte</h4>
-          <ul>
-            <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
-            <li><a href="/preise">Preise & Pakete</a></li>
-            <li><a href="https://app.sbsdeutschland.com/">Demo & Upload</a></li>
-          </ul>
-        </div>
-        
-        <div class="footer-section">
-          <h4>Unternehmen</h4>
-          <ul>
-            <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
-            <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
-            <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
-            <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
-          </ul>
-        </div>
-        
-        <div class="footer-section">
-          <h4>Rechtliches</h4>
-          <ul>
-            <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
-            <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
-            <li><a href="/sbshomepage/agb.html">AGB</a></li>
-          </ul>
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
         </div>
       </div>
-      
-      <div class="footer-bottom">
-        <p>&copy; 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
-        <p class="footer-made">Made with ❤️ in Weinheim</p>
-      </div>
+      <p class="footer-tagline">
+        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+      </p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
     </div>
-  </footer>
 
-  <script>
-  (function() {
-    'use strict';
-    
-    // Dark Mode
-    const savedTheme = localStorage.getItem('sbs-theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    if (document.body) {
-      document.body.setAttribute('data-theme', savedTheme);
-    }
-    
-    // Burger Menu
-    const burgerMenu = document.getElementById('burger-menu');
-    const mainNav = document.getElementById('main-nav');
-    
-    if (burgerMenu && mainNav) {
-      burgerMenu.addEventListener('click', function() {
-        burgerMenu.classList.toggle('active');
-        mainNav.classList.toggle('active');
-      });
-    }
-    
-    // Dark Mode Toggle
-    const darkModeToggle = document.getElementById('dark-mode-toggle');
-    
-    if (darkModeToggle) {
-      darkModeToggle.addEventListener('click', function(e) {
-        e.preventDefault();
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        
-        document.documentElement.setAttribute('data-theme', newTheme);
-        if (document.body) {
-          document.body.setAttribute('data-theme', newTheme);
-        }
-        localStorage.setItem('sbs-theme', newTheme);
-      });
-    }
-  })();
-  </script>
+    <div>
+      <h4>Produkte</h4>
+      <ul>
+        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="/preise">Preise &amp; Pakete</a></li>
+        <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
+      </ul>
+    </div>
 
+    <div>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
+  </div>
+</footer>
+
+<script src="/static/js/main.js"></script>
 </body>
 </html>

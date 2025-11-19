@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>SBS Deutschland - KI-Rechnungsverarbeitung für Unternehmen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- SBS Corporate Styles der Unternehmensseite -->
+  <link rel="stylesheet" href="/sbshomepage/style.css">
+
+  <style>
+    /* =========================
+       KI-Landing im SBS-Design
+       ========================= */
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f6f8;
+      color: #0f172a;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    main {
+      flex: 1 0 auto;
+    }
+
+    /* Hero oben wie sbshomepage, aber für KI-Produkt */
+    .ki-hero {
+      background: radial-gradient(circle at top left, #ffb90022 0, transparent 40%),
+                  radial-gradient(circle at top right, #ffb90011 0, transparent 45%),
+                  linear-gradient(135deg, #003856 0%, #015a7a 55%, #00425e 100%);
+      color: #ffffff;
+      padding: 72px 0 72px;
+    }
+
+    .ki-wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(280px, 2.2fr);
+      gap: 40px;
+      align-items: center;
+    }
+
+    .ki-eyebrow {
+      font-size: 13px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #ffb900;
+      margin-bottom: 10px;
+    }
+
+    .ki-title {
+      font-size: 40px;
+      line-height: 1.15;
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+
+    .ki-subline {
+      font-size: 17px;
+      font-weight: 500;
+      color: #ffb900;
+      margin: 0 0 16px;
+    }
+
+    .ki-text {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #e5eef5;
+      margin: 0 0 24px;
+      max-width: 640px;
+    }
+
+    .ki-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .ki-btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 32px;
+      border-radius: 999px;
+      background: #ffb900;
+      color: #003856;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.28);
+      transition: all 0.25s ease;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .ki-btn-primary:hover {
+      background: #ffcb38;
+      transform: translateY(-1px);
+      box-shadow: 0 18px 48px rgba(0,0,0,0.35);
+    }
+
+    .ki-btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 13px 26px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.7);
+      background: transparent;
+      color: #ffffff;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      font-size: 14px;
+    }
+
+    .ki-btn-ghost:hover {
+      background: rgba(255,255,255,0.08);
+    }
+
+    .ki-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 0;
+    }
+
+    .ki-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.26);
+      color: #ffffff;
+      font-size: 12px;
+    }
+
+    .ki-rightbox {
+      background: rgba(255,255,255,0.98);
+      color: #003856;
+      border-radius: 24px;
+      padding: 22px 22px 16px;
+      box-shadow: 0 18px 55px rgba(0,0,0,0.45);
+      font-size: 13px;
+    }
+
+    .ki-rightbox h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      color: #003856;
+      font-weight: 700;
+    }
+
+    .ki-rightbox ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .ki-rightbox li {
+      margin: 3px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      color: #1f2933;
+    }
+
+    .ki-rightbox li span {
+      color: #22c55e;
+      font-size: 14px;
+      margin-top: 2px;
+    }
+
+    /* Features / USPs */
+    .section {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 56px 24px 40px;
+    }
+
+    .section-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #003856;
+      margin-bottom: 8px;
+    }
+
+    .section-sub {
+      font-size: 15px;
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+
+    .usp-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .usp-card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 18px 18px 16px;
+      box-shadow: 0 8px 24px rgba(15,23,42,0.06);
+      border: 1px solid rgba(148,163,253,0.25);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .usp-emoji {
+      font-size: 22px;
+    }
+
+    .usp-title {
+      font-weight: 600;
+      color: #003856;
+      font-size: 15px;
+    }
+
+    .usp-text {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    /* Pricing */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 22px;
+      margin-top: 26px;
+    }
+
+    .pricing-card {
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 22px 22px 20px;
+      box-shadow: 0 10px 30px rgba(15,23,42,0.08);
+      border: 1px solid rgba(148,163,253,0.22);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .pricing-card.featured {
+      border-width: 2px;
+      border-color: #003856;
+    }
+
+    .pricing-badge {
+      align-self: flex-start;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #003856;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .pricing-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #003856;
+    }
+
+    .pricing-price {
+      font-size: 24px;
+      font-weight: 700;
+      color: #003856;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .pricing-old {
+      font-size: 13px;
+      color: #9ca3af;
+      text-decoration: line-through;
+    }
+
+    .pricing-note {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .pricing-features {
+      list-style: none;
+      padding-left: 0;
+      margin: 8px 0 12px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+
+    .pricing-features li {
+      margin-bottom: 3px;
+    }
+
+    .pricing-cta {
+      margin-top: auto;
+      align-self: flex-start;
+      padding: 9px 20px;
+      border-radius: 999px;
+      background: #ffb900;
+      color: #003856;
+      font-weight: 600;
+      font-size: 13px;
+      text-decoration: none;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.16);
+      transition: all 0.2s ease;
+    }
+
+    .pricing-cta:hover {
+      background: #ffcb38;
+      transform: translateY(-1px);
+    }
+
+    /* Kontaktformular */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2.1fr) minmax(260px, 1.4fr);
+      gap: 26px;
+      margin-top: 24px;
+      align-items: flex-start;
+    }
+
+    .contact-label {
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: #111827;
+      font-weight: 600;
+    }
+
+    .contact-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .contact-fields-full {
+      grid-column: 1 / -1;
+    }
+
+    .contact-input,
+    .contact-select,
+    .contact-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      font-size: 14px;
+      font-family: inherit;
+      box-sizing: border-box;
+      outline: none;
+      transition: all 0.2s ease;
+      background: #ffffff;
+    }
+
+    .contact-input:focus,
+    .contact-select:focus,
+    .contact-textarea:focus {
+      border-color: #003856;
+      box-shadow: 0 0 0 3px rgba(0,56,86,0.12);
+    }
+
+    .contact-textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .contact-cta {
+      margin-top: 10px;
+      padding: 12px 30px;
+      border-radius: 999px;
+      background: #ffb900;
+      color: #003856;
+      font-weight: 600;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+      transition: all 0.25s ease;
+    }
+
+    .contact-cta:hover {
+      background: #ffcb38;
+      transform: translateY(-1px);
+    }
+
+    .company-box {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 18px 18px 14px;
+      box-shadow: 0 8px 24px rgba(15,23,42,0.06);
+      border: 1px solid rgba(148,163,253,0.22);
+      font-size: 13px;
+      color: #4b5563;
+    }
+
+    .company-box strong {
+      color: #003856;
+    }
+
+    .company-box a {
+      color: #003856;
+      text-decoration: none;
+    }
+
+    .company-box a:hover {
+      text-decoration: underline;
+    }
+
+    /* Footer global – identisch zu sbshomepage/landing */
+    #sbs-footer-global {
+      flex-shrink: 0;
+      margin-top: 40px;
+      padding: 18px 24px;
+      font-size: 13px;
+      color: #0f172a;
+      background: #ffffff;
+      border-top: 1px solid rgba(148,163,253,0.18);
+      text-align: left;
+    }
+
+    #sbs-footer-global a {
+      color: #0f172a;
+      text-decoration: none;
+      margin: 0 4px;
+    }
+
+    #sbs-footer-global a:hover {
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .ki-wrap {
+        grid-template-columns: 1fr;
+      }
+      .usp-grid,
+      .pricing-grid,
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="nav">
+      <div class="logo">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo">
+        <div class="logo-text">
+          <span>SBS Deutschland GmbH &amp; Co. KG</span>
+          <span>Smart Business Service · Weinheim</span>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="/sbshomepage/">Startseite</a>
+        <a href="/landing">KI-Rechnungsverarbeitung</a>
+        <a href="/sbshomepage/unternehmen.html">Über uns</a>
+        <a href="/sbshomepage/kontakt.html">Kontakt</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+
+  <!-- Header (aus sbshomepage übernommen) -->
+  
+
+  <main>
+    <!-- HERO -->
+    <section class="ki-hero">
+      <div class="ki-wrap">
+        <div>
+          <div class="ki-eyebrow">KI-GESTÜTZTE RECHNUNGSVERARBEITUNG AUS DER RHEIN-NECKAR-REGION</div>
+          <h1 class="ki-title">Rechnungen verarbeiten in Sekunden</h1>
+          <p class="ki-subline">Mit KI, entwickelt &amp; betrieben von SBS Deutschland aus Weinheim.</p>
+          <p class="ki-text">
+            Automatisierte Erkennung, Validierung und Übergabe Ihrer Eingangsrechnungen –
+            sicher, DSGVO-konform und optimiert für Steuerkanzleien, Buchhaltungen und
+            mittelständische Unternehmen.
+          </p>
+          <div class="ki-actions">
+            <a href="/" class="ki-btn-primary">Kostenlos testen</a>
+            <a href="#preise" class="ki-btn-ghost">Mehr erfahren</a>
+          </div>
+          <div class="ki-badges">
+            <div class="ki-badge">🔒 DSGVO-konform</div>
+            <div class="ki-badge">🇩🇪 Made in Germany</div>
+            <div class="ki-badge">⚡ 99% Genauigkeit</div>
+            <div class="ki-badge">📞 Lokaler Support</div>
+          </div>
+        </div>
+        <aside class="ki-rightbox">
+          <h3>Warum unsere KI-Lösung?</h3>
+          <ul>
+            <li><span>✔</span> Upload mehrerer Rechnungen &amp; automatische Verarbeitung</li>
+            <li><span>✔</span> Valider Export für DATEV, Excel &amp; FiBu-Systeme</li>
+            <li><span>✔</span> Prüfung auf Pflichtangaben &amp; Plausibilität</li>
+            <li><span>✔</span> Infrastruktur &amp; Support durch SBS Deutschland (Weinheim)</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <!-- FEATURES / USPs -->
+    <section class="section" id="features">
+      <h2 class="section-title">Professionelle KI-Rechnungsverarbeitung für Unternehmen</h2>
+      <p class="section-sub">
+        Von der Erfassung bis zur Übergabe an Ihre Buchhaltung – modular, sicher und nahtlos integrierbar.
+      </p>
+      <div class="usp-grid">
+        <div class="usp-card">
+          <div class="usp-emoji">🤖</div>
+          <div class="usp-title">Multi-Model KI</div>
+          <div class="usp-text">
+            Intelligente Kombination führender KI-Modelle für maximale Erkennungsqualität.
+          </div>
+        </div>
+        <div class="usp-card">
+          <div class="usp-emoji">⚡</div>
+          <div class="usp-title">Bis zu 90% Zeitersparnis</div>
+          <div class="usp-text">
+            100 Rechnungen in Minuten statt Stunden – Fokus auf wertschöpfende Tätigkeiten.
+          </div>
+        </div>
+        <div class="usp-card">
+          <div class="usp-emoji">💼</div>
+          <div class="usp-title">DATEV-Ready</div>
+          <div class="usp-text">
+            Direkte Exporte für DATEV, Excel &amp; CSV. Saubere Übergabe in bestehende Prozesse.
+          </div>
+        </div>
+        <div class="usp-card">
+          <div class="usp-emoji">🔒</div>
+          <div class="usp-title">DSGVO &amp; Compliance</div>
+          <div class="usp-text">
+            Hosting in Deutschland, kurze Speicherfristen, klare Rollen- &amp; Rechtekonzepte.
+          </div>
+        </div>
+        <div class="usp-card">
+          <div class="usp-emoji">📊</div>
+          <div class="usp-title">OCR &amp; Qualitätschecks</div>
+          <div class="usp-text">
+            Robuste Erkennung auch bei Scans – plus Plausibilitätsprüfungen für sichere Daten.
+          </div>
+        </div>
+        <div class="usp-card">
+          <div class="usp-emoji">📍</div>
+          <div class="usp-title">Regional &amp; nahbar</div>
+          <div class="usp-text">
+            Persönliche Ansprechpartner in Weinheim – Rhein-Neckar &amp; Odenwald im Fokus.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PREISE -->
+    <section class="section" id="preise">
+      <h2 class="section-title">Transparente Preise</h2>
+      <p class="section-sub">Faire Konditionen ohne versteckte Kosten.</p>
+      <div class="pricing-grid">
+        <!-- Basic -->
+        <div class="pricing-card">
+          <div class="pricing-badge">STARTER</div>
+          <div class="pricing-title">Basic</div>
+          <div class="pricing-price">
+            <span class="pricing-old">119€</span>
+            <span>99€</span>
+          </div>
+          <div class="pricing-note">pro Monat</div>
+          <ul class="pricing-features">
+            <li>Bis zu 100 Rechnungen/Monat</li>
+            <li>Multi-Model KI</li>
+            <li>Excel, CSV, DATEV Export</li>
+            <li>Email-Support</li>
+            <li>DSGVO-konform</li>
+          </ul>
+          <a href="#kontakt" class="pricing-cta">Anfragen</a>
+        </div>
+
+        <!-- Professional -->
+        <div class="pricing-card featured">
+          <div class="pricing-badge">BELIEBT</div>
+          <div class="pricing-title">Professional</div>
+          <div class="pricing-price">
+            <span class="pricing-old">249€</span>
+            <span>189€</span>
+          </div>
+          <div class="pricing-note">pro Monat</div>
+          <ul class="pricing-features">
+            <li>Bis zu 500 Rechnungen/Monat</li>
+            <li>Alle Basic-Features</li>
+            <li>Prioritäts- &amp; Telefon-Support</li>
+            <li>Quartals-Review</li>
+            <li>API-Zugang</li>
+          </ul>
+          <a href="#kontakt" class="pricing-cta">Anfragen</a>
+        </div>
+
+        <!-- Enterprise -->
+        <div class="pricing-card">
+          <div class="pricing-badge">ENTERPRISE</div>
+          <div class="pricing-title">Enterprise</div>
+          <div class="pricing-price">
+            <span>Individuell</span>
+          </div>
+          <div class="pricing-note">ab 349€/Monat</div>
+          <ul class="pricing-features">
+            <li>Unbegrenzte Rechnungen</li>
+            <li>Alle Professional-Features</li>
+            <li>24/7 Premium-Support</li>
+            <li>On-Premise Optionen</li>
+            <li>Schulungen &amp; SLA-Vereinbarungen</li>
+          </ul>
+          <a href="#kontakt" class="pricing-cta">Anfragen</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- KONTAKT -->
+    <section class="section" id="kontakt">
+      <h2 class="section-title">Jetzt Beratungstermin vereinbaren</h2>
+      <p class="section-sub">Wir melden uns innerhalb von 24 Stunden.</p>
+
+      <div class="contact-grid">
+        <div>
+          <div class="contact-fields">
+            <div>
+              <input class="contact-input" type="text" name="name" placeholder="Name *" required>
+            </div>
+            <div>
+              <input class="contact-input" type="email" name="email" placeholder="E-Mail *" required>
+            </div>
+            <div>
+              <input class="contact-input" type="text" name="company" placeholder="Firma">
+            </div>
+            <div>
+              <input class="contact-input" type="tel" name="phone" placeholder="Telefon">
+            </div>
+            <div class="contact-fields-full">
+              <select class="contact-select" name="plan">
+                <option value="Professional">Professional - 189€/Monat</option>
+                <option value="Basic">Basic - 99€/Monat</option>
+                <option value="Enterprise">Enterprise - ab 349€/Monat</option>
+                <option value="Unklar">Noch unentschlossen / Beratung gewünscht</option>
+              </select>
+            </div>
+            <div class="contact-fields-full">
+              <textarea class="contact-textarea" name="message"
+                placeholder="Ihre Nachricht & ungefähre Anzahl Rechnungen pro Monat..."></textarea>
+            </div>
+          </div>
+          <button class="contact-cta" type="button">
+            Anfrage senden
+          </button>
+          <!-- Hinweis: Anbindung an Backend / Form-Handler nach Bedarf ergänzen -->
+        </div>
+
+        <aside class="company-box">
+          <strong>SBS Deutschland GmbH &amp; Co. KG</strong><br>
+          In der Dell 19<br>
+          69469 Weinheim, Deutschland<br><br>
+          HRA 706204 · Amtsgericht Mannheim<br><br>
+          <strong>Kontakt</strong><br>
+          ✉ <a href="mailto:info@sbsdeutschland.com">info@sbsdeutschland.com</a><br>
+          ☎ <a href="tel:+496201806109">+49 6201 80 6109</a><br>
+          🌐 <a href="https://www.sbsdeutschland.com" target="_blank" rel="noopener">www.sbsdeutschland.com</a><br>
+          Mo–Fr: 9:00–18:00 Uhr
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer global -->
+  <footer id="sbs-footer-global">
+    © 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten. ·
+    In der Dell 19, 69469 Weinheim ·
+    <a href="/static/landing/impressum.html">Impressum</a> ·
+    <a href="/static/landing/datenschutz.html">Datenschutz</a> ·
+    <a href="/static/landing/agb.html">AGB</a> ·
+    Made with ❤️ in Weinheim · Region Rhein-Neckar &amp; Odenwald
+  </footer>
+
+</body>
+</html>
