@@ -551,3 +551,151 @@ async def analytics_page(request: Request):
         "top_suppliers": data['top_suppliers'],
         "weekday_data": data['weekday_data']
     })
+
+@app.get("/api/invoice/{invoice_id}")
+async def get_invoice(invoice_id: int):
+    """Get single invoice for editing"""
+    from database import get_invoice_by_id
+    
+    invoice = get_invoice_by_id(invoice_id)
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    return invoice
+
+@app.put("/api/invoice/{invoice_id}")
+async def update_invoice_endpoint(invoice_id: int, request: Request):
+    """Update invoice with corrections and save for learning"""
+    from database import get_invoice_by_id, update_invoice, save_correction
+    
+    # Get current invoice
+    current = get_invoice_by_id(invoice_id)
+    if not current:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    # Get updates from request
+    updates = await request.json()
+    
+    # Save corrections for learning
+    supplier = current.get('rechnungsaussteller', '')
+    for field, new_value in updates.items():
+        old_value = current.get(field, '')
+        if str(old_value) != str(new_value):
+            save_correction(invoice_id, supplier, field, str(old_value), str(new_value))
+    
+    # Update invoice
+    update_invoice(invoice_id, updates)
+    
+    return {"success": True, "message": "Invoice updated and corrections saved for learning"}
+
+@app.get("/api/supplier/{supplier}/patterns")
+async def get_supplier_patterns_endpoint(supplier: str):
+    """Get learned patterns for a supplier"""
+    from database import get_supplier_patterns
+    from urllib.parse import unquote
+    
+    supplier = unquote(supplier)
+    patterns = get_supplier_patterns(supplier)
+    
+    return patterns
+
+@app.get("/api/invoice/{invoice_id}")
+async def get_invoice(invoice_id: int):
+    """Get single invoice for editing"""
+    from database import get_invoice_by_id
+    
+    invoice = get_invoice_by_id(invoice_id)
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    return invoice
+
+@app.put("/api/invoice/{invoice_id}")
+async def update_invoice_endpoint(invoice_id: int, request: Request):
+    """Update invoice with corrections and save for learning"""
+    from database import get_invoice_by_id, update_invoice, save_correction
+    
+    # Get current invoice
+    current = get_invoice_by_id(invoice_id)
+    if not current:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    # Get updates from request
+    updates = await request.json()
+    
+    # Save corrections for learning
+    supplier = current.get('rechnungsaussteller', '')
+    for field, new_value in updates.items():
+        old_value = current.get(field, '')
+        if str(old_value) != str(new_value):
+            save_correction(invoice_id, supplier, field, str(old_value), str(new_value))
+    
+    # Update invoice
+    update_invoice(invoice_id, updates)
+    
+    return {"success": True, "message": "Invoice updated and corrections saved for learning"}
+
+@app.get("/api/supplier/{supplier}/patterns")
+async def get_supplier_patterns_endpoint(supplier: str):
+    """Get learned patterns for a supplier"""
+    from database import get_supplier_patterns
+    from urllib.parse import unquote
+    
+    supplier = unquote(supplier)
+    patterns = get_supplier_patterns(supplier)
+    
+    return patterns
+
+@app.get("/email-config", response_class=HTMLResponse)
+async def email_config_page(request: Request):
+    """Email inbox configuration page"""
+    from database import get_email_config
+    
+    config = get_email_config()
+    
+    return templates.TemplateResponse("email_config.html", {
+        "request": request,
+        "config": config
+    })
+
+@app.post("/api/email-config")
+async def save_email_config_endpoint(request: Request):
+    """Save email inbox configuration"""
+    from database import save_email_config
+    
+    try:
+        config = await request.json()
+        save_email_config(config)
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/email-config/test")
+async def test_email_connection(request: Request):
+    """Test IMAP connection"""
+    import imaplib
+    
+    try:
+        config = await request.json()
+        
+        # Try to connect
+        conn = imaplib.IMAP4_SSL(
+            config['imap_server'],
+            config.get('imap_port', 993)
+        )
+        conn.login(config['username'], config['password'])
+        conn.logout()
+        
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/email-config/check-now")
+async def check_emails_now():
+    """Manually trigger email check"""
+    try:
+        from email_fetcher import check_inbox_and_process
+        check_inbox_and_process()
+        return {"success": True, "message": "Email check completed"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
