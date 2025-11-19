@@ -7,142 +7,49 @@
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/css/main.css" />
   <style>
-    .settings-container {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    .settings-card {
-      background: var(--sbs-white);
-      border-radius: 12px;
-      padding: 32px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-    .settings-card h2 {
-      margin: 0 0 8px 0;
-      font-size: 1.2rem;
-    }
-    .settings-card p {
-      color: var(--sbs-muted);
-      margin: 0 0 24px 0;
-      font-size: 0.9rem;
-    }
-    .form-group {
-      margin-bottom: 20px;
-    }
-    .form-group label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 8px;
-      font-size: 0.9rem;
-    }
-    .form-group input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid var(--sbs-border-soft);
-      border-radius: 8px;
-      font-size: 1rem;
-      background: var(--sbs-bg);
-      box-sizing: border-box;
-    }
-    .form-group input:focus {
-      outline: none;
-      border-color: var(--sbs-accent);
-    }
-    .form-group input:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    .btn-save {
-      background: var(--sbs-accent);
-      color: var(--sbs-dark);
-      border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-save:hover {
-      background: #e6a600;
-    }
-    .btn-danger {
-      background: #dc3545;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-danger:hover {
-      background: #c82333;
-    }
-    .status-msg {
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 16px;
-      display: none;
-    }
-    .status-msg.success {
-      background: #d4edda;
-      color: #155724;
-      display: block;
-    }
-    .status-msg.error {
-      background: #f8d7da;
-      color: #721c24;
-      display: block;
-    }
-    .tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 24px;
-    }
-    .tab {
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 500;
-      background: var(--sbs-bg);
-      border: none;
-      font-size: 0.9rem;
-    }
-    .tab.active {
-      background: var(--sbs-dark);
-      color: white;
-    }
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-    }
+    .settings-container { max-width: 800px; margin: 0 auto; }
+    .settings-card { background: var(--sbs-white); border-radius: 12px; padding: 32px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .settings-card h2 { margin: 0 0 8px 0; font-size: 1.2rem; }
+    .settings-card p { color: var(--sbs-muted); margin: 0 0 24px 0; font-size: 0.9rem; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; }
+    .form-group input { width: 100%; padding: 12px; border: 1px solid var(--sbs-border-soft); border-radius: 8px; font-size: 1rem; background: var(--sbs-bg); box-sizing: border-box; }
+    .form-group input:focus { outline: none; border-color: var(--sbs-accent); }
+    .form-group input:disabled { opacity: 0.6; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .btn-save { background: var(--sbs-accent); color: var(--sbs-dark); border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-save:hover { background: #e6a600; }
+    .status-msg { padding: 12px; border-radius: 8px; margin-top: 16px; display: none; }
+    .status-msg.success { background: #d4edda; color: #155724; display: block; }
+    .status-msg.error { background: #f8d7da; color: #721c24; display: block; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .tab { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 500; background: var(--sbs-bg); border: none; font-size: 0.9rem; }
+    .tab.active { background: var(--sbs-dark); color: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
   </style>
 </head>
 <body>
 
-<header class="header" id="header">
+<header class="header">
   <div class="header-inner">
     <a href="https://sbsdeutschland.com/" class="logo-wrap">
       <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
-      <div class="logo-text">
-        <strong>SBS Deutschland</strong>
-        <span>Smart Business Service · Weinheim</span>
-      </div>
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
     </a>
-    <nav class="nav" id="nav">
+    <nav class="nav">
+      <div class="dropdown">
+        <span class="dropdown-toggle">Leistungen</span>
+        <div class="dropdown-menu">
+          <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+        </div>
+      </div>
       <a href="https://sbsdeutschland.com/preise">Preise</a>
       <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
-      
-      <div class="account-dropdown" id="accountDropdown">
-        <span class="account-toggle">
-          👤 <span id="accountName">Account</span> ▾
-        </span>
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
         <div class="account-menu">
           <a href="/history">📊 Verlauf</a>
           <a href="/analytics">📈 Analytics</a>
@@ -159,239 +66,87 @@
 <section class="hero" style="padding: 40px 24px;">
   <div class="hero-content">
     <h1>⚙️ Einstellungen</h1>
-    <p class="hero-subtitle">Verwalten Sie Ihr Konto und Ihre Präferenzen</p>
+    <p class="hero-subtitle">Verwalten Sie Ihr Konto</p>
   </div>
 </section>
 
 <section class="section">
   <div class="settings-container">
-    
-    <!-- Tabs -->
     <div class="tabs">
-      <button class="tab active" onclick="showTab('profile')">👤 Profil</button>
-      <button class="tab" onclick="showTab('company')">🏢 Firma</button>
-      <button class="tab" onclick="showTab('security')">🔒 Sicherheit</button>
-      <button class="tab" onclick="showTab('billing')">💳 Abrechnung</button>
+      <button class="tab active" onclick="showTab('profile', this)">👤 Profil</button>
+      <button class="tab" onclick="showTab('company', this)">🏢 Firma</button>
+      <button class="tab" onclick="showTab('security', this)">🔒 Sicherheit</button>
     </div>
     
-    <!-- Profil Tab -->
     <div id="profile-tab" class="tab-content active">
       <form id="profileForm" class="settings-card">
         <h2>Persönliche Daten</h2>
-        <p>Ihre persönlichen Kontaktdaten</p>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label>Vorname</label>
-            <input type="text" name="first_name" value="{{ user.name.split()[0] if user.name else '' }}">
-          </div>
-          <div class="form-group">
-            <label>Nachname</label>
-            <input type="text" name="last_name" value="{{ user.name.split()[-1] if user.name and ' ' in user.name else '' }}">
-          </div>
+        <p>Ihre Kontaktdaten</p>
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" name="name" value="{{ user.name if user else '' }}">
         </div>
-        
         <div class="form-group">
           <label>Email</label>
-          <input type="email" name="email" value="{{ user.email }}" disabled>
+          <input type="email" value="{{ user.email if user else '' }}" disabled>
         </div>
-        
-        <div class="form-group">
-          <label>Telefon</label>
-          <input type="tel" name="phone" value="{{ user.phone if user.phone else '' }}" placeholder="+49 123 456789">
-        </div>
-        
         <button type="submit" class="btn-save">Speichern</button>
         <div id="profileStatus" class="status-msg"></div>
       </form>
     </div>
     
-    <!-- Firma Tab -->
     <div id="company-tab" class="tab-content">
       <form id="companyForm" class="settings-card">
         <h2>Firmendaten</h2>
         <p>Informationen zu Ihrem Unternehmen</p>
-        
         <div class="form-group">
           <label>Firmenname</label>
-          <input type="text" name="company" value="{{ user.company if user.company else '' }}">
+          <input type="text" name="company" value="{{ user.company if user else '' }}">
         </div>
-        
-        <div class="form-group">
-          <label>Straße & Hausnummer</label>
-          <input type="text" name="street" value="{{ user.street if user.street else '' }}">
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label>PLZ</label>
-            <input type="text" name="zip" value="{{ user.zip if user.zip else '' }}">
-          </div>
-          <div class="form-group">
-            <label>Stadt</label>
-            <input type="text" name="city" value="{{ user.city if user.city else '' }}">
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label>USt-IdNr.</label>
-          <input type="text" name="vat_id" value="{{ user.vat_id if user.vat_id else '' }}" placeholder="DE123456789">
-        </div>
-        
         <button type="submit" class="btn-save">Speichern</button>
         <div id="companyStatus" class="status-msg"></div>
       </form>
     </div>
     
-    <!-- Sicherheit Tab -->
     <div id="security-tab" class="tab-content">
       <form id="passwordForm" class="settings-card">
         <h2>Passwort ändern</h2>
-        <p>Aktualisieren Sie Ihr Passwort regelmäßig</p>
-        
+        <p>Aktualisieren Sie Ihr Passwort</p>
         <div class="form-group">
           <label>Aktuelles Passwort</label>
           <input type="password" name="current_password" required>
         </div>
-        
         <div class="form-group">
           <label>Neues Passwort</label>
           <input type="password" name="new_password" required>
         </div>
-        
         <div class="form-group">
-          <label>Neues Passwort wiederholen</label>
+          <label>Wiederholen</label>
           <input type="password" name="new_password2" required>
         </div>
-        
         <button type="submit" class="btn-save">Passwort ändern</button>
         <div id="passwordStatus" class="status-msg"></div>
       </form>
     </div>
-    
-    <!-- Abrechnung Tab -->
-    <div id="billing-tab" class="tab-content">
-      <div class="settings-card">
-        <h2>Aktueller Plan</h2>
-        <p>Ihr Abonnement und Verbrauch</p>
-        
-        <div style="padding: 20px; background: var(--sbs-bg); border-radius: 8px; margin-bottom: 20px;">
-          <strong style="font-size: 1.2rem;">Starter</strong>
-          <p style="margin: 8px 0 0 0; color: var(--sbs-muted);">50 Rechnungen / Monat</p>
-        </div>
-        
-        <p style="margin-bottom: 16px;">
-          <strong>Verbrauch diesen Monat:</strong> {{ usage if usage else 0 }} / 50 Rechnungen
-        </p>
-        
-        <a href="https://sbsdeutschland.com/preise" class="btn-save" style="display: inline-block; text-decoration: none;">
-          Plan upgraden
-        </a>
-      </div>
-    </div>
-    
   </div>
 </section>
 
-<footer class="footer" style="margin-top: 40px;">
-  <div class="footer-bottom">
-    <p>&copy; 2025 SBS Deutschland GmbH & Co. KG</p>
-  </div>
-</footer>
-
 <script>
-// Tab switching
-function showTab(tabName) {
+function showTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  
-  event.target.classList.add('active');
-  document.getElementById(tabName + '-tab').classList.add('active');
+  btn.classList.add('active');
+  document.getElementById(name + '-tab').classList.add('active');
 }
 
-// Update account name
 async function updateAccountStatus() {
   try {
-    const response = await fetch('/api/user');
-    const user = await response.json();
-    if (user.logged_in) {
-      document.getElementById('accountName').textContent = user.name;
-    }
-  } catch (e) {}
+    const r = await fetch('/api/user');
+    const u = await r.json();
+    if (u.logged_in) document.getElementById('accountName').textContent = u.name;
+  } catch(e) {}
 }
 document.addEventListener('DOMContentLoaded', updateAccountStatus);
-
-// Form submissions
-document.getElementById('profileForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const data = Object.fromEntries(formData);
-  
-  try {
-    const response = await fetch('/api/profile', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    const result = await response.json();
-    const status = document.getElementById('profileStatus');
-    status.className = 'status-msg ' + (result.success ? 'success' : 'error');
-    status.textContent = result.success ? '✓ Gespeichert' : '✗ ' + result.error;
-  } catch (e) {
-    document.getElementById('profileStatus').className = 'status-msg error';
-    document.getElementById('profileStatus').textContent = '✗ Fehler beim Speichern';
-  }
-});
-
-document.getElementById('companyForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const data = Object.fromEntries(formData);
-  
-  try {
-    const response = await fetch('/api/profile', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    const result = await response.json();
-    const status = document.getElementById('companyStatus');
-    status.className = 'status-msg ' + (result.success ? 'success' : 'error');
-    status.textContent = result.success ? '✓ Gespeichert' : '✗ ' + result.error;
-  } catch (e) {
-    document.getElementById('companyStatus').className = 'status-msg error';
-    document.getElementById('companyStatus').textContent = '✗ Fehler beim Speichern';
-  }
-});
-
-document.getElementById('passwordForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const data = Object.fromEntries(formData);
-  
-  if (data.new_password !== data.new_password2) {
-    document.getElementById('passwordStatus').className = 'status-msg error';
-    document.getElementById('passwordStatus').textContent = '✗ Passwörter stimmen nicht überein';
-    return;
-  }
-  
-  try {
-    const response = await fetch('/api/profile/password', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    const result = await response.json();
-    const status = document.getElementById('passwordStatus');
-    status.className = 'status-msg ' + (result.success ? 'success' : 'error');
-    status.textContent = result.success ? '✓ Passwort geändert' : '✗ ' + result.error;
-    if (result.success) e.target.reset();
-  } catch (e) {
-    document.getElementById('passwordStatus').className = 'status-msg error';
-    document.getElementById('passwordStatus').textContent = '✗ Fehler beim Speichern';
-  }
-});
 </script>
-
 </body>
 </html>

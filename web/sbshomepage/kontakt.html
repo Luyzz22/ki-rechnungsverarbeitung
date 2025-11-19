@@ -38,7 +38,7 @@
       <a href="/sbshomepage/unternehmen.html">Über uns</a>
       <a href="/sbshomepage/kontakt.html" class="active">Kontakt</a>
       <a href="https://app.sbsdeutschland.com/" class="nav-cta">Demo starten</a>
-      <a href="https://app.sbsdeutschland.com/login" class="nav-cta">🔑 Login</a>
+      <a href="https://app.sbsdeutschland.com/login?next=https://sbsdeutschland.com/sbshomepage/kontakt.html" class="nav-cta">🔑 Login</a>
       <button class="theme-toggle" id="theme-toggle" aria-label="Theme">
         <span class="sun">☀️</span>
         <span class="moon">🌙</span>
@@ -223,4 +223,24 @@
 
 <script src="/static/js/main.js"></script>
 </body>
+<script>
+// Check login status from app subdomain
+async function checkLoginStatus() {
+  try {
+    const response = await fetch('https://app.sbsdeutschland.com/api/user', {
+      credentials: 'include'
+    });
+    const user = await response.json();
+    
+    const loginLink = document.querySelector('a[href*="app.sbsdeutschland.com/login"]');
+    if (loginLink && user.logged_in) {
+      loginLink.textContent = '👤 ' + user.name;
+      loginLink.href = 'https://app.sbsdeutschland.com/history';
+    }
+  } catch (e) {
+    console.log('Login check failed');
+  }
+}
+document.addEventListener('DOMContentLoaded', checkLoginStatus);
+</script>
 </html>

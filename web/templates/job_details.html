@@ -208,37 +208,34 @@
 </head>
 <body>
 
-<header class="header" id="header">
+<header class="header">
   <div class="header-inner">
     <a href="https://sbsdeutschland.com/" class="logo-wrap">
       <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
-      <div class="logo-text">
-        <strong>SBS Deutschland</strong>
-        <span>Smart Business Service · Weinheim</span>
-      </div>
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
     </a>
-    <button class="burger" id="burger" aria-label="Menü">
-      <span></span><span></span><span></span>
-    </button>
-    <nav class="nav" id="nav">
+    <nav class="nav">
       <div class="dropdown">
         <span class="dropdown-toggle">Leistungen</span>
         <div class="dropdown-menu">
           <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
           <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
           <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
-          <a href="https://sbsdeutschland.com/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
-          <a href="https://sbsdeutschland.com/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
         </div>
       </div>
       <a href="https://sbsdeutschland.com/preise">Preise</a>
-      <a href="https://sbsdeutschland.com/sbshomepage/unternehmen.html">Über uns</a>
       <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
-      <a href="/history" class="nav-cta">Verlauf</a>
-      <button class="theme-toggle" id="theme-toggle" aria-label="Theme">
-        <span class="sun">☀️</span>
-        <span class="moon">🌙</span>
-      </button>
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
+        <div class="account-menu">
+          <a href="/history">📊 Verlauf</a>
+          <a href="/analytics">📈 Analytics</a>
+          <a href="/email-config">📧 Email-Inbox</a>
+          <a href="/profile">⚙️ Einstellungen</a>
+          <div class="divider"></div>
+          <a href="/logout">🚪 Logout</a>
+        </div>
+      </div>
     </nav>
   </div>
 </header>
@@ -423,4 +420,18 @@ burger.addEventListener('click', () => {
 
 <script src="/static/js/inline-edit.js"></script>
 </body>
+<script>
+async function updateAccountStatus() {
+  try {
+    const r = await fetch('/api/user');
+    const u = await r.json();
+    if (u.logged_in) {
+      document.getElementById('accountName').textContent = u.name;
+    } else {
+      document.getElementById('accountName').textContent = 'Account';
+    }
+  } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', updateAccountStatus);
+</script>
 </html>

@@ -705,7 +705,7 @@ from starlette.middleware.sessions import SessionMiddleware
 import secrets
 
 # Add session middleware (muss nach app = FastAPI() kommen)
-app.add_middleware(SessionMiddleware, secret_key=secrets.token_hex(32))
+app.add_middleware(SessionMiddleware, secret_key='sbs-invoice-app-secret-key-2025', domain='.sbsdeutschland.com')
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
@@ -732,7 +732,8 @@ async def login_submit(request: Request):
         request.session['user_email'] = user['email']
         
         from starlette.responses import RedirectResponse
-        return RedirectResponse(url='/', status_code=303)
+        next_url = request.query_params.get('next', '/')
+    return RedirectResponse(url=next_url, status_code=303)
     
     return templates.TemplateResponse("login.html", {
         "request": request,
@@ -793,14 +794,16 @@ async def register_submit(request: Request):
     request.session['user_email'] = email
     
     from starlette.responses import RedirectResponse
-    return RedirectResponse(url='/', status_code=303)
+    next_url = request.query_params.get('next', '/')
+    return RedirectResponse(url=next_url, status_code=303)
 
 @app.get("/logout")
 async def logout(request: Request):
     """Logout user"""
     request.session.clear()
     from starlette.responses import RedirectResponse
-    return RedirectResponse(url='/', status_code=303)
+    next_url = request.query_params.get('next', '/')
+    return RedirectResponse(url=next_url, status_code=303)
 
 @app.get("/api/user")
 async def get_current_user(request: Request):
@@ -853,3 +856,14 @@ async def change_password(request: Request):
         return {"success": True}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+# CORS für Cross-Domain API Requests
+from starlette.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://sbsdeutschland.com", "https://app.sbsdeutschland.com"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+)
