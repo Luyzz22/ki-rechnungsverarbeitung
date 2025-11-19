@@ -699,3 +699,116 @@ async def check_emails_now():
         return {"success": True, "message": "Email check completed"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+# Session Management
+from starlette.middleware.sessions import SessionMiddleware
+import secrets
+
+# Add session middleware (muss nach app = FastAPI() kommen)
+app.add_middleware(SessionMiddleware, secret_key=secrets.token_hex(32))
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """Login page"""
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "error": None
+    })
+
+@app.post("/login")
+async def login_submit(request: Request):
+    """Handle login"""
+    from database import verify_user
+    
+    form = await request.form()
+    email = form.get('email', '')
+    password = form.get('password', '')
+    
+    user = verify_user(email, password)
+    
+    if user:
+        request.session['user_id'] = user['id']
+        request.session['user_name'] = user['name'] or user['email'].split('@')[0]
+        request.session['user_email'] = user['email']
+        
+        from starlette.responses import RedirectResponse
+        return RedirectResponse(url='/', status_code=303)
+    
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "error": "Ungültige Email oder Passwort"
+    })
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    """Register page"""
+    return templates.TemplateResponse("register.html", {
+        "request": request,
+        "error": None
+    })
+
+@app.post("/register")
+async def register_submit(request: Request):
+    """Handle registration"""
+    from database import create_user, email_exists
+    
+    form = await request.form()
+    name = form.get('name', '')
+    email = form.get('email', '')
+    company = form.get('company', '')
+    password = form.get('password', '')
+    password2 = form.get('password2', '')
+    
+    # Validation
+    if not email or not password:
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": "Email und Passwort sind erforderlich"
+        })
+    
+    if password != password2:
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": "Passwörter stimmen nicht überein"
+        })
+    
+    if len(password) < 6:
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": "Passwort muss mindestens 6 Zeichen haben"
+        })
+    
+    if email_exists(email):
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": "Email ist bereits registriert"
+        })
+    
+    # Create user
+    user_id = create_user(email, password, name, company)
+    
+    # Auto-login
+    request.session['user_id'] = user_id
+    request.session['user_name'] = name or email.split('@')[0]
+    request.session['user_email'] = email
+    
+    from starlette.responses import RedirectResponse
+    return RedirectResponse(url='/', status_code=303)
+
+@app.get("/logout")
+async def logout(request: Request):
+    """Logout user"""
+    request.session.clear()
+    from starlette.responses import RedirectResponse
+    return RedirectResponse(url='/', status_code=303)
+
+@app.get("/api/user")
+async def get_current_user(request: Request):
+    """Get current logged in user"""
+    if 'user_id' in request.session:
+        return {
+            "logged_in": True,
+            "name": request.session.get('user_name', ''),
+            "email": request.session.get('user_email', '')
+        }
+    return {"logged_in": False}

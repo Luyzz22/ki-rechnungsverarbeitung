@@ -802,9 +802,33 @@
       <a href="https://sbsdeutschland.com/preise">Preise</a>
       <a href="https://sbsdeutschland.com/sbshomepage/unternehmen.html">Über uns</a>
       <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
-      <a href="/history">Verlauf</a>
-      <a href="/analytics">Analytics</a>
-      <a href="/email-config" class="nav-cta">⚙️ Einstellungen</a>
+      
+      <!-- Account Dropdown -->
+      <div class="account-dropdown" id="accountDropdown">
+        <span class="account-toggle" id="accountToggle">
+          👤 <span id="accountName">Account</span> ▾
+        </span>
+        <div class="account-menu" id="accountMenu">
+          <!-- Logged in content -->
+          <div id="loggedInMenu" style="display: none;">
+            <div class="user-info">
+              <div class="name" id="userName"></div>
+              <div class="email" id="userEmail"></div>
+            </div>
+            <a href="/history">📊 Verlauf</a>
+            <a href="/analytics">📈 Analytics</a>
+            <a href="/email-config">⚙️ Einstellungen</a>
+            <div class="divider"></div>
+            <a href="/logout">🚪 Logout</a>
+          </div>
+          <!-- Logged out content -->
+          <div id="loggedOutMenu">
+            <a href="/login">🔑 Login</a>
+            <a href="/register">✨ Registrieren</a>
+          </div>
+        </div>
+      </div>
+      
       <button class="theme-toggle" id="theme-toggle" aria-label="Theme">
         <span class="sun">☀️</span>
         <span class="moon">🌙</span>
@@ -1130,4 +1154,30 @@ async function pollProgress(jobId) {
 </script>
 
 </body>
+<script>
+// Check login status and update account dropdown
+async function updateAccountStatus() {
+  try {
+    const response = await fetch('/api/user');
+    const user = await response.json();
+    
+    if (user.logged_in) {
+      document.getElementById('accountName').textContent = user.name;
+      document.getElementById('userName').textContent = user.name;
+      document.getElementById('userEmail').textContent = user.email;
+      document.getElementById('loggedInMenu').style.display = 'block';
+      document.getElementById('loggedOutMenu').style.display = 'none';
+    } else {
+      document.getElementById('accountName').textContent = 'Account';
+      document.getElementById('loggedInMenu').style.display = 'none';
+      document.getElementById('loggedOutMenu').style.display = 'block';
+    }
+  } catch (e) {
+    console.error('Error checking login status:', e);
+  }
+}
+
+// Run on page load
+document.addEventListener('DOMContentLoaded', updateAccountStatus);
+</script>
 </html>

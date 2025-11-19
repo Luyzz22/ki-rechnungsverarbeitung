@@ -1855,3 +1855,80 @@ body {
   color: var(--sbs-muted);
   margin-bottom: 12px;
 }
+
+/* Account Dropdown */
+.account-dropdown {
+  position: relative;
+}
+.account-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--sbs-bg);
+  border: 1px solid var(--sbs-border-soft);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+.account-toggle:hover {
+  background: var(--sbs-white);
+}
+.account-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: var(--sbs-white);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  min-width: 200px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+.account-dropdown:hover .account-menu,
+.account-dropdown.active .account-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.account-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  color: var(--sbs-dark);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+.account-menu a:hover {
+  background: var(--sbs-bg);
+}
+.account-menu a:first-child {
+  border-radius: 12px 12px 0 0;
+}
+.account-menu a:last-child {
+  border-radius: 0 0 12px 12px;
+}
+.account-menu .divider {
+  height: 1px;
+  background: var(--sbs-border-soft);
+  margin: 4px 0;
+}
+.account-menu .user-info {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--sbs-border-soft);
+}
+.account-menu .user-info .name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.account-menu .user-info .email {
+  font-size: 0.8rem;
+  color: var(--sbs-muted);
+}

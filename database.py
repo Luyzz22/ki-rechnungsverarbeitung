@@ -813,3 +813,205 @@ def is_email_processed(message_id: str) -> bool:
     exists = cursor.fetchone() is not None
     conn.close()
     return exists
+
+def init_users_table():
+    """Initialize users table"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            name TEXT,
+            company TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            last_login TEXT,
+            is_active INTEGER DEFAULT 1
+        )
+    ''')
+    
+    # Add user_id to jobs table if not exists
+    cursor.execute("PRAGMA table_info(jobs)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if 'user_id' not in columns:
+        cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
+    
+    conn.commit()
+    conn.close()
+
+init_users_table()
+
+def create_user(email: str, password: str, name: str = '', company: str = '') -> int:
+    """Create new user, returns user_id"""
+    import hashlib
+    
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO users (email, password_hash, name, company)
+        VALUES (?, ?, ?, ?)
+    ''', (email, password_hash, name, company))
+    
+    user_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    
+    return user_id
+
+def verify_user(email: str, password: str) -> dict:
+    """Verify user credentials, returns user dict or None"""
+    import hashlib
+    from datetime import datetime
+    
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id, email, name, company, is_active 
+        FROM users 
+        WHERE email = ? AND password_hash = ?
+    ''', (email, password_hash))
+    
+    row = cursor.fetchone()
+    
+    if row and row[4]:  # is_active
+        # Update last login
+        cursor.execute('UPDATE users SET last_login = ? WHERE id = ?', 
+                      (datetime.now().isoformat(), row[0]))
+        conn.commit()
+        conn.close()
+        return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
+    
+    conn.close()
+    return None
+
+def get_user_by_id(user_id: int) -> dict:
+    """Get user by ID"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT id, email, name, company FROM users WHERE id = ?', (user_id,))
+    row = cursor.fetchone()
+    
+    conn.close()
+    
+    if row:
+        return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
+    return None
+
+def email_exists(email: str) -> bool:
+    """Check if email already exists"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
+    exists = cursor.fetchone() is not None
+    conn.close()
+    return exists
+
+def init_users_table():
+    """Initialize users table"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            name TEXT,
+            company TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            last_login TEXT,
+            is_active INTEGER DEFAULT 1
+        )
+    ''')
+    
+    # Add user_id to jobs table if not exists
+    cursor.execute("PRAGMA table_info(jobs)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if 'user_id' not in columns:
+        cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
+    
+    conn.commit()
+    conn.close()
+
+init_users_table()
+
+def create_user(email: str, password: str, name: str = '', company: str = '') -> int:
+    """Create new user, returns user_id"""
+    import hashlib
+    
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO users (email, password_hash, name, company)
+        VALUES (?, ?, ?, ?)
+    ''', (email, password_hash, name, company))
+    
+    user_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    
+    return user_id
+
+def verify_user(email: str, password: str) -> dict:
+    """Verify user credentials, returns user dict or None"""
+    import hashlib
+    from datetime import datetime
+    
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id, email, name, company, is_active 
+        FROM users 
+        WHERE email = ? AND password_hash = ?
+    ''', (email, password_hash))
+    
+    row = cursor.fetchone()
+    
+    if row and row[4]:  # is_active
+        # Update last login
+        cursor.execute('UPDATE users SET last_login = ? WHERE id = ?', 
+                      (datetime.now().isoformat(), row[0]))
+        conn.commit()
+        conn.close()
+        return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
+    
+    conn.close()
+    return None
+
+def get_user_by_id(user_id: int) -> dict:
+    """Get user by ID"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT id, email, name, company FROM users WHERE id = ?', (user_id,))
+    row = cursor.fetchone()
+    
+    conn.close()
+    
+    if row:
+        return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
+    return None
+
+def email_exists(email: str) -> bool:
+    """Check if email already exists"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
+    exists = cursor.fetchone() is not None
+    conn.close()
+    return exists
