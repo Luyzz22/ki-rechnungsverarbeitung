@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from database import save_job, save_invoices, get_job, get_all_jobs, get_statistics
 from logging.handlers import RotatingFileHandler
 import sys
 
@@ -271,6 +272,11 @@ async def process_invoices_background(job_id: str):
         "successful": len(results)
     })
     
+    # Save to database
+    save_job(job_id, processing_jobs[job_id])
+    if results:
+        save_invoices(job_id, results)
+    
     # Schedule cleanup of uploaded PDFs (nach 60 Minuten)
     asyncio.create_task(cleanup_uploads(upload_path, delay_minutes=60))
 @app.get("/api/status/{job_id}")
@@ -424,3 +430,15 @@ async def cleanup_uploads(upload_path: Path, delay_minutes: int = 60):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+
+@app.get("/history", response_class=HTMLResponse)
+async def history_page(request: Request):
+    """Dashboard with job history"""
+    jobs = get_all_jobs(limit=50)
+    stats = get_statistics()
+    
+    return templates.TemplateResponse("history.html", {
+        "request": request,
+        "jobs": jobs,
+        "stats": stats
+    })
