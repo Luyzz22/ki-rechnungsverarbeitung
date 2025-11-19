@@ -360,6 +360,7 @@
     {% if invoices %}
     <div class="section-card">
       <h3>📑 Einzelne Rechnungen ({{ invoices|length }})</h3>
+      <p class="edit-hint">💡 Klicken Sie auf einen Wert zum Bearbeiten. Korrekturen werden gespeichert und verbessern die KI.</p>
       <div class="table-scroll">
         <table class="invoices-table">
           <thead>
@@ -375,14 +376,14 @@
           </thead>
           <tbody>
             {% for inv in invoices %}
-            <tr>
-              <td>{{ inv.rechnungsnummer or '-' }}</td>
-              <td class="date">{{ inv.datum or '-' }}</td>
-              <td>{{ inv.rechnungsaussteller or '-' }}</td>
-              <td>{{ inv.rechnungsempfaenger or '-' }}</td>
-              <td class="amount">{{ "%.2f"|format(inv.betrag_netto or 0) }}€</td>
-              <td class="amount">{{ "%.2f"|format(inv.mwst_betrag or 0) }}€</td>
-              <td class="amount">{{ "%.2f"|format(inv.betrag_brutto or 0) }}€</td>
+            <tr data-invoice-id="{{ inv.id }}">
+              <td class="editable" data-field="rechnungsnummer">{{ inv.rechnungsnummer or '-' }}</td>
+              <td class="editable date" data-field="datum">{{ inv.datum or '-' }}</td>
+              <td class="editable" data-field="rechnungsaussteller">{{ inv.rechnungsaussteller or '-' }}</td>
+              <td class="editable" data-field="rechnungsempfaenger">{{ inv.rechnungsempfaenger or '-' }}</td>
+              <td class="editable amount" data-field="betrag_netto">{{ "%.2f"|format(inv.betrag_netto or 0) }}</td>
+              <td class="editable amount" data-field="mwst_betrag">{{ "%.2f"|format(inv.mwst_betrag or 0) }}</td>
+              <td class="editable amount" data-field="betrag_brutto">{{ "%.2f"|format(inv.betrag_brutto or 0) }}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -390,7 +391,6 @@
       </div>
     </div>
     {% endif %}
-    
   </div>
 </section>
 
@@ -421,5 +421,6 @@ burger.addEventListener('click', () => {
 });
 </script>
 
+<script src="/static/js/inline-edit.js"></script>
 </body>
 </html>

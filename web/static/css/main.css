@@ -1804,3 +1804,54 @@ body {
 [data-theme="dark"] .dropdown-menu a {
   color: #e2e8f0;
 }
+
+/* Inline Editing */
+.editable {
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+.editable:hover {
+  background: rgba(255, 185, 0, 0.1);
+}
+.editable.editing {
+  padding: 4px;
+}
+.editable.edited {
+  background: rgba(40, 167, 69, 0.1);
+}
+.edit-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 2px solid #FFB900;
+  border-radius: 4px;
+  font-size: inherit;
+  font-family: inherit;
+}
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  background: #28a745;
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 9999;
+}
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+.toast.error {
+  background: #dc3545;
+}
+.edit-hint {
+  font-size: 0.8rem;
+  color: var(--sbs-muted);
+  margin-bottom: 12px;
+}

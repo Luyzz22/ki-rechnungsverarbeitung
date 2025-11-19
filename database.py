@@ -413,3 +413,403 @@ def get_analytics_data():
         'top_suppliers': top_suppliers,
         'weekday_data': weekday_data
     }
+
+def init_feedback_table():
+    """Initialize feedback/corrections table"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS corrections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            supplier TEXT,
+            field_name TEXT,
+            original_value TEXT,
+            corrected_value TEXT,
+            invoice_id INTEGER,
+            FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+        )
+    ''')
+    
+    # Supplier patterns table - learned patterns per supplier
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS supplier_patterns (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            supplier TEXT UNIQUE,
+            patterns TEXT,
+            confidence REAL DEFAULT 0,
+            invoice_count INTEGER DEFAULT 0,
+            last_updated TEXT
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+# Initialize feedback tables
+init_feedback_table()
+
+def save_correction(invoice_id: int, supplier: str, field_name: str, original_value: str, corrected_value: str):
+    """Save a user correction for learning"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO corrections (supplier, field_name, original_value, corrected_value, invoice_id)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (supplier, field_name, original_value, corrected_value, invoice_id))
+    
+    conn.commit()
+    conn.close()
+    
+    # Update supplier patterns
+    update_supplier_patterns(supplier)
+
+def update_supplier_patterns(supplier: str):
+    """Update learned patterns for a supplier based on corrections"""
+    import json
+    from datetime import datetime
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Get all corrections for this supplier
+    cursor.execute('''
+        SELECT field_name, corrected_value, COUNT(*) as count
+        FROM corrections
+        WHERE supplier = ?
+        GROUP BY field_name, corrected_value
+        ORDER BY count DESC
+    ''', (supplier,))
+    
+    corrections = cursor.fetchall()
+    
+    # Build patterns
+    patterns = {}
+    for field, value, count in corrections:
+        if field not in patterns:
+            patterns[field] = []
+        patterns[field].append({'value': value, 'count': count})
+    
+    # Count total invoices for this supplier
+    cursor.execute('SELECT COUNT(*) FROM invoices WHERE rechnungsaussteller = ?', (supplier,))
+    invoice_count = cursor.fetchone()[0]
+    
+    # Calculate confidence (more corrections = higher confidence)
+    total_corrections = sum(c[2] for c in corrections)
+    confidence = min(total_corrections / 10, 1.0)  # Max confidence at 10 corrections
+    
+    # Save patterns
+    cursor.execute('''
+        INSERT OR REPLACE INTO supplier_patterns (supplier, patterns, confidence, invoice_count, last_updated)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (supplier, json.dumps(patterns), confidence, invoice_count, datetime.now().isoformat()))
+    
+    conn.commit()
+    conn.close()
+
+def get_supplier_patterns(supplier: str) -> dict:
+    """Get learned patterns for a supplier"""
+    import json
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT patterns, confidence FROM supplier_patterns WHERE supplier = ?', (supplier,))
+    row = cursor.fetchone()
+    
+    conn.close()
+    
+    if row:
+        return {
+            'patterns': json.loads(row[0]),
+            'confidence': row[1]
+        }
+    return {'patterns': {}, 'confidence': 0}
+
+def update_invoice(invoice_id: int, updates: dict):
+    """Update invoice with corrected values"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Build UPDATE query dynamically
+    set_clauses = []
+    values = []
+    for field, value in updates.items():
+        set_clauses.append(f"{field} = ?")
+        values.append(value)
+    
+    values.append(invoice_id)
+    
+    query = f"UPDATE invoices SET {', '.join(set_clauses)} WHERE id = ?"
+    cursor.execute(query, values)
+    
+    conn.commit()
+    conn.close()
+
+def get_invoice_by_id(invoice_id: int) -> dict:
+    """Get single invoice by ID"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM invoices WHERE id = ?', (invoice_id,))
+    row = cursor.fetchone()
+    
+    conn.close()
+    
+    if row:
+        return dict(row)
+    return None
+
+def init_feedback_table():
+    """Initialize feedback/corrections table"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS corrections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            supplier TEXT,
+            field_name TEXT,
+            original_value TEXT,
+            corrected_value TEXT,
+            invoice_id INTEGER,
+            FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+        )
+    ''')
+    
+    # Supplier patterns table - learned patterns per supplier
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS supplier_patterns (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            supplier TEXT UNIQUE,
+            patterns TEXT,
+            confidence REAL DEFAULT 0,
+            invoice_count INTEGER DEFAULT 0,
+            last_updated TEXT
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+# Initialize feedback tables
+init_feedback_table()
+
+def save_correction(invoice_id: int, supplier: str, field_name: str, original_value: str, corrected_value: str):
+    """Save a user correction for learning"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO corrections (supplier, field_name, original_value, corrected_value, invoice_id)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (supplier, field_name, original_value, corrected_value, invoice_id))
+    
+    conn.commit()
+    conn.close()
+    
+    # Update supplier patterns
+    update_supplier_patterns(supplier)
+
+def update_supplier_patterns(supplier: str):
+    """Update learned patterns for a supplier based on corrections"""
+    import json
+    from datetime import datetime
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Get all corrections for this supplier
+    cursor.execute('''
+        SELECT field_name, corrected_value, COUNT(*) as count
+        FROM corrections
+        WHERE supplier = ?
+        GROUP BY field_name, corrected_value
+        ORDER BY count DESC
+    ''', (supplier,))
+    
+    corrections = cursor.fetchall()
+    
+    # Build patterns
+    patterns = {}
+    for field, value, count in corrections:
+        if field not in patterns:
+            patterns[field] = []
+        patterns[field].append({'value': value, 'count': count})
+    
+    # Count total invoices for this supplier
+    cursor.execute('SELECT COUNT(*) FROM invoices WHERE rechnungsaussteller = ?', (supplier,))
+    invoice_count = cursor.fetchone()[0]
+    
+    # Calculate confidence (more corrections = higher confidence)
+    total_corrections = sum(c[2] for c in corrections)
+    confidence = min(total_corrections / 10, 1.0)  # Max confidence at 10 corrections
+    
+    # Save patterns
+    cursor.execute('''
+        INSERT OR REPLACE INTO supplier_patterns (supplier, patterns, confidence, invoice_count, last_updated)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (supplier, json.dumps(patterns), confidence, invoice_count, datetime.now().isoformat()))
+    
+    conn.commit()
+    conn.close()
+
+def get_supplier_patterns(supplier: str) -> dict:
+    """Get learned patterns for a supplier"""
+    import json
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT patterns, confidence FROM supplier_patterns WHERE supplier = ?', (supplier,))
+    row = cursor.fetchone()
+    
+    conn.close()
+    
+    if row:
+        return {
+            'patterns': json.loads(row[0]),
+            'confidence': row[1]
+        }
+    return {'patterns': {}, 'confidence': 0}
+
+def update_invoice(invoice_id: int, updates: dict):
+    """Update invoice with corrected values"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Build UPDATE query dynamically
+    set_clauses = []
+    values = []
+    for field, value in updates.items():
+        set_clauses.append(f"{field} = ?")
+        values.append(value)
+    
+    values.append(invoice_id)
+    
+    query = f"UPDATE invoices SET {', '.join(set_clauses)} WHERE id = ?"
+    cursor.execute(query, values)
+    
+    conn.commit()
+    conn.close()
+
+def get_invoice_by_id(invoice_id: int) -> dict:
+    """Get single invoice by ID"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM invoices WHERE id = ?', (invoice_id,))
+    row = cursor.fetchone()
+    
+    conn.close()
+    
+    if row:
+        return dict(row)
+    return None
+
+def init_email_inbox_table():
+    """Initialize email inbox configuration table"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS email_inbox_config (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            enabled INTEGER DEFAULT 0,
+            email_address TEXT,
+            imap_server TEXT,
+            imap_port INTEGER DEFAULT 993,
+            username TEXT,
+            password TEXT,
+            folder TEXT DEFAULT 'INBOX',
+            filter_from TEXT,
+            filter_subject TEXT,
+            auto_process INTEGER DEFAULT 1,
+            last_check TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS email_processed (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message_id TEXT UNIQUE,
+            from_address TEXT,
+            subject TEXT,
+            received_at TEXT,
+            processed_at TEXT,
+            job_id TEXT,
+            status TEXT,
+            attachments_count INTEGER
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+init_email_inbox_table()
+
+def get_email_config():
+    """Get email inbox configuration"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM email_inbox_config ORDER BY id DESC LIMIT 1')
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def save_email_config(config: dict):
+    """Save email inbox configuration"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Delete existing config
+    cursor.execute('DELETE FROM email_inbox_config')
+    
+    cursor.execute('''
+        INSERT INTO email_inbox_config 
+        (enabled, email_address, imap_server, imap_port, username, password, folder, filter_from, filter_subject, auto_process)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        config.get('enabled', 0),
+        config.get('email_address', ''),
+        config.get('imap_server', ''),
+        config.get('imap_port', 993),
+        config.get('username', ''),
+        config.get('password', ''),
+        config.get('folder', 'INBOX'),
+        config.get('filter_from', ''),
+        config.get('filter_subject', ''),
+        config.get('auto_process', 1)
+    ))
+    
+    conn.commit()
+    conn.close()
+
+def save_processed_email(message_id: str, from_addr: str, subject: str, job_id: str, attachments: int):
+    """Save record of processed email"""
+    from datetime import datetime
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT OR REPLACE INTO email_processed 
+        (message_id, from_address, subject, received_at, processed_at, job_id, status, attachments_count)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (message_id, from_addr, subject, datetime.now().isoformat(), datetime.now().isoformat(), job_id, 'processed', attachments))
+    
+    conn.commit()
+    conn.close()
+
+def is_email_processed(message_id: str) -> bool:
+    """Check if email was already processed"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM email_processed WHERE message_id = ?', (message_id,))
+    exists = cursor.fetchone() is not None
+    conn.close()
+    return exists
