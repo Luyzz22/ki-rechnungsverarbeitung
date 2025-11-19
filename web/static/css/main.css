@@ -592,7 +592,7 @@ body {
 .pricing-desc {
   font-size: 0.9rem;
   color: var(--sbs-muted);
-  margin-top: 8px;
+  margin-top: 0; padding-top: 8px;
 }
 
 .pricing-features {
@@ -1427,7 +1427,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: 8px;
+  margin-top: 0; padding-top: 8px;
   padding: 8px 16px;
   border-radius: 999px;
   border: 1px solid var(--sbs-border);
@@ -1879,7 +1879,7 @@ body {
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 8px;
+  margin-top: 0; padding-top: 8px;
   background: var(--sbs-white);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
