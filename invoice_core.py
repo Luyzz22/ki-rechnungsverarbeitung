@@ -13,6 +13,7 @@ from typing import Dict, Any, List, Optional, Tuple
 import PyPDF2
 import pdfplumber
 import pytesseract
+pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 from pdf2image import convert_from_path
 from PIL import Image
 from dotenv import load_dotenv
@@ -256,7 +257,7 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     # METHODE 2: OCR (langsam aber findet ALLES, auch Bilder/Footer)
     try:
         # PDF zu Bildern konvertieren
-        images = convert_from_path(pdf_path, dpi=300)
+        images = convert_from_path(pdf_path, dpi=300, poppler_path='/usr/bin')
         
         ocr_text = ""
         for i, image in enumerate(images):

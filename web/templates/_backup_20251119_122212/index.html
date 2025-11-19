@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SBS KI-Rechnungsverarbeitung – Upload</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/dropzone.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/dropzone.min.js"></script>
+
+    <style>
+        body {
+            background: #f7f9fc;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #003856;
+        }
+
+        /* HEADER */
+        header {
+            background: #003856;
+            padding: 15px 30px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        header .logo {
+            font-size: 1.4rem;
+            font-weight: bold;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+        }
+
+        nav a:hover {
+            opacity: 0.8;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 2rem;
+        }
+
+        .dropzone {
+            border: 3px dashed #003856;
+            background: #eef4f8;
+            padding: 40px;
+            border-radius: 12px;
+        }
+
+        #fileList {
+            margin-top: 20px;
+            background: #fff;
+            border: 1px solid #ccd5db;
+            border-radius: 8px;
+            padding: 8px;
+            max-height: 250px;
+            overflow-y: scroll;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            background: #f5f7fa;
+        }
+
+        .remove-btn {
+            color: red;
+            cursor: pointer;
+        }
+
+        .process-btn {
+            margin-top: 25px;
+            background: #ffb900;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            color: #003856;
+            font-size: 1.2rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .process-btn:hover {
+            background: #e0a300;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">SBS Deutschland</div>
+    <nav>
+        <a href="https://sbsdeutschland.com/">Home</a>
+        <a href="https://sbsdeutschland.com/landing/">KI Anwendung</a>
+        <a href="/upload">Upload</a>
+        <a href="/history">Verlauf</a>
+        <a href="/logout">Logout</a>
+    </nav>
+</header>
+
+<div class="container">
+
+    <h1>📄 KI-Rechnungsverarbeitung – Dateien hochladen</h1>
+    <p>
+        Laden Sie beliebig viele Rechnungen hoch. Unsere KI extrahiert automatisch alle relevanten
+        Daten und bereitet sie für <strong>Excel, CSV oder DATEV</strong> auf.
+        Sie können Dateien vor der Verarbeitung jederzeit wieder entfernen.
+    </p>
+
+    <!-- Dropzone-Feld -->
+    <form action="/upload" id="invoiceDropzone" class="dropzone"></form>
+
+    <!-- Scrollbare Dateiliste -->
+    <div id="fileList"></div>
+
+    <!-- Button, der NUR die KI-Verarbeitung startet -->
+    <button id="processBtn" class="process-btn">Jetzt verarbeiten</button>
+
+</div>
+<script>
+// -----------------------------------------------
+// DROPZONE CONFIG
+// -----------------------------------------------
+let uploadedFiles = [];
+
+Dropzone.autoDiscover = false;
+
+const dz = new Dropzone("#invoiceDropzone", {
+    url: "/upload",
+    maxFilesize: 20, 
+    acceptedFiles: ".pdf,.jpg,.jpeg,.png",
+    addRemoveLinks: false,
+    dictDefaultMessage: "Dateien hier ablegen oder klicken",
+    init: function () {
+        this.on("success", function (file, response) {
+            uploadedFiles.push({ name: file.name, path: response.path });
+            updateFileList();
+        });
+
+        this.on("removedfile", function (file) {
+            uploadedFiles = uploadedFiles.filter(f => f.name !== file.name);
+            updateFileList();
+        });
+    }
+});
+
+
+// -----------------------------------------------
+// Dateiliste erneuern
+// -----------------------------------------------
+function updateFileList() {
+    const list = document.getElementById("fileList");
+    list.innerHTML = "";
+
+    uploadedFiles.forEach(f => {
+        const item = document.createElement("div");
+        item.className = "file-item";
+        item.innerHTML = `
+            <span>${f.name}</span>
+            <span class="remove-btn" onclick="removeFile('${f.name}')">Entfernen</span>
+        `;
+        list.appendChild(item);
+    });
+}
+
+
+// -----------------------------------------------
+// Datei entfernen
+// -----------------------------------------------
+function removeFile(name) {
+    uploadedFiles = uploadedFiles.filter(f => f.name !== name);
+    updateFileList();
+}
+
+
+// -----------------------------------------------
+// JETZT VERARBEITEN BUTTON → KI STARTEN
+// -----------------------------------------------
+document.getElementById("processBtn").addEventListener("click", () => {
+
+    if (uploadedFiles.length === 0) {
+        alert("Bitte laden Sie zuerst Dateien hoch.");
+        return;
+    }
+
+    fetch("/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: uploadedFiles })
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert("✔️ Verarbeitung gestartet! Sie werden benachrichtigt.");
+        console.log(data);
+    })
+    .catch(err => {
+        alert("Ein Fehler ist aufgetreten.");
+        console.error(err);
+    });
+
+});
+</script>
+
+</body>
+</html>

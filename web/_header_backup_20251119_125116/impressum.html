@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Impressum | SBS Deutschland</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="container nav">
+    <div class="nav-left">
+      <div class="brand-mark"></div>
+      <div class="brand-text">SBS Deutschland</div>
+    </div>
+    <nav class="nav-links">
+      <a href="/sbshomepage/index.html">Startseite</a>
+      <a href="/static/landing/index.html">KI-Rechnungsverarbeitung</a>
+      <a href="/sbshomepage/unternehmen.html">Unternehmen</a>
+      <a href="/sbshomepage/kontakt.html">Kontakt</a>
+    </nav>
+    <div class="nav-cta">
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Darstellung wechseln">🌓</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="section">
+    <div class="container">
+      <h1 class="section-title">Impressum</h1>
+
+      <div class="card" style="margin-top:1.5rem;">
+        <h2>Angaben nach § 5 TMG</h2>
+        <p>
+          SBS Deutschland GmbH &amp; Co. KG<br />
+          In der Dell 19<br />
+          69469 Weinheim<br />
+          Deutschland
+        </p>
+
+        <h2>Vertretungsberechtigte</h2>
+        <p>
+          Persönlich haftende Gesellschafterin:<br />
+          SBS Deutschland Verwaltungs-GmbH<br />
+          (diese wiederum vertreten durch die/den Geschäftsführer/in)
+        </p>
+
+        <h2>Kontakt</h2>
+        <p>
+          Telefon: +49 (0) 6201 80 6109<br />
+          E-Mail: <a href="mailto:info@sbsdeutschland.com">info@sbsdeutschland.com</a><br />
+          Internet: <a href="https://www.sbsdeutschland.com/">www.sbsdeutschland.com</a>
+        </p>
+
+        <h2>Registereintrag</h2>
+        <p>
+          Eintragung im Handelsregister.<br />
+          Registergericht: Amtsgericht Mannheim<br />
+          Registernummer: HRA 706204
+        </p>
+
+        <h2>Umsatzsteuer-ID</h2>
+        <p>
+          Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG:<br />
+          DE[Nummer]
+        </p>
+
+        <h2>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>
+        <p>
+          Luis Schenk<br />
+          Musterstraße 123<br />
+          69469 Weinheim<br />
+          Deutschland
+        </p>
+
+        <h2>EU-Streitbeilegung</h2>
+        <p>
+          Die Europäische Kommission bietet eine Plattform zur Online-Streitbeilegung (OS) an:
+          <a href="https://ec.europa.eu/consumers/odr">https://ec.europa.eu/consumers/odr</a>.<br />
+          Unsere E-Mail-Adresse finden Sie im Abschnitt „Kontakt“.
+        </p>
+
+        <h2>Verbraucherstreitbeilegung</h2>
+        <p>
+          Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer
+          Verbraucherschlichtungsstelle teilzunehmen.
+        </p>
+
+        <h2>Hinweise zur Haftung</h2>
+        <h3>Haftung für Inhalte</h3>
+        <p>
+          Als Diensteanbieter sind wir nach den allgemeinen Gesetzen für eigene Inhalte auf diesen
+          Seiten verantwortlich. Eine dauerhafte Überwachung fremder Informationen ist ohne konkrete
+          Anhaltspunkte einer Rechtsverletzung jedoch nicht zumutbar. Sobald uns entsprechende
+          Rechtsverletzungen bekannt werden, entfernen wir diese Inhalte umgehend.
+        </p>
+
+        <h3>Haftung für Links</h3>
+        <p>
+          Unsere Website enthält Verlinkungen zu externen Angeboten Dritter. Auf deren Inhalte haben
+          wir keinen Einfluss, daher übernehmen wir dafür keine Gewähr. Für die Inhalte der
+          verlinkten Seiten ist stets der jeweilige Anbieter bzw. Betreiber verantwortlich.
+        </p>
+
+        <h3>Urheberrecht</h3>
+        <p>
+          Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Beiträge Dritter
+          sind entsprechend gekennzeichnet. Eine Vervielfältigung oder Weitergabe außerhalb der
+          gesetzlichen Grenzen des Urheberrechts bedarf der vorherigen Zustimmung der jeweiligen
+          Rechteinhaber.
+        </p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div>© <span id="year"></span> SBS Deutschland GmbH &amp; Co. KG · In der Dell 19, 69469 Weinheim</div>
+    <div>
+      <a href="/sbshomepage/impressum.html">Impressum</a> ·
+      <a href="/sbshomepage/datenschutz.html">Datenschutz</a> ·
+      <a href="/sbshomepage/agb.html">AGB</a>
+    </div>
+  </div>
+  <script>
+    const themeToggle = document.getElementById('themeToggle');
+    const root = document.documentElement;
+    const storedTheme = localStorage.getItem('sbs-theme');
+    if (storedTheme) root.setAttribute('data-theme', storedTheme);
+    themeToggle.addEventListener('click', () => {
+      const current = root.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      localStorage.setItem('sbs-theme', next);
+    });
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</footer>
+</body>
+</html>
+

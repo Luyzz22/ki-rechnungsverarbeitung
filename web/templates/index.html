@@ -1,17 +1,782 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>Upload / Demo | KI-Rechnungsverarbeitung | SBS Deutschland</title>
+  <title>Upload · SBS KI-Rechnungsverarbeitung</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="Upload- und Demo-Seite für die KI-Rechnungsverarbeitung von SBS Deutschland. PDF-Rechnungen hochladen und automatisch verarbeiten lassen." />
+  <meta name="description" content="SBS Deutschland KI-Rechnungsverarbeitung – Automatisierte Datenextraktion für Rechnungen." />
   <link rel="icon" href="/static/favicon.ico" />
-  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/dropzone.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/dropzone.min.js"></script>
+  <style>
+    :root {
+      --sbs-bg: #f5f6f8;
+      --sbs-white: #ffffff;
+      --sbs-dark: #003856;
+      --sbs-dark-soft: #0b2435;
+      --sbs-accent: #ffb900;
+      --sbs-accent-soft: rgba(255,180,0,0.14);
+      --sbs-border-soft: rgba(15,23,42,0.08);
+      --sbs-text: #17212b;
+      --sbs-muted: #6b7280;
+      --sbs-gradient: linear-gradient(135deg, #003856 0%, #00507a 100%);
+      --transition-fast: all 0.25s ease;
+    }
+
+    [data-theme="dark"] {
+      --sbs-bg: #0f172a;
+      --sbs-white: #1e293b;
+      --sbs-dark: #60a5fa;
+      --sbs-dark-soft: #e2e8f0;
+      --sbs-text: #e2e8f0;
+      --sbs-muted: #94a3b8;
+      --sbs-border-soft: rgba(148,163,253,0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--sbs-bg);
+      color: var(--sbs-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* HEADER */
+    .header {
+      background: var(--sbs-white);
+      padding: 12px 0;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      transition: var(--transition-fast);
+    }
+
+    .header.scrolled {
+      padding: 8px 0;
+      box-shadow: 0 4px 20px rgba(15,23,42,0.12);
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+
+    .logo-img {
+      height: 46px;
+      width: auto;
+      transition: height 0.3s ease;
+    }
+
+    .header.scrolled .logo-img {
+      height: 38px;
+    }
+
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+      line-height: 1.25;
+      color: var(--sbs-dark-soft);
+    }
+
+    .logo-text strong {
+      font-size: 14px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    /* NAV */
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 15px;
+    }
+
+    .nav a {
+      position: relative;
+      padding-bottom: 4px;
+      opacity: 0.85;
+      transition: var(--transition-fast);
+      text-decoration: none;
+      color: var(--sbs-text);
+    }
+
+    .nav a:hover {
+      opacity: 1;
+    }
+
+    .nav a:hover::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--sbs-accent);
+    }
+
+    .nav-cta {
+      padding: 9px 16px !important;
+      border-radius: 999px;
+      background: var(--sbs-accent) !important;
+      color: #111827 !important;
+      font-weight: 600;
+      box-shadow: 0 8px 18px rgba(255,180,0,0.32);
+    }
+
+    .nav-cta:hover::after {
+      display: none !important;
+    }
+
+    /* Dropdown */
+    .dropdown {
+      position: relative;
+    }
+
+    .dropdown-toggle {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--sbs-text);
+    }
+
+    .dropdown-toggle::after {
+      content: "▾";
+      font-size: 10px;
+      opacity: 0.6;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: var(--sbs-white);
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      padding: 8px 0;
+      min-width: 220px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(10px);
+      transition: var(--transition-fast);
+      z-index: 1000;
+    }
+
+    .dropdown:hover .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown-menu a {
+      display: block;
+      padding: 10px 16px;
+      color: var(--sbs-text);
+      text-decoration: none;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .dropdown-menu a:hover {
+      background: var(--sbs-accent-soft);
+    }
+
+    .dropdown-menu a:hover::after {
+      display: none;
+    }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px;
+    }
+
+    .theme-toggle .sun { display: inline; }
+    .theme-toggle .moon { display: none; }
+    [data-theme="dark"] .theme-toggle .sun { display: none; }
+    [data-theme="dark"] .theme-toggle .moon { display: inline; }
+
+    /* Burger */
+    .burger {
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+    }
+
+    .burger span {
+      width: 24px;
+      height: 2px;
+      background: var(--sbs-dark);
+      border-radius: 2px;
+      transition: var(--transition-fast);
+    }
+
+    /* HERO SECTION */
+    .hero {
+      background: var(--sbs-gradient);
+      padding: 60px 24px;
+      text-align: center;
+      color: white;
+    }
+
+    .hero-content {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-size: 2.5rem;
+      margin: 0 0 16px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .hero-subtitle {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    /* MAIN CONTENT */
+    .main {
+      flex: 1;
+      padding: 40px 24px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .upload-card {
+      background: var(--sbs-white);
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 8px 40px rgba(0,56,86,0.08);
+      border-top: 4px solid var(--sbs-accent);
+    }
+
+    .upload-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .upload-header h2 {
+      color: var(--sbs-dark);
+      font-size: 1.5rem;
+      margin: 0 0 12px;
+    }
+
+    .upload-header p {
+      color: var(--sbs-muted);
+      font-size: 1rem;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    /* Dropzone */
+    .dropzone {
+      border: 3px dashed var(--sbs-dark) !important;
+      background: var(--sbs-bg) !important;
+      border-radius: 12px !important;
+      padding: 40px !important;
+      min-height: 180px !important;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .dropzone:hover {
+      border-color: var(--sbs-accent) !important;
+      background: var(--sbs-accent-soft) !important;
+    }
+
+    .dropzone .dz-message {
+      margin: 0 !important;
+      font-size: 1.1rem;
+      color: var(--sbs-muted);
+    }
+
+    .dropzone .dz-preview {
+      display: none !important;
+    }
+
+    /* File List Section - ALWAYS VISIBLE */
+    .file-list-section {
+      margin-top: 24px;
+      background: var(--sbs-bg);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--sbs-border-soft);
+    }
+
+    .file-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--sbs-border-soft);
+    }
+
+    .file-list-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      color: var(--sbs-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .file-count {
+      font-size: 0.85rem;
+      color: var(--sbs-muted);
+      background: var(--sbs-white);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .file-list {
+      max-height: 250px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    /* Custom Scrollbar */
+    .file-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .file-list::-webkit-scrollbar-track {
+      background: var(--sbs-border-soft);
+      border-radius: 3px;
+    }
+
+    .file-list::-webkit-scrollbar-thumb {
+      background: var(--sbs-dark);
+      border-radius: 3px;
+    }
+
+    .file-list::-webkit-scrollbar-thumb:hover {
+      background: var(--sbs-accent);
+    }
+
+    .file-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      background: var(--sbs-white);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: var(--transition-fast);
+    }
+
+    .file-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .file-item:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    .file-details {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .file-name {
+      font-size: 0.9rem;
+      color: var(--sbs-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-size {
+      font-size: 0.75rem;
+      color: var(--sbs-muted);
+      margin-top: 2px;
+    }
+
+    .remove-btn {
+      background: none;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: var(--transition-fast);
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .remove-btn:hover {
+      background: rgba(239,68,68,0.1);
+      transform: scale(1.1);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px 20px;
+      color: var(--sbs-muted);
+    }
+
+    .empty-state-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .empty-state p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    /* Process Button */
+    .process-section {
+      margin-top: 24px;
+      text-align: center;
+    }
+
+    .process-btn {
+      background: var(--sbs-accent);
+      color: #111827;
+      border: none;
+      padding: 16px 48px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(255,180,0,0.4);
+      transition: var(--transition-fast);
+    }
+
+    .process-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(255,180,0,0.5);
+    }
+
+    .process-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Progress Section */
+    .progress-section {
+      margin-top: 32px;
+      display: none;
+    }
+
+    .progress-section.active {
+      display: block;
+    }
+
+    .progress-header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .progress-header h3 {
+      margin: 0 0 8px;
+      color: var(--sbs-dark);
+    }
+
+    .progress-status {
+      font-size: 0.9rem;
+      color: var(--sbs-muted);
+    }
+
+    .progress-bar-container {
+      background: var(--sbs-bg);
+      border-radius: 999px;
+      height: 24px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--sbs-dark) 0%, var(--sbs-accent) 100%);
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .progress-text {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    /* Result Section */
+    .result-section {
+      margin-top: 32px;
+      text-align: center;
+      display: none;
+    }
+
+    .result-section.active {
+      display: block;
+    }
+
+    .result-success {
+      background: var(--sbs-accent-soft);
+      padding: 24px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .result-success h3 {
+      margin: 0 0 8px;
+      color: var(--sbs-dark);
+    }
+
+    .result-success p {
+      margin: 0;
+      color: var(--sbs-muted);
+    }
+
+    .result-btn {
+      display: inline-block;
+      background: var(--sbs-dark);
+      color: white;
+      padding: 14px 32px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 999px;
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(0,56,86,0.3);
+      transition: var(--transition-fast);
+    }
+
+    .result-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(0,56,86,0.4);
+    }
+
+    /* FOOTER */
+    .footer {
+      background: linear-gradient(135deg, #001f2e 0%, #003856 100%);
+      color: rgba(255, 255, 255, 0.85);
+      padding: 60px 24px 24px;
+      margin-top: auto;
+    }
+
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+
+    .footer-section h4 {
+      color: var(--sbs-accent);
+      font-weight: 700;
+      margin-bottom: 16px;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-section ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .footer-section ul li {
+      margin-bottom: 10px;
+    }
+
+    .footer-section ul li a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: color 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .footer-section ul li a:hover {
+      color: var(--sbs-accent);
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .footer-logo-img {
+      height: 36px;
+      width: auto;
+    }
+
+    .footer-brand {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .footer-brand strong {
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-brand span {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-tagline {
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+
+    .footer-location {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.85rem;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-bottom p {
+      margin: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--sbs-white);
+        flex-direction: column;
+        padding: 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      }
+
+      .nav.active {
+        display: flex;
+      }
+
+      .burger {
+        display: flex;
+      }
+
+      .hero h1 {
+        font-size: 1.8rem;
+      }
+
+      .upload-card {
+        padding: 24px;
+      }
+
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+  </style>
 </head>
 <body>
-<header class="header">
+
+<header class="header" id="header">
   <div class="header-inner">
-    <a href="https://sbsdeutschland.com" class="logo-wrap">
+    <a href="https://sbsdeutschland.com/" class="logo-wrap">
       <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
       <div class="logo-text">
         <strong>SBS Deutschland</strong>
@@ -24,12 +789,20 @@
     </button>
 
     <nav class="nav" id="nav">
-      <a href="https://sbsdeutschland.com/">Startseite</a>
-      <a href="https://sbsdeutschland.com/landing">KI-Rechnungsverarbeitung</a>
+      <div class="dropdown">
+        <span class="dropdown-toggle">Leistungen</span>
+        <div class="dropdown-menu">
+          <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/met-pmo.html">📐 Metrologie &amp; PMO</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/quality-risk-management.html">🎯 Quality &amp; Risk</a>
+        </div>
+      </div>
       <a href="https://sbsdeutschland.com/preise">Preise</a>
       <a href="https://sbsdeutschland.com/sbshomepage/unternehmen.html">Über uns</a>
       <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
-      <a href="https://app.sbsdeutschland.com/" class="nav-cta">Upload / Demo</a>
+      <a href="/history" class="nav-cta">Verlauf</a>
       <button class="theme-toggle" id="theme-toggle" aria-label="Theme">
         <span class="sun">☀️</span>
         <span class="moon">🌙</span>
@@ -38,318 +811,321 @@
   </div>
 </header>
 
-<!-- HERO-Bereich -->
+<!-- HERO SECTION -->
 <section class="hero">
   <div class="hero-content">
-    <div class="hero-badge">🤖 KI-RECHNUNGSVERARBEITUNG · DEMO</div>
-    <h1>Rechnungen hochladen &amp;<br>automatisch verarbeiten</h1>
+    <div class="hero-badge">KI-RECHNUNGSVERARBEITUNG</div>
+    <h1>Rechnungen intelligent<br>verarbeiten</h1>
     <p class="hero-subtitle">
-      Laden Sie Ihre PDF-Rechnungen hoch und lassen Sie unsere KI alle relevanten Daten extrahieren –
-      schnell, sicher und DSGVO-konform.
+      Laden Sie Ihre Rechnungen hoch und unsere KI extrahiert automatisch alle relevanten Daten. 
+      Export in Excel, CSV oder DATEV – schnell, präzise und DSGVO-konform.
     </p>
   </div>
 </section>
 
-<!-- Erklärung + Upload-Karte ÜBEREINANDER -->
-<section class="section">
-  <div class="container upload-layout">
-    
-    <!-- Erklärung -->
-    <div class="upload-intro">
-      <div class="section-badge">KURZ ERKLÄRT</div>
-      <h2>So nutzen Sie die Demo</h2>
-      <p>
-        Diese Demo zeigt, wie unsere KI-Rechnungsverarbeitung Ihre Belege automatisiert ausliest und
-        für die Buchhaltung aufbereitet.
-      </p>
-      <ul>
-        <li>Beliebig viele PDF-Rechnungen nach und nach hinzufügen</li>
-        <li>Dateien in der Liste prüfen und bei Bedarf wieder entfernen</li>
-        <li>Mit „Jetzt verarbeiten“ startet die KI-Verarbeitung aller ausgewählten Rechnungen</li>
-      </ul>
-      <p>
-        Für produktiven Einsatz, höhere Volumina und Integrationen steht Ihnen unsere
-        <a href="https://sbsdeutschland.com/preise">volle Produktversion</a> zur Verfügung.
-      </p>
-    </div>
-
-    <!-- Upload-Karte -->
+<main class="main">
+  <div class="container">
     <div class="upload-card">
-      <div class="upload-card-header">
-        <h2>PDF-Rechnungen hochladen</h2>
-        <p>Drag &amp; Drop oder Dateiauswahl – Ihre Daten bleiben in Deutschland.</p>
-      </div>
-
-      <div class="upload-zone-wrapper">
-        <div class="upload-dropzone" id="upload-dropzone">
-          <span class="upload-dropzone-icon">📄</span>
-          <div class="upload-dropzone-title">Drag &amp; Drop oder klicken</div>
-          <div class="upload-dropzone-text">
-            Ziehen Sie eine oder mehrere PDF-Dateien hierher oder klicken Sie auf „Dateien auswählen“, um weitere Rechnungen hinzuzufügen.
-          </div>
-
-          <form id="upload-form" action="/api/upload" method="post" enctype="multipart/form-data" onsubmit="return false;">
-            <input
-              type="file"
-              name="files"
-              id="files"
-              accept="application/pdf"
-              multiple
-              style="display:none"
-            />
-            <button type="button" class="upload-secondary-btn" id="select-files-button">
-              Dateien auswählen
-            </button>
-          </form>
-        </div>
-
-        <!-- Scrollbare Dateiliste -->
-        <div class="upload-file-list" id="upload-file-list">
-          <div class="upload-file-list-empty">Noch keine Dateien hinzugefügt.</div>
-        </div>
-      </div>
-
-      <!-- Ergebnisbox -->
-      <div id="upload-result" class="upload-result"></div>
-
-      <!-- Haupt-CTA: startet NUR die KI -->
-      <button type="button" class="upload-primary-btn upload-primary-btn-full" id="process-button">
-        ⚡ Jetzt verarbeiten
-      </button>
-
-      <div class="upload-meta">
-        <p><strong>Hinweis:</strong> Diese Demo ist für Testzwecke gedacht. Für größere Volumen
-          und produktive Anbindung (z.B. DATEV-Export, API-Integration) empfehlen wir unsere
-          Produktpakete auf der <a href="https://sbsdeutschland.com/preise">Preise-Seite</a>.
+      <div class="upload-header">
+        <h2>📤 Dateien hochladen</h2>
+        <p>
+          Ziehen Sie Ihre Rechnungen in das Feld oder klicken Sie zum Auswählen.
+          Unterstützte Formate: PDF, JPG, PNG (max. 20 MB pro Datei)
         </p>
       </div>
-    </div>
 
-  </div>
-</section>
+      <!-- Dropzone -->
+      <form action="/upload" id="invoiceDropzone" class="dropzone">
+        <div class="dz-message">
+          <span>📥 Dateien hier ablegen oder klicken</span>
+        </div>
+      </form>
 
-<footer class="footer">
-  <div class="footer-grid">
-    <div>
-      <div class="footer-brand">
-        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
-        <div class="footer-brand-text">
-          <strong>SBS Deutschland</strong>
-          <span>Smart Business Service</span>
+      <!-- File List Section - ALWAYS VISIBLE -->
+      <div class="file-list-section">
+        <div class="file-list-header">
+          <h3>📋 Hochgeladene Dateien</h3>
+          <span class="file-count" id="fileCount">0 Dateien</span>
+        </div>
+        <div class="file-list" id="fileList">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-state-icon">📁</div>
+            <p>Noch keine Dateien hochgeladen</p>
+          </div>
         </div>
       </div>
-      <p class="footer-tagline">
-        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
-      </p>
-      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
-    </div>
 
-    <div>
-      <h4>Produkte</h4>
-      <ul>
-        <li><a href="https://sbsdeutschland.com/landing">KI-Rechnungsverarbeitung</a></li>
-        <li><a href="https://sbsdeutschland.com/preise">Preise &amp; Pakete</a></li>
-        <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
-      </ul>
-    </div>
+      <!-- Process Button -->
+      <div class="process-section" id="processSection">
+        <button class="process-btn" id="processBtn" disabled>
+          ⚡ Jetzt verarbeiten
+        </button>
+      </div>
 
-    <div>
-      <h4>Unternehmen</h4>
-      <ul>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/unternehmen.html">Über uns</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">IT Consulting</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
-      </ul>
-    </div>
+      <!-- Progress Section -->
+      <div class="progress-section" id="progressSection">
+        <div class="progress-header">
+          <h3>🔄 Verarbeitung läuft...</h3>
+          <p class="progress-status" id="progressStatus">Initialisiere...</p>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="progressBar">
+            <span class="progress-text" id="progressText">0%</span>
+          </div>
+        </div>
+      </div>
 
-    <div>
-      <h4>Rechtliches</h4>
-      <ul>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/impressum.html">Impressum</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/datenschutz.html">Datenschutz</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/agb.html">AGB</a></li>
-      </ul>
+      <!-- Result Section -->
+      <div class="result-section" id="resultSection">
+        <div class="result-success">
+          <h3>✅ Verarbeitung abgeschlossen!</h3>
+          <p id="resultMessage">Alle Rechnungen wurden erfolgreich verarbeitet.</p>
+        </div>
+        <a href="#" class="result-btn" id="resultBtn">
+          📊 Ergebnisse anzeigen →
+        </a>
+      </div>
     </div>
   </div>
+</main>
 
-  <div class="footer-bottom">
-    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
-    <p>Made with ❤️ in Weinheim</p>
+<footer class="footer">
+  <div class="footer-container">
+    <div class="footer-content">
+      <div class="footer-section">
+        <div class="footer-logo">
+          <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="footer-logo-img" />
+          <div class="footer-brand">
+            <strong>SBS Deutschland</strong>
+            <span>Smart Business Service</span>
+          </div>
+        </div>
+        <p class="footer-tagline">Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.</p>
+        <div class="footer-location">
+          📍 In der Dell 19, 69469 Weinheim
+        </div>
+      </div>
+
+      <div class="footer-section">
+        <h4>Produkte</h4>
+        <ul>
+          <li><a href="https://sbsdeutschland.com/landing">KI-Rechnungsverarbeitung</a></li>
+          <li><a href="https://sbsdeutschland.com/preise">Preise &amp; Pakete</a></li>
+          <li><a href="/">Demo &amp; Upload</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h4>Unternehmen</h4>
+        <ul>
+          <li><a href="https://sbsdeutschland.com/sbshomepage/unternehmen.html">Über uns</a></li>
+          <li><a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a></li>
+          <li><a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">IT Consulting</a></li>
+          <li><a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h4>Rechtliches</h4>
+        <ul>
+          <li><a href="https://sbsdeutschland.com/sbshomepage/impressum.html">Impressum</a></li>
+          <li><a href="https://sbsdeutschland.com/sbshomepage/datenschutz.html">Datenschutz</a></li>
+          <li><a href="https://sbsdeutschland.com/sbshomepage/agb.html">AGB</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+      <p>Made with ❤️ in Weinheim</p>
+    </div>
   </div>
 </footer>
 
-<script src="/static/js/main.js"></script>
-
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const dropzone = document.getElementById('upload-dropzone');
-    const fileInput = document.getElementById('files');
-    const selectFilesButton = document.getElementById('select-files-button');
-    const processButton = document.getElementById('process-button');
-    const resultEl = document.getElementById('upload-result');
-    const form = document.getElementById('upload-form');
-    const fileListEl = document.getElementById('upload-file-list');
+// Theme Toggle
+const themeToggle = document.getElementById('theme-toggle');
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
 
-    if (!dropzone || !fileInput || !selectFilesButton || !processButton || !resultEl || !form || !fileListEl) return;
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+});
 
-    let filesArray = []; // alle ausgewählten Dateien
+// Burger Menu
+const burger = document.getElementById('burger');
+const nav = document.getElementById('nav');
+burger.addEventListener('click', () => {
+  nav.classList.toggle('active');
+});
 
-    function formatSize(bytes) {
-      if (!bytes && bytes !== 0) return '';
-      if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-      if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
-      return bytes + ' B';
-    }
+// Header Scroll
+window.addEventListener('scroll', () => {
+  const header = document.getElementById('header');
+  if (window.scrollY > 50) {
+    header.classList.add('scrolled');
+  } else {
+    header.classList.remove('scrolled');
+  }
+});
 
-    function showResult(type, html) {
-      resultEl.className = 'upload-result upload-result--' + type;
-      resultEl.innerHTML = html;
-    }
+// Dropzone Config
+let uploadedFiles = [];
+Dropzone.autoDiscover = false;
 
-    function renderFileList() {
-      if (!filesArray.length) {
-        fileListEl.innerHTML = '<div class="upload-file-list-empty">Noch keine Dateien hinzugefügt.</div>';
-        return;
-      }
-
-      const items = filesArray.map((file, idx) => {
-        return (
-          '<div class="upload-file-item">' +
-            '<span class="upload-file-name">' + file.name + '</span>' +
-            '<span class="upload-file-size">' + formatSize(file.size) + '</span>' +
-            '<button type="button" class="upload-file-remove" data-index="' + idx + '" aria-label="Datei entfernen">&times;</button>' +
-          '</div>'
-        );
-      }).join('');
-      fileListEl.innerHTML = items;
-    }
-
-    function addFiles(newFiles) {
-      const arr = Array.from(newFiles);
-      // einfach anhängen, Duplikate kann der Nutzer bei Bedarf löschen
-      filesArray = filesArray.concat(arr);
-      renderFileList();
-      showResult('pending', filesArray.length + ' Datei(en) ausgewählt. Klicken Sie auf „Jetzt verarbeiten“, um die KI zu starten.');
-    }
-
-    async function handleUpload() {
-      if (!filesArray.length) {
-        showResult('error', 'Bitte fügen Sie zuerst PDF-Dateien hinzu.');
-        return;
-      }
-
-      const formData = new FormData();
-      filesArray.forEach(file => formData.append('files', file));
-
-      showResult('pending', 'Rechnungen werden hochgeladen und verarbeitet …');
-
-      try {
-        const res = await fetch(form.action, {
-          method: 'POST',
-          body: formData
-        });
-
-        if (!res.ok) {
-          throw new Error('Serverfehler: ' + res.status);
-        }
-
-        const data = await res.json();
-        if (data.success) {
-          const fileList = (data.files || [])
-            .map(f => '<li>' + (f.filename || 'Datei') + ' (' + (formatSize(f.size) || '–') + ')</li>')
-            .join('');
-
-          const html =
-            '✅ ' + (data.files_uploaded || filesArray.length) + ' Rechnungen erfolgreich hochgeladen.<br>' +
-            'Batch-ID: <code>' + (data.batch_id || '–') + '</code>' +
-            (fileList ? '<ul style="margin-top:8px;padding-left:20px;">' + fileList + '</ul>' : '');
-
-          showResult('success', html);
-          // Nach erfolgreicher Verarbeitung Liste leeren
-          filesArray = [];
-          renderFileList();
-        } else {
-          showResult('error', 'Die Verarbeitung war nicht erfolgreich. Bitte versuchen Sie es erneut.');
-        }
-      } catch (err) {
-        console.error(err);
-        showResult('error', 'Fehler beim Upload: ' + err.message);
-      }
-    }
-
-    // Dateien auswählen-Button
-    selectFilesButton.addEventListener('click', function (e) {
-      e.stopPropagation();
-      fileInput.click();
-    });
-
-    // Änderung im File-Input → Dateien hinzufügen, aber noch nicht hochladen
-    fileInput.addEventListener('change', function () {
-      if (fileInput.files && fileInput.files.length) {
-        addFiles(fileInput.files);
-        // Input leeren, damit man dieselbe Datei erneut auswählen könnte
-        fileInput.value = '';
-      }
-    });
-
-    // Drag & Drop Styling
-    ['dragenter', 'dragover'].forEach(eventName => {
-      dropzone.addEventListener(eventName, function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        dropzone.classList.add('upload-dropzone--active');
+const dz = new Dropzone("#invoiceDropzone", {
+  url: "/api/upload",
+  maxFilesize: 20,
+  acceptedFiles: ".pdf,.jpg,.jpeg,.png",
+  addRemoveLinks: false,
+  autoProcessQueue: false,
+  uploadMultiple: true,
+  parallelUploads: 100,
+  dictDefaultMessage: "",
+  init: function () {
+    this.on("addedfile", function (file) {
+      uploadedFiles.push({ 
+        name: file.name, 
+        file: file,
+        size: file.size 
       });
+      updateFileList();
     });
+  }
+});
 
-    ['dragleave', 'drop'].forEach(eventName => {
-      dropzone.addEventListener(eventName, function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        dropzone.classList.remove('upload-dropzone--active');
-      });
-    });
-
-    // Dateien per Drag & Drop hinzufügen
-    dropzone.addEventListener('drop', function (e) {
-      const dt = e.dataTransfer;
-      if (dt && dt.files && dt.files.length) {
-        addFiles(dt.files);
-      }
-    });
-
-    // Klick in die Dropzone (ohne den sekundären Button) → Dateidialog
-    dropzone.addEventListener('click', function (e) {
-      if (e.target === dropzone || e.target.classList.contains('upload-dropzone-title') || e.target.classList.contains('upload-dropzone-text') || e.target.classList.contains('upload-dropzone-icon')) {
-        fileInput.click();
-      }
-    });
-
-    // Entfernen von Dateien aus der Liste
-    fileListEl.addEventListener('click', function (e) {
-      const btn = e.target.closest('.upload-file-remove');
-      if (!btn) return;
-      const idx = parseInt(btn.getAttribute('data-index'), 10);
-      if (!isNaN(idx)) {
-        filesArray.splice(idx, 1);
-        renderFileList();
-        if (filesArray.length) {
-          showResult('pending', filesArray.length + ' Datei(en) ausgewählt. Klicken Sie auf „Jetzt verarbeiten“, um die KI zu starten.');
-        } else {
-          resultEl.className = 'upload-result';
-          resultEl.innerHTML = '';
-        }
-      }
-    });
-
-    // Haupt-Button: startet NUR den Upload
-    processButton.addEventListener('click', function () {
-      handleUpload();
-    });
-
-    // Initial: leere Liste rendern
-    renderFileList();
+// Update File List
+function updateFileList() {
+  const list = document.getElementById('fileList');
+  const count = document.getElementById('fileCount');
+  const processBtn = document.getElementById('processBtn');
+  
+  count.textContent = uploadedFiles.length + ' Datei' + (uploadedFiles.length !== 1 ? 'en' : '');
+  
+  if (uploadedFiles.length === 0) {
+    list.innerHTML = '<div class="empty-state" id="emptyState"><div class="empty-state-icon">📁</div><p>Noch keine Dateien hochgeladen</p></div>';
+    processBtn.disabled = true;
+    return;
+  }
+  
+  processBtn.disabled = false;
+  list.innerHTML = '';
+  
+  uploadedFiles.forEach((f, index) => {
+    const item = document.createElement('div');
+    item.className = 'file-item';
+    
+    const ext = f.name.split('.').pop().toLowerCase();
+    let icon = '📄';
+    if (ext === 'pdf') icon = '📕';
+    else if (['jpg', 'jpeg', 'png'].includes(ext)) icon = '🖼️';
+    
+    const size = formatFileSize(f.size);
+    
+    item.innerHTML = '<div class="file-info"><span class="file-icon">' + icon + '</span><div class="file-details"><div class="file-name">' + f.name + '</div><div class="file-size">' + size + '</div></div></div><button class="remove-btn" onclick="removeFile(' + index + ')" title="Entfernen">✕</button>';
+    list.appendChild(item);
   });
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function removeFile(index) {
+  const file = uploadedFiles[index];
+  dz.removeFile(file.file);
+  uploadedFiles.splice(index, 1);
+  updateFileList();
+}
+
+// Process Button
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (uploadedFiles.length === 0) {
+    alert('Bitte laden Sie zuerst Dateien hoch.');
+    return;
+  }
+
+  document.getElementById('processSection').style.display = 'none';
+  document.getElementById('progressSection').classList.add('active');
+
+  try {
+    const formData = new FormData();
+    uploadedFiles.forEach(f => {
+      formData.append('files', f.file);
+    });
+
+    const uploadResponse = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    const uploadData = await uploadResponse.json();
+    const jobId = uploadData.batch_id;
+
+    await fetch('/api/process/' + jobId, {
+      method: 'POST'
+    });
+
+    pollProgress(jobId);
+
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Ein Fehler ist aufgetreten.');
+    document.getElementById('processSection').style.display = 'block';
+    document.getElementById('progressSection').classList.remove('active');
+  }
+});
+
+// Poll Progress
+async function pollProgress(jobId) {
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+  const progressStatus = document.getElementById('progressStatus');
+  
+  const poll = async () => {
+    try {
+      const response = await fetch('/api/status/' + jobId);
+      const data = await response.json();
+      
+      const progress = data.progress || 0;
+      progressBar.style.width = progress + '%';
+      progressText.textContent = progress + '%';
+      
+      if (data.status === 'processing') {
+        progressStatus.textContent = 'Verarbeite ' + (data.processed || 0) + ' von ' + (data.total || uploadedFiles.length) + ' Dateien...';
+      }
+      
+      if (data.status === 'completed' || progress >= 100) {
+        document.getElementById('progressSection').classList.remove('active');
+        document.getElementById('resultSection').classList.add('active');
+        document.getElementById('resultBtn').href = '/results/' + jobId;
+        
+        const total = data.total || uploadedFiles.length;
+        const failed = data.failed ? data.failed.length : 0;
+        const success = total - failed;
+        document.getElementById('resultMessage').textContent = success + ' von ' + total + ' Rechnungen erfolgreich verarbeitet.';
+        
+        return;
+      }
+      
+      setTimeout(poll, 1000);
+      
+    } catch (error) {
+      console.error('Polling error:', error);
+      setTimeout(poll, 2000);
+    }
+  };
+  
+  poll();
+}
 </script>
+
 </body>
 </html>
