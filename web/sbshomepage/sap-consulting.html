@@ -175,5 +175,19 @@
 </footer>
 
 <script src="/static/js/main.js"></script>
+<script>
+async function checkLoginStatus() {
+  try {
+    const r = await fetch("https://app.sbsdeutschland.com/api/user", {credentials: "include"});
+    const u = await r.json();
+    const loginLink = document.querySelector("a[href*=\"app.sbsdeutschland.com/login\"]");
+    if (loginLink && u.logged_in) {
+      loginLink.textContent = "👤 " + u.name;
+      loginLink.href = "https://app.sbsdeutschland.com/history";
+    }
+  } catch(e) {}
+}
+document.addEventListener("DOMContentLoaded", checkLoginStatus);
+</script>
 </body>
 </html>
