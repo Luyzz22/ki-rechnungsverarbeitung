@@ -38,7 +38,17 @@
       <a href="/sbshomepage/unternehmen.html">Über uns</a>
       <a href="/sbshomepage/kontakt.html">Kontakt</a>
       <a href="https://app.sbsdeutschland.com/" class="nav-cta">Demo starten</a>
-      <a href="https://app.sbsdeutschland.com/login" class="nav-cta">🔑 Login</a>
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">Login</span> ▾</span>
+        <div class="account-menu">
+          <a href="https://app.sbsdeutschland.com/history">📊 Verlauf</a>
+          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
+          <a href="https://app.sbsdeutschland.com/email-config">📧 Email-Inbox</a>
+          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
+          <div class="divider"></div>
+          <a href="https://app.sbsdeutschland.com/logout">🚪 Logout</a>
+        </div>
+      </div>
       <button class="theme-toggle" id="theme-toggle" aria-label="Theme">
         <span class="sun">☀️</span>
         <span class="moon">🌙</span>
@@ -274,4 +284,25 @@ async function checkLoginStatus() {
 document.addEventListener("DOMContentLoaded", checkLoginStatus);
 </script>
 </body>
+<script>
+async function checkLoginStatus() {
+  try {
+    const r = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
+    const u = await r.json();
+    const toggle = document.querySelector('.account-toggle');
+    const menu = document.querySelector('.account-menu');
+    
+    if (u.logged_in) {
+      document.getElementById('accountName').textContent = u.name;
+    } else {
+      toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+      if (menu) menu.style.display = 'none';
+    }
+  } catch(e) {
+    const toggle = document.querySelector('.account-toggle');
+    if (toggle) toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+  }
+}
+document.addEventListener('DOMContentLoaded', checkLoginStatus);
+</script>
 </html>
