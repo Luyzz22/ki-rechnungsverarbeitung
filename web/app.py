@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from logging.handlers import RotatingFileHandler
 import sys
 
@@ -121,6 +122,8 @@ async def upload_files(files: List[UploadFile] = File(...)):
     upload_path.mkdir(exist_ok=True)
     
     uploaded_files = []
+    skipped_files = []
+    MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
     
     for file in files:
         if not file.filename.endswith('.pdf'):
@@ -180,7 +183,7 @@ async def process_job(job_id: str, background_tasks: BackgroundTasks):
     }
 
 async def process_invoices_background(job_id: str):
-    """Background task to process invoices"""
+    """Background task to process invoices with parallel processing"""
     job = processing_jobs[job_id]
     upload_path = Path(job["path"])
     
@@ -189,17 +192,37 @@ async def process_invoices_background(job_id: str):
     
     # Get all PDFs
     pdf_files = list(upload_path.glob("*.pdf"))
+    total_files = len(pdf_files)
     
-    # Process each PDF
-    for pdf_path in pdf_files:
+    # Update job with total count
+    processing_jobs[job_id]["total"] = total_files
+    processing_jobs[job_id]["processed"] = 0
+    
+    # Process PDFs in parallel (8 threads)
+    def process_single_pdf(pdf_path):
         try:
             data = processor.process_invoice(pdf_path)
-            if data:
+            return ("success", data, pdf_path.name)
+        except Exception as e:
+            return ("error", str(e), pdf_path.name)
+    
+    # Use ThreadPoolExecutor for parallel processing
+    max_workers = min(8, total_files) if total_files > 0 else 1
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_pdf = {executor.submit(process_single_pdf, pdf): pdf for pdf in pdf_files}
+        
+        for future in as_completed(future_to_pdf):
+            status, data, filename = future.result()
+            
+            if status == "success" and data:
                 results.append(data)
             else:
-                failed.append(pdf_path.name)
-        except Exception as e:
-            failed.append(f"{pdf_path.name}: {str(e)}")
+                failed.append(filename if status == "success" else f"{filename}: {data}")
+            
+            # Update progress
+            processing_jobs[job_id]["processed"] = len(results) + len(failed)
+            processing_jobs[job_id]["progress"] = int((len(results) + len(failed)) / total_files * 100) if total_files > 0 else 100
     
     # Calculate statistics
     stats = calculate_statistics(results) if results else None
@@ -207,7 +230,6 @@ async def process_invoices_background(job_id: str):
     # Füge Rechnungsanzahl hinzu
     if stats:
         stats['total_invoices'] = len(results)
-
     
     # Export (XLSX, CSV, DATEV)
     exported_files = {}
@@ -243,12 +265,14 @@ async def process_invoices_background(job_id: str):
         "stats": stats,
         "failed": failed,
         "exported_files": exported_files,
-        "completed_at": datetime.now().isoformat()
+        "completed_at": datetime.now().isoformat(),
+        "total_amount": stats.get('total_brutto', 0) if stats else 0,
+        "total": total_files,
+        "successful": len(results)
     })
     
     # Schedule cleanup of uploaded PDFs (nach 60 Minuten)
     asyncio.create_task(cleanup_uploads(upload_path, delay_minutes=60))
-
 @app.get("/api/status/{job_id}")
 async def get_status(job_id: str):
     """Get processing status"""

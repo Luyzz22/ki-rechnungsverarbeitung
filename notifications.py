@@ -1,35 +1,38 @@
 #!/usr/bin/env python3
 """
-KI-Rechnungsverarbeitung - Notifications Module v3.1
-Email & Slack notifications after processing
+KI-Rechnungsverarbeitung - Notifications Module v3.2
+Email (SendGrid) & Slack notifications after processing
 """
 
-import smtplib
+import os
 import logging
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email import encoders
+import base64
 from pathlib import Path
 from typing import Dict, List
 import requests
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
 
 class EmailNotifier:
-    """Send email notifications"""
+    """Send email notifications via SendGrid"""
     
     def __init__(self, config: Dict):
         self.enabled = config.get('email', {}).get('enabled', False)
+        self.api_key = os.getenv('SENDGRID_API_KEY')
+        
+        if self.enabled and not self.api_key:
+            logger.warning("SendGrid API key not found - email disabled")
+            self.enabled = False
         
         if self.enabled:
-            self.smtp_server = config['email']['smtp_server']
-            self.smtp_port = config['email']['smtp_port']
-            self.username = config['email']['username']
-            self.password = config['email']['password']
-            self.from_address = config['email']['from_address']
-            self.to_addresses = config['email']['to_addresses']
+            self.from_address = 'info@sbsdeutschland.com'
+            self.to_addresses = config['email'].get('to_addresses', [])
     
     def send_completion_email(self, stats: Dict, exported_files: Dict[str, str]) -> bool:
         """Send email when processing is complete"""
@@ -38,28 +41,41 @@ class EmailNotifier:
             return False
         
         try:
-            # Create message
-            msg = MIMEMultipart()
-            msg['From'] = self.from_address
-            msg['To'] = ', '.join(self.to_addresses)
-            msg['Subject'] = f"✅ Rechnungsverarbeitung abgeschlossen - {stats['total_invoices']} Rechnungen"
-            
-            # Email body
+            subject = f"✅ Rechnungsverarbeitung abgeschlossen - {stats['total_invoices']} Rechnungen"
             body = self._create_email_body(stats)
-            msg.attach(MIMEText(body, 'html'))
+            
+            message = Mail(
+                from_email=self.from_address,
+                to_emails=self.to_addresses,
+                subject=subject,
+                html_content=body
+            )
             
             # Attach Excel file if available
             if 'xlsx' in exported_files:
-                self._attach_file(msg, exported_files['xlsx'])
+                filepath = exported_files['xlsx']
+                if Path(filepath).exists():
+                    with open(filepath, 'rb') as f:
+                        file_data = base64.b64encode(f.read()).decode()
+                    
+                    attachment = Attachment(
+                        FileContent(file_data),
+                        FileName(Path(filepath).name),
+                        FileType('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+                        Disposition('attachment')
+                    )
+                    message.attachment = attachment
             
-            # Send email
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.username, self.password)
-                server.send_message(msg)
+            # Send via SendGrid
+            sg = SendGridAPIClient(self.api_key)
+            response = sg.send(message)
             
-            logger.info(f"Email sent to {self.to_addresses}")
-            return True
+            if response.status_code in [200, 201, 202]:
+                logger.info(f"Email sent to {self.to_addresses}")
+                return True
+            else:
+                logger.error(f"SendGrid error: {response.status_code}")
+                return False
             
         except Exception as e:
             logger.error(f"Failed to send email: {e}")
@@ -72,10 +88,7 @@ class EmailNotifier:
             return False
         
         try:
-            msg = MIMEMultipart()
-            msg['From'] = self.from_address
-            msg['To'] = ', '.join(self.to_addresses)
-            msg['Subject'] = f"❌ Rechnungsverarbeitung fehlgeschlagen - {failed_count} Fehler"
+            subject = f"❌ Rechnungsverarbeitung fehlgeschlagen - {failed_count} Fehler"
             
             body = f"""
             <html>
@@ -89,15 +102,22 @@ class EmailNotifier:
             </html>
             """
             
-            msg.attach(MIMEText(body, 'html'))
+            message = Mail(
+                from_email=self.from_address,
+                to_emails=self.to_addresses,
+                subject=subject,
+                html_content=body
+            )
             
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.username, self.password)
-                server.send_message(msg)
+            sg = SendGridAPIClient(self.api_key)
+            response = sg.send(message)
             
-            logger.info("Error email sent")
-            return True
+            if response.status_code in [200, 201, 202]:
+                logger.info("Error email sent")
+                return True
+            else:
+                logger.error(f"SendGrid error: {response.status_code}")
+                return False
             
         except Exception as e:
             logger.error(f"Failed to send error email: {e}")
@@ -109,7 +129,9 @@ class EmailNotifier:
         return f"""
         <html>
         <body style="font-family: Arial, sans-serif;">
-            <h2 style="color: #00d4ff;">✅ Rechnungsverarbeitung abgeschlossen</h2>
+            <div style="background: #003856; color: white; padding: 20px; text-align: center;">
+                <h2>✅ Rechnungsverarbeitung abgeschlossen</h2>
+            </div>
             
             <table style="border-collapse: collapse; width: 100%; margin: 20px 0;">
                 <tr style="background: #f0f0f0;">
@@ -140,31 +162,21 @@ class EmailNotifier:
             
             <p style="margin-top: 20px;">Die Excel-Datei ist als Anhang beigefügt.</p>
             
-            <p style="margin-top: 30px; color: #888;">
-                Diese Email wurde automatisch von der KI-Rechnungsverarbeitung v3.0 generiert.<br>
-                © 2025 Luis Schenk
+            <p style="margin-top: 30px; text-align: center;">
+                <a href="https://app.sbsdeutschland.com/" 
+                   style="background: #FFB900; color: #003856; padding: 12px 24px; 
+                          text-decoration: none; border-radius: 8px; font-weight: bold;">
+                    Weitere Rechnungen verarbeiten
+                </a>
+            </p>
+            
+            <p style="margin-top: 30px; color: #888; font-size: 12px;">
+                Diese Email wurde automatisch von der KI-Rechnungsverarbeitung generiert.<br>
+                © 2025 SBS Deutschland GmbH &amp; Co. KG
             </p>
         </body>
         </html>
         """
-    
-    def _attach_file(self, msg: MIMEMultipart, filepath: str):
-        """Attach file to email"""
-        try:
-            with open(filepath, 'rb') as f:
-                part = MIMEBase('application', 'octet-stream')
-                part.set_payload(f.read())
-            
-            encoders.encode_base64(part)
-            part.add_header(
-                'Content-Disposition',
-                f'attachment; filename= {Path(filepath).name}'
-            )
-            
-            msg.attach(part)
-            
-        except Exception as e:
-            logger.error(f"Failed to attach file {filepath}: {e}")
 
 
 class SlackNotifier:

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Allgemeine Geschäftsbedingungen | SBS Deutschland</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="container nav">
+    <div class="nav-left">
+      <div class="brand-mark"></div>
+      <div class="brand-text">SBS Deutschland</div>
+    </div>
+    <nav class="nav-links">
+      <a href="/sbshomepage/index.html">Startseite</a>
+      <a href="/static/landing/index.html">KI-Rechnungsverarbeitung</a>
+      <a href="/sbshomepage/unternehmen.html">Unternehmen</a>
+      <a href="/sbshomepage/kontakt.html">Kontakt</a>
+    </nav>
+    <div class="nav-cta">
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Darstellung wechseln">🌓</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="section">
+    <div class="container">
+      <h1 class="section-title">Allgemeine Geschäftsbedingungen (AGB)</h1>
+
+      <div class="card" style="margin-top:1.5rem;">
+        <!--
+          HINWEIS:
+          Bitte füge hier den vollständigen Text deiner aktuellen AGB ein,
+          z.B. aus app.sbsdeutschland.com/static/landing/agb.html.
+          Achte darauf, dass insbesondere Geltungsbereich, Vertragsschluss,
+          Leistungspflichten, Nutzungsrechte, Haftung, Laufzeit/Kündigung,
+          Vertraulichkeit und Gerichtsstand enthalten sind.
+        -->
+        <p>
+          Bitte fügen Sie hier den vollständigen Wortlaut Ihrer aktuellen Allgemeinen
+          Geschäftsbedingungen ein. Diese gelten insbesondere für die Nutzung der
+          KI-Rechnungsverarbeitungssoftware der SBS Deutschland GmbH &amp; Co. KG.
+        </p>
+
+        <p style="font-size:.85rem;color:var(--color-text-muted);margin-top:1rem;">
+          Stand dieser AGB: November 2025
+        </p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div>© <span id="year"></span> SBS Deutschland GmbH &amp; Co. KG · In der Dell 19, 69469 Weinheim</div>
+    <div>
+      <a href="/sbshomepage/impressum.html">Impressum</a> ·
+      <a href="/sbshomepage/datenschutz.html">Datenschutz</a> ·
+      <a href="/sbshomepage/agb.html">AGB</a>
+    </div>
+  </div>
+  <script>
+    const themeToggle = document.getElementById('themeToggle');
+    const root = document.documentElement;
+    const storedTheme = localStorage.getItem('sbs-theme');
+    if (storedTheme) root.setAttribute('data-theme', storedTheme);
+    themeToggle.addEventListener('click', () => {
+      const current = root.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      localStorage.setItem('sbs-theme', next);
+    });
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</footer>
+</body>
+</html>
+
