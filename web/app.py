@@ -535,3 +535,19 @@ async def job_details_page(request: Request, job_id: str):
         "invoices": invoices,
         "aussteller_stats": aussteller_list
     })
+
+@app.get("/analytics", response_class=HTMLResponse)
+async def analytics_page(request: Request):
+    """Expense analytics dashboard"""
+    from database import get_analytics_data
+    
+    data = get_analytics_data()
+    
+    return templates.TemplateResponse("analytics.html", {
+        "request": request,
+        "stats": data['stats'],
+        "monthly_labels": data['monthly_labels'],
+        "monthly_values": data['monthly_values'],
+        "top_suppliers": data['top_suppliers'],
+        "weekday_data": data['weekday_data']
+    })
