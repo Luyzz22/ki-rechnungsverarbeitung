@@ -442,3 +442,96 @@ async def history_page(request: Request):
         "jobs": jobs,
         "stats": stats
     })
+
+@app.get("/job/{job_id}", response_class=HTMLResponse)
+async def job_details_page(request: Request, job_id: str):
+    """Detailed job view from database"""
+    from database import get_job
+    
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Get invoices for this job
+    invoices = job.get('results', [])
+    
+    # Calculate aussteller statistics
+    aussteller_stats = {}
+    for inv in invoices:
+        name = inv.get('rechnungsaussteller', 'Unbekannt')
+        if name not in aussteller_stats:
+            aussteller_stats[name] = {'name': name, 'count': 0, 'total': 0}
+        aussteller_stats[name]['count'] += 1
+        aussteller_stats[name]['total'] += inv.get('betrag_brutto', 0) or 0
+    
+    aussteller_list = sorted(aussteller_stats.values(), key=lambda x: x['total'], reverse=True)
+    
+    return templates.TemplateResponse("job_details.html", {
+        "request": request,
+        "job_id": job_id,
+        "job": job,
+        "invoices": invoices,
+        "aussteller_stats": aussteller_list
+    })
+
+@app.get("/job/{job_id}", response_class=HTMLResponse)
+async def job_details_page(request: Request, job_id: str):
+    """Detailed job view from database"""
+    from database import get_job
+    
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Get invoices for this job
+    invoices = job.get('results', [])
+    
+    # Calculate aussteller statistics
+    aussteller_stats = {}
+    for inv in invoices:
+        name = inv.get('rechnungsaussteller', 'Unbekannt')
+        if name not in aussteller_stats:
+            aussteller_stats[name] = {'name': name, 'count': 0, 'total': 0}
+        aussteller_stats[name]['count'] += 1
+        aussteller_stats[name]['total'] += inv.get('betrag_brutto', 0) or 0
+    
+    aussteller_list = sorted(aussteller_stats.values(), key=lambda x: x['total'], reverse=True)
+    
+    return templates.TemplateResponse("job_details.html", {
+        "request": request,
+        "job_id": job_id,
+        "job": job,
+        "invoices": invoices,
+        "aussteller_stats": aussteller_list
+    })
+
+@app.get("/job/{job_id}", response_class=HTMLResponse)
+async def job_details_page(request: Request, job_id: str):
+    """Detailed job view from database"""
+    from database import get_job
+    
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Get invoices for this job
+    invoices = job.get('results', [])
+    
+    # Calculate aussteller statistics
+    aussteller_stats = {}
+    for inv in invoices:
+        name = inv.get('rechnungsaussteller', 'Unbekannt')
+        if name not in aussteller_stats:
+            aussteller_stats[name] = {'name': name, 'count': 0, 'total': 0}
+        aussteller_stats[name]['count'] += 1
+        aussteller_stats[name]['total'] += inv.get('betrag_brutto', 0) or 0
+    
+    aussteller_list = sorted(aussteller_stats.values(), key=lambda x: x['total'], reverse=True)
+    
+    return templates.TemplateResponse("job_details.html", {
+        "request": request,
+        "job_id": job_id,
+        "job": job,
+        "invoices": invoices,
+        "aussteller_stats": aussteller_list
+    })

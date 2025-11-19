@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Job Details · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .detail-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+    .summary-card {
+      background: var(--sbs-white);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .summary-card .value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--sbs-dark);
+    }
+    .summary-card .label {
+      font-size: 0.85rem;
+      color: var(--sbs-muted);
+      margin-top: 6px;
+    }
+    .summary-card.highlight {
+      background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+    }
+    .summary-card.highlight .value,
+    .summary-card.highlight .label {
+      color: white;
+    }
+    .section-card {
+      background: var(--sbs-white);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .section-card h3 {
+      margin: 0 0 20px 0;
+      font-size: 1.1rem;
+      color: var(--sbs-dark);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .download-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .btn-excel {
+      background: #28a745;
+      color: white;
+    }
+    .btn-csv {
+      background: #17a2b8;
+      color: white;
+    }
+    .btn-datev {
+      background: #fd7e14;
+      color: white;
+    }
+    .invoices-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .invoices-table th,
+    .invoices-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--sbs-border-soft);
+    }
+    .invoices-table th {
+      background: var(--sbs-bg);
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--sbs-muted);
+      position: sticky;
+      top: 0;
+    }
+    .invoices-table tr:hover {
+      background: var(--sbs-bg);
+    }
+    .invoices-table .amount {
+      font-weight: 600;
+      text-align: right;
+    }
+    .invoices-table .date {
+      white-space: nowrap;
+    }
+    .table-scroll {
+      max-height: 500px;
+      overflow-y: auto;
+      border-radius: 8px;
+      border: 1px solid var(--sbs-border-soft);
+    }
+    .meta-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+    .meta-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--sbs-border-soft);
+    }
+    .meta-item:last-child {
+      border-bottom: none;
+    }
+    .meta-item .label {
+      color: var(--sbs-muted);
+      font-size: 0.9rem;
+    }
+    .meta-item .value {
+      font-weight: 600;
+      color: var(--sbs-dark);
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--sbs-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+    .back-link:hover {
+      color: var(--sbs-dark);
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .status-badge.completed {
+      background: #d4edda;
+      color: #155724;
+    }
+    .aussteller-list {
+      display: grid;
+      gap: 12px;
+    }
+    .aussteller-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--sbs-bg);
+      border-radius: 8px;
+    }
+    .aussteller-item .name {
+      font-weight: 500;
+    }
+    .aussteller-item .stats {
+      text-align: right;
+      font-size: 0.85rem;
+    }
+    .aussteller-item .count {
+      color: var(--sbs-muted);
+    }
+    .aussteller-item .total {
+      font-weight: 600;
+      color: var(--sbs-dark);
+    }
+    @media (max-width: 768px) {
+      .table-scroll {
+        overflow-x: auto;
+      }
+      .invoices-table {
+        min-width: 800px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header" id="header">
+  <div class="header-inner">
+    <a href="https://sbsdeutschland.com/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text">
+        <strong>SBS Deutschland</strong>
+        <span>Smart Business Service · Weinheim</span>
+      </div>
+    </a>
+    <button class="burger" id="burger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav" id="nav">
+      <div class="dropdown">
+        <span class="dropdown-toggle">Leistungen</span>
+        <div class="dropdown-menu">
+          <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
+        </div>
+      </div>
+      <a href="https://sbsdeutschland.com/preise">Preise</a>
+      <a href="https://sbsdeutschland.com/sbshomepage/unternehmen.html">Über uns</a>
+      <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
+      <a href="/history" class="nav-cta">Verlauf</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Theme">
+        <span class="sun">☀️</span>
+        <span class="moon">🌙</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<section class="section" style="padding-top: 40px;">
+  <div class="detail-container">
+    
+    <a href="/history" class="back-link">← Zurück zum Verlauf</a>
+    
+    <!-- Header -->
+    <div class="section-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <h2 style="margin: 0 0 8px 0;">📋 Verarbeitungsdetails</h2>
+          <p style="margin: 0; color: var(--sbs-muted); font-size: 0.9rem;">
+            Job ID: {{ job_id }}
+          </p>
+        </div>
+        <span class="status-badge completed">✓ Abgeschlossen</span>
+      </div>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="value">{{ job.total_files }}</div>
+        <div class="label">Rechnungen</div>
+      </div>
+      <div class="summary-card">
+        <div class="value">{{ job.successful }}</div>
+        <div class="label">Erfolgreich</div>
+      </div>
+      <div class="summary-card highlight">
+        <div class="value">{{ "%.2f"|format(job.total_amount) }}€</div>
+        <div class="label">Brutto Gesamt</div>
+      </div>
+      <div class="summary-card">
+        <div class="value">{{ "%.2f"|format(job.total_netto) }}€</div>
+        <div class="label">Netto Gesamt</div>
+      </div>
+      <div class="summary-card">
+        <div class="value">{{ "%.2f"|format(job.total_mwst) }}€</div>
+        <div class="label">MwSt. Gesamt</div>
+      </div>
+      <div class="summary-card">
+        <div class="value">{{ "%.2f"|format(job.average_amount) }}€</div>
+        <div class="label">Ø pro Rechnung</div>
+      </div>
+    </div>
+    
+    <!-- Downloads -->
+    <div class="section-card">
+      <h3>📥 Dateien herunterladen</h3>
+      <div class="download-grid">
+        {% if job.exported_files and 'xlsx' in job.exported_files %}
+        <a href="/api/download/{{ job_id }}/xlsx" class="download-btn btn-excel">
+          📗 Excel (.xlsx)
+        </a>
+        {% endif %}
+        {% if job.exported_files and 'csv' in job.exported_files %}
+        <a href="/api/download/{{ job_id }}/csv" class="download-btn btn-csv">
+          📄 CSV
+        </a>
+        {% endif %}
+        {% if job.exported_files and 'datev' in job.exported_files %}
+        <a href="/api/download/{{ job_id }}/datev" class="download-btn btn-datev">
+          💼 DATEV
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    
+    <!-- Meta Info -->
+    <div class="section-card">
+      <h3>ℹ️ Verarbeitungsinfo</h3>
+      <div class="meta-info">
+        <div>
+          <div class="meta-item">
+            <span class="label">Erstellt am</span>
+            <span class="value">{{ job.created_at[:16].replace('T', ' ') if job.created_at else '-' }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="label">Abgeschlossen am</span>
+            <span class="value">{{ job.completed_at[:16].replace('T', ' ') if job.completed_at else '-' }}</span>
+          </div>
+        </div>
+        <div>
+          <div class="meta-item">
+            <span class="label">Erfolgsrate</span>
+            <span class="value">{{ "%.1f"|format(job.successful / job.total_files * 100 if job.total_files > 0 else 0) }}%</span>
+          </div>
+          <div class="meta-item">
+            <span class="label">Fehlgeschlagen</span>
+            <span class="value">{{ job.failed_count }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Aussteller Breakdown -->
+    {% if aussteller_stats %}
+    <div class="section-card">
+      <h3>🏢 Nach Rechnungsaussteller</h3>
+      <div class="aussteller-list">
+        {% for item in aussteller_stats %}
+        <div class="aussteller-item">
+          <span class="name">{{ item.name or 'Unbekannt' }}</span>
+          <div class="stats">
+            <div class="count">{{ item.count }} Rechnung{% if item.count != 1 %}en{% endif %}</div>
+            <div class="total">{{ "%.2f"|format(item.total) }}€</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    
+    <!-- Invoices Table -->
+    {% if invoices %}
+    <div class="section-card">
+      <h3>📑 Einzelne Rechnungen ({{ invoices|length }})</h3>
+      <div class="table-scroll">
+        <table class="invoices-table">
+          <thead>
+            <tr>
+              <th>Rechnungsnr.</th>
+              <th>Datum</th>
+              <th>Aussteller</th>
+              <th>Empfänger</th>
+              <th class="amount">Netto</th>
+              <th class="amount">MwSt.</th>
+              <th class="amount">Brutto</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for inv in invoices %}
+            <tr>
+              <td>{{ inv.rechnungsnummer or '-' }}</td>
+              <td class="date">{{ inv.datum or '-' }}</td>
+              <td>{{ inv.rechnungsaussteller or '-' }}</td>
+              <td>{{ inv.rechnungsempfaenger or '-' }}</td>
+              <td class="amount">{{ "%.2f"|format(inv.betrag_netto or 0) }}€</td>
+              <td class="amount">{{ "%.2f"|format(inv.mwst_betrag or 0) }}€</td>
+              <td class="amount">{{ "%.2f"|format(inv.betrag_brutto or 0) }}€</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+    
+  </div>
+</section>
+
+<footer class="footer" style="margin-top: 40px;">
+  <div class="footer-bottom">
+    <p>&copy; 2025 SBS Deutschland GmbH & Co. KG</p>
+  </div>
+</footer>
+
+<script>
+// Theme Toggle
+const themeToggle = document.getElementById('theme-toggle');
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+});
+
+// Burger Menu
+const burger = document.getElementById('burger');
+const nav = document.getElementById('nav');
+burger.addEventListener('click', () => {
+  nav.classList.toggle('active');
+});
+</script>
+
+</body>
+</html>
