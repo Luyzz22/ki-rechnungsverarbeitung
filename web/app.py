@@ -812,3 +812,44 @@ async def get_current_user(request: Request):
             "email": request.session.get('user_email', '')
         }
     return {"logged_in": False}
+
+@app.get("/profile", response_class=HTMLResponse)
+async def profile_page(request: Request):
+    """Profile settings page"""
+    if 'user_id' not in request.session:
+        from starlette.responses import RedirectResponse
+        return RedirectResponse(url='/login', status_code=303)
+    
+    from database import get_user_by_id
+    user = get_user_by_id(request.session['user_id'])
+    
+    return templates.TemplateResponse("profile.html", {
+        "request": request,
+        "user": user
+    })
+
+@app.put("/api/profile")
+async def update_profile(request: Request):
+    """Update user profile"""
+    if 'user_id' not in request.session:
+        return {"success": False, "error": "Not logged in"}
+    
+    try:
+        data = await request.json()
+        # TODO: Update user in database
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.put("/api/profile/password")
+async def change_password(request: Request):
+    """Change user password"""
+    if 'user_id' not in request.session:
+        return {"success": False, "error": "Not logged in"}
+    
+    try:
+        data = await request.json()
+        # TODO: Verify old password and update
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
