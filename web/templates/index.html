@@ -770,6 +770,14 @@
         text-align: center;
       }
     }
+    /* Account Dropdown */
+    .account-dropdown { position: relative; }
+    .account-toggle { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--sbs-bg); border: 1px solid var(--sbs-border-soft); border-radius: 8px; cursor: pointer; font-weight: 500; }
+    .account-menu { position: absolute; top: 100%; right: 0; margin-top: 0; padding-top: 8px; background: var(--sbs-white); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); min-width: 200px; display: none; z-index: 1000; }
+    .account-dropdown:hover .account-menu { display: block; }
+    .account-menu a { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: var(--sbs-dark); text-decoration: none; }
+    .account-menu a:hover { background: var(--sbs-bg); }
+    .account-menu .divider { height: 1px; background: var(--sbs-border-soft); margin: 4px 0; }
   </style>
 </head>
 <body>
@@ -787,6 +795,8 @@
           <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
           <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
           <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
         </div>
       </div>
       <a href="https://sbsdeutschland.com/preise">Preise</a>
@@ -1123,6 +1133,25 @@ async function pollProgress(jobId) {
 </script>
 
 </body>
+<script>
+async function updateAccountStatus() {
+  try {
+    const r = await fetch('/api/user');
+    const u = await r.json();
+    const toggle = document.querySelector('.account-toggle');
+    const menu = document.querySelector('.account-menu');
+    
+    if (u.logged_in) {
+      document.getElementById('accountName').textContent = u.name;
+    } else {
+      // Show login link when logged out
+      toggle.innerHTML = '<a href="/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+      menu.style.display = 'none';
+    }
+  } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', updateAccountStatus);
+</script>
 <script>
 async function updateAccountStatus() {
   try {
