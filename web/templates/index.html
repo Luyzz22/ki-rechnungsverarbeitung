@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="description" content="SBS Deutschland KI-Rechnungsverarbeitung – Automatisierte Datenextraktion für Rechnungen." />
   <link rel="icon" href="/static/favicon.ico" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/dropzone.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/dropzone.min.js"></script>
+  
+  
   <style>
     :root {
       --sbs-bg: #f5f6f8;
@@ -977,66 +977,71 @@ window.addEventListener('scroll', () => {
   }
 });
 
-// Dropzone Config
-let uploadedFiles = [];
-Dropzone.autoDiscover = false;
+// Native File Upload
+let selectedFiles = [];
+const fileInput = document.getElementById('fileInput');
+const uploadArea = document.getElementById('uploadArea');
+const fileList = document.getElementById('fileList');
+const fileCount = document.getElementById('fileCount');
+const processBtn = document.getElementById('processBtn');
 
-const dz = new Dropzone("#invoiceDropzone", {
-  url: "/api/upload",
-  maxFilesize: 20,
-  acceptedFiles: ".pdf",
-  addRemoveLinks: false,
-  autoProcessQueue: false,
-  autoQueue: false,
-  uploadMultiple: true,
-  parallelUploads: 100,
-  dictDefaultMessage: "",
-  paramName: "files",
-  init: function () {
-    const dropzoneElement = this;
-    this.on("addedfile", function (file) {
-      // Store BOTH dropzone file and native file
-      uploadedFiles.push({ 
-        name: file.name, 
-        dropzoneFile: file,
-        nativeFile: file,  // Dropzone file IS the native file
-        size: file.size 
-      });
-      updateFileList();
-    });
-  }
+// File input change
+fileInput.addEventListener('change', function() {
+  handleFiles(this.files);
 });
 
-// Update File List
+// Drag and drop
+uploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadArea.style.borderColor = '#FFB900';
+});
+
+uploadArea.addEventListener('dragleave', () => {
+  uploadArea.style.borderColor = '#e5e7eb';
+});
+
+uploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadArea.style.borderColor = '#e5e7eb';
+  handleFiles(e.dataTransfer.files);
+});
+
+function handleFiles(files) {
+  for (let file of files) {
+    if (file.type === 'application/pdf') {
+      selectedFiles.push(file);
+    }
+  }
+  updateFileList();
+}
+
 function updateFileList() {
-  const list = document.getElementById('fileList');
-  const count = document.getElementById('fileCount');
-  const processBtn = document.getElementById('processBtn');
+  fileCount.textContent = selectedFiles.length + ' Datei' + (selectedFiles.length !== 1 ? 'en' : '');
   
-  count.textContent = uploadedFiles.length + ' Datei' + (uploadedFiles.length !== 1 ? 'en' : '');
-  
-  if (uploadedFiles.length === 0) {
-    list.innerHTML = '<div class="empty-state" id="emptyState"><div class="empty-state-icon">📁</div><p>Noch keine Dateien hochgeladen</p></div>';
+  if (selectedFiles.length === 0) {
+    fileList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📁</div><p>Noch keine Dateien hochgeladen</p></div>';
     processBtn.disabled = true;
     return;
   }
   
   processBtn.disabled = false;
-  list.innerHTML = '';
+  fileList.innerHTML = '';
   
-  uploadedFiles.forEach((f, index) => {
+  selectedFiles.forEach((file, index) => {
     const item = document.createElement('div');
     item.className = 'file-item';
-    
-    const ext = f.name.split('.').pop().toLowerCase();
-    let icon = '📄';
-    if (ext === 'pdf') icon = '📕';
-    else if (['jpg', 'jpeg', 'png'].includes(ext)) icon = '🖼️';
-    
-    const size = formatFileSize(f.size);
-    
-    item.innerHTML = '<div class="file-info"><span class="file-icon">' + icon + '</span><div class="file-details"><div class="file-name">' + f.name + '</div><div class="file-size">' + size + '</div></div></div><button class="remove-btn" onclick="removeFile(' + index + ')" title="Entfernen">✕</button>';
-    list.appendChild(item);
+    const size = formatFileSize(file.size);
+    item.innerHTML = `
+      <div class="file-info">
+        <span class="file-icon">📕</span>
+        <div class="file-details">
+          <div class="file-name">${file.name}</div>
+          <div class="file-size">${size}</div>
+        </div>
+      </div>
+      <button class="remove-btn" onclick="removeFile(${index})" title="Entfernen">✕</button>
+    `;
+    fileList.appendChild(item);
   });
 }
 
@@ -1049,9 +1054,7 @@ function formatFileSize(bytes) {
 }
 
 function removeFile(index) {
-  const file = uploadedFiles[index];
-  dz.removeFile(file.file);
-  uploadedFiles.splice(index, 1);
+  selectedFiles.splice(index, 1);
   updateFileList();
 }
 
