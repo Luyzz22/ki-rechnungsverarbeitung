@@ -1142,3 +1142,256 @@ async def stripe_webhook(request: Request):
             print(f"Subscription updated: {subscription_id}, status: {new_status}")
     
     return {"received": True}
+
+# Email notifications for subscriptions
+def send_subscription_email(to_email: str, subject: str, body: str):
+    """Send subscription-related emails"""
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        
+        # Gmail SMTP settings
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        smtp_user = "luisschenk2202@gmail.com"
+        smtp_password = os.getenv('GMAIL_APP_PASSWORD', '')
+        
+        if not smtp_password:
+            print("No GMAIL_APP_PASSWORD set")
+            return False
+        
+        msg = MIMEMultipart()
+        msg['From'] = smtp_user
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.send_message(msg)
+        
+        print(f"Email sent to {to_email}: {subject}")
+        return True
+    except Exception as e:
+        print(f"Email error: {e}")
+        return False
+
+def send_welcome_email(email: str, name: str, plan: str):
+    """Send welcome email after subscription"""
+    plan_names = {'starter': 'Starter', 'professional': 'Professional', 'enterprise': 'Enterprise'}
+    subject = f"Willkommen bei SBS KI-Rechnungsverarbeitung - {plan_names.get(plan, plan)}"
+    body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #003856; color: white; padding: 30px; text-align: center;">
+            <h1 style="margin: 0;">Willkommen bei SBS!</h1>
+        </div>
+        <div style="padding: 30px;">
+            <p>Hallo {name},</p>
+            <p>vielen Dank für Ihr Abonnement des <strong>{plan_names.get(plan, plan)}</strong> Plans!</p>
+            <p>Sie können jetzt sofort mit der KI-Rechnungsverarbeitung starten:</p>
+            <p style="text-align: center;">
+                <a href="https://app.sbsdeutschland.com/" style="background: #ffb900; color: #003856; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold;">Jetzt starten</a>
+            </p>
+            <p>Bei Fragen stehen wir Ihnen gerne zur Verfügung.</p>
+            <p>Mit freundlichen Grüßen,<br>Ihr SBS Deutschland Team</p>
+        </div>
+        <div style="background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666;">
+            SBS Deutschland GmbH & Co. KG · Weinheim
+        </div>
+    </body>
+    </html>
+    """
+    send_subscription_email(email, subject, body)
+
+def send_cancellation_email(email: str, name: str):
+    """Send email when subscription is cancelled"""
+    subject = "Ihr SBS Abonnement wurde gekündigt"
+    body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #003856; color: white; padding: 30px; text-align: center;">
+            <h1 style="margin: 0;">Kündigung bestätigt</h1>
+        </div>
+        <div style="padding: 30px;">
+            <p>Hallo {name},</p>
+            <p>Ihr Abonnement wurde gekündigt und läuft zum Ende der aktuellen Abrechnungsperiode aus.</p>
+            <p>Sie können den Service bis dahin weiter nutzen.</p>
+            <p>Wir würden uns freuen, Sie bald wieder begrüßen zu dürfen!</p>
+            <p style="text-align: center;">
+                <a href="https://sbsdeutschland.com/preise" style="background: #ffb900; color: #003856; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold;">Erneut abonnieren</a>
+            </p>
+            <p>Mit freundlichen Grüßen,<br>Ihr SBS Deutschland Team</p>
+        </div>
+    </body>
+    </html>
+    """
+    send_subscription_email(email, subject, body)
+
+# PDF Invoice Generation
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+from io import BytesIO
+
+def generate_invoice_pdf(invoice_data: dict) -> bytes:
+    """Generate PDF invoice for subscription"""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+    
+    styles = getSampleStyleSheet()
+    elements = []
+    
+    # Header
+    header_style = ParagraphStyle('Header', parent=styles['Heading1'], fontSize=24, textColor=colors.HexColor('#003856'))
+    elements.append(Paragraph("SBS Deutschland", header_style))
+    elements.append(Paragraph("Smart Business Service · Weinheim", styles['Normal']))
+    elements.append(Spacer(1, 1*cm))
+    
+    # Invoice title
+    elements.append(Paragraph(f"Rechnung Nr. {invoice_data.get('invoice_number', 'N/A')}", styles['Heading2']))
+    elements.append(Paragraph(f"Datum: {invoice_data.get('date', 'N/A')}", styles['Normal']))
+    elements.append(Spacer(1, 0.5*cm))
+    
+    # Customer info
+    elements.append(Paragraph("<b>Rechnungsempfänger:</b>", styles['Normal']))
+    elements.append(Paragraph(invoice_data.get('customer_name', ''), styles['Normal']))
+    elements.append(Paragraph(invoice_data.get('customer_email', ''), styles['Normal']))
+    elements.append(Spacer(1, 1*cm))
+    
+    # Items table
+    plan_names = {'starter': 'Starter', 'professional': 'Professional', 'enterprise': 'Enterprise'}
+    plan_prices = {'starter': '69,00 €', 'professional': '179,00 €', 'enterprise': '449,00 €'}
+    
+    plan = invoice_data.get('plan', 'starter')
+    
+    data = [
+        ['Beschreibung', 'Betrag'],
+        [f'KI-Rechnungsverarbeitung - {plan_names.get(plan, plan)} (Monatlich)', plan_prices.get(plan, '0,00 €')],
+    ]
+    
+    table = Table(data, colWidths=[12*cm, 4*cm])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#003856')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e5e7eb')),
+        ('FONTSIZE', (0, 1), (-1, -1), 10),
+        ('PADDING', (0, 0), (-1, -1), 8),
+    ]))
+    elements.append(table)
+    elements.append(Spacer(1, 1*cm))
+    
+    # Footer
+    footer_style = ParagraphStyle('Footer', parent=styles['Normal'], fontSize=8, textColor=colors.grey)
+    elements.append(Paragraph("SBS Deutschland GmbH & Co. KG · Weinheim", footer_style))
+    elements.append(Paragraph("Diese Rechnung wurde maschinell erstellt und ist ohne Unterschrift gültig.", footer_style))
+    
+    doc.build(elements)
+    return buffer.getvalue()
+
+@app.get("/api/invoice/{subscription_id}")
+async def download_invoice(request: Request, subscription_id: int):
+    """Download invoice PDF for a subscription"""
+    if 'user_id' not in request.session:
+        return {"error": "Not logged in"}
+    
+    from database import get_user_subscription, get_user_by_id
+    
+    user = get_user_by_id(request.session['user_id'])
+    subscription = get_user_subscription(request.session['user_id'])
+    
+    if not subscription or subscription['id'] != subscription_id:
+        return {"error": "Subscription not found"}
+    
+    from datetime import datetime
+    invoice_data = {
+        'invoice_number': f"SBS-{subscription_id}-{datetime.now().strftime('%Y%m')}",
+        'date': datetime.now().strftime('%d.%m.%Y'),
+        'customer_name': user.get('name', ''),
+        'customer_email': user.get('email', ''),
+        'plan': subscription.get('plan', 'starter')
+    }
+    
+    pdf_bytes = generate_invoice_pdf(invoice_data)
+    
+    from fastapi.responses import Response
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=Rechnung_{invoice_data['invoice_number']}.pdf"}
+    )
+
+# Contact Form Endpoint
+@app.post("/api/contact")
+async def contact_form(request: Request):
+    """Handle contact form submissions"""
+    try:
+        data = await request.json()
+        
+        name = data.get('name', '')
+        email = data.get('email', '')
+        phone = data.get('phone', '')
+        company = data.get('company', '')
+        service = data.get('service', '')
+        message = data.get('message', '')
+        
+        # Send email to SBS
+        subject = f"Kontaktanfrage: {service} - {name}"
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif;">
+            <h2>Neue Kontaktanfrage</h2>
+            <table style="border-collapse: collapse;">
+                <tr><td style="padding: 8px; font-weight: bold;">Service:</td><td style="padding: 8px;">{service}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Name:</td><td style="padding: 8px;">{name}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">{email}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Telefon:</td><td style="padding: 8px;">{phone or '-'}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Unternehmen:</td><td style="padding: 8px;">{company or '-'}</td></tr>
+            </table>
+            <h3>Nachricht:</h3>
+            <p style="background: #f5f5f5; padding: 16px; border-radius: 8px;">{message}</p>
+        </body>
+        </html>
+        """
+        
+        # Send to SBS email
+        send_subscription_email("info@sbsdeutschland.com", subject, body)
+        
+        # Send confirmation to customer
+        confirm_subject = "Ihre Anfrage bei SBS Deutschland"
+        confirm_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #003856; color: white; padding: 30px; text-align: center;">
+                <h1 style="margin: 0;">Vielen Dank!</h1>
+            </div>
+            <div style="padding: 30px;">
+                <p>Hallo {name},</p>
+                <p>vielen Dank für Ihre Anfrage. Wir haben Ihre Nachricht erhalten und werden uns innerhalb von 24 Stunden bei Ihnen melden.</p>
+                <p><strong>Ihre Anfrage:</strong></p>
+                <p style="background: #f5f5f5; padding: 16px; border-radius: 8px;">{message}</p>
+                <p>Mit freundlichen Grüßen,<br>Ihr SBS Deutschland Team</p>
+            </div>
+            <div style="background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666;">
+                SBS Deutschland GmbH & Co. KG · Weinheim
+            </div>
+        </body>
+        </html>
+        """
+        send_subscription_email(email, confirm_subject, confirm_body)
+        
+        return {"success": True, "message": "Nachricht gesendet"}
+    except Exception as e:
+        print(f"Contact form error: {e}")
+        return {"success": False, "error": str(e)}
