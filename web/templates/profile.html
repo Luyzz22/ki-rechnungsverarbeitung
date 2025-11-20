@@ -78,6 +78,7 @@
       <button class="tab active" onclick="showTab('profile', this)">👤 Profil</button>
       <button class="tab" onclick="showTab('company', this)">🏢 Firma</button>
       <button class="tab" onclick="showTab('security', this)">🔒 Sicherheit</button>
+      <button class="tab" onclick="showTab('subscription', this)">💳 Abonnement</button>
     </div>
     
     <div id="profile-tab" class="tab-content active">
@@ -130,6 +131,17 @@
         <div id="passwordStatus" class="status-msg"></div>
       </form>
     </div>
+    
+    <div id="subscription-tab" class="tab-content">
+      <div class="settings-card">
+        <h2>Ihr Abonnement</h2>
+        <p>Verwalten Sie Ihren Plan und Verbrauch</p>
+        <div id="subscriptionInfo" style="margin-bottom: 24px;">
+          <p style="color: var(--sbs-muted);">Laden...</p>
+        </div>
+        <div id="subscriptionActions"></div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -149,6 +161,68 @@ async function updateAccountStatus() {
   } catch(e) {}
 }
 document.addEventListener('DOMContentLoaded', updateAccountStatus);
+
+// Load subscription info
+async function loadSubscription() {
+  try {
+    const r = await fetch("/api/subscription/status");
+    const data = await r.json();
+    const info = document.getElementById("subscriptionInfo");
+    const actions = document.getElementById("subscriptionActions");
+    
+    if (data.error) {
+      info.innerHTML = `<p style="color: var(--sbs-muted);">${data.error}</p>`;
+      actions.innerHTML = `<a href="https://sbsdeutschland.com/preise" class="btn-save">Plan wählen</a>`;
+      return;
+    }
+    
+    const planNames = {starter: "Starter", professional: "Professional", enterprise: "Enterprise"};
+    const percent = Math.round((data.used / data.limit) * 100);
+    
+    info.innerHTML = `
+      <div style="display: grid; gap: 16px;">
+        <div style="padding: 16px; background: var(--sbs-bg); border-radius: 8px;">
+          <strong style="font-size: 1.2rem;">Plan: ${planNames[data.plan] || data.plan}</strong>
+        </div>
+        <div style="padding: 16px; background: var(--sbs-bg); border-radius: 8px;">
+          <div style="margin-bottom: 8px;">Verbrauch: <strong>${data.used} / ${data.limit}</strong> Rechnungen</div>
+          <div style="background: #e5e7eb; border-radius: 4px; height: 8px;">
+            <div style="background: ${percent > 80 ? "#ef4444" : "#22c55e"}; width: ${percent}%; height: 100%; border-radius: 4px;"></div>
+          </div>
+          <div style="margin-top: 8px; font-size: 0.85rem; color: var(--sbs-muted);">Noch ${data.remaining} Rechnungen verfügbar</div>
+        </div>
+      </div>
+    `;
+    
+    actions.innerHTML = `
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="https://sbsdeutschland.com/preise" class="btn-save">Plan ändern</a>
+        <button onclick="cancelSubscription()" style="padding: 12px 24px; border: 1px solid #ef4444; background: transparent; color: #ef4444; border-radius: 8px; cursor: pointer;">Kündigen</button>
+      </div>
+    `;
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function cancelSubscription() {
+  if (!confirm("Möchten Sie Ihr Abonnement wirklich kündigen? Sie können den Service bis zum Ende der Laufzeit weiter nutzen.")) return;
+  
+  try {
+    const r = await fetch("/api/subscription/cancel", {method: "POST"});
+    const data = await r.json();
+    if (data.success) {
+      alert(data.message);
+      loadSubscription();
+    } else {
+      alert("Fehler: " + data.error);
+    }
+  } catch(e) {
+    alert("Verbindungsfehler");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadSubscription);
 </script>
 </body>
 </html>
