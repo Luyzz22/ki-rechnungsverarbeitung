@@ -6,13 +6,13 @@
   <title>KI-Rechnungsverarbeitung - SBS Deutschland</title>
   <link rel="stylesheet" href="/static/css/main.css">
   <style>
-    .upload-container {
+    .upload-section {
       max-width: 1200px;
       margin: 60px auto;
-      padding: 0 20px;
+      padding: 0 24px;
     }
     
-    .upload-area {
+    .upload-box {
       border: 3px dashed #e5e7eb;
       border-radius: 16px;
       padding: 80px 40px;
@@ -23,51 +23,36 @@
       margin-bottom: 40px;
     }
     
-    .upload-area:hover {
+    .upload-box:hover {
       border-color: #FFB900;
-      background: linear-gradient(135deg, #ffffff 0%, #fffef5 100%);
+      background: #fffef5;
       transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(0,56,86,0.1);
     }
     
-    .file-list-section {
+    .file-list-box {
       background: white;
       border-radius: 16px;
       padding: 40px;
       margin-bottom: 40px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      display: none;
     }
     
-    #fileList {
-      max-height: 600px;
-      overflow-y: auto;
-      margin-bottom: 20px;
+    .file-list-box.active {
+      display: block;
     }
-
-    #fileList {
+    
+    .file-list {
       max-height: 550px;
       overflow-y: auto;
-      margin-bottom: 20px;
-      padding-right: 10px;
+      margin: 24px 0;
     }
     
-    #fileList::-webkit-scrollbar {
-      width: 8px;
-    }
+    .file-list::-webkit-scrollbar { width: 8px; }
+    .file-list::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+    .file-list::-webkit-scrollbar-thumb { background: #FFB900; border-radius: 4px; }
     
-    #fileList::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 4px;
-    }
-    
-    #fileList::-webkit-scrollbar-thumb {
-      background: #FFB900;
-      border-radius: 4px;
-    }
-    
-    #fileList::-webkit-scrollbar-thumb:hover {
-      background: #e5a800;
-    }
     .file-item {
       display: flex;
       justify-content: space-between;
@@ -92,7 +77,7 @@
     
     .file-icon { font-size: 2.5rem; }
     
-    .remove-btn {
+    .btn-remove {
       background: #ef4444;
       color: white;
       border: none;
@@ -100,15 +85,9 @@
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
-      transition: all 0.2s;
     }
     
-    .remove-btn:hover {
-      background: #dc2626;
-      transform: scale(1.05);
-    }
-    
-    .process-btn {
+    .btn-process {
       background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
       color: #003856;
       border: none;
@@ -118,22 +97,15 @@
       font-weight: bold;
       cursor: pointer;
       width: 100%;
-      transition: all 0.3s;
       box-shadow: 0 4px 16px rgba(255,185,0,0.3);
     }
     
-    .process-btn:hover {
+    .btn-process:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(255,185,0,0.4);
     }
     
-    .process-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-    
-    .progress-section {
+    .progress-box {
       display: none;
       background: white;
       border-radius: 16px;
@@ -142,7 +114,7 @@
       box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
     
-    .progress-section.active { display: block; }
+    .progress-box.active { display: block; }
     
     .progress-bar {
       width: 100%;
@@ -159,12 +131,10 @@
       width: 0%;
       transition: width 0.3s;
     }
-
   </style>
 </head>
 <body>
 
-<!-- Header -->
 <header class="header">
   <div class="header-inner">
     <a href="https://sbsdeutschland.com/" class="logo-wrap">
@@ -199,28 +169,21 @@
   </div>
 </header>
 
-<!-- Hero Section -->
 <section class="hero" style="background: linear-gradient(135deg, #003856 0%, #004d73 100%); padding: 80px 20px; text-align: center; color: white;">
   <div style="max-width: 1200px; margin: 0 auto;">
     <div style="display: inline-block; background: rgba(255,185,0,0.15); padding: 8px 20px; border-radius: 24px; margin-bottom: 24px;">
       <span style="color: #FFB900; font-weight: 600;">🤖 KI-RECHNUNGSVERARBEITUNG</span>
     </div>
-    
-    <h1 style="font-size: 3.5rem; margin-bottom: 24px; font-weight: 800; line-height: 1.2;">
-      Rechnungen intelligent<br>verarbeiten
-    </h1>
-    
-    <p style="font-size: 1.3rem; opacity: 0.9; max-width: 700px; margin: 0 auto 40px;">
+    <h1 style="font-size: 3.5rem; margin-bottom: 24px; font-weight: 800;">Rechnungen intelligent verarbeiten</h1>
+    <p style="font-size: 1.3rem; opacity: 0.9; max-width: 700px; margin: 0 auto;">
       Laden Sie Ihre Rechnungen hoch und unsere KI extrahiert automatisch alle relevanten Daten.<br>
       Export in Excel, CSV oder DATEV – schnell, präzise und DSGVO-konform.
     </p>
   </div>
 </section>
 
-<!-- Upload Section -->
-<div class="upload-container">
-  <!-- Upload Area -->
-  <div id="uploadArea" class="upload-area">
+<div class="upload-section">
+  <div id="uploadBox" class="upload-box">
     <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
     <div style="font-size: 5rem; margin-bottom: 24px;">📁</div>
     <h2 style="color: #003856; margin-bottom: 12px;">Dateien hochladen</h2>
@@ -228,15 +191,13 @@
     <p style="color: #999; font-size: 0.9rem; margin-top: 8px;">PDF, JPG oder PNG (max. 20 MB pro Datei)</p>
   </div>
 
-  <!-- File List -->
-  <div id="fileListSection" class="file-list-section" style="display: none;">
+  <div id="fileListBox" class="file-list-box">
     <h3 style="color: #003856; margin-bottom: 24px;">📋 Hochgeladene Dateien (<span id="fileCount">0</span>)</h3>
-    <div id="fileList"></div>
-    <button id="processBtn" class="process-btn">⚡ Jetzt verarbeiten</button>
+    <div id="fileList" class="file-list"></div>
+    <button id="processBtn" class="btn-process">⚡ Jetzt verarbeiten</button>
   </div>
 
-  <!-- Progress -->
-  <div id="progressSection" class="progress-section">
+  <div id="progressBox" class="progress-box">
     <div style="font-size: 4rem; margin-bottom: 24px;">⚙️</div>
     <h2 style="color: #003856; margin-bottom: 16px;">Verarbeitung läuft...</h2>
     <div class="progress-bar">
@@ -246,30 +207,23 @@
   </div>
 </div>
 
-<!-- Footer -->
 <footer class="footer">
   <div class="footer-grid">
     <div>
       <div class="footer-brand">
-        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <img src="/static/sbs-logo-new.png" alt="SBS" />
         <div class="footer-brand-text">
           <strong>SBS Deutschland</strong>
           <span>Smart Business Service</span>
         </div>
       </div>
-      <p class="footer-tagline">
-        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
-      </p>
+      <p class="footer-tagline">Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.</p>
       <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
     </div>
-
     <div>
       <h4>Produkte</h4>
-      <ul>
-        <li><a href="/">🤖 KI-Rechnungsverarbeitung</a></li>
-      </ul>
+      <ul><li><a href="/">🤖 KI-Rechnungsverarbeitung</a></li></ul>
     </div>
-
     <div>
       <h4>Beratung</h4>
       <ul>
@@ -279,7 +233,6 @@
         <li><a href="https://sbsdeutschland.com/sbshomepage/metrologie-pmo.html">📐 Metrologie & PMO</a></li>
       </ul>
     </div>
-
     <div>
       <h4>Unternehmen</h4>
       <ul>
@@ -288,7 +241,6 @@
         <li><a href="https://sbsdeutschland.com/preise">Preise</a></li>
       </ul>
     </div>
-
     <div>
       <h4>Rechtliches</h4>
       <ul>
@@ -306,159 +258,113 @@
 
 <script src="/static/js/main.js"></script>
 <script>
-  let selectedFiles = [];
-  const fileInput = document.getElementById('fileInput');
-  const uploadArea = document.getElementById('uploadArea');
-  const fileListSection = document.getElementById('fileListSection');
-  const fileList = document.getElementById('fileList');
-  const fileCount = document.getElementById('fileCount');
-  const processBtn = document.getElementById('processBtn');
+let files = [];
+const fileInput = document.getElementById('fileInput');
+const uploadBox = document.getElementById('uploadBox');
+const fileListBox = document.getElementById('fileListBox');
+const fileList = document.getElementById('fileList');
+const fileCount = document.getElementById('fileCount');
+const processBtn = document.getElementById('processBtn');
 
-  // Click to upload
-  uploadArea.addEventListener('click', () => fileInput.click());
+uploadBox.onclick = () => fileInput.click();
 
-  // File input change
-  fileInput.addEventListener('change', (e) => {
-    handleFiles(e.target.files);
-  });
+fileInput.onchange = (e) => addFiles(e.target.files);
 
-  // Drag and drop
-  uploadArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadArea.style.borderColor = '#FFB900';
-  });
+uploadBox.ondragover = (e) => { e.preventDefault(); uploadBox.style.borderColor = '#FFB900'; };
+uploadBox.ondragleave = () => { uploadBox.style.borderColor = '#e5e7eb'; };
+uploadBox.ondrop = (e) => { e.preventDefault(); uploadBox.style.borderColor = '#e5e7eb'; addFiles(e.dataTransfer.files); };
 
-  uploadArea.addEventListener('dragleave', () => {
-    uploadArea.style.borderColor = '#e5e7eb';
-  });
-
-  uploadArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadArea.style.borderColor = '#e5e7eb';
-    handleFiles(e.dataTransfer.files);
-  });
-
-  function handleFiles(files) {
-    for (let file of files) {
-      if (file.size > 20 * 1024 * 1024) {
-        alert(file.name + ' ist zu groß (max. 20 MB)');
-        continue;
-      }
-      selectedFiles.push(file);
-    }
-    updateFileList();
+function addFiles(newFiles) {
+  for (let f of newFiles) {
+    if (f.size > 20*1024*1024) { alert(f.name + ' zu groß (max 20MB)'); continue; }
+    files.push(f);
   }
+  showFiles();
+}
 
-  function updateFileList() {
-    if (selectedFiles.length === 0) {
-      fileListSection.style.display = 'none';
+function showFiles() {
+  if (files.length === 0) { fileListBox.classList.remove('active'); return; }
+  fileListBox.classList.add('active');
+  fileCount.textContent = files.length;
+  fileList.innerHTML = '';
+  files.forEach((f, i) => {
+    const icon = f.type === 'application/pdf' ? '📕' : '🖼️';
+    const size = (f.size/1024/1024).toFixed(2) + ' MB';
+    const div = document.createElement('div');
+    div.className = 'file-item';
+    div.innerHTML = `
+      <div class="file-info">
+        <span class="file-icon">${icon}</span>
+        <div>
+          <div style="font-weight:600;color:#003856">${f.name}</div>
+          <div style="font-size:0.9rem;color:#666">${size}</div>
+        </div>
+      </div>
+      <button class="btn-remove" onclick="removeFile(${i})">✕</button>
+    `;
+    fileList.appendChild(div);
+  });
+}
+
+function removeFile(i) { files.splice(i,1); showFiles(); }
+
+processBtn.onclick = async () => {
+  if (files.length === 0) return;
+  fileListBox.classList.remove('active');
+  document.getElementById('progressBox').classList.add('active');
+  
+  try {
+    const fd = new FormData();
+    files.forEach(f => fd.append('files', f));
+    
+    const r = await fetch('/api/upload', { method: 'POST', body: fd });
+    const data = await r.json();
+    
+    if (data.error) {
+      alert(data.error);
+      if (data.redirect) window.location.href = data.redirect;
       return;
     }
-
-    fileListSection.style.display = 'block';
-    fileCount.textContent = selectedFiles.length;
-    fileList.innerHTML = '';
-
-    selectedFiles.forEach((file, index) => {
-      const item = document.createElement('div');
-      item.className = 'file-item';
-      const icon = file.type === 'application/pdf' ? '📕' : '🖼️';
-      const size = (file.size / 1024 / 1024).toFixed(2) + ' MB';
-      
-      item.innerHTML = `
-        <div class="file-info">
-          <span class="file-icon">${icon}</span>
-          <div>
-            <div style="font-weight: 600; color: #003856;">${file.name}</div>
-            <div style="font-size: 0.9rem; color: #666;">${size}</div>
-          </div>
-        </div>
-        <button class="remove-btn" onclick="removeFile(${index})">✕ Entfernen</button>
-      `;
-      fileList.appendChild(item);
-    });
+    
+    const jobId = data.batch_id;
+    await fetch('/api/process/' + jobId, { method: 'POST' });
+    pollProgress(jobId);
+  } catch (e) {
+    alert('Upload-Fehler');
+    console.error(e);
   }
+};
 
-  function removeFile(index) {
-    selectedFiles.splice(index, 1);
-    updateFileList();
-  }
-
-  // Process button
-  processBtn.addEventListener('click', async () => {
-    if (selectedFiles.length === 0) return;
-
-    fileListSection.style.display = 'none';
-    document.getElementById('progressSection').classList.add('active');
-
-    try {
-      // Upload
-      const formData = new FormData();
-      selectedFiles.forEach(file => formData.append('files', file));
-
-      const uploadResponse = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-
-      const uploadData = await uploadResponse.json();
-
-      if (uploadData.error) {
-        alert(uploadData.error);
-        if (uploadData.redirect) {
-          window.location.href = uploadData.redirect;
-        }
-        return;
-      }
-
-      const jobId = uploadData.batch_id;
-
-      // Start processing
-      await fetch('/api/process/' + jobId, { method: 'POST' });
-
-      // Poll progress
-      pollProgress(jobId);
-    } catch (error) {
-      alert('Fehler beim Upload');
-      console.error(error);
-    }
-  });
-
-  async function pollProgress(jobId) {
-    const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
-
-    const interval = setInterval(async () => {
-      try {
-        const response = await fetch('/api/status/' + jobId);
-        const data = await response.json();
-
-        if (data.status === 'completed') {
-          clearInterval(interval);
-          window.location.href = '/job/' + jobId;
-        } else if (data.status === 'error') {
-          clearInterval(interval);
-          alert('Fehler bei der Verarbeitung');
-        }
-
-        const progress = (data.processed || 0) / (data.total || 1) * 100;
-        progressFill.style.width = progress + '%';
-        progressText.textContent = `${data.processed || 0} von ${data.total || 0} Dateien verarbeitet`;
-      } catch (error) {
-        console.error(error);
-      }
-    }, 1000);
-  }
+async function pollProgress(jobId) {
+  const fill = document.getElementById('progressFill');
+  const text = document.getElementById('progressText');
   
-  // Account menu functionality
-  async function checkLoginStatus() {
+  const timer = setInterval(async () => {
     try {
-      const r = await fetch('/api/user', {credentials: 'include'});
-      const u = await r.json();
-      const toggle = document.querySelector('
-    } catch(e) {}
-  }
-  document.addEventListener('DOMContentLoaded', checkLoginStatus);
+      const r = await fetch('/api/status/' + jobId);
+      const d = await r.json();
+      
+      if (d.status === 'completed') {
+        clearInterval(timer);
+        window.location.href = '/job/' + jobId;
+      } else if (d.status === 'error') {
+        clearInterval(timer);
+        alert('Verarbeitungs-Fehler');
+      }
+      
+      const pct = (d.processed || 0) / (d.total || 1) * 100;
+      fill.style.width = pct + '%';
+      text.textContent = `${d.processed || 0} von ${d.total || 0} Dateien`;
+    } catch (e) {
+      console.error(e);
+    }
+  }, 1000);
+}
+
+// Load user name
+fetch('/api/user').then(r => r.json()).then(u => {
+  if (u.logged_in && u.name) document.getElementById('accountName').textContent = u.name;
+}).catch(e => console.error(e));
 </script>
 
 </body>
