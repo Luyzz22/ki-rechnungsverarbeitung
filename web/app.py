@@ -113,11 +113,32 @@ async def home(request: Request):
 
 
 @app.post("/api/upload")
-async def upload_files(files: List[UploadFile] = File(...)):
+async def upload_files(request: Request, files: List[UploadFile] = File(...)):
     """
-    Upload PDF files
+    Upload PDF files with subscription limit check
     Returns job_id for tracking
     """
+    # Check if user is logged in
+    if 'user_id' not in request.session:
+        return JSONResponse(
+            status_code=401,
+            content={"error": "Bitte melden Sie sich an", "redirect": "/login"}
+        )
+    
+    # Check subscription limit
+    from database import check_invoice_limit
+    limit_check = check_invoice_limit(request.session['user_id'])
+    
+    if not limit_check.get('allowed'):
+        return JSONResponse(
+            status_code=403,
+            content={
+                "error": limit_check.get('message'),
+                "reason": limit_check.get('reason'),
+                "redirect": "https://sbsdeutschland.com/preise" if limit_check.get('reason') == 'no_subscription' else None
+            }
+        )
+    
     job_id = str(uuid.uuid4())
     upload_path = UPLOAD_DIR / job_id
     upload_path.mkdir(exist_ok=True)
@@ -140,8 +161,20 @@ async def upload_files(files: List[UploadFile] = File(...)):
             "size": file_path.stat().st_size
         })
     
+    # Check if enough quota
+    remaining = limit_check.get('remaining', 0)
+    if len(uploaded_files) > remaining:
+        return JSONResponse(
+            status_code=403,
+            content={
+                "error": f"Nicht genug Kontingent. Verbleibend: {remaining}, Hochgeladen: {len(uploaded_files)}",
+                "remaining": remaining
+            }
+        )
+    
     # Store job info
     processing_jobs[job_id] = {
+        "user_id": request.session.get("user_id"),
         "status": "uploaded",
         "files": uploaded_files,
         "created_at": datetime.now().isoformat(),
@@ -151,9 +184,15 @@ async def upload_files(files: List[UploadFile] = File(...)):
     return {
         "success": True,
         "batch_id": job_id,
-        "job_id": job_id,  # Für Kompatibilität behalten
+        "job_id": job_id,
         "files_uploaded": len(uploaded_files),
-        "files": uploaded_files
+        "files": uploaded_files,
+        "subscription": {
+            "plan": limit_check.get('plan'),
+            "used": limit_check.get('used'),
+            "limit": limit_check.get('limit'),
+            "remaining": remaining - len(uploaded_files)
+        }
     }
 
 @app.post("/api/process/{job_id}")
@@ -276,6 +315,11 @@ async def process_invoices_background(job_id: str):
     save_job(job_id, processing_jobs[job_id])
     if results:
         save_invoices(job_id, results)
+    
+    # Track invoice usage
+    if results and job.get("user_id"):
+        from database import increment_invoice_usage
+        increment_invoice_usage(job["user_id"], len(results))
     
     # Schedule cleanup of uploaded PDFs (nach 60 Minuten)
     asyncio.create_task(cleanup_uploads(upload_path, delay_minutes=60))
@@ -951,3 +995,13 @@ async def checkout_success(request: Request, session_id: str = None):
     return templates.TemplateResponse("checkout_success.html", {
         "request": request
     })
+
+@app.get("/api/subscription/status")
+async def get_subscription_status(request: Request):
+    """Get current subscription status and usage"""
+    if 'user_id' not in request.session:
+        return {"error": "Not logged in"}
+    
+    from database import check_invoice_limit
+    status = check_invoice_limit(request.session['user_id'])
+    return status

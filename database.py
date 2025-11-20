@@ -1069,3 +1069,68 @@ def create_subscription(user_id: int, plan: str, stripe_customer_id: str, stripe
     ''', (user_id, plan, stripe_customer_id, stripe_subscription_id, limits.get(plan, 100)))
     conn.commit()
     conn.close()
+
+def check_invoice_limit(user_id: int) -> dict:
+    """Check if user can process more invoices"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Get active subscription
+    cursor.execute('''
+        SELECT plan, invoices_limit, invoices_used 
+        FROM subscriptions 
+        WHERE user_id = ? AND status = 'active' 
+        ORDER BY created_at DESC LIMIT 1
+    ''', (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row:
+        return {
+            'allowed': False,
+            'reason': 'no_subscription',
+            'message': 'Kein aktives Abonnement. Bitte wählen Sie einen Plan.'
+        }
+    
+    plan, limit, used = row[0], row[1], row[2]
+    remaining = limit - used
+    
+    if remaining <= 0:
+        return {
+            'allowed': False,
+            'reason': 'limit_reached',
+            'message': f'Monatliches Limit erreicht ({used}/{limit}). Bitte upgraden Sie Ihren Plan.',
+            'plan': plan,
+            'limit': limit,
+            'used': used
+        }
+    
+    return {
+        'allowed': True,
+        'plan': plan,
+        'limit': limit,
+        'used': used,
+        'remaining': remaining
+    }
+
+def increment_invoice_usage(user_id: int, count: int = 1):
+    """Increment the invoice usage counter"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        UPDATE subscriptions 
+        SET invoices_used = invoices_used + ?
+        WHERE user_id = ? AND status = 'active'
+    ''', (count, user_id))
+    
+    conn.commit()
+    conn.close()
+
+def reset_monthly_usage():
+    """Reset all usage counters (call monthly via cron)"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('UPDATE subscriptions SET invoices_used = 0 WHERE status = "active"')
+    conn.commit()
+    conn.close()
