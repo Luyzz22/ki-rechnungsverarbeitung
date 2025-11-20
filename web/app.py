@@ -867,3 +867,87 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
+
+# Stripe Integration
+import stripe
+
+import os
+from dotenv import load_dotenv
+load_dotenv()
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+STRIPE_PRICES = {
+    'starter': 'price_starter_monthly',  # Wird später ersetzt
+    'professional': 'price_professional_monthly',
+    'enterprise': 'price_enterprise_monthly'
+}
+
+@app.post("/api/checkout/create-session")
+async def create_checkout_session(request: Request):
+    """Create Stripe checkout session"""
+    if 'user_id' not in request.session:
+        return {"error": "Not logged in"}
+    
+    try:
+        data = await request.json()
+        plan = data.get('plan', 'starter')
+        
+        # Price IDs (in cents)
+        prices = {
+            'starter': 6900,
+            'professional': 17900,
+            'enterprise': 44900
+        }
+        
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'eur',
+                    'product_data': {
+                        'name': f'SBS KI-Rechnungsverarbeitung - {plan.title()}',
+                        'description': f'Monatliches Abonnement'
+                    },
+                    'unit_amount': prices.get(plan, 6900),
+                    'recurring': {'interval': 'month'}
+                },
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url='https://app.sbsdeutschland.com/checkout/success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url='https://sbsdeutschland.com/preise',
+            metadata={
+                'user_id': str(request.session['user_id']),
+                'plan': plan
+            }
+        )
+        
+        return {"sessionId": session.id, "url": session.url}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/checkout/success", response_class=HTMLResponse)
+async def checkout_success(request: Request, session_id: str = None):
+    """Handle successful checkout"""
+    from database import create_subscription
+    
+    if session_id:
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+            
+            if session.payment_status == 'paid':
+                user_id = int(session.metadata.get('user_id'))
+                plan = session.metadata.get('plan')
+                
+                create_subscription(
+                    user_id=user_id,
+                    plan=plan,
+                    stripe_customer_id=session.customer,
+                    stripe_subscription_id=session.subscription
+                )
+        except Exception as e:
+            print(f"Error processing checkout: {e}")
+    
+    return templates.TemplateResponse("checkout_success.html", {
+        "request": request
+    })
