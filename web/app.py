@@ -482,7 +482,7 @@ async def history_page(request: Request):
     if "user_id" not in request.session:
         return RedirectResponse(url="/login", status_code=303)
     jobs = get_all_jobs(limit=50, user_id=request.session["user_id"])
-    stats = get_statistics()
+    stats = get_statistics(user_id=request.session["user_id"])
     
     return templates.TemplateResponse("history.html", {
         "request": request,
