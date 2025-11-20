@@ -79,7 +79,7 @@
           <a href="/email-config">📧 Email-Inbox</a>
           <a href="/profile">⚙️ Einstellungen</a>
           <div class="divider"></div>
-          <a href="/logout">🚪 Logout</a>
+          <a href="/logout?next=/">🚪 Logout</a>
         </div>
       </div>
     </nav>
@@ -190,7 +190,16 @@ function showFiles(){if(files.length===0){fileListBox.style.display='none';retur
 function removeFile(i){files.splice(i,1);showFiles();}
 document.getElementById('processBtn').onclick=async()=>{if(files.length===0)return;fileListBox.style.display='none';document.getElementById('progressBox').style.display='block';try{const fd=new FormData();files.forEach(f=>fd.append('files',f));console.log('Uploading',files.length,'files');const r=await fetch('/api/upload',{method:'POST',body:fd});const data=await r.json();console.log('Upload:',data);if(data.error){alert(data.error);if(data.redirect)window.location.href=data.redirect;return;}const jobId=data.batch_id;console.log('Job:',jobId);await fetch('/api/process/'+jobId,{method:'POST'});pollProgress(jobId);}catch(e){alert('Fehler: '+e.message);console.error(e);document.getElementById('progressBox').style.display='none';fileListBox.style.display='block';}};
 async function pollProgress(jobId){const timer=setInterval(async()=>{try{const r=await fetch('/api/status/'+jobId);const d=await r.json();if(d.status==='completed'){clearInterval(timer);window.location.href='/job/'+jobId;}else if(d.status==='error'){clearInterval(timer);alert('Verarbeitungsfehler');}document.getElementById('progressFill').style.width=((d.processed||0)/(d.total||1)*100)+'%';document.getElementById('progressText').textContent=(d.processed||0)+' von '+(d.total||0)+' Dateien';}catch(e){}},1000);}
-fetch('/api/user').then(r=>r.json()).then(u=>{if(u.logged_in&&u.name)document.getElementById('accountName').textContent=u.name;});
+fetch('/api/user').then(r=>r.json()).then(u=>{
+  const toggle = document.querySelector('.account-toggle');
+  const menu = document.querySelector('.account-menu');
+  if(u.logged_in && u.name) {
+    document.getElementById('accountName').textContent=u.name;
+  } else {
+    toggle.innerHTML = '<a href="/login?next=/" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+    if(menu) menu.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
