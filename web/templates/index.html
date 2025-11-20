@@ -840,11 +840,18 @@
       </div>
 
       <!-- Dropzone -->
-      <form action="/api/upload" id="invoiceDropzone" class="dropzone">
-        <div class="dz-message">
-          <span>📥 Dateien hier ablegen oder klicken</span>
+      <div id="uploadArea" class="dropzone" style="cursor: pointer;">
+        <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
+        <div class="dz-message" onclick="document.getElementById('fileInput').click()">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">📄</div>
+          <div style="font-size: 1.2rem; font-weight: 500; margin-bottom: 0.5rem;">
+            Rechnungen hochladen
+          </div>
+          <div style="font-size: 0.9rem; opacity: 0.7;">
+            Klicken oder PDF-Dateien hierher ziehen (max. 20 MB)
+          </div>
         </div>
-      </form>
+      </div>
 
       <!-- File List Section - ALWAYS VISIBLE -->
       <div class="file-list-section">
