@@ -219,7 +219,10 @@ def get_statistics(user_id: int = None) -> Dict:
     cursor = conn.cursor()
     
     # Total jobs
-    cursor.execute('SELECT COUNT(*) FROM jobs WHERE status = "completed"')
+    if user_id:
+        cursor.execute('SELECT COUNT(*) FROM jobs WHERE status = "completed" AND user_id = ?', (user_id,))
+    else:
+        cursor.execute('SELECT COUNT(*) FROM jobs WHERE status = "completed"')
     total_jobs = cursor.fetchone()[0]
     
     # Total invoices
@@ -276,79 +279,6 @@ def get_statistics(user_id: int = None) -> Dict:
 
 # Initialize on import
 init_database()
-
-def get_analytics_data():
-    """Get comprehensive analytics data"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    # Basic stats
-    cursor.execute('SELECT COUNT(*) FROM invoices')
-    total_invoices = cursor.fetchone()[0]
-    
-    cursor.execute('SELECT SUM(betrag_brutto), SUM(betrag_netto), SUM(mwst_betrag) FROM invoices')
-    row = cursor.fetchone()
-    total_brutto = row[0] or 0
-    total_netto = row[1] or 0
-    total_mwst = row[2] or 0
-    
-    # Unique suppliers
-    cursor.execute('SELECT COUNT(DISTINCT rechnungsaussteller) FROM invoices WHERE rechnungsaussteller != ""')
-    unique_suppliers = cursor.fetchone()[0]
-    
-    # Average per invoice
-    avg_per_invoice = (total_brutto / total_invoices) if total_invoices > 0 else 0
-    
-    # Monthly data
-    cursor.execute('''
-        SELECT strftime('%Y-%m', datum) as month, SUM(betrag_brutto) as total
-        FROM invoices
-        WHERE datum != '' AND datum IS NOT NULL
-        GROUP BY month
-        ORDER BY month
-        LIMIT 12
-    ''')
-    monthly_data = cursor.fetchall()
-    monthly_labels = [r[0] for r in monthly_data] if monthly_data else []
-    monthly_values = [r[1] or 0 for r in monthly_data] if monthly_data else []
-    
-    # Top suppliers
-    cursor.execute('''
-        SELECT rechnungsaussteller as name, COUNT(*) as count, SUM(betrag_brutto) as total
-        FROM invoices
-        WHERE rechnungsaussteller != '' AND rechnungsaussteller IS NOT NULL
-        GROUP BY rechnungsaussteller
-        ORDER BY total DESC
-        LIMIT 10
-    ''')
-    top_suppliers = [dict(r) for r in cursor.fetchall()]
-    
-    # Weekday distribution
-    cursor.execute('''
-        SELECT strftime('%w', datum) as weekday, COUNT(*) as count
-        FROM invoices
-        WHERE datum != '' AND datum IS NOT NULL
-        GROUP BY weekday
-    ''')
-    weekday_raw = {int(r[0]): r[1] for r in cursor.fetchall()}
-    weekday_data = [weekday_raw.get((i + 1) % 7, 0) for i in range(7)]
-    
-    conn.close()
-    
-    return {
-        'stats': {
-            'total_invoices': total_invoices,
-            'total_amount': round(total_brutto, 2),
-            'total_netto': round(total_netto, 2),
-            'total_mwst': round(total_mwst, 2),
-            'avg_per_invoice': round(avg_per_invoice, 2),
-            'unique_suppliers': unique_suppliers
-        },
-        'monthly_labels': monthly_labels,
-        'monthly_values': monthly_values,
-        'top_suppliers': top_suppliers,
-        'weekday_data': weekday_data
-    }
 
 def get_analytics_data():
     """Get comprehensive analytics data"""
