@@ -994,9 +994,10 @@ const dz = new Dropzone("#invoiceDropzone", {
   paramName: "files",
   init: function () {
     this.on("addedfile", function (file) {
+      // Store the native file object for upload
       uploadedFiles.push({ 
         name: file.name, 
-        file: file,
+        nativeFile: file.nativeFile || file,
         size: file.size 
       });
       updateFileList();
@@ -1064,10 +1065,10 @@ document.getElementById('processBtn').addEventListener('click', async () => {
 
   try {
     const formData = new FormData();
-    // Use Dropzone's files directly
-    dz.files.forEach(file => {
-      console.log('Appending file:', file.name, file.size);
-      formData.append('files', file);
+    // Use stored native files
+    uploadedFiles.forEach(f => {
+      console.log('Appending file:', f.name, f.nativeFile);
+      formData.append('files', f.nativeFile);
     });
 
     const uploadResponse = await fetch('/api/upload', {
