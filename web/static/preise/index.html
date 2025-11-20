@@ -106,7 +106,7 @@
           <li><span class="check">✓</span> E-Mail Support</li>
           <li><span class="check">✓</span> Überlauf: 0,70 €/Rechnung</li>
         </ul>
-        <a href="https://app.sbsdeutschland.com/" class="pricing-cta">Jetzt starten</a>
+        <button class="pricing-cta" onclick="startCheckout('starter')">Jetzt starten</button>
       </div>
 
       <!-- Professional -->
@@ -124,7 +124,7 @@
           <li><span class="check">✓</span> Prioritäts-Support</li>
           <li><span class="check">✓</span> Überlauf: 0,30 €/Rechnung</li>
         </ul>
-        <a href="https://app.sbsdeutschland.com/" class="pricing-cta">Jetzt starten</a>
+        <button class="pricing-cta" onclick="startCheckout('professional')">Jetzt starten</button>
       </div>
 
       <!-- Enterprise -->
@@ -324,3 +324,36 @@ async function checkLoginStatus() {
 document.addEventListener('DOMContentLoaded', checkLoginStatus);
 </script>
 </html>
+<script>
+async function startCheckout(plan) {
+  // Prüfe ob eingeloggt
+  try {
+    const userResp = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
+    const user = await userResp.json();
+    
+    if (!user.logged_in) {
+      // Redirect to login with return URL
+      window.location.href = 'https://app.sbsdeutschland.com/login?next=' + encodeURIComponent(window.location.href);
+      return;
+    }
+    
+    // Erstelle Checkout Session
+    const response = await fetch('https://app.sbsdeutschland.com/api/checkout/create-session', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({plan: plan})
+    });
+    
+    const data = await response.json();
+    
+    if (data.url) {
+      window.location.href = data.url;
+    } else if (data.error) {
+      alert('Fehler: ' + data.error);
+    }
+  } catch (e) {
+    alert('Verbindungsfehler. Bitte versuchen Sie es erneut.');
+  }
+}
+</script>
