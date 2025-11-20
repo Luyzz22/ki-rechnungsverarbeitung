@@ -1067,11 +1067,16 @@ document.getElementById('processBtn').addEventListener('click', async () => {
 
   try {
     const formData = new FormData();
-    // Use stored native files
-    uploadedFiles.forEach(f => {
-      console.log('Appending file:', f.name, f.nativeFile);
-      formData.append('files', f.nativeFile);
-    });
+    // Get files from Dropzone's hidden input
+    const dzInput = document.querySelector('#invoiceDropzone input[type="file"]');
+    if (dzInput && dzInput.files.length > 0) {
+      console.log('Using Dropzone input, files:', dzInput.files.length);
+      for (let i = 0; i < dzInput.files.length; i++) {
+        formData.append('files', dzInput.files[i]);
+      }
+    } else {
+      console.log('No files in Dropzone input');
+    }
 
     const uploadResponse = await fetch('/api/upload', {
       method: 'POST',
