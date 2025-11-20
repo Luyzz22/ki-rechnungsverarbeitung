@@ -840,7 +840,7 @@
       </div>
 
       <!-- Dropzone -->
-      <form action="#" id="invoiceDropzone" class="dropzone">
+      <form action="/api/upload" id="invoiceDropzone" class="dropzone">
         <div class="dz-message">
           <span>📥 Dateien hier ablegen oder klicken</span>
         </div>
@@ -982,11 +982,12 @@ let uploadedFiles = [];
 Dropzone.autoDiscover = false;
 
 const dz = new Dropzone("#invoiceDropzone", {
-  url: "#",
+  url: "/api/upload",
   maxFilesize: 20,
   acceptedFiles: ".pdf,.jpg,.jpeg,.png",
   addRemoveLinks: false,
   autoProcessQueue: false,
+  autoQueue: false,
   uploadMultiple: true,
   parallelUploads: 100,
   dictDefaultMessage: "",
