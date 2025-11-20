@@ -1015,3 +1015,57 @@ def email_exists(email: str) -> bool:
     exists = cursor.fetchone() is not None
     conn.close()
     return exists
+
+def init_subscriptions_table():
+    """Initialize subscriptions table"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            plan TEXT NOT NULL,
+            stripe_customer_id TEXT,
+            stripe_subscription_id TEXT,
+            status TEXT DEFAULT 'active',
+            invoices_limit INTEGER,
+            invoices_used INTEGER DEFAULT 0,
+            current_period_start TEXT,
+            current_period_end TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+init_subscriptions_table()
+
+def get_user_subscription(user_id: int) -> dict:
+    """Get user's active subscription"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT * FROM subscriptions 
+        WHERE user_id = ? AND status = 'active' 
+        ORDER BY created_at DESC LIMIT 1
+    ''', (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def create_subscription(user_id: int, plan: str, stripe_customer_id: str, stripe_subscription_id: str):
+    """Create new subscription"""
+    limits = {'starter': 100, 'professional': 600, 'enterprise': 999999}
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO subscriptions 
+        (user_id, plan, stripe_customer_id, stripe_subscription_id, invoices_limit, status)
+        VALUES (?, ?, ?, ?, ?, 'active')
+    ''', (user_id, plan, stripe_customer_id, stripe_subscription_id, limits.get(plan, 100)))
+    conn.commit()
+    conn.close()
