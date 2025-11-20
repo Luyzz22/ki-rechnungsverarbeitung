@@ -1064,8 +1064,10 @@ document.getElementById('processBtn').addEventListener('click', async () => {
 
   try {
     const formData = new FormData();
-    uploadedFiles.forEach(f => {
-      console.log('Appending file:', f.file, f.file.name); formData.append('files', f.file);
+    // Use Dropzone's files directly
+    dz.files.forEach(file => {
+      console.log('Appending file:', file.name, file.size);
+      formData.append('files', file);
     });
 
     const uploadResponse = await fetch('/api/upload', {
