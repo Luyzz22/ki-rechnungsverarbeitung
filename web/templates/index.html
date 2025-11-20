@@ -32,11 +32,6 @@
       max-width: 700px;
       margin: 0 auto;
     }
-    .footer {
-      background: #003856;
-      color: white;
-      padding: 40px 24px 20px;
-    }
     .footer-grid {
       max-width: 1200px;
       margin: 0 auto 30px;
@@ -129,24 +124,47 @@
 <footer class="footer">
   <div class="footer-grid">
     <div>
-      <strong style="font-size:1.1rem;">SBS Deutschland</strong>
-      <p style="margin-top:8px;opacity:0.8;">In der Dell 19, 69469 Weinheim</p>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">
+        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+      </p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
     </div>
     <div>
-      <strong>Produkte</strong>
-      <p style="margin-top:8px;"><a href="/" style="color:white;text-decoration:none;opacity:0.8;">KI-Rechnungsverarbeitung</a></p>
+      <h4>Produkte</h4>
+      <ul>
+        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="/preise">Preise & Pakete</a></li>
+        <li><a href="https://app.sbsdeutschland.com/">Demo & Upload</a></li>
+      </ul>
     </div>
     <div>
-      <strong>Unternehmen</strong>
-      <p style="margin-top:8px;"><a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" style="color:white;text-decoration:none;opacity:0.8;">Kontakt</a></p>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+      </ul>
     </div>
     <div>
-      <strong>Rechtliches</strong>
-      <p style="margin-top:8px;"><a href="https://sbsdeutschland.com/sbshomepage/impressum.html" style="color:white;text-decoration:none;opacity:0.8;">Impressum</a></p>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
+      </ul>
     </div>
   </div>
   <div class="footer-bottom">
-    <p>&copy; 2025 SBS Deutschland GmbH & Co. KG · Made with ❤️ in Weinheim</p>
+    <p>&copy; 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
   </div>
 </footer>
 
