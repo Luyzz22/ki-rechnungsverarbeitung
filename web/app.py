@@ -1366,7 +1366,7 @@ async def contact_form(request: Request):
         """
         
         # Send to SBS email
-        send_subscription_email("info@sbsdeutschland.com", subject, body)
+        import threading; threading.Thread(target=send_subscription_email, args=("luisschenk2202@gmail.com", subject, body)).start()
         
         # Send confirmation to customer
         confirm_subject = "Ihre Anfrage bei SBS Deutschland"
@@ -1389,7 +1389,7 @@ async def contact_form(request: Request):
         </body>
         </html>
         """
-        send_subscription_email(email, confirm_subject, confirm_body)
+        threading.Thread(target=send_subscription_email, args=(email, confirm_subject, confirm_body)).start()
         
         return {"success": True, "message": "Nachricht gesendet"}
     except Exception as e:
