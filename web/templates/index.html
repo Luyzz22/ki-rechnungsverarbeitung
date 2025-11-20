@@ -993,11 +993,13 @@ const dz = new Dropzone("#invoiceDropzone", {
   dictDefaultMessage: "",
   paramName: "files",
   init: function () {
+    const dropzoneElement = this;
     this.on("addedfile", function (file) {
-      // Store the native file object for upload
+      // Store BOTH dropzone file and native file
       uploadedFiles.push({ 
         name: file.name, 
-        nativeFile: file.nativeFile || file,
+        dropzoneFile: file,
+        nativeFile: file,  // Dropzone file IS the native file
         size: file.size 
       });
       updateFileList();

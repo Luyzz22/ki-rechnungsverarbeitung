@@ -1398,3 +1398,8 @@ async def contact_form(request: Request):
     except Exception as e:
         print(f"Contact form error: {e}")
         return {"success": False, "error": str(e)}
+
+@app.get("/test", response_class=HTMLResponse)
+async def test_upload_page(request: Request):
+    return templates.TemplateResponse("test_upload.html", {"request": request})
+
