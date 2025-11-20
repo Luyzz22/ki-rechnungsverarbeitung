@@ -312,7 +312,7 @@ async def process_invoices_background(job_id: str):
     })
     
     # Save to database
-    save_job(job_id, processing_jobs[job_id])
+    save_job(job_id, processing_jobs[job_id], processing_jobs[job_id].get("user_id"))
     if results:
         save_invoices(job_id, results)
     
