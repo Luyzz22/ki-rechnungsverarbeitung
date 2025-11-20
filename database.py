@@ -183,16 +183,24 @@ def get_job(job_id: str) -> Optional[Dict]:
     conn.close()
     return job
 
-def get_all_jobs(limit: int = 50, offset: int = 0) -> List[Dict]:
-    """Get all jobs, newest first"""
+def get_all_jobs(limit: int = 50, offset: int = 0, user_id: int = None) -> List[Dict]:
+    """Get all jobs for a user, newest first"""
     conn = get_connection()
     cursor = conn.cursor()
     
-    cursor.execute('''
-        SELECT * FROM jobs 
-        ORDER BY created_at DESC 
-        LIMIT ? OFFSET ?
-    ''', (limit, offset))
+    if user_id:
+        cursor.execute('''
+            SELECT * FROM jobs 
+            WHERE user_id = ?
+            ORDER BY created_at DESC 
+            LIMIT ? OFFSET ?
+        ''', (user_id, limit, offset))
+    else:
+        cursor.execute('''
+            SELECT * FROM jobs 
+            ORDER BY created_at DESC 
+            LIMIT ? OFFSET ?
+        ''', (limit, offset))
     
     jobs = []
     for row in cursor.fetchall():
@@ -204,13 +212,13 @@ def get_all_jobs(limit: int = 50, offset: int = 0) -> List[Dict]:
     conn.close()
     return jobs
 
-def get_statistics() -> Dict:
+def get_statistics(user_id: int = None) -> Dict:
     """Get overall statistics"""
     conn = get_connection()
     cursor = conn.cursor()
     
     # Total jobs
-    cursor.execute('SELECT COUNT(*) FROM jobs WHERE status = "completed"')
+    cursor.execute('SELECT COUNT(*) FROM jobs WHERE status = "completed" AND user_id = ?')
     total_jobs = cursor.fetchone()[0]
     
     # Total invoices
@@ -1134,3 +1142,17 @@ def reset_monthly_usage():
     cursor.execute('UPDATE subscriptions SET invoices_used = 0 WHERE status = "active"')
     conn.commit()
     conn.close()
+
+# Add user_id column to existing jobs table if not exists
+def add_user_id_to_jobs():
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
+        conn.commit()
+        print("Added user_id column to jobs table")
+    except:
+        pass  # Column already exists
+    conn.close()
+
+add_user_id_to_jobs()
