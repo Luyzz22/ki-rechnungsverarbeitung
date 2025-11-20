@@ -219,7 +219,7 @@ def get_statistics(user_id: int = None) -> Dict:
     cursor = conn.cursor()
     
     # Total jobs
-    cursor.execute('SELECT COUNT(*) FROM jobs WHERE status = "completed" AND user_id = ?')
+    cursor.execute('SELECT COUNT(*) FROM jobs WHERE status = "completed"')
     total_jobs = cursor.fetchone()[0]
     
     # Total invoices
