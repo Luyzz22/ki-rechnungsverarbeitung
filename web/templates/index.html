@@ -5,6 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Upload - SBS KI-Rechnungsverarbeitung</title>
   <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .hero-compact {
+      background: linear-gradient(135deg, #003856 0%, #004d73 100%);
+      color: white;
+      padding: 60px 24px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,185,0,0.15);
+      color: #FFB900;
+      padding: 8px 20px;
+      border-radius: 24px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .hero-compact h1 {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+      color: white;
+    }
+    .hero-compact p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .footer {
+      background: #003856;
+      color: white;
+      padding: 40px 24px 20px;
+    }
+    .footer-grid {
+      max-width: 1200px;
+      margin: 0 auto 30px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 30px;
+    }
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      text-align: center;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+  </style>
 </head>
 <body>
 
@@ -80,49 +129,24 @@
 <footer class="footer">
   <div class="footer-grid">
     <div>
-      <div class="footer-brand">
-        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
-        <div class="footer-brand-text">
-          <strong>SBS Deutschland</strong>
-          <span>Smart Business Service</span>
-        </div>
-      </div>
-      <p class="footer-tagline">Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.</p>
-      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+      <strong style="font-size:1.1rem;">SBS Deutschland</strong>
+      <p style="margin-top:8px;opacity:0.8;">In der Dell 19, 69469 Weinheim</p>
     </div>
     <div>
-      <h4>Produkte</h4>
-      <ul><li><a href="/">🤖 KI-Rechnungsverarbeitung</a></li></ul>
+      <strong>Produkte</strong>
+      <p style="margin-top:8px;"><a href="/" style="color:white;text-decoration:none;opacity:0.8;">KI-Rechnungsverarbeitung</a></p>
     </div>
     <div>
-      <h4>Beratung</h4>
-      <ul>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/quality-risk.html">🎯 Quality & Risk</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/metrologie-pmo.html">📐 Metrologie & PMO</a></li>
-      </ul>
+      <strong>Unternehmen</strong>
+      <p style="margin-top:8px;"><a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" style="color:white;text-decoration:none;opacity:0.8;">Kontakt</a></p>
     </div>
     <div>
-      <h4>Unternehmen</h4>
-      <ul>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/about.html">Über uns</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a></li>
-        <li><a href="https://sbsdeutschland.com/preise">Preise</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Rechtliches</h4>
-      <ul>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/impressum.html">Impressum</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/datenschutz.html">Datenschutz</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/agb.html">AGB</a></li>
-      </ul>
+      <strong>Rechtliches</strong>
+      <p style="margin-top:8px;"><a href="https://sbsdeutschland.com/sbshomepage/impressum.html" style="color:white;text-decoration:none;opacity:0.8;">Impressum</a></p>
     </div>
   </div>
   <div class="footer-bottom">
-    <p>&copy; 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
-    <p>Made with ❤️ in Weinheim</p>
+    <p>&copy; 2025 SBS Deutschland GmbH & Co. KG · Made with ❤️ in Weinheim</p>
   </div>
 </footer>
 
@@ -139,11 +163,11 @@ uploadBox.ondragover=(e)=>{e.preventDefault();uploadBox.style.borderColor='#FFB9
 uploadBox.ondragleave=()=>uploadBox.style.borderColor='#e5e7eb';
 uploadBox.ondrop=(e)=>{e.preventDefault();uploadBox.style.borderColor='#e5e7eb';addFiles(e.dataTransfer.files);};
 function addFiles(newFiles){for(let f of newFiles){if(f.size>20*1024*1024){alert(f.name+' ist zu groß (max. 20 MB)');continue;}files.push(f);}showFiles();}
-function showFiles(){if(files.length===0){fileListBox.style.display='none';return;}fileListBox.style.display='block';document.getElementById('fileCount').textContent=files.length;fileList.innerHTML='';files.forEach((f,i)=>{const icon=f.type==='application/pdf'?'📕':'🖼️';const div=document.createElement('div');div.style='display:flex;justify-content:space-between;align-items:center;padding:20px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:12px;transition:all 0.2s;';div.innerHTML='<div style="display:flex;align-items:center;gap:20px;"><span style="font-size:2.5rem;">'+icon+'</span><div><div style="font-weight:600;color:#003856;">'+f.name+'</div><div style="font-size:0.9rem;color:#666;">'+(f.size/1024/1024).toFixed(2)+' MB</div></div></div><button onclick="removeFile('+i+')" style="background:#ef4444;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;">✕ Entfernen</button>';fileList.appendChild(div);});}
+function showFiles(){if(files.length===0){fileListBox.style.display='none';return;}fileListBox.style.display='block';document.getElementById('fileCount').textContent=files.length;fileList.innerHTML='';files.forEach((f,i)=>{const icon=f.type==='application/pdf'?'📕':'🖼️';const div=document.createElement('div');div.style='display:flex;justify-content:space-between;align-items:center;padding:20px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:12px;';div.innerHTML='<div style="display:flex;align-items:center;gap:20px;"><span style="font-size:2.5rem;">'+icon+'</span><div><div style="font-weight:600;color:#003856;">'+f.name+'</div><div style="font-size:0.9rem;color:#666;">'+(f.size/1024/1024).toFixed(2)+' MB</div></div></div><button onclick="removeFile('+i+')" style="background:#ef4444;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;">✕</button>';fileList.appendChild(div);});}
 function removeFile(i){files.splice(i,1);showFiles();}
-document.getElementById('processBtn').onclick=async()=>{if(files.length===0)return;fileListBox.style.display='none';document.getElementById('progressBox').style.display='block';try{const fd=new FormData();files.forEach(f=>fd.append('files',f));console.log('Uploading',files.length,'files...');const r=await fetch('/api/upload',{method:'POST',body:fd});const data=await r.json();console.log('Upload response:',data);if(data.error){alert(data.error);if(data.redirect)window.location.href=data.redirect;return;}const jobId=data.batch_id;console.log('Starting processing for job:',jobId);await fetch('/api/process/'+jobId,{method:'POST'});pollProgress(jobId);}catch(e){alert('Upload-Fehler: '+e.message);console.error(e);document.getElementById('progressBox').style.display='none';fileListBox.style.display='block';}};
-async function pollProgress(jobId){const timer=setInterval(async()=>{try{const r=await fetch('/api/status/'+jobId);const d=await r.json();console.log('Status:',d);if(d.status==='completed'){clearInterval(timer);window.location.href='/job/'+jobId;}else if(d.status==='error'){clearInterval(timer);alert('Verarbeitungsfehler');}const pct=((d.processed||0)/(d.total||1)*100);document.getElementById('progressFill').style.width=pct+'%';document.getElementById('progressText').textContent=(d.processed||0)+' von '+(d.total||0)+' Dateien verarbeitet';}catch(e){console.error('Poll error:',e);}},1000);}
-fetch('/api/user').then(r=>r.json()).then(u=>{if(u.logged_in&&u.name)document.getElementById('accountName').textContent=u.name;}).catch(e=>console.error(e));
+document.getElementById('processBtn').onclick=async()=>{if(files.length===0)return;fileListBox.style.display='none';document.getElementById('progressBox').style.display='block';try{const fd=new FormData();files.forEach(f=>fd.append('files',f));console.log('Uploading',files.length,'files');const r=await fetch('/api/upload',{method:'POST',body:fd});const data=await r.json();console.log('Upload:',data);if(data.error){alert(data.error);if(data.redirect)window.location.href=data.redirect;return;}const jobId=data.batch_id;console.log('Job:',jobId);await fetch('/api/process/'+jobId,{method:'POST'});pollProgress(jobId);}catch(e){alert('Fehler: '+e.message);console.error(e);document.getElementById('progressBox').style.display='none';fileListBox.style.display='block';}};
+async function pollProgress(jobId){const timer=setInterval(async()=>{try{const r=await fetch('/api/status/'+jobId);const d=await r.json();if(d.status==='completed'){clearInterval(timer);window.location.href='/job/'+jobId;}else if(d.status==='error'){clearInterval(timer);alert('Verarbeitungsfehler');}document.getElementById('progressFill').style.width=((d.processed||0)/(d.total||1)*100)+'%';document.getElementById('progressText').textContent=(d.processed||0)+' von '+(d.total||0)+' Dateien';}catch(e){}},1000);}
+fetch('/api/user').then(r=>r.json()).then(u=>{if(u.logged_in&&u.name)document.getElementById('accountName').textContent=u.name;});
 </script>
 </body>
 </html>
