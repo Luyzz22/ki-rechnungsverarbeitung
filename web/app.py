@@ -478,7 +478,9 @@ if __name__ == "__main__":
 @app.get("/history", response_class=HTMLResponse)
 async def history_page(request: Request):
     """Dashboard with job history"""
-    jobs = get_all_jobs(limit=50)
+    if "user_id" not in request.session:
+        return RedirectResponse(url="/login", status_code=303)
+    jobs = get_all_jobs(limit=50, user_id=request.session["user_id"])
     stats = get_statistics()
     
     return templates.TemplateResponse("history.html", {
