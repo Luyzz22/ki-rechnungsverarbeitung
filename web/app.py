@@ -1042,3 +1042,103 @@ async def cancel_subscription(request: Request):
         return {"success": True, "message": "Abonnement wird zum Ende der Laufzeit gekündigt"}
     except Exception as e:
         return {"error": str(e)}
+
+# Stripe Webhook Endpoint
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhook events"""
+    payload = await request.body()
+    sig_header = request.headers.get('stripe-signature')
+    
+    # Webhook secret (muss in Stripe Dashboard konfiguriert werden)
+    webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET', '')
+    
+    try:
+        if webhook_secret:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, webhook_secret
+            )
+        else:
+            # Fallback ohne Signatur-Verifizierung (nur für Tests)
+            import json
+            event = json.loads(payload)
+    except Exception as e:
+        print(f"Webhook error: {e}")
+        return {"error": str(e)}, 400
+    
+    event_type = event.get('type', event.get('type'))
+    data = event.get('data', {}).get('object', {})
+    
+    print(f"Stripe Webhook: {event_type}")
+    
+    # Handle different event types
+    if event_type == 'checkout.session.completed':
+        # Payment successful - already handled in success page
+        pass
+        
+    elif event_type == 'invoice.payment_succeeded':
+        # Subscription renewed successfully
+        subscription_id = data.get('subscription')
+        if subscription_id:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE subscriptions 
+                SET status = 'active', invoices_used = 0
+                WHERE stripe_subscription_id = ?
+            ''', (subscription_id,))
+            conn.commit()
+            conn.close()
+            print(f"Subscription renewed: {subscription_id}")
+            
+    elif event_type == 'invoice.payment_failed':
+        # Payment failed
+        subscription_id = data.get('subscription')
+        customer_email = data.get('customer_email')
+        if subscription_id:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE subscriptions 
+                SET status = 'payment_failed'
+                WHERE stripe_subscription_id = ?
+            ''', (subscription_id,))
+            conn.commit()
+            conn.close()
+            print(f"Payment failed for: {subscription_id}, email: {customer_email}")
+            
+    elif event_type == 'customer.subscription.deleted':
+        # Subscription cancelled
+        subscription_id = data.get('id')
+        if subscription_id:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE subscriptions 
+                SET status = 'cancelled'
+                WHERE stripe_subscription_id = ?
+            ''', (subscription_id,))
+            conn.commit()
+            conn.close()
+            print(f"Subscription cancelled: {subscription_id}")
+            
+    elif event_type == 'customer.subscription.updated':
+        # Subscription updated (plan change, etc.)
+        subscription_id = data.get('id')
+        status = data.get('status')
+        cancel_at_period_end = data.get('cancel_at_period_end')
+        
+        if subscription_id:
+            new_status = 'canceling' if cancel_at_period_end else status
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE subscriptions 
+                SET status = ?
+                WHERE stripe_subscription_id = ?
+            ''', (new_status, subscription_id,))
+            conn.commit()
+            conn.close()
+            print(f"Subscription updated: {subscription_id}, status: {new_status}")
+    
+    return {"received": True}
