@@ -1072,6 +1072,21 @@ document.getElementById('processBtn').addEventListener('click', async () => {
     });
 
     const uploadData = await uploadResponse.json();
+
+    // Check for errors
+    if (!uploadResponse.ok || uploadData.error) {
+      document.getElementById("processSection").style.display = "block";
+      document.getElementById("progressSection").classList.remove("active");
+      
+      if (uploadData.redirect) {
+        if (confirm(uploadData.error + "\n\nMöchten Sie zur entsprechenden Seite weitergeleitet werden?")) {
+          window.location.href = uploadData.redirect;
+        }
+      } else {
+        alert(uploadData.error || "Ein Fehler ist aufgetreten.");
+      }
+      return;
+    }
     const jobId = uploadData.batch_id;
 
     await fetch('/api/process/' + jobId, {
