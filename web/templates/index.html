@@ -2,143 +2,14 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KI-Rechnungsverarbeitung - SBS Deutschland</title>
+  <title>Upload - SBS KI-Rechnungsverarbeitung</title>
   <link rel="stylesheet" href="/static/css/main.css">
-  <style>
-    .upload-section {
-      max-width: 1200px;
-      margin: 60px auto;
-      padding: 0 24px;
-    }
-    
-    .upload-box {
-      border: 3px dashed #e5e7eb;
-      border-radius: 16px;
-      padding: 80px 40px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.3s;
-      background: white;
-      margin-bottom: 40px;
-    }
-    
-    .upload-box:hover {
-      border-color: #FFB900;
-      background: #fffef5;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,56,86,0.1);
-    }
-    
-    .file-list-box {
-      background: white;
-      border-radius: 16px;
-      padding: 40px;
-      margin-bottom: 40px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-      display: none;
-    }
-    
-    .file-list-box.active {
-      display: block;
-    }
-    
-    .file-list {
-      max-height: 550px;
-      overflow-y: auto;
-      margin: 24px 0;
-    }
-    
-    .file-list::-webkit-scrollbar { width: 8px; }
-    .file-list::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-    .file-list::-webkit-scrollbar-thumb { background: #FFB900; border-radius: 4px; }
-    
-    .file-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      margin-bottom: 12px;
-      transition: all 0.2s;
-    }
-    
-    .file-item:hover {
-      border-color: #FFB900;
-      box-shadow: 0 2px 8px rgba(255,185,0,0.1);
-    }
-    
-    .file-info {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-    
-    .file-icon { font-size: 2.5rem; }
-    
-    .btn-remove {
-      background: #ef4444;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    
-    .btn-process {
-      background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
-      color: #003856;
-      border: none;
-      padding: 18px 40px;
-      border-radius: 12px;
-      font-size: 1.2rem;
-      font-weight: bold;
-      cursor: pointer;
-      width: 100%;
-      box-shadow: 0 4px 16px rgba(255,185,0,0.3);
-    }
-    
-    .btn-process:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(255,185,0,0.4);
-    }
-    
-    .progress-box {
-      display: none;
-      background: white;
-      border-radius: 16px;
-      padding: 60px 40px;
-      text-align: center;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-    }
-    
-    .progress-box.active { display: block; }
-    
-    .progress-bar {
-      width: 100%;
-      height: 40px;
-      background: #e5e7eb;
-      border-radius: 20px;
-      overflow: hidden;
-      margin: 30px 0;
-    }
-    
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #003856 0%, #FFB900 100%);
-      width: 0%;
-      transition: width 0.3s;
-    }
-  </style>
 </head>
 <body>
-
 <header class="header">
   <div class="header-inner">
     <a href="https://sbsdeutschland.com/" class="logo-wrap">
-      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <img src="/static/sbs-logo-new.png" alt="SBS" class="logo-img" />
       <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
     </a>
     <nav class="nav">
@@ -147,9 +18,6 @@
         <div class="dropdown-menu">
           <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
           <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
-          <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
-          <a href="https://sbsdeutschland.com/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
-          <a href="https://sbsdeutschland.com/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
         </div>
       </div>
       <a href="https://sbsdeutschland.com/preise">Preise</a>
@@ -159,7 +27,6 @@
         <div class="account-menu">
           <a href="/history">📊 Verlauf</a>
           <a href="/analytics">📈 Analytics</a>
-          <a href="/email-config">📧 Email-Inbox</a>
           <a href="/profile">⚙️ Einstellungen</a>
           <div class="divider"></div>
           <a href="/logout">🚪 Logout</a>
@@ -168,204 +35,60 @@
     </nav>
   </div>
 </header>
-
-<section class="hero" style="background: linear-gradient(135deg, #003856 0%, #004d73 100%); padding: 80px 20px; text-align: center; color: white;">
-  <div style="max-width: 1200px; margin: 0 auto;">
-    <div style="display: inline-block; background: rgba(255,185,0,0.15); padding: 8px 20px; border-radius: 24px; margin-bottom: 24px;">
-      <span style="color: #FFB900; font-weight: 600;">🤖 KI-RECHNUNGSVERARBEITUNG</span>
+<main class="main-content">
+  <div class="hero-compact">
+    <div class="hero-content">
+      <div class="hero-badge">🤖 KI-RECHNUNGSVERARBEITUNG</div>
+      <h1>Rechnungen intelligent verarbeiten</h1>
+      <p>Laden Sie Ihre Rechnungen hoch - KI extrahiert alle Daten automatisch</p>
     </div>
-    <h1 style="font-size: 3.5rem; margin-bottom: 24px; font-weight: 800;">Rechnungen intelligent verarbeiten</h1>
-    <p style="font-size: 1.3rem; opacity: 0.9; max-width: 700px; margin: 0 auto;">
-      Laden Sie Ihre Rechnungen hoch und unsere KI extrahiert automatisch alle relevanten Daten.<br>
-      Export in Excel, CSV oder DATEV – schnell, präzise und DSGVO-konform.
-    </p>
   </div>
-</section>
-
-<div class="upload-section">
-  <div id="uploadBox" class="upload-box">
-    <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
-    <div style="font-size: 5rem; margin-bottom: 24px;">📁</div>
-    <h2 style="color: #003856; margin-bottom: 12px;">Dateien hochladen</h2>
-    <p style="color: #666; font-size: 1.1rem;">Klicken oder Dateien hierher ziehen</p>
-    <p style="color: #999; font-size: 0.9rem; margin-top: 8px;">PDF, JPG oder PNG (max. 20 MB pro Datei)</p>
-  </div>
-
-  <div id="fileListBox" class="file-list-box">
-    <h3 style="color: #003856; margin-bottom: 24px;">📋 Hochgeladene Dateien (<span id="fileCount">0</span>)</h3>
-    <div id="fileList" class="file-list"></div>
-    <button id="processBtn" class="btn-process">⚡ Jetzt verarbeiten</button>
-  </div>
-
-  <div id="progressBox" class="progress-box">
-    <div style="font-size: 4rem; margin-bottom: 24px;">⚙️</div>
-    <h2 style="color: #003856; margin-bottom: 16px;">Verarbeitung läuft...</h2>
-    <div class="progress-bar">
-      <div id="progressFill" class="progress-fill"></div>
+  <section style="max-width:1200px;margin:60px auto;padding:0 24px;">
+    <div id="uploadBox" style="border:3px dashed #e5e7eb;border-radius:16px;padding:80px 40px;text-align:center;cursor:pointer;background:white;margin-bottom:40px;transition:all 0.3s;">
+      <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none;">
+      <div style="font-size:5rem;margin-bottom:24px;">📁</div>
+      <h2 style="color:#003856;margin-bottom:12px;">Dateien hochladen</h2>
+      <p style="color:#666;">Klicken oder Dateien hierher ziehen</p>
+      <p style="color:#999;font-size:0.9rem;margin-top:8px;">PDF, JPG, PNG (max 20MB)</p>
     </div>
-    <p id="progressText" style="color: #666; font-size: 1.1rem;">Bitte warten...</p>
-  </div>
-</div>
-
-<footer class="footer">
-  <div class="footer-grid">
-    <div>
-      <div class="footer-brand">
-        <img src="/static/sbs-logo-new.png" alt="SBS" />
-        <div class="footer-brand-text">
-          <strong>SBS Deutschland</strong>
-          <span>Smart Business Service</span>
-        </div>
+    <div id="fileListBox" style="display:none;background:white;border-radius:16px;padding:40px;box-shadow:0 4px 16px rgba(0,0,0,0.08);margin-bottom:40px;">
+      <h3>📋 Hochgeladene Dateien (<span id="fileCount">0</span>)</h3>
+      <div id="fileList" style="max-height:550px;overflow-y:auto;margin:24px 0;"></div>
+      <button id="processBtn" style="background:linear-gradient(135deg,#FFB900,#ff9500);color:#003856;border:none;padding:18px 40px;border-radius:12px;font-size:1.2rem;font-weight:bold;cursor:pointer;width:100%;">⚡ Jetzt verarbeiten</button>
+    </div>
+    <div id="progressBox" style="display:none;background:white;border-radius:16px;padding:60px 40px;text-align:center;">
+      <div style="font-size:4rem;">⚙️</div>
+      <h2>Verarbeitung läuft...</h2>
+      <div style="width:100%;height:40px;background:#e5e7eb;border-radius:20px;overflow:hidden;margin:30px 0;">
+        <div id="progressFill" style="height:100%;background:linear-gradient(90deg,#003856,#FFB900);width:0%;transition:width 0.3s;"></div>
       </div>
-      <p class="footer-tagline">Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.</p>
-      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+      <p id="progressText">Bitte warten...</p>
     </div>
-    <div>
-      <h4>Produkte</h4>
-      <ul><li><a href="/">🤖 KI-Rechnungsverarbeitung</a></li></ul>
-    </div>
-    <div>
-      <h4>Beratung</h4>
-      <ul>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/quality-risk.html">🎯 Quality & Risk</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/metrologie-pmo.html">📐 Metrologie & PMO</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Unternehmen</h4>
-      <ul>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/about.html">Über uns</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a></li>
-        <li><a href="https://sbsdeutschland.com/preise">Preise</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Rechtliches</h4>
-      <ul>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/impressum.html">Impressum</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/datenschutz.html">Datenschutz</a></li>
-        <li><a href="https://sbsdeutschland.com/sbshomepage/agb.html">AGB</a></li>
-      </ul>
-    </div>
-  </div>
+  </section>
+</main>
+<footer class="footer">
   <div class="footer-bottom">
-    <p>&copy; 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
-    <p>Made with ❤️ in Weinheim</p>
+    <p>&copy; 2025 SBS Deutschland GmbH & Co. KG</p>
   </div>
 </footer>
-
 <script src="/static/js/main.js"></script>
 <script>
-let files = [];
-const fileInput = document.getElementById('fileInput');
-const uploadBox = document.getElementById('uploadBox');
-const fileListBox = document.getElementById('fileListBox');
-const fileList = document.getElementById('fileList');
-const fileCount = document.getElementById('fileCount');
-const processBtn = document.getElementById('processBtn');
-
-uploadBox.onclick = () => fileInput.click();
-
-fileInput.onchange = (e) => addFiles(e.target.files);
-
-uploadBox.ondragover = (e) => { e.preventDefault(); uploadBox.style.borderColor = '#FFB900'; };
-uploadBox.ondragleave = () => { uploadBox.style.borderColor = '#e5e7eb'; };
-uploadBox.ondrop = (e) => { e.preventDefault(); uploadBox.style.borderColor = '#e5e7eb'; addFiles(e.dataTransfer.files); };
-
-function addFiles(newFiles) {
-  for (let f of newFiles) {
-    if (f.size > 20*1024*1024) { alert(f.name + ' zu groß (max 20MB)'); continue; }
-    files.push(f);
-  }
-  showFiles();
-}
-
-function showFiles() {
-  if (files.length === 0) { fileListBox.classList.remove('active'); return; }
-  fileListBox.classList.add('active');
-  fileCount.textContent = files.length;
-  fileList.innerHTML = '';
-  files.forEach((f, i) => {
-    const icon = f.type === 'application/pdf' ? '📕' : '🖼️';
-    const size = (f.size/1024/1024).toFixed(2) + ' MB';
-    const div = document.createElement('div');
-    div.className = 'file-item';
-    div.innerHTML = `
-      <div class="file-info">
-        <span class="file-icon">${icon}</span>
-        <div>
-          <div style="font-weight:600;color:#003856">${f.name}</div>
-          <div style="font-size:0.9rem;color:#666">${size}</div>
-        </div>
-      </div>
-      <button class="btn-remove" onclick="removeFile(${i})">✕</button>
-    `;
-    fileList.appendChild(div);
-  });
-}
-
-function removeFile(i) { files.splice(i,1); showFiles(); }
-
-processBtn.onclick = async () => {
-  if (files.length === 0) return;
-  fileListBox.classList.remove('active');
-  document.getElementById('progressBox').classList.add('active');
-  
-  try {
-    const fd = new FormData();
-    files.forEach(f => fd.append('files', f));
-    
-    const r = await fetch('/api/upload', { method: 'POST', body: fd });
-    const data = await r.json();
-    
-    if (data.error) {
-      alert(data.error);
-      if (data.redirect) window.location.href = data.redirect;
-      return;
-    }
-    
-    const jobId = data.batch_id;
-    await fetch('/api/process/' + jobId, { method: 'POST' });
-    pollProgress(jobId);
-  } catch (e) {
-    alert('Upload-Fehler');
-    console.error(e);
-  }
-};
-
-async function pollProgress(jobId) {
-  const fill = document.getElementById('progressFill');
-  const text = document.getElementById('progressText');
-  
-  const timer = setInterval(async () => {
-    try {
-      const r = await fetch('/api/status/' + jobId);
-      const d = await r.json();
-      
-      if (d.status === 'completed') {
-        clearInterval(timer);
-        window.location.href = '/job/' + jobId;
-      } else if (d.status === 'error') {
-        clearInterval(timer);
-        alert('Verarbeitungs-Fehler');
-      }
-      
-      const pct = (d.processed || 0) / (d.total || 1) * 100;
-      fill.style.width = pct + '%';
-      text.textContent = `${d.processed || 0} von ${d.total || 0} Dateien`;
-    } catch (e) {
-      console.error(e);
-    }
-  }, 1000);
-}
-
-// Load user name
-fetch('/api/user').then(r => r.json()).then(u => {
-  if (u.logged_in && u.name) document.getElementById('accountName').textContent = u.name;
-}).catch(e => console.error(e));
+let files=[];
+const fileInput=document.getElementById('fileInput');
+const uploadBox=document.getElementById('uploadBox');
+const fileListBox=document.getElementById('fileListBox');
+const fileList=document.getElementById('fileList');
+uploadBox.onclick=()=>fileInput.click();
+fileInput.onchange=(e)=>addFiles(e.target.files);
+uploadBox.ondragover=(e)=>{e.preventDefault();uploadBox.style.borderColor='#FFB900';};
+uploadBox.ondragleave=()=>uploadBox.style.borderColor='#e5e7eb';
+uploadBox.ondrop=(e)=>{e.preventDefault();uploadBox.style.borderColor='#e5e7eb';addFiles(e.dataTransfer.files);};
+function addFiles(newFiles){for(let f of newFiles){if(f.size>20*1024*1024){alert(f.name+' zu groß');continue;}files.push(f);}showFiles();}
+function showFiles(){if(files.length===0){fileListBox.style.display='none';return;}fileListBox.style.display='block';document.getElementById('fileCount').textContent=files.length;fileList.innerHTML='';files.forEach((f,i)=>{const icon=f.type==='application/pdf'?'📕':'🖼️';const div=document.createElement('div');div.style='display:flex;justify-content:space-between;align-items:center;padding:20px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:12px;';div.innerHTML='<div style="display:flex;gap:20px;"><span style="font-size:2.5rem;">'+icon+'</span><div><div style="font-weight:600;">'+f.name+'</div><div style="color:#666;">'+(f.size/1024/1024).toFixed(2)+' MB</div></div></div><button onclick="removeFile('+i+')" style="background:#ef4444;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;">✕</button>';fileList.appendChild(div);});}
+function removeFile(i){files.splice(i,1);showFiles();}
+document.getElementById('processBtn').onclick=async()=>{if(files.length===0)return;fileListBox.style.display='none';document.getElementById('progressBox').style.display='block';try{const fd=new FormData();files.forEach(f=>fd.append('files',f));const r=await fetch('/api/upload',{method:'POST',body:fd});const data=await r.json();console.log('Upload response:',data);if(data.error){alert(data.error);if(data.redirect)window.location.href=data.redirect;return;}const jobId=data.batch_id;await fetch('/api/process/'+jobId,{method:'POST'});pollProgress(jobId);}catch(e){alert('Upload-Fehler');console.error(e);}};
+async function pollProgress(jobId){const timer=setInterval(async()=>{try{const r=await fetch('/api/status/'+jobId);const d=await r.json();if(d.status==='completed'){clearInterval(timer);window.location.href='/job/'+jobId;}else if(d.status==='error'){clearInterval(timer);alert('Fehler');}document.getElementById('progressFill').style.width=((d.processed||0)/(d.total||1)*100)+'%';document.getElementById('progressText').textContent=(d.processed||0)+' von '+(d.total||0);}catch(e){}},1000);}
+fetch('/api/user').then(r=>r.json()).then(u=>{if(u.logged_in&&u.name)document.getElementById('accountName').textContent=u.name;});
 </script>
-
 </body>
 </html>
