@@ -982,7 +982,7 @@ let uploadedFiles = [];
 Dropzone.autoDiscover = false;
 
 const dz = new Dropzone("#invoiceDropzone", {
-  url: "/api/upload",
+  url: "#",
   maxFilesize: 20,
   acceptedFiles: ".pdf,.jpg,.jpeg,.png",
   addRemoveLinks: false,
@@ -990,6 +990,7 @@ const dz = new Dropzone("#invoiceDropzone", {
   uploadMultiple: true,
   parallelUploads: 100,
   dictDefaultMessage: "",
+  paramName: "files",
   init: function () {
     this.on("addedfile", function (file) {
       uploadedFiles.push({ 
