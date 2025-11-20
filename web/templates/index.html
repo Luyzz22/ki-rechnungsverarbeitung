@@ -3,349 +3,430 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Upload - SBS KI-Rechnungsverarbeitung</title>
-  <link rel="stylesheet" href="/static/css/styles.css">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; }
-    
-    .navbar {
-      background: #003856;
-      color: white;
-      padding: 1rem 2rem;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    
-    .nav-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .nav-brand {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      color: white;
-      text-decoration: none;
-    }
-    
-    .nav-brand img { height: 50px; }
-    
-    .nav-links {
-      display: flex;
-      gap: 25px;
-    }
-    
-    .nav-links a {
-      color: white;
-      text-decoration: none;
-      font-weight: 500;
-    }
-
+  <title>KI-Rechnungsverarbeitung - SBS Deutschland</title>
+  <link rel="stylesheet" href="/static/css/main.css">
   <style>
     .upload-container {
       max-width: 1200px;
-      margin: 0 auto;
-      padding: 40px 20px;
+      margin: 60px auto;
+      padding: 0 20px;
     }
     
     .upload-area {
       border: 3px dashed #e5e7eb;
-      border-radius: 12px;
-      padding: 60px 40px;
+      border-radius: 16px;
+      padding: 80px 40px;
       text-align: center;
       cursor: pointer;
       transition: all 0.3s;
       background: white;
-      margin-bottom: 30px;
+      margin-bottom: 40px;
     }
     
     .upload-area:hover {
       border-color: #FFB900;
-      background: #fffef5;
-    }
-    
-    .upload-area.dragover {
-      border-color: #FFB900;
-      background: #fffef5;
+      background: linear-gradient(135deg, #ffffff 0%, #fffef5 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,56,86,0.1);
     }
     
     .file-list-section {
       background: white;
-      border-radius: 12px;
-      padding: 30px;
-      margin-bottom: 30px;
+      border-radius: 16px;
+      padding: 40px;
+      margin-bottom: 40px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
     
     .file-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 15px;
+      padding: 20px;
       border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      margin-bottom: 10px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      transition: all 0.2s;
+    }
+    
+    .file-item:hover {
+      border-color: #FFB900;
+      box-shadow: 0 2px 8px rgba(255,185,0,0.1);
     }
     
     .file-info {
       display: flex;
       align-items: center;
-      gap: 15px;
+      gap: 20px;
     }
     
-    .file-icon {
-      font-size: 2rem;
-    }
+    .file-icon { font-size: 2.5rem; }
     
     .remove-btn {
       background: #ef4444;
       color: white;
       border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
+      padding: 10px 20px;
+      border-radius: 8px;
       cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    
+    .remove-btn:hover {
+      background: #dc2626;
+      transform: scale(1.05);
     }
     
     .process-btn {
-      background: #FFB900;
+      background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
       color: #003856;
       border: none;
-      padding: 16px 32px;
-      border-radius: 8px;
-      font-size: 1.1rem;
+      padding: 18px 40px;
+      border-radius: 12px;
+      font-size: 1.2rem;
       font-weight: bold;
       cursor: pointer;
       width: 100%;
+      transition: all 0.3s;
+      box-shadow: 0 4px 16px rgba(255,185,0,0.3);
+    }
+    
+    .process-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(255,185,0,0.4);
     }
     
     .process-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+      transform: none;
     }
     
     .progress-section {
       display: none;
       background: white;
-      border-radius: 12px;
-      padding: 30px;
+      border-radius: 16px;
+      padding: 60px 40px;
       text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
     
-    .progress-section.active {
-      display: block;
-    }
+    .progress-section.active { display: block; }
     
     .progress-bar {
       width: 100%;
-      height: 30px;
+      height: 40px;
       background: #e5e7eb;
-      border-radius: 15px;
+      border-radius: 20px;
       overflow: hidden;
-      margin: 20px 0;
+      margin: 30px 0;
     }
     
     .progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, #003856, #FFB900);
+      background: linear-gradient(90deg, #003856 0%, #FFB900 100%);
       width: 0%;
       transition: width 0.3s;
     }
   </style>
 </head>
 <body>
-  <nav class="navbar">
-    <div class="nav-container">
-      <a href="/" class="nav-brand">
-        <img src="/static/sbs-logo-new.png" alt="SBS">
-        <div>
-          <strong>SBS DEUTSCHLAND</strong>
-          <span>Smart Business Service · Weinheim</span>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-container">
+    <a href="https://sbsdeutschland.com" class="header-brand">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="header-logo">
+      <div class="header-brand-text">
+        <strong>SBS DEUTSCHLAND</strong>
+        <span>Smart Business Service · Weinheim</span>
+      </div>
+    </a>
+    
+    <nav class="header-nav">
+      <a href="https://sbsdeutschland.com/sbshomepage/leistungen.html">Leistungen</a>
+      <a href="https://sbsdeutschland.com/preise">Preise</a>
+      <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
+      <div class="header-divider"></div>
+      <a href="/history">📊 Verlauf</a>
+      <div class="account-toggle">
+        <span id="accountName">Account</span>
+        <span class="account-arrow">▼</span>
+        <div class="account-menu">
+          <a href="/profile">👤 Profil</a>
+          <a href="/logout">🚪 Logout</a>
         </div>
-      </a>
-      <div class="nav-links">
-        <a href="https://sbsdeutschland.com">🏠 Home</a>
-        <a href="/history">📊 Verlauf</a>
-        <a href="/profile">👤 Profil</a>
       </div>
-    </div>
-  </nav>
+    </nav>
+  </div>
+</header>
 
-  <div class="upload-container">
-    <h1>📄 Rechnungen hochladen</h1>
-    <p style="margin-bottom: 30px;">Laden Sie Ihre Rechnungen hoch - PDF, JPG oder PNG (max. 20 MB pro Datei)</p>
-
-    <!-- Upload Area -->
-    <div id="uploadArea" class="upload-area">
-      <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
-      <div style="font-size: 4rem; margin-bottom: 20px;">📁</div>
-      <h2>Dateien hochladen</h2>
-      <p>Klicken oder Dateien hierher ziehen</p>
+<!-- Hero Section -->
+<section class="hero" style="background: linear-gradient(135deg, #003856 0%, #004d73 100%); padding: 80px 20px; text-align: center; color: white;">
+  <div style="max-width: 1200px; margin: 0 auto;">
+    <div style="display: inline-block; background: rgba(255,185,0,0.15); padding: 8px 20px; border-radius: 24px; margin-bottom: 24px;">
+      <span style="color: #FFB900; font-weight: 600;">🤖 KI-RECHNUNGSVERARBEITUNG</span>
     </div>
+    
+    <h1 style="font-size: 3.5rem; margin-bottom: 24px; font-weight: 800; line-height: 1.2;">
+      Rechnungen intelligent<br>verarbeiten
+    </h1>
+    
+    <p style="font-size: 1.3rem; opacity: 0.9; max-width: 700px; margin: 0 auto 40px;">
+      Laden Sie Ihre Rechnungen hoch und unsere KI extrahiert automatisch alle relevanten Daten.<br>
+      Export in Excel, CSV oder DATEV – schnell, präzise und DSGVO-konform.
+    </p>
+  </div>
+</section>
 
-    <!-- File List -->
-    <div id="fileListSection" class="file-list-section" style="display: none;">
-      <h3>Hochgeladene Dateien (<span id="fileCount">0</span>)</h3>
-      <div id="fileList"></div>
-      <button id="processBtn" class="process-btn">Jetzt verarbeiten</button>
-    </div>
-
-    <!-- Progress -->
-    <div id="progressSection" class="progress-section">
-      <h2>⚙️ Verarbeitung läuft...</h2>
-      <div class="progress-bar">
-        <div id="progressFill" class="progress-fill"></div>
-      </div>
-      <p id="progressText">Bitte warten...</p>
-    </div>
+<!-- Upload Section -->
+<div class="upload-container">
+  <!-- Upload Area -->
+  <div id="uploadArea" class="upload-area">
+    <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
+    <div style="font-size: 5rem; margin-bottom: 24px;">📁</div>
+    <h2 style="color: #003856; margin-bottom: 12px;">Dateien hochladen</h2>
+    <p style="color: #666; font-size: 1.1rem;">Klicken oder Dateien hierher ziehen</p>
+    <p style="color: #999; font-size: 0.9rem; margin-top: 8px;">PDF, JPG oder PNG (max. 20 MB pro Datei)</p>
   </div>
 
-  <script>
-    let selectedFiles = [];
-    const fileInput = document.getElementById('fileInput');
-    const uploadArea = document.getElementById('uploadArea');
-    const fileListSection = document.getElementById('fileListSection');
-    const fileList = document.getElementById('fileList');
-    const fileCount = document.getElementById('fileCount');
-    const processBtn = document.getElementById('processBtn');
+  <!-- File List -->
+  <div id="fileListSection" class="file-list-section" style="display: none;">
+    <h3 style="color: #003856; margin-bottom: 24px;">📋 Hochgeladene Dateien (<span id="fileCount">0</span>)</h3>
+    <div id="fileList"></div>
+    <button id="processBtn" class="process-btn">⚡ Jetzt verarbeiten</button>
+  </div>
 
-    // Click to upload
-    uploadArea.addEventListener('click', () => fileInput.click());
+  <!-- Progress -->
+  <div id="progressSection" class="progress-section">
+    <div style="font-size: 4rem; margin-bottom: 24px;">⚙️</div>
+    <h2 style="color: #003856; margin-bottom: 16px;">Verarbeitung läuft...</h2>
+    <div class="progress-bar">
+      <div id="progressFill" class="progress-fill"></div>
+    </div>
+    <p id="progressText" style="color: #666; font-size: 1.1rem;">Bitte warten...</p>
+  </div>
+</div>
 
-    // File input change
-    fileInput.addEventListener('change', (e) => {
-      handleFiles(e.target.files);
-    });
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">
+        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+      </p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+    </div>
 
-    // Drag and drop
-    uploadArea.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      uploadArea.classList.add('dragover');
-    });
+    <div>
+      <h4>Produkte</h4>
+      <ul>
+        <li><a href="/">🤖 KI-Rechnungsverarbeitung</a></li>
+      </ul>
+    </div>
 
-    uploadArea.addEventListener('dragleave', () => {
-      uploadArea.classList.remove('dragover');
-    });
+    <div>
+      <h4>Beratung</h4>
+      <ul>
+        <li><a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a></li>
+        <li><a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a></li>
+        <li><a href="https://sbsdeutschland.com/sbshomepage/quality-risk.html">🎯 Quality & Risk</a></li>
+        <li><a href="https://sbsdeutschland.com/sbshomepage/metrologie-pmo.html">📐 Metrologie & PMO</a></li>
+      </ul>
+    </div>
 
-    uploadArea.addEventListener('drop', (e) => {
-      e.preventDefault();
-      uploadArea.classList.remove('dragover');
-      handleFiles(e.dataTransfer.files);
-    });
+    <div>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="https://sbsdeutschland.com/sbshomepage/about.html">Über uns</a></li>
+        <li><a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="https://sbsdeutschland.com/preise">Preise</a></li>
+      </ul>
+    </div>
 
-    function handleFiles(files) {
-      for (let file of files) {
-        if (file.size > 20 * 1024 * 1024) {
-          alert(file.name + ' ist zu groß (max. 20 MB)');
-          continue;
-        }
-        selectedFiles.push(file);
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="https://sbsdeutschland.com/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="https://sbsdeutschland.com/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="https://sbsdeutschland.com/sbshomepage/agb.html">AGB</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
+  </div>
+</footer>
+
+<script src="/static/js/main.js"></script>
+<script>
+  let selectedFiles = [];
+  const fileInput = document.getElementById('fileInput');
+  const uploadArea = document.getElementById('uploadArea');
+  const fileListSection = document.getElementById('fileListSection');
+  const fileList = document.getElementById('fileList');
+  const fileCount = document.getElementById('fileCount');
+  const processBtn = document.getElementById('processBtn');
+
+  // Click to upload
+  uploadArea.addEventListener('click', () => fileInput.click());
+
+  // File input change
+  fileInput.addEventListener('change', (e) => {
+    handleFiles(e.target.files);
+  });
+
+  // Drag and drop
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#FFB900';
+  });
+
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.style.borderColor = '#e5e7eb';
+  });
+
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#e5e7eb';
+    handleFiles(e.dataTransfer.files);
+  });
+
+  function handleFiles(files) {
+    for (let file of files) {
+      if (file.size > 20 * 1024 * 1024) {
+        alert(file.name + ' ist zu groß (max. 20 MB)');
+        continue;
       }
-      updateFileList();
+      selectedFiles.push(file);
+    }
+    updateFileList();
+  }
+
+  function updateFileList() {
+    if (selectedFiles.length === 0) {
+      fileListSection.style.display = 'none';
+      return;
     }
 
-    function updateFileList() {
-      if (selectedFiles.length === 0) {
-        fileListSection.style.display = 'none';
+    fileListSection.style.display = 'block';
+    fileCount.textContent = selectedFiles.length;
+    fileList.innerHTML = '';
+
+    selectedFiles.forEach((file, index) => {
+      const item = document.createElement('div');
+      item.className = 'file-item';
+      const icon = file.type === 'application/pdf' ? '📕' : '🖼️';
+      const size = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+      
+      item.innerHTML = `
+        <div class="file-info">
+          <span class="file-icon">${icon}</span>
+          <div>
+            <div style="font-weight: 600; color: #003856;">${file.name}</div>
+            <div style="font-size: 0.9rem; color: #666;">${size}</div>
+          </div>
+        </div>
+        <button class="remove-btn" onclick="removeFile(${index})">✕ Entfernen</button>
+      `;
+      fileList.appendChild(item);
+    });
+  }
+
+  function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    updateFileList();
+  }
+
+  // Process button
+  processBtn.addEventListener('click', async () => {
+    if (selectedFiles.length === 0) return;
+
+    fileListSection.style.display = 'none';
+    document.getElementById('progressSection').classList.add('active');
+
+    try {
+      // Upload
+      const formData = new FormData();
+      selectedFiles.forEach(file => formData.append('files', file));
+
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const uploadData = await uploadResponse.json();
+
+      if (uploadData.error) {
+        alert(uploadData.error);
+        if (uploadData.redirect) {
+          window.location.href = uploadData.redirect;
+        }
         return;
       }
 
-      fileListSection.style.display = 'block';
-      fileCount.textContent = selectedFiles.length;
-      fileList.innerHTML = '';
+      const jobId = uploadData.batch_id;
 
-      selectedFiles.forEach((file, index) => {
-        const item = document.createElement('div');
-        item.className = 'file-item';
-        const icon = file.type === 'application/pdf' ? '📕' : '🖼️';
-        const size = (file.size / 1024 / 1024).toFixed(2) + ' MB';
-        
-        item.innerHTML = `
-          <div class="file-info">
-            <span class="file-icon">${icon}</span>
-            <div>
-              <div><strong>${file.name}</strong></div>
-              <div style="font-size: 0.9rem; color: #666;">${size}</div>
-            </div>
-          </div>
-          <button class="remove-btn" onclick="removeFile(${index})">✕ Entfernen</button>
-        `;
-        fileList.appendChild(item);
-      });
+      // Start processing
+      await fetch('/api/process/' + jobId, { method: 'POST' });
+
+      // Poll progress
+      pollProgress(jobId);
+    } catch (error) {
+      alert('Fehler beim Upload');
+      console.error(error);
     }
+  });
 
-    function removeFile(index) {
-      selectedFiles.splice(index, 1);
-      updateFileList();
-    }
+  async function pollProgress(jobId) {
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
 
-    // Process button
-    processBtn.addEventListener('click', async () => {
-      if (selectedFiles.length === 0) return;
-
-      fileListSection.style.display = 'none';
-      document.getElementById('progressSection').classList.add('active');
-
+    const interval = setInterval(async () => {
       try {
-        // Upload
-        const formData = new FormData();
-        selectedFiles.forEach(file => formData.append('files', file));
+        const response = await fetch('/api/status/' + jobId);
+        const data = await response.json();
 
-        const uploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-
-        const uploadData = await uploadResponse.json();
-
-        if (uploadData.error) {
-          alert(uploadData.error);
-          if (uploadData.redirect) {
-            window.location.href = uploadData.redirect;
-          }
-          return;
+        if (data.status === 'completed') {
+          clearInterval(interval);
+          window.location.href = '/job/' + jobId;
+        } else if (data.status === 'error') {
+          clearInterval(interval);
+          alert('Fehler bei der Verarbeitung');
         }
 
-        const jobId = uploadData.batch_id;
-
-        // Start processing
-        await fetch('/api/process/' + jobId, { method: 'POST' });
-
-        // Poll progress
-        pollProgress(jobId);
+        const progress = (data.processed || 0) / (data.total || 1) * 100;
+        progressFill.style.width = progress + '%';
+        progressText.textContent = `${data.processed || 0} von ${data.total || 0} Dateien verarbeitet`;
       } catch (error) {
-        alert('Fehler beim Upload');
         console.error(error);
       }
-    });
+    }, 1000);
+  }
+  
+  // Account menu functionality
+  async function checkLoginStatus() {
+    try {
+      const r = await fetch('/api/user', {credentials: 'include'});
+      const u = await r.json();
+      const toggle = document.querySelector('.account-toggle');
+      
+      if (u.logged_in && document.getElementById('accountName')) {
+        document.getElementById('accountName').textContent = u.name;
+      }
+    } catch(e) {}
+  }
+  document.addEventListener('DOMContentLoaded', checkLoginStatus);
+</script>
 
-    async function pollProgress(jobId) {
-      const progressFill = document.getElementById('progressFill');
-      const progressText = document.getElementById('progressText');
-
-      const interval = setInterval(async () => {
-        try {
-          const response = await fetch('/api/status/' + jobId);
-          const data = await response.json();
-
-          if (data.status === 'completed') {
-            clearInterval(interval);
-            window.location.href = '/job/' + jobId;
-          } else if (data.status === 'error') {
-            clearInterval(interval);
-            alert('Fehler bei der Verarbeitung');
-          }
-
-          const progress = (data.processed || 0) / (data.total || 1) * 100;
-          progressFill.style.width = progress + '%';
-          progressText.textContent = `${data.processed || 0} von ${data.total || 0} Dateien verarbeitet`;
-        } catch (error) {
-          console.error(error);
-        }
-      }, 1000);
-    }
-  </script>
 </body>
 </html>
