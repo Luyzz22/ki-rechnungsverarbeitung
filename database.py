@@ -79,7 +79,7 @@ def init_database():
     conn.close()
     logger.info("Database initialized")
 
-def save_job(job_id: str, job_data: Dict):
+def save_job(job_id: str, job_data: Dict, user_id: int = None):
     """Save or update a job"""
     conn = get_connection()
     cursor = conn.cursor()
@@ -92,8 +92,8 @@ def save_job(job_id: str, job_data: Dict):
         INSERT OR REPLACE INTO jobs (
             job_id, created_at, completed_at, status, total_files,
             successful, failed_count, total_amount, total_netto, total_mwst,
-            average_amount, exported_files, upload_path, failed_list
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            average_amount, exported_files, upload_path, failed_list, user_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         job_id,
         job_data.get('created_at', datetime.now().isoformat()),
@@ -108,7 +108,8 @@ def save_job(job_id: str, job_data: Dict):
         job_data.get('stats', {}).get('average_brutto', 0) if job_data.get('stats') else 0,
         exported_files,
         job_data.get('path', ''),
-        failed_list
+        failed_list,
+        user_id
     ))
     
     conn.commit()
