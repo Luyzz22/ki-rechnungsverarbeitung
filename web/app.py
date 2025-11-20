@@ -1005,3 +1005,40 @@ async def get_subscription_status(request: Request):
     from database import check_invoice_limit
     status = check_invoice_limit(request.session['user_id'])
     return status
+
+@app.post("/api/subscription/cancel")
+async def cancel_subscription(request: Request):
+    """Cancel user's subscription"""
+    if 'user_id' not in request.session:
+        return {"error": "Not logged in"}
+    
+    user_id = request.session['user_id']
+    
+    # Get subscription
+    from database import get_user_subscription
+    subscription = get_user_subscription(user_id)
+    
+    if not subscription:
+        return {"error": "Kein aktives Abonnement gefunden"}
+    
+    try:
+        # Cancel in Stripe
+        stripe.Subscription.modify(
+            subscription['stripe_subscription_id'],
+            cancel_at_period_end=True
+        )
+        
+        # Update database
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE subscriptions 
+            SET status = 'canceling' 
+            WHERE id = ?
+        ''', (subscription['id'],))
+        conn.commit()
+        conn.close()
+        
+        return {"success": True, "message": "Abonnement wird zum Ende der Laufzeit gekündigt"}
+    except Exception as e:
+        return {"error": str(e)}
