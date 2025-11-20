@@ -114,6 +114,7 @@ async def home(request: Request):
 
 @app.post("/api/upload")
 async def upload_files(request: Request, files: List[UploadFile] = File(...)):
+    print(f"Upload request received, files count: {len(files) if files else 0}")
     """
     Upload PDF files with subscription limit check
     Returns job_id for tracking
