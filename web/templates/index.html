@@ -1065,7 +1065,7 @@ document.getElementById('processBtn').addEventListener('click', async () => {
   try {
     const formData = new FormData();
     uploadedFiles.forEach(f => {
-      formData.append('files', f.file);
+      console.log('Appending file:', f.file, f.file.name); formData.append('files', f.file);
     });
 
     const uploadResponse = await fetch('/api/upload', {
