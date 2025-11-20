@@ -43,7 +43,6 @@
       overflow-y: auto;
       margin-bottom: 20px;
     }
-    
 
     #fileList {
       max-height: 550px;
@@ -161,116 +160,6 @@
       transition: width 0.3s;
     }
 
-    .header {
-      background: #003856;
-      padding: 1rem 2rem;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    
-    .header-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .header-brand {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      text-decoration: none;
-      color: white;
-    }
-    
-    .header-logo {
-      height: 50px;
-      width: auto;
-    }
-    
-    .header-brand-text strong {
-      display: block;
-      font-size: 1.1rem;
-      color: white;
-    }
-    
-    .header-brand-text span {
-      display: block;
-      font-size: 0.85rem;
-      color: rgba(255,255,255,0.8);
-    }
-    
-    .header-nav {
-      display: flex;
-      align-items: center;
-      gap: 2rem;
-    }
-    
-    .header-nav a {
-      color: white;
-      text-decoration: none;
-      font-weight: 500;
-      transition: color 0.2s;
-    }
-    
-    .header-nav a:hover {
-      color: #FFB900;
-    }
-    
-    .header-divider {
-      width: 1px;
-      height: 30px;
-      background: rgba(255,255,255,0.2);
-    }
-    
-    .account-toggle {
-      position: relative;
-      cursor: pointer;
-      color: white;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 8px;
-    }
-    
-    .account-toggle:hover {
-      background: rgba(255,255,255,0.15);
-    }
-    
-    .account-arrow {
-      font-size: 0.7rem;
-    }
-    
-    .account-menu {
-      display: none;
-      position: absolute;
-      top: 100%;
-      right: 0;
-      margin-top: 8px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-      min-width: 200px;
-      z-index: 1000;
-    }
-    
-    .account-toggle:hover .account-menu {
-      display: block;
-    }
-    
-    .account-menu a {
-      display: block;
-      padding: 12px 20px;
-      color: #003856;
-      text-decoration: none;
-      transition: background 0.2s;
-    }
-    
-    .account-menu a:hover {
-      background: #f5f7fa;
-    }
   </style>
 </head>
 <body>
@@ -566,11 +455,7 @@
     try {
       const r = await fetch('/api/user', {credentials: 'include'});
       const u = await r.json();
-      const toggle = document.querySelector('.account-toggle');
-      
-      if (u.logged_in && document.getElementById('accountName')) {
-        document.getElementById('accountName').textContent = u.name;
-      }
+      const toggle = document.querySelector('
     } catch(e) {}
   }
   document.addEventListener('DOMContentLoaded', checkLoginStatus);
