@@ -1087,3 +1087,68 @@ def add_user_id_to_jobs():
     conn.close()
 
 add_user_id_to_jobs()
+
+def get_analytics_insights(user_id: int = None) -> list:
+    """Generate actionable insights from analytics data"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    insights = []
+    
+    # Insight 1: Top Suppliers
+    cursor.execute('''
+        SELECT rechnungsaussteller, COUNT(*) as count, SUM(betrag_brutto) as total
+        FROM invoices
+        WHERE rechnungsaussteller != ''
+        GROUP BY rechnungsaussteller
+        ORDER BY total DESC
+        LIMIT 3
+    ''')
+    top_suppliers = cursor.fetchall()
+    if top_suppliers:
+        total_all = sum(r[2] for r in top_suppliers)
+        cursor.execute('SELECT SUM(betrag_brutto) FROM invoices')
+        grand_total = cursor.fetchone()[0] or 1
+        percentage = (total_all / grand_total * 100) if grand_total > 0 else 0
+        insights.append({
+            'icon': '💡',
+            'type': 'info',
+            'title': 'Top-Lieferanten Konzentration',
+            'message': f'Deine Top-3 Lieferanten machen {percentage:.1f}% der Gesamtausgaben aus'
+        })
+    
+    # Insight 2: Monthly Trend
+    cursor.execute('''
+        SELECT strftime('%Y-%m', datum) as month, SUM(betrag_brutto) as total
+        FROM invoices
+        WHERE datum != '' AND datum IS NOT NULL
+        GROUP BY month
+        ORDER BY month DESC
+        LIMIT 2
+    ''')
+    months = cursor.fetchall()
+    if len(months) == 2:
+        current, previous = months[0][1], months[1][1]
+        if current and previous:
+            change = ((current - previous) / previous * 100)
+            icon = '📈' if change > 0 else '📉'
+            direction = 'höher' if change > 0 else 'niedriger'
+            insights.append({
+                'icon': icon,
+                'type': 'warning' if change > 20 else 'info',
+                'title': 'Monatlicher Trend',
+                'message': f'Ausgaben sind {abs(change):.1f}% {direction} als letzter Monat'
+            })
+    
+    # Insight 3: Processing Stats
+    cursor.execute('SELECT COUNT(*), AVG(betrag_brutto) FROM invoices')
+    stats = cursor.fetchone()
+    if stats[0]:
+        insights.append({
+            'icon': '✨',
+            'type': 'success',
+            'title': 'Verarbeitungs-Performance',
+            'message': f'{stats[0]} Rechnungen verarbeitet · Ø {stats[1]:.2f}€ pro Rechnung'
+        })
+    
+    conn.close()
+    return insights
