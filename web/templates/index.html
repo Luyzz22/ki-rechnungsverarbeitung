@@ -311,11 +311,11 @@ fileInput.onchange=(e)=>addFiles(e.target.files);
 uploadBox.ondragover=(e)=>{e.preventDefault();uploadBox.style.borderColor='#FFB900';};
 uploadBox.ondragleave=()=>uploadBox.style.borderColor='#e5e7eb';
 uploadBox.ondrop=(e)=>{e.preventDefault();uploadBox.style.borderColor='#e5e7eb';addFiles(e.dataTransfer.files);};
-function addFiles(newFiles){for(let f of newFiles){if(f.size>20*1024*1024){showToast(f.name + ' ist zu groß (max. 20 MB)', 'error');continue;}files.push(f);}showFiles();}
+function addFiles(newFiles){for(let f of newFiles){if(f.size>20*1024*1024){showError('file_too_large', f.name + ' ist zu groß (max. 20 MB)');continue;}files.push(f);}showFiles();}
 function showFiles(){if(files.length===0){fileListBox.style.display='none';return;}fileListBox.style.display='block';document.getElementById('fileCount').textContent=files.length;fileList.innerHTML='';files.forEach((f,i)=>{const icon=f.type==='application/pdf'?'📕':'🖼️';const div=document.createElement('div');div.style='display:flex;justify-content:space-between;align-items:center;padding:20px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:12px;';div.innerHTML='<div style="display:flex;align-items:center;gap:20px;"><span style="font-size:2.5rem;">'+icon+'</span><div><div style="font-weight:600;color:#003856;">'+f.name+'</div><div style="font-size:0.9rem;color:#666;">'+(f.size/1024/1024).toFixed(2)+' MB</div></div></div><button onclick="removeFile('+i+')" style="background:#ef4444;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;">✕</button>';fileList.appendChild(div);});}
 function removeFile(i){files.splice(i,1);showFiles();}
 document.getElementById('processBtn').onclick=async()=>{const btn=document.getElementById('processBtn');if(files.length===0)return;btn.classList.add('btn-loading');btn.disabled=true;uploadBox.style.display='none';fileListBox.style.display='none';document.getElementById('progressBox').style.display='block';try{const fd=new FormData();files.forEach(f=>fd.append('files',f));console.log('Uploading',files.length,'files');const r=await fetch('/api/upload',{method:'POST',body:fd});const data=await r.json();console.log('Upload:',data);if(data.error){showToast(data.error, 'error');if(data.redirect)window.location.href=data.redirect;return;}const jobId=data.batch_id;console.log('Job:',jobId);showToast('Upload erfolgreich! Verarbeitung gestartet...', 'success', 2000);await fetch('/api/process/'+jobId,{method:'POST'});pollProgress(jobId);}catch(e){alert('Fehler: '+e.message);console.error(e);document.getElementById('progressBox').style.display='none';fileListBox.style.display='block';}};
-async function pollProgress(jobId){const timer=setInterval(async()=>{try{const r=await fetch('/api/status/'+jobId);const d=await r.json();if(d.status==='completed'){clearInterval(timer);window.location.href='/job/'+jobId;}else if(d.status==='error'){clearInterval(timer);showToast('Verarbeitung fehlgeschlagen', 'error');}document.getElementById('progressFill').style.width=((d.processed||0)/(d.total||1)*100)+'%';document.getElementById('progressText').textContent=(d.processed||0)+' von '+(d.total||0)+' Dateien';}catch(e){}},1000);}
+async function pollProgress(jobId){const timer=setInterval(async()=>{try{const r=await fetch('/api/status/'+jobId);const d=await r.json();if(d.status==='completed'){clearInterval(timer);window.location.href='/job/'+jobId;}else if(d.status==='error'){clearInterval(timer);showError('processing_failed', 'Verarbeitung konnte nicht abgeschlossen werden');}document.getElementById('progressFill').style.width=((d.processed||0)/(d.total||1)*100)+'%';document.getElementById('progressText').textContent=(d.processed||0)+' von '+(d.total||0)+' Dateien';}catch(e){}},1000);}
 fetch('/api/user').then(r=>r.json()).then(u=>{
   const toggle = document.querySelector('.account-toggle');
   const menu = document.querySelector('.account-menu');
@@ -883,6 +883,264 @@ function completeTour() {
 if (typeof window !== 'undefined') {
   checkOnboardingStatus();
 }
+</script>
+
+<style>
+/* Professional Error Display */
+.error-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 24px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  border-left: 4px solid #ef4444;
+}
+
+.error-icon {
+  font-size: 3rem;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.error-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.error-message {
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.error-solutions {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.error-solutions h4 {
+  color: #1f2937;
+  font-weight: 600;
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.error-solutions ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.error-solutions li {
+  padding: 10px 0;
+  padding-left: 28px;
+  position: relative;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+.error-solutions li::before {
+  content: "💡";
+  position: absolute;
+  left: 0;
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.error-btn {
+  flex: 1;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.error-btn-primary {
+  background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+  color: #003856;
+  box-shadow: 0 4px 12px rgba(255,185,0,0.3);
+}
+
+.error-btn-secondary {
+  background: white;
+  color: #6b7280;
+  border: 2px solid #e5e7eb;
+}
+</style>
+
+<script>
+// Enhanced error handler with solutions
+const errorSolutions = {
+  'file_too_large': {
+    icon: '📁',
+    title: 'Datei zu groß',
+    solutions: [
+      'Komprimiere die PDF-Datei vor dem Hochladen',
+      'Teile große Dateien in mehrere kleinere auf',
+      'Maximale Dateigröße: 20 MB pro Datei'
+    ],
+    actions: [
+      { text: 'Neue Datei wählen', type: 'primary', action: 'retry' },
+      { text: 'Hilfe', type: 'secondary', action: 'help' }
+    ]
+  },
+  'invalid_format': {
+    icon: '⚠️',
+    title: 'Ungültiges Dateiformat',
+    solutions: [
+      'Unterstützte Formate: PDF, JPG, PNG',
+      'Konvertiere deine Datei in ein unterstütztes Format',
+      'Stelle sicher, dass die Datei nicht beschädigt ist'
+    ],
+    actions: [
+      { text: 'Andere Datei wählen', type: 'primary', action: 'retry' }
+    ]
+  },
+  'processing_failed': {
+    icon: '🔧',
+    title: 'Verarbeitung fehlgeschlagen',
+    solutions: [
+      'Prüfe ob die Rechnung gut lesbar ist',
+      'Stelle sicher, dass alle relevanten Daten sichtbar sind',
+      'Bei wiederholten Problemen kontaktiere den Support'
+    ],
+    actions: [
+      { text: 'Erneut versuchen', type: 'primary', action: 'retry' },
+      { text: 'Support kontaktieren', type: 'secondary', action: 'support' }
+    ]
+  },
+  'network_error': {
+    icon: '🌐',
+    title: 'Netzwerkfehler',
+    solutions: [
+      'Überprüfe deine Internetverbindung',
+      'Aktualisiere die Seite und versuche es erneut',
+      'Falls das Problem bestehen bleibt, warte kurz und versuche es nochmal'
+    ],
+    actions: [
+      { text: 'Seite neu laden', type: 'primary', action: 'reload' },
+      { text: 'Erneut versuchen', type: 'secondary', action: 'retry' }
+    ]
+  },
+  'authentication_error': {
+    icon: '🔐',
+    title: 'Anmeldefehler',
+    solutions: [
+      'Überprüfe deine Anmeldedaten',
+      'Melde dich erneut an',
+      'Falls du dein Passwort vergessen hast, setze es zurück'
+    ],
+    actions: [
+      { text: 'Zur Anmeldung', type: 'primary', action: 'login' }
+    ]
+  },
+  'quota_exceeded': {
+    icon: '📊',
+    title: 'Kontingent überschritten',
+    solutions: [
+      'Dein monatliches Kontingent ist aufgebraucht',
+      'Upgrade auf einen höheren Plan für mehr Rechnungen',
+      'Warte bis zum nächsten Monat oder kontaktiere den Vertrieb'
+    ],
+    actions: [
+      { text: 'Upgrade ansehen', type: 'primary', action: 'upgrade' },
+      { text: 'Vertrieb kontaktieren', type: 'secondary', action: 'sales' }
+    ]
+  }
+};
+
+function showError(errorType, customMessage = null) {
+  const error = errorSolutions[errorType] || {
+    icon: '❌',
+    title: 'Ein Fehler ist aufgetreten',
+    solutions: ['Bitte versuche es erneut', 'Bei weiteren Problemen kontaktiere den Support'],
+    actions: [{ text: 'Erneut versuchen', type: 'primary', action: 'retry' }]
+  };
+  
+  // Use toast for quick errors
+  if (typeof showToast !== 'undefined' && !['quota_exceeded', 'authentication_error'].includes(errorType)) {
+    showToast(customMessage || error.title, 'error', 5000);
+    return;
+  }
+  
+  // For critical errors, show full error page
+  const errorHTML = `
+    <div class="error-container">
+      <div class="error-icon">${error.icon}</div>
+      <h2 class="error-title">${error.title}</h2>
+      ${customMessage ? `<p class="error-message">${customMessage}</p>` : ''}
+      
+      <div class="error-solutions">
+        <h4>💡 Lösungsvorschläge:</h4>
+        <ul>
+          ${error.solutions.map(s => `<li>${s}</li>`).join('')}
+        </ul>
+      </div>
+      
+      <div class="error-actions">
+        ${error.actions.map(a => `
+          <button class="error-btn error-btn-${a.type}" onclick="handleErrorAction('${a.action}')">
+            ${a.text}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  
+  // Show in modal or dedicated area
+  console.error(`Error: ${errorType}`, customMessage);
+}
+
+function handleErrorAction(action) {
+  switch(action) {
+    case 'retry':
+      window.location.reload();
+      break;
+    case 'reload':
+      window.location.reload();
+      break;
+    case 'login':
+      window.location.href = '/login';
+      break;
+    case 'upgrade':
+      window.location.href = '/pricing';
+      break;
+    case 'support':
+      window.location.href = 'mailto:support@sbsdeutschland.com';
+      break;
+    case 'sales':
+      window.location.href = 'mailto:vertrieb@sbsdeutschland.com';
+      break;
+    case 'help':
+      window.open('https://sbsdeutschland.com/hilfe', '_blank');
+      break;
+  }
+}
+
+// Global error handler
+window.addEventListener('error', function(e) {
+  console.error('Global error:', e);
+  showError('processing_failed', 'Ein unerwarteter Fehler ist aufgetreten');
+});
+
+// Network error detection
+window.addEventListener('offline', function() {
+  showError('network_error', 'Keine Internetverbindung');
+});
 </script>
 
 </body>
