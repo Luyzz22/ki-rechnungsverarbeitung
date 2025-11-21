@@ -20,6 +20,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from database import save_job, save_invoices, get_job, get_all_jobs, get_statistics
+from notifications import send_completion_email
 from logging.handlers import RotatingFileHandler
 import sys
 
