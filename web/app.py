@@ -315,6 +315,17 @@ async def process_invoices_background(job_id: str):
     
     # Save to database
     save_job(job_id, processing_jobs[job_id], processing_jobs[job_id].get("user_id"))
+    
+    # Send email notification
+    try:
+        from database import get_user_by_id
+        user_id = processing_jobs[job_id].get("user_id")
+        if user_id:
+            user = get_user_by_id(user_id)
+            if user and user.get('email'):
+                send_completion_email(user['email'], processing_jobs[job_id], stats)
+    except Exception as e:
+        logger.warning(f"Email notification failed: {e}")
     if results:
         save_invoices(job_id, results)
     
