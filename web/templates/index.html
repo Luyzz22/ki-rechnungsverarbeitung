@@ -547,5 +547,343 @@ function showToast(message, type = 'info', duration = 4000) {
 }
 </script>
 
+<style>
+/* Onboarding Tour Overlay */
+.onboarding-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  backdrop-filter: blur(3px);
+}
+
+.onboarding-overlay.active {
+  display: block;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Welcome Card */
+.onboarding-welcome {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 20px;
+  padding: 50px 40px;
+  max-width: 500px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: scaleIn 0.4s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.onboarding-welcome h2 {
+  font-size: 2rem;
+  margin-bottom: 16px;
+  color: #1f2937;
+}
+
+.onboarding-welcome p {
+  font-size: 1.1rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.onboarding-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.onboarding-btn {
+  flex: 1;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s;
+  font-size: 1rem;
+}
+
+.onboarding-btn-primary {
+  background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+  color: #003856;
+  box-shadow: 0 4px 12px rgba(255,185,0,0.3);
+}
+
+.onboarding-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255,185,0,0.4);
+}
+
+.onboarding-btn-secondary {
+  background: white;
+  color: #6b7280;
+  border: 2px solid #e5e7eb;
+}
+
+.onboarding-btn-secondary:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+/* Tour Tooltip */
+.tour-tooltip {
+  position: fixed;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 350px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  z-index: 10001;
+  animation: tooltipSlideIn 0.3s ease-out;
+}
+
+@keyframes tooltipSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tour-tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+.tour-tooltip-step {
+  background: linear-gradient(135deg, #FFB900, #ff9500);
+  color: #003856;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+}
+
+.tour-tooltip-close {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.tour-tooltip-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 12px;
+}
+
+.tour-tooltip-description {
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.tour-tooltip-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.tour-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-size: 0.9rem;
+}
+
+.tour-btn-next {
+  background: linear-gradient(135deg, #FFB900, #ff9500);
+  color: #003856;
+  flex: 1;
+}
+
+.tour-btn-skip {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Highlight Element */
+.tour-highlight {
+  position: relative;
+  z-index: 10000;
+  box-shadow: 0 0 0 4px #FFB900, 0 0 0 9999px rgba(0,0,0,0.7);
+  border-radius: 8px;
+}
+</style>
+
+<!-- Onboarding Tour HTML -->
+<div id="onboardingOverlay" class="onboarding-overlay">
+  <!-- Welcome Screen -->
+  <div id="onboardingWelcome" class="onboarding-welcome">
+    <div style="font-size: 3rem; margin-bottom: 20px;">👋</div>
+    <h2>Willkommen bei SBS!</h2>
+    <p>Lass uns gemeinsam einen kurzen Rundgang machen. Wir zeigen dir die wichtigsten Funktionen der KI-Rechnungsverarbeitung.</p>
+    <div class="onboarding-buttons">
+      <button class="onboarding-btn onboarding-btn-secondary" onclick="skipTour()">Überspringen</button>
+      <button class="onboarding-btn onboarding-btn-primary" onclick="startTour()">🚀 Los geht's!</button>
+    </div>
+  </div>
+  
+  <!-- Tour Tooltip (wird dynamisch positioniert) -->
+  <div id="tourTooltip" class="tour-tooltip" style="display: none;">
+    <div class="tour-tooltip-header">
+      <span id="tourStep" class="tour-tooltip-step">Schritt 1 von 4</span>
+      <button class="tour-tooltip-close" onclick="skipTour()">×</button>
+    </div>
+    <h3 id="tourTitle" class="tour-tooltip-title">Titel</h3>
+    <p id="tourDescription" class="tour-tooltip-description">Beschreibung</p>
+    <div class="tour-tooltip-actions">
+      <button class="tour-btn tour-btn-skip" onclick="skipTour()">Überspringen</button>
+      <button class="tour-btn tour-btn-next" onclick="nextTourStep()">Weiter →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const tourSteps = [
+  {
+    target: '#uploadBox',
+    title: '📁 Upload-Bereich',
+    description: 'Hier kannst du deine Rechnungen hochladen. Einfach klicken oder Dateien hierher ziehen. PDFs, JPGs und PNGs werden unterstützt.',
+    position: 'bottom'
+  },
+  {
+    target: '.account-dropdown',
+    title: '👤 Dein Account',
+    description: 'Hier findest du deinen Verlauf, Analytics, Email-Einstellungen und dein Profil. Alles an einem Ort.',
+    position: 'left'
+  },
+  {
+    target: 'a[href="/history"]',
+    title: '📊 Verlauf & Analytics',
+    description: 'Sieh dir alle verarbeiteten Rechnungen an, exportiere Daten und analysiere deine Ausgaben mit intelligenten Insights.',
+    position: 'bottom'
+  },
+  {
+    target: '.hero-compact',
+    title: '✨ Fertig!',
+    description: 'Das war\'s! Du bist jetzt bereit, deine ersten Rechnungen zu verarbeiten. Viel Erfolg!',
+    position: 'center'
+  }
+];
+
+let currentStep = 0;
+
+function checkOnboardingStatus() {
+  const completed = localStorage.getItem('onboarding_completed');
+  if (!completed && window.location.pathname === '/') {
+    setTimeout(() => showOnboarding(), 1000);
+  }
+}
+
+function showOnboarding() {
+  document.getElementById('onboardingOverlay').classList.add('active');
+  document.getElementById('onboardingWelcome').style.display = 'block';
+}
+
+function startTour() {
+  document.getElementById('onboardingWelcome').style.display = 'none';
+  currentStep = 0;
+  showTourStep();
+}
+
+function showTourStep() {
+  const step = tourSteps[currentStep];
+  const tooltip = document.getElementById('tourTooltip');
+  const target = document.querySelector(step.target);
+  
+  if (!target) {
+    nextTourStep();
+    return;
+  }
+  
+  // Update tooltip content
+  document.getElementById('tourStep').textContent = `Schritt ${currentStep + 1} von ${tourSteps.length}`;
+  document.getElementById('tourTitle').textContent = step.title;
+  document.getElementById('tourDescription').textContent = step.description;
+  
+  // Highlight target
+  document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+  target.classList.add('tour-highlight');
+  
+  // Position tooltip
+  const rect = target.getBoundingClientRect();
+  tooltip.style.display = 'block';
+  
+  if (step.position === 'bottom') {
+    tooltip.style.top = (rect.bottom + 20) + 'px';
+    tooltip.style.left = (rect.left + rect.width / 2) + 'px';
+    tooltip.style.transform = 'translateX(-50%)';
+  } else if (step.position === 'left') {
+    tooltip.style.top = (rect.top) + 'px';
+    tooltip.style.left = (rect.left - 370) + 'px';
+    tooltip.style.transform = 'none';
+  } else if (step.position === 'center') {
+    tooltip.style.top = '50%';
+    tooltip.style.left = '50%';
+    tooltip.style.transform = 'translate(-50%, -50%)';
+  }
+  
+  // Last step button
+  if (currentStep === tourSteps.length - 1) {
+    document.querySelector('.tour-btn-next').textContent = '🎉 Fertig!';
+  }
+}
+
+function nextTourStep() {
+  currentStep++;
+  if (currentStep >= tourSteps.length) {
+    completeTour();
+  } else {
+    showTourStep();
+  }
+}
+
+function skipTour() {
+  completeTour();
+}
+
+function completeTour() {
+  localStorage.setItem('onboarding_completed', 'true');
+  document.getElementById('onboardingOverlay').classList.remove('active');
+  document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+  showToast && showToast('Tour abgeschlossen! 🎉', 'success', 3000);
+}
+
+// Check on page load
+if (typeof window !== 'undefined') {
+  checkOnboardingStatus();
+}
+</script>
+
 </body>
 </html>
