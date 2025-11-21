@@ -252,6 +252,13 @@
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
         <div>
           <h2 style="margin: 0 0 8px 0;">📋 Verarbeitungsdetails</h2>
+
+<!-- Export Button -->
+<button onclick="openExportModal()" style="background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%); color: #003856; border: none; padding: 14px 28px; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(255,185,0,0.3); transition: all 0.3s;">
+  📊 Daten exportieren
+</button>
+
+
           <p style="margin: 0; color: var(--sbs-muted); font-size: 0.9rem;">
             Job ID: {{ job_id }}
           </p>
