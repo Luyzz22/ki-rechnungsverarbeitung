@@ -219,11 +219,11 @@ fileInput.onchange=(e)=>addFiles(e.target.files);
 uploadBox.ondragover=(e)=>{e.preventDefault();uploadBox.style.borderColor='#FFB900';};
 uploadBox.ondragleave=()=>uploadBox.style.borderColor='#e5e7eb';
 uploadBox.ondrop=(e)=>{e.preventDefault();uploadBox.style.borderColor='#e5e7eb';addFiles(e.dataTransfer.files);};
-function addFiles(newFiles){for(let f of newFiles){if(f.size>20*1024*1024){alert(f.name+' ist zu groß (max. 20 MB)');continue;}files.push(f);}showFiles();}
+function addFiles(newFiles){for(let f of newFiles){if(f.size>20*1024*1024){showToast(f.name + ' ist zu groß (max. 20 MB)', 'error');continue;}files.push(f);}showFiles();}
 function showFiles(){if(files.length===0){fileListBox.style.display='none';return;}fileListBox.style.display='block';document.getElementById('fileCount').textContent=files.length;fileList.innerHTML='';files.forEach((f,i)=>{const icon=f.type==='application/pdf'?'📕':'🖼️';const div=document.createElement('div');div.style='display:flex;justify-content:space-between;align-items:center;padding:20px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:12px;';div.innerHTML='<div style="display:flex;align-items:center;gap:20px;"><span style="font-size:2.5rem;">'+icon+'</span><div><div style="font-weight:600;color:#003856;">'+f.name+'</div><div style="font-size:0.9rem;color:#666;">'+(f.size/1024/1024).toFixed(2)+' MB</div></div></div><button onclick="removeFile('+i+')" style="background:#ef4444;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;">✕</button>';fileList.appendChild(div);});}
 function removeFile(i){files.splice(i,1);showFiles();}
-document.getElementById('processBtn').onclick=async()=>{if(files.length===0)return;uploadBox.style.display='none';fileListBox.style.display='none';document.getElementById('progressBox').style.display='block';try{const fd=new FormData();files.forEach(f=>fd.append('files',f));console.log('Uploading',files.length,'files');const r=await fetch('/api/upload',{method:'POST',body:fd});const data=await r.json();console.log('Upload:',data);if(data.error){alert(data.error);if(data.redirect)window.location.href=data.redirect;return;}const jobId=data.batch_id;console.log('Job:',jobId);await fetch('/api/process/'+jobId,{method:'POST'});pollProgress(jobId);}catch(e){alert('Fehler: '+e.message);console.error(e);document.getElementById('progressBox').style.display='none';fileListBox.style.display='block';}};
-async function pollProgress(jobId){const timer=setInterval(async()=>{try{const r=await fetch('/api/status/'+jobId);const d=await r.json();if(d.status==='completed'){clearInterval(timer);window.location.href='/job/'+jobId;}else if(d.status==='error'){clearInterval(timer);alert('Verarbeitungsfehler');}document.getElementById('progressFill').style.width=((d.processed||0)/(d.total||1)*100)+'%';document.getElementById('progressText').textContent=(d.processed||0)+' von '+(d.total||0)+' Dateien';}catch(e){}},1000);}
+document.getElementById('processBtn').onclick=async()=>{if(files.length===0)return;uploadBox.style.display='none';fileListBox.style.display='none';document.getElementById('progressBox').style.display='block';try{const fd=new FormData();files.forEach(f=>fd.append('files',f));console.log('Uploading',files.length,'files');const r=await fetch('/api/upload',{method:'POST',body:fd});const data=await r.json();console.log('Upload:',data);if(data.error){showToast(data.error, 'error');if(data.redirect)window.location.href=data.redirect;return;}const jobId=data.batch_id;console.log('Job:',jobId);await fetch('/api/process/'+jobId,{method:'POST'});pollProgress(jobId);}catch(e){alert('Fehler: '+e.message);console.error(e);document.getElementById('progressBox').style.display='none';fileListBox.style.display='block';}};
+async function pollProgress(jobId){const timer=setInterval(async()=>{try{const r=await fetch('/api/status/'+jobId);const d=await r.json();if(d.status==='completed'){clearInterval(timer);window.location.href='/job/'+jobId;}else if(d.status==='error'){clearInterval(timer);showToast('Verarbeitung fehlgeschlagen', 'error');}document.getElementById('progressFill').style.width=((d.processed||0)/(d.total||1)*100)+'%';document.getElementById('progressText').textContent=(d.processed||0)+' von '+(d.total||0)+' Dateien';}catch(e){}},1000);}
 fetch('/api/user').then(r=>r.json()).then(u=>{
   const toggle = document.querySelector('.account-toggle');
   const menu = document.querySelector('.account-menu');
@@ -235,5 +235,131 @@ fetch('/api/user').then(r=>r.json()).then(u=>{
   }
 });
 </script>
+<!-- Toast Container -->
+<div id="toastContainer" style="position:fixed;top:20px;right:20px;z-index:9999;"></div>
+
+<style>
+.toast {
+  min-width: 300px;
+  max-width: 400px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideIn 0.3s ease-out;
+  background: white;
+  border-left: 4px solid;
+}
+
+.toast.success { border-color: #22c55e; }
+.toast.error { border-color: #ef4444; }
+.toast.info { border-color: #3b82f6; }
+.toast.warning { border-color: #f59e0b; }
+
+.toast-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.toast-content {
+  flex: 1;
+}
+
+.toast-title {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.toast-message {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.toast-close:hover {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+</style>
+
+<script>
+function showToast(message, type = 'info', duration = 4000) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  const icons = {
+    success: '✅',
+    error: '❌',
+    info: 'ℹ️',
+    warning: '⚠️'
+  };
+  
+  const titles = {
+    success: 'Erfolg',
+    error: 'Fehler',
+    info: 'Information',
+    warning: 'Warnung'
+  };
+  
+  toast.innerHTML = `
+    <div class="toast-icon">${icons[type]}</div>
+    <div class="toast-content">
+      <div class="toast-title">${titles[type]}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Auto-remove nach duration
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease-in';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+</script>
+
 </body>
 </html>
