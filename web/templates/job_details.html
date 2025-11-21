@@ -473,6 +473,306 @@ burger.addEventListener('click', () => {
   </div>
 </footer>
 
+<style>
+/* Export Modal */
+.export-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+
+.export-modal.active {
+  display: flex;
+}
+
+.export-modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 600px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.export-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.export-modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.export-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #9ca3af;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.export-modal-close:hover {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.export-formats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.export-format-card {
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.export-format-card:hover {
+  border-color: #FFB900;
+  background: #fffef5;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(255,185,0,0.2);
+}
+
+.export-format-card.selected {
+  border-color: #FFB900;
+  background: linear-gradient(135deg, #fffef5 0%, #fff9e6 100%);
+}
+
+.export-format-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.export-format-name {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.export-format-desc {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.export-action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.export-btn {
+  flex: 1;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s;
+}
+
+.export-btn-primary {
+  background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+  color: #003856;
+  box-shadow: 0 4px 12px rgba(255,185,0,0.3);
+}
+
+.export-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255,185,0,0.4);
+}
+
+.export-btn-secondary {
+  background: white;
+  color: #6b7280;
+  border: 2px solid #e5e7eb;
+}
+
+.export-btn-secondary:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+/* Export History */
+.export-history {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.export-history-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 16px;
+}
+
+.export-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+
+.export-history-item:hover {
+  border-color: #FFB900;
+  box-shadow: 0 2px 8px rgba(255,185,0,0.1);
+}
+
+.export-history-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.export-history-icon {
+  font-size: 1.5rem;
+}
+
+.export-history-details h4 {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.export-history-details p {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.export-history-download {
+  background: #003856;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.export-history-download:hover {
+  background: #004d73;
+}
+</style>
+
+<!-- Export Modal -->
+<div id="exportModal" class="export-modal">
+  <div class="export-modal-content">
+    <div class="export-modal-header">
+      <h2 class="export-modal-title">📊 Export wählen</h2>
+      <button class="export-modal-close" onclick="closeExportModal()">×</button>
+    </div>
+    
+    <div class="export-formats">
+      <div class="export-format-card" onclick="selectFormat('excel')">
+        <div class="export-format-icon">📗</div>
+        <div class="export-format-name">Excel</div>
+        <div class="export-format-desc">XLSX Format</div>
+      </div>
+      <div class="export-format-card" onclick="selectFormat('csv')">
+        <div class="export-format-icon">📄</div>
+        <div class="export-format-name">CSV</div>
+        <div class="export-format-desc">Tabellendaten</div>
+      </div>
+      <div class="export-format-card" onclick="selectFormat('datev')">
+        <div class="export-format-icon">🏦</div>
+        <div class="export-format-name">DATEV</div>
+        <div class="export-format-desc">Buchhaltung</div>
+      </div>
+    </div>
+    
+    <div class="export-action-buttons">
+      <button class="export-btn export-btn-secondary" onclick="closeExportModal()">Abbrechen</button>
+      <button class="export-btn export-btn-primary" onclick="executeExport()">Exportieren</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let selectedExportFormat = 'excel';
+
+function openExportModal() {
+  document.getElementById('exportModal').classList.add('active');
+}
+
+function closeExportModal() {
+  document.getElementById('exportModal').classList.remove('active');
+}
+
+function selectFormat(format) {
+  selectedExportFormat = format;
+  document.querySelectorAll('.export-format-card').forEach(card => {
+    card.classList.remove('selected');
+  });
+  event.currentTarget.classList.add('selected');
+}
+
+async function executeExport() {
+  const jobId = window.location.pathname.split('/').pop();
+  showToast('Export wird erstellt...', 'info', 2000);
+  closeExportModal();
+  
+  try {
+    const response = await fetch(`/api/export/${jobId}/${selectedExportFormat}`);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `export_${jobId}_${selectedExportFormat}.${selectedExportFormat === 'datev' ? 'csv' : selectedExportFormat}`;
+    a.click();
+    showToast('Export erfolgreich heruntergeladen!', 'success');
+  } catch (e) {
+    showToast('Export fehlgeschlagen', 'error');
+  }
+}
+
+// Close modal on outside click
+document.getElementById('exportModal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'exportModal') closeExportModal();
+});
+</script>
+
 </body>
 <script>
 async function updateAccountStatus() {
