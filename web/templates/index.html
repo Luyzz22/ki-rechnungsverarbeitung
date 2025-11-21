@@ -412,6 +412,100 @@ fetch('/api/user').then(r=>r.json()).then(u=>{
     opacity: 0;
   }
 }
+
+<style>
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin: 40px auto;
+  max-width: 500px;
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  margin-bottom: 24px;
+  opacity: 0.5;
+}
+
+.empty-state-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 12px;
+}
+
+.empty-state-description {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.empty-state-action {
+  background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+  color: #003856;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(255,185,0,0.3);
+}
+
+.empty-state-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255,185,0,0.4);
+}
+
+.empty-state-tips {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 24px;
+  text-align: left;
+}
+
+.empty-state-tips h4 {
+  color: #374151;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.empty-state-tips ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.empty-state-tips li {
+  color: #6b7280;
+  font-size: 0.85rem;
+  padding: 8px 0;
+  padding-left: 24px;
+  position: relative;
+}
+
+.empty-state-tips li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #22c55e;
+  font-weight: bold;
+}
+</style>
+
 </style>
 
 <script>
