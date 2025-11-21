@@ -327,3 +327,67 @@ def send_notifications(config: Dict, stats: Dict, exported_files: Dict[str, str]
     """
     manager = NotificationManager(config)
     return manager.notify_completion(stats, exported_files)
+
+def send_completion_email(user_email: str, job_data: dict, stats: dict) -> bool:
+    """Send professional HTML email notification"""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    import os
+    
+    # Gmail credentials from .env
+    gmail_user = os.getenv('GMAIL_USER', 'noreply@sbsdeutschland.com')
+    gmail_password = os.getenv('GMAIL_APP_PASSWORD')
+    
+    if not gmail_password:
+        print("⚠️  Gmail password not configured")
+        return False
+    
+    # Load HTML template
+    template_path = '/var/www/invoice-app/email_templates/completion.html'
+    try:
+        with open(template_path, 'r') as f:
+            html_template = f.read()
+    except:
+        print("⚠️  Email template not found")
+        return False
+    
+    # Replace placeholders
+    job_url = f"https://app.sbsdeutschland.com/job/{job_data.get('batch_id', '')}"
+    html_content = html_template.replace('{{total_invoices}}', str(stats.get('total_invoices', 0)))
+    html_content = html_content.replace('{{successful}}', str(job_data.get('successful', 0)))
+    html_content = html_content.replace('{{total_amount}}', f"{stats.get('total_brutto', 0):.2f}")
+    html_content = html_content.replace('{{total_netto}}', f"{stats.get('total_netto', 0):.2f}")
+    html_content = html_content.replace('{{total_mwst}}', f"{stats.get('total_mwst', 0):.2f}")
+    html_content = html_content.replace('{{job_url}}', job_url)
+    
+    # Create message
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f"✅ {stats.get('total_invoices', 0)} Rechnungen verarbeitet ({stats.get('total_brutto', 0):.2f}€)"
+    msg['From'] = f"SBS Deutschland <{gmail_user}>"
+    msg['To'] = user_email
+    
+    # Plain text fallback
+    text_content = f"""
+SBS Deutschland - Rechnungsverarbeitung abgeschlossen
+
+{stats.get('total_invoices', 0)} Rechnungen wurden erfolgreich verarbeitet.
+Gesamtsumme: {stats.get('total_brutto', 0):.2f}€
+
+Jetzt ansehen: {job_url}
+    """
+    
+    msg.attach(MIMEText(text_content, 'plain'))
+    msg.attach(MIMEText(html_content, 'html'))
+    
+    # Send email
+    try:
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.login(gmail_user, gmail_password)
+        server.send_message(msg)
+        server.quit()
+        print(f"✅ Email sent to {user_email}")
+        return True
+    except Exception as e:
+        print(f"❌ Email error: {e}")
+        return False
