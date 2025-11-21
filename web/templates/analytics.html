@@ -256,7 +256,25 @@
     </div>
     
     <!-- KPI Cards -->
-    <div class="kpi-grid">
+    <!-- Insights Section -->
+{% if insights %}
+<div style="margin: 40px 0;">
+  <h2 style="margin-bottom: 24px; color: #1f2937;">💡 Erkenntnisse</h2>
+  <div style="display: grid; gap: 16px;">
+    {% for insight in insights %}
+    <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; align-items: start; gap: 16px; border-left: 4px solid {% if insight.type == 'success' %}#22c55e{% elif insight.type == 'warning' %}#f59e0b{% elif insight.type == 'error' %}#ef4444{% else %}#3b82f6{% endif %};">
+      <div style="font-size: 2rem; flex-shrink: 0;">{{ insight.icon }}</div>
+      <div style="flex: 1;">
+        <h3 style="font-size: 1rem; font-weight: 600; color: #1f2937; margin-bottom: 4px;">{{ insight.title }}</h3>
+        <p style="font-size: 0.9rem; color: #6b7280; margin: 0;">{{ insight.message }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="kpi-grid">
       <div class="kpi-card highlight">
         <div class="value">{{ "%.2f"|format(stats.total_amount) }}€</div>
         <div class="label">Gesamtausgaben</div>
