@@ -348,6 +348,8 @@ async def get_status(job_id: str):
         "job_id": job_id,
         "status": job["status"],
         "files_count": len(job["files"]),
+        "processed": job.get("successful", 0),
+        "total": job.get("total", len(job["files"])),
         "created_at": job["created_at"]
     }
 
