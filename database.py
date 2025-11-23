@@ -1172,7 +1172,9 @@ def get_analytics_insights(user_id: int = None) -> list:
 
 def get_all_categories(user_id: int = None):
     """Get all categories (user-specific or global)"""
-    conn = get_connection()
+    import sqlite3
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     if user_id:
         cursor.execute('SELECT * FROM categories WHERE user_id IS NULL OR user_id = ?', (user_id,))
@@ -1198,7 +1200,9 @@ def create_category(name: str, description: str = None, account_number: str = No
 
 def assign_category_to_invoice(invoice_id: int, category_id: int, confidence: float = 1.0, assigned_by: str = 'user'):
     """Assign category to invoice"""
-    conn = get_connection()
+    import sqlite3
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('''
         INSERT OR REPLACE INTO invoice_categories (invoice_id, category_id, confidence, assigned_by)
@@ -1253,7 +1257,9 @@ def save_category_learning(supplier_name: str, category_id: int, invoice_text: s
 
 def get_learned_category(supplier_name: str, user_id: int = None):
     """Get learned category for a supplier"""
-    conn = get_connection()
+    import sqlite3
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('''
         SELECT category_id, times_confirmed 
