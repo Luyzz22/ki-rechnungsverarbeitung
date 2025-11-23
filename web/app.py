@@ -522,8 +522,13 @@ async def job_details_page(request: Request, job_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
-    # Get invoices from database
+    # Get invoices from database with categories
     invoices = get_invoices_by_job(job_id)
+    
+    # Add categories to each invoice
+    from database import get_invoice_categories
+    for inv in invoices:
+        inv['categories'] = get_invoice_categories(inv['id'])
     
     # Calculate aussteller statistics
     aussteller_stats = {}
@@ -553,8 +558,13 @@ async def job_details_page(request: Request, job_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
-    # Get invoices from database
+    # Get invoices from database with categories
     invoices = get_invoices_by_job(job_id)
+    
+    # Add categories to each invoice
+    from database import get_invoice_categories
+    for inv in invoices:
+        inv['categories'] = get_invoice_categories(inv['id'])
     
     # Calculate aussteller statistics
     aussteller_stats = {}
@@ -584,8 +594,13 @@ async def job_details_page(request: Request, job_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
-    # Get invoices from database
+    # Get invoices from database with categories
     invoices = get_invoices_by_job(job_id)
+    
+    # Add categories to each invoice
+    from database import get_invoice_categories
+    for inv in invoices:
+        inv['categories'] = get_invoice_categories(inv['id'])
     
     # Calculate aussteller statistics
     aussteller_stats = {}
