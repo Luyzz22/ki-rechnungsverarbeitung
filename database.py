@@ -117,7 +117,9 @@ def save_job(job_id: str, job_data: Dict, user_id: int = None):
 
 def save_invoices(job_id: str, results: List[Dict]):
     """Save invoice results for a job"""
-    conn = get_connection()
+    import sqlite3
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
     # Delete existing invoices for this job (in case of re-processing)
