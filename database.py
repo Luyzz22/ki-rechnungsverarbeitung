@@ -159,6 +159,9 @@ def save_invoices(job_id: str, results: List[Dict]):
     
     conn.commit()
     conn.close()
+    
+    conn.commit()
+    conn.close()
 
 
 
