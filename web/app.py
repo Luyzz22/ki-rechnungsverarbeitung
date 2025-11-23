@@ -315,9 +315,15 @@ async def process_invoices_background(job_id: str):
     })
     
     # Save to database
+    logger.info(f"💾 Saving job {job_id} with {len(results)} results")
     save_job(job_id, processing_jobs[job_id], processing_jobs[job_id].get("user_id"))
+    logger.info(f"✅ Job saved, now saving invoices")
     if results:
+        logger.info(f"💾 Saving {len(results)} invoices to database")
         save_invoices(job_id, results)
+        logger.info(f"✅ Invoices saved successfully")
+    else:
+        logger.warning("⚠️ No results to save!")
     
     # Send email notification
     try:
@@ -330,7 +336,11 @@ async def process_invoices_background(job_id: str):
     except Exception as e:
         logger.warning(f"Email notification failed: {e}")
     if results:
+        logger.info(f"💾 Saving {len(results)} invoices to database")
         save_invoices(job_id, results)
+        logger.info(f"✅ Invoices saved successfully")
+    else:
+        logger.warning("⚠️ No results to save!")
     
     # Auto-Kategorisierung
     try:
