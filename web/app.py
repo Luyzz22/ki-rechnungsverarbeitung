@@ -332,12 +332,13 @@ async def process_invoices_background(job_id: str):
     
     # Auto-Kategorisierung
     try:
-        from database import assign_category_to_invoice
-        for result in results:
-            category_id, confidence, reasoning = predict_category(result, job.get("user_id"))
-            if result.get('id'):
-                assign_category_to_invoice(result['id'], category_id, confidence, 'ai')
-                logger.info(f"📊 Invoice {result['id']}: Category {category_id} (conf: {confidence:.2f})")
+        from database import assign_category_to_invoice, get_invoices_by_job
+        # Hole die gespeicherten Invoices mit IDs
+        saved_invoices = get_invoices_by_job(job_id)
+        for invoice in saved_invoices:
+            category_id, confidence, reasoning = predict_category(invoice, job.get("user_id"))
+            assign_category_to_invoice(invoice['id'], category_id, confidence, 'ai')
+            logger.info(f"📊 Invoice {invoice['id']}: Category {category_id} (conf: {confidence:.2f})")
     except Exception as e:
         logger.warning(f"Auto-categorization failed: {e}")
 
