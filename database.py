@@ -1152,3 +1152,101 @@ def get_analytics_insights(user_id: int = None) -> list:
     
     conn.close()
     return insights
+
+# ==================== CATEGORIES ====================
+
+def get_all_categories(user_id: int = None):
+    """Get all categories (user-specific or global)"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    if user_id:
+        cursor.execute('SELECT * FROM categories WHERE user_id IS NULL OR user_id = ?', (user_id,))
+    else:
+        cursor.execute('SELECT * FROM categories WHERE user_id IS NULL')
+    categories = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return categories
+
+def create_category(name: str, description: str = None, account_number: str = None, 
+                   color: str = '#3B82F6', icon: str = '📁', user_id: int = None):
+    """Create new category"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO categories (name, description, account_number, color, icon, user_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (name, description, account_number, color, icon, user_id))
+    conn.commit()
+    category_id = cursor.lastrowid
+    conn.close()
+    return category_id
+
+def assign_category_to_invoice(invoice_id: int, category_id: int, confidence: float = 1.0, assigned_by: str = 'user'):
+    """Assign category to invoice"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT OR REPLACE INTO invoice_categories (invoice_id, category_id, confidence, assigned_by)
+        VALUES (?, ?, ?, ?)
+    ''', (invoice_id, category_id, confidence, assigned_by))
+    conn.commit()
+    conn.close()
+
+def get_invoice_categories(invoice_id: int):
+    """Get categories for an invoice"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT c.*, ic.confidence, ic.assigned_by
+        FROM categories c
+        JOIN invoice_categories ic ON c.id = ic.category_id
+        WHERE ic.invoice_id = ?
+    ''', (invoice_id,))
+    categories = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return categories
+
+def save_category_learning(supplier_name: str, category_id: int, invoice_text: str, user_id: int = None):
+    """Save learning data for future predictions"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    snippet = invoice_text[:500] if invoice_text else ""
+    
+    # Check if exists
+    cursor.execute('''
+        SELECT id, times_confirmed FROM category_learning 
+        WHERE supplier_name = ? AND category_id = ? AND user_id = ?
+    ''', (supplier_name, category_id, user_id))
+    
+    existing = cursor.fetchone()
+    if existing:
+        # Update existing
+        cursor.execute('''
+            UPDATE category_learning 
+            SET times_confirmed = times_confirmed + 1, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        ''', (existing['id'],))
+    else:
+        # Insert new
+        cursor.execute('''
+            INSERT INTO category_learning (supplier_name, category_id, invoice_text_snippet, user_id)
+            VALUES (?, ?, ?, ?)
+        ''', (supplier_name, category_id, snippet, user_id))
+    
+    conn.commit()
+    conn.close()
+
+def get_learned_category(supplier_name: str, user_id: int = None):
+    """Get learned category for a supplier"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT category_id, times_confirmed 
+        FROM category_learning 
+        WHERE supplier_name = ? AND (user_id IS NULL OR user_id = ?)
+        ORDER BY times_confirmed DESC, updated_at DESC
+        LIMIT 1
+    ''', (supplier_name, user_id))
+    result = cursor.fetchone()
+    conn.close()
+    return dict(result) if result else None
