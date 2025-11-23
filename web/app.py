@@ -325,23 +325,6 @@ async def process_invoices_background(job_id: str):
     else:
         logger.warning("⚠️ No results to save!")
     
-    # Send email notification
-    try:
-        from database import get_user_by_id
-        user_id = processing_jobs[job_id].get("user_id")
-        if user_id:
-            user = get_user_by_id(user_id)
-            if user and user.get('email'):
-                send_completion_email(user['email'], processing_jobs[job_id], stats)
-    except Exception as e:
-        logger.warning(f"Email notification failed: {e}")
-    if results:
-        logger.info(f"💾 Saving {len(results)} invoices to database")
-        save_invoices(job_id, results)
-        logger.info(f"✅ Invoices saved successfully")
-    else:
-        logger.warning("⚠️ No results to save!")
-    
     # Auto-Kategorisierung
     try:
         from database import assign_category_to_invoice, get_invoices_by_job
