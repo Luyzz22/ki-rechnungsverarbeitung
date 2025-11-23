@@ -161,15 +161,14 @@ def save_invoices(job_id: str, results: List[Dict]):
     
     conn.commit()
     conn.close()
-    
-    conn.commit()
-    conn.close()
 
 
 
 def get_invoices_by_job(job_id: str):
     """Get all invoices for a job with their IDs"""
-    conn = get_connection()
+    import sqlite3
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM invoices WHERE job_id = ?', (job_id,))
     invoices = [dict(row) for row in cursor.fetchall()]
