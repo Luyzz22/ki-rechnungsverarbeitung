@@ -391,10 +391,15 @@ async def get_results(job_id: str):
 @app.get("/api/download/{job_id}/{format}")
 async def download_export(job_id: str, format: str):
     """Download exported file"""
-    if job_id not in processing_jobs:
-        raise HTTPException(status_code=404, detail="Job not found")
+    from database import get_job
     
-    job = processing_jobs[job_id]
+    # Try RAM first, then DB
+    if job_id in processing_jobs:
+        job = processing_jobs[job_id]
+    else:
+        job = get_job(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
     
     if job["status"] != "completed":
         raise HTTPException(status_code=400, detail="Processing not complete")
@@ -418,11 +423,17 @@ async def download_export(job_id: str, format: str):
 
 @app.get("/results/{job_id}", response_class=HTMLResponse)
 async def results_page(request: Request, job_id: str):
-    """Results page"""
-    if job_id not in processing_jobs:
-        raise HTTPException(status_code=404, detail="Job not found")
+    """Results page - with DB fallback"""
+    from database import get_job
     
-    job = processing_jobs[job_id]
+    # Try RAM first (for active jobs)
+    if job_id in processing_jobs:
+        job = processing_jobs[job_id]
+    else:
+        # Fallback to DB (for completed jobs)
+        job = get_job(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
     
     return templates.TemplateResponse(
         "results.html",
