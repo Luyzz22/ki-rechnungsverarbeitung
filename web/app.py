@@ -516,14 +516,14 @@ async def history_page(request: Request):
 @app.get("/job/{job_id}", response_class=HTMLResponse)
 async def job_details_page(request: Request, job_id: str):
     """Detailed job view from database"""
-    from database import get_job
+    from database import get_job, get_invoices_by_job
     
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
-    # Get invoices for this job
-    invoices = job.get('results', [])
+    # Get invoices from database
+    invoices = get_invoices_by_job(job_id)
     
     # Calculate aussteller statistics
     aussteller_stats = {}
@@ -547,14 +547,14 @@ async def job_details_page(request: Request, job_id: str):
 @app.get("/job/{job_id}", response_class=HTMLResponse)
 async def job_details_page(request: Request, job_id: str):
     """Detailed job view from database"""
-    from database import get_job
+    from database import get_job, get_invoices_by_job
     
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
-    # Get invoices for this job
-    invoices = job.get('results', [])
+    # Get invoices from database
+    invoices = get_invoices_by_job(job_id)
     
     # Calculate aussteller statistics
     aussteller_stats = {}
@@ -578,14 +578,14 @@ async def job_details_page(request: Request, job_id: str):
 @app.get("/job/{job_id}", response_class=HTMLResponse)
 async def job_details_page(request: Request, job_id: str):
     """Detailed job view from database"""
-    from database import get_job
+    from database import get_job, get_invoices_by_job
     
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
-    # Get invoices for this job
-    invoices = job.get('results', [])
+    # Get invoices from database
+    invoices = get_invoices_by_job(job_id)
     
     # Calculate aussteller statistics
     aussteller_stats = {}
