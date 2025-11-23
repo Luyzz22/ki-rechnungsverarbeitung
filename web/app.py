@@ -21,6 +21,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from database import save_job, save_invoices, get_job, get_all_jobs, get_statistics
 from notifications import send_completion_email
+from category_ai import predict_category
 from logging.handlers import RotatingFileHandler
 import sys
 
@@ -328,6 +329,18 @@ async def process_invoices_background(job_id: str):
         logger.warning(f"Email notification failed: {e}")
     if results:
         save_invoices(job_id, results)
+    
+    # Auto-Kategorisierung
+    try:
+        from database import assign_category_to_invoice
+        for result in results:
+            category_id, confidence, reasoning = predict_category(result, job.get("user_id"))
+            if result.get('id'):
+                assign_category_to_invoice(result['id'], category_id, confidence, 'ai')
+                logger.info(f"📊 Invoice {result['id']}: Category {category_id} (conf: {confidence:.2f})")
+    except Exception as e:
+        logger.warning(f"Auto-categorization failed: {e}")
+
     
     # Track invoice usage
     if results and job.get("user_id"):
