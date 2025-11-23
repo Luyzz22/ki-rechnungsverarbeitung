@@ -160,6 +160,17 @@ def save_invoices(job_id: str, results: List[Dict]):
     conn.commit()
     conn.close()
 
+
+
+def get_invoices_by_job(job_id: str):
+    """Get all invoices for a job with their IDs"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM invoices WHERE job_id = ?', (job_id,))
+    invoices = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return invoices
+
 def get_job(job_id: str) -> Optional[Dict]:
     """Get a job by ID"""
     conn = get_connection()
