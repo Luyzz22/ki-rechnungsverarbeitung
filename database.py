@@ -1187,7 +1187,9 @@ def get_all_categories(user_id: int = None):
 def create_category(name: str, description: str = None, account_number: str = None, 
                    color: str = '#3B82F6', icon: str = '📁', user_id: int = None):
     """Create new category"""
-    conn = get_connection()
+    import sqlite3
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('''
         INSERT INTO categories (name, description, account_number, color, icon, user_id)
@@ -1213,7 +1215,9 @@ def assign_category_to_invoice(invoice_id: int, category_id: int, confidence: fl
 
 def get_invoice_categories(invoice_id: int):
     """Get categories for an invoice"""
-    conn = get_connection()
+    import sqlite3
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('''
         SELECT c.*, ic.confidence, ic.assigned_by
