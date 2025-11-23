@@ -4,7 +4,8 @@ KI-gestützte Auto-Kategorisierung von Rechnungen
 """
 import logging
 from typing import Dict, List, Optional, Tuple
-from llm_router import get_llm_client
+from anthropic import Anthropic
+import os
 from database import get_all_categories, get_learned_category, save_category_learning
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ AUFGABE:
 Antworte NUR mit diesem JSON-Format (kein Markdown, keine Backticks):
 {{"category_id": 5, "confidence": 0.95, "reasoning": "EDEKA ist ein Lebensmittel-Einzelhändler"}}"""
 
-        client = get_llm_client()
+        client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=500,
