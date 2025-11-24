@@ -1324,24 +1324,54 @@ def get_duplicates_for_job(job_id: str):
     
     return results
 
-# --- Job-bezogene Rechnungsabfragen (einheitliche Implementierung) ---
+# --- Invoice-Helper für Job-Details ---------------------------------
+
+def get_invoices_for_job(job_id: str):
+    """
+    Liefert alle Rechnungen zu einem Job als Liste von Dicts.
+
+    Wird von der Job-Details-Seite benutzt. Greift auf dieselbe
+    invoices.db zu wie die Analytics-Funktionen.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM invoices WHERE job_id = ? ORDER BY id DESC",
+        (job_id,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+# Legacy-Name: alle Aufrufer von get_invoices_by_job bekommen jetzt
+# automatisch dieselbe Implementierung.
+get_invoices_by_job = get_invoices_for_job
+
+
+# --- Robuste Invoice-Suche pro Job (überschreibt ältere Versionen) ---
 
 import sqlite3
-from pathlib import Path as _Path
+from pathlib import Path
 
 def _get_invoice_conn():
     """
     Öffnet direkt die invoices.db im Projektverzeichnis.
-    Nutzt sqlite3.Row, damit wir Dicts zurückgeben können.
+    Unabhängig von get_connection(), damit wir sicher die gleiche
+    DB benutzen wie auf der CLI (sqlite3 invoices.db).
     """
-    db_path = _Path(__file__).resolve().parent / "invoices.db"
+    db_path = Path(__file__).resolve().parent / "invoices.db"
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
 def get_invoices_by_job(job_id: str):
     """
-    Liefert alle Rechnungen zu einem Job als Liste von Dicts.
+    Liefert alle Rechnungen zu einem Job.
+
+    Strategie:
+    1) Direkt auf invoices.job_id matchen.
+    2) Falls nichts gefunden, über jobs-Tabelle die interne ID ermitteln
+       und mit verschiedenen Varianten (UUID, int, str(int)) erneut suchen.
     """
     conn = _get_invoice_conn()
     cur = conn.cursor()
@@ -1353,9 +1383,10 @@ def get_invoices_by_job(job_id: str):
     )
     rows = cur.fetchall()
 
-    # 2) Fallback: versuche interne ID / verschiedene Repräsentationen
+    # 2) Fallback über jobs-Tabelle, wenn noch nichts gefunden
     if not rows:
         try:
+            # jobs.job_id = UUID, jobs.id = interne int-ID
             cur.execute(
                 "SELECT id, job_id FROM jobs WHERE job_id = ? OR id = ?",
                 (job_id, job_id),
@@ -1382,5 +1413,9 @@ def get_invoices_by_job(job_id: str):
     return [dict(r) for r in rows]
 
 def get_invoices_for_job(job_id: str):
-    """Alias für get_invoices_by_job (Kompatibilität)."""
+    """
+    Alias für get_invoices_by_job, damit beide Namensvarianten
+    (alte und neue Aufrufer) funktionieren.
+    """
     return get_invoices_by_job(job_id)
+
