@@ -556,6 +556,13 @@ async def cleanup_uploads(upload_path: Path, delay_minutes: int = 60):
     except Exception as e:
         print(f"⚠️  Cleanup-Fehler: {e}")
 
+
+@app.on_event("startup")
+async def startup_event():
+    """Start background tasks on server startup"""
+    from email_scheduler import email_scheduler
+    email_scheduler.start()
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
@@ -867,6 +874,7 @@ async def check_emails_now():
 from starlette.middleware.sessions import SessionMiddleware
 import secrets
 
+from email_scheduler import email_scheduler
 # Add session middleware (muss nach app = FastAPI() kommen)
 app.add_middleware(SessionMiddleware, secret_key='sbs-invoice-app-secret-key-2025', domain='.sbsdeutschland.com')
 
