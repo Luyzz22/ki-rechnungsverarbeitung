@@ -2,19 +2,21 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>Kunden & Referenzen · SBS Deutschland</title>
+  <title>Kunden &amp; Referenzen · SBS Deutschland</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="Ausgewählte Kunden und Referenzen der SBS Deutschland: KI-Rechnungsverarbeitung, SAP- und IT-Projekte in der Praxis." />
+  <meta name="description" content="Kundenbeispiele, Branchen und Referenzen für KI-Rechnungsverarbeitung, SAP- und IT-Consulting von SBS Deutschland." />
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/css/main.css" />
 </head>
 <body>
-
 <header class="header">
   <div class="header-inner">
     <a href="https://sbsdeutschland.com/" class="logo-wrap">
       <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
-      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
+      <div class="logo-text">
+        <strong>SBS Deutschland</strong>
+        <span>Smart Business Service · Weinheim</span>
+      </div>
     </a>
 
     <button class="burger" id="burger" aria-label="Menü">
@@ -22,8 +24,6 @@
     </button>
 
     <nav class="nav" id="nav">
-      <a href="/landing">Produkt</a>
-
       <div class="dropdown">
         <span class="dropdown-toggle">Lösungen</span>
         <div class="dropdown-menu">
@@ -36,6 +36,8 @@
       </div>
 
       <a href="/preise">Preise</a>
+      <a href="/static/landing/ressourcen.html">Ressourcen</a>
+      <a href="/static/landing/kunden.html">Kunden</a>
       <a href="/sbshomepage/unternehmen.html">Unternehmen</a>
       <a href="/sbshomepage/kontakt.html">Kontakt</a>
 
@@ -54,115 +56,99 @@
   </div>
 </header>
 
-<section class="hero">
+<section class="hero" style="padding: 60px 24px 40px;">
   <div class="hero-content">
-    <div class="hero-badge">KUNDEN · REFERENZEN · SUCCESS STORIES</div>
-    <h1>Vertrauen entsteht<br>über echte Ergebnisse.</h1>
+    <h1>🤝 Kunden &amp; Referenzen</h1>
     <p class="hero-subtitle">
-      SBS begleitet Unternehmen vom Mittelstand bis zum Konzern – mit pragmatischer KI-Rechnungsverarbeitung
-      und Beratung, die im Alltag funktioniert.
+      Von mittelständischen Unternehmen bis hin zu Handelsverbünden – wir begleiten Teams auf ihrem Weg
+      zur digitalen Rechnungsverarbeitung.
     </p>
-    <a href="/sbshomepage/kontakt.html" class="hero-cta">
-      Referenzgespräch anfragen →
-    </a>
   </div>
 </section>
 
 <section class="section">
   <div class="container">
-    <h2>Ausgewählte Branchen</h2>
-    <div class="feature-grid">
-      <div class="feature-card">
-        <span class="feature-icon">🏬</span>
-        <h3>Handel &amp; Filialnetze</h3>
-        <p>Viele Standorte, viele Lieferanten, tausende Belege – ideal für Automatisierung.</p>
-        <ul>
-          <li>Hohe Wiederholrate bei Lieferanten & Artikeln</li>
-          <li>Volumenstarke Eingangsrechnungsprozesse</li>
-          <li>Auswertungen nach Standort & Lieferant</li>
-        </ul>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">🏭</span>
-        <h3>Produktion &amp; Industrie</h3>
-        <p>Material, Dienstleistungen, Projekte – alles mit Bezug zur Kostenstelle.</p>
-        <ul>
-          <li>Kostenstellen- & Kostenträger-Sichtbarkeit</li>
-          <li>Integration in ERP- und PPS-Systeme</li>
-          <li>Transparenz bei Dienstleisterkosten</li>
-        </ul>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">📊</span>
-        <h3>Beratung &amp; Dienstleistungen</h3>
-        <p>Hoher Anteil an Dienstleistungsrechnungen, oft mit Projektbezug.</p>
-        <ul>
-          <li>Projekt-/Mandanten-Sicht in Analytics</li>
-          <li>Schnelles Onboarding neuer Lieferanten</li>
-          <li>Export für Kanzleien & Shared Service Center</li>
-        </ul>
+
+    <!-- Logo-Row / Branchen -->
+    <div class="card" style="background:white; border-radius:16px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:32px;">
+      <h2>Typische Branchen</h2>
+      <p>
+        Unser Schwerpunkt liegt auf Unternehmen mit hohem Rechnungsvolumen – insbesondere im Handel
+        und in filialisierten Strukturen.
+      </p>
+      <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:12px;">
+        <span class="badge">Lebensmittel- &amp; Einzelhandel</span>
+        <span class="badge">Logistik &amp; Distribution</span>
+        <span class="badge">Dienstleistungsunternehmen</span>
+        <span class="badge">Produzierendes Gewerbe</span>
       </div>
     </div>
-  </div>
-</section>
 
-<section class="section">
-  <div class="container">
-    <h2>Beispiele aus Projekten</h2>
-    <div class="feature-grid">
-      <div class="feature-card">
-        <span class="feature-icon">⏱️</span>
-        <h3>Monatsabschluss spürbar entlastet</h3>
-        <p>
-          Ein Handelsunternehmen reduziert den manuellen Erfassungsaufwand um über 60 % –
-          bei gleichzeitig besserer Nachvollziehbarkeit.
+    <!-- Case Studies -->
+    <div class="grid-2" style="gap:24px; margin-bottom:40px;">
+      <div class="card" style="background:white; border-radius:16px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+        <h2>Case Study: Handelsverbund</h2>
+        <p class="muted">
+          Mehrere tausend Rechnungen pro Monat, dezentrale Standorte, zentrales Controlling.
         </p>
         <ul>
-          <li>Automatisierte Vorerfassung von Eingangsrechnungen</li>
-          <li>Schnelle Korrektur von Ausnahmen in der App</li>
-          <li>Übersichtliche Analytics für den Monatsabschluss</li>
+          <li>Einführung der KI-Rechnungsverarbeitung innerhalb von wenigen Wochen.</li>
+          <li>Hoher Automatisierungsgrad bei Standardlieferanten.</li>
+          <li>Transparente Ausgabenanalyse pro Filiale im Analytics-Dashboard.</li>
         </ul>
+        <p style="margin-top:8px;">
+          <em>Ergebnis:</em> Deutlich reduzierte manuelle Erfassung und mehr Zeit für Auswertungen.
+        </p>
       </div>
-      <div class="feature-card">
-        <span class="feature-icon">📉</span>
-        <h3>Fehlerquote im Vier-Augen-Prinzip</h3>
-        <p>
-          Ein Kunde nutzt SBS, um Rechnungsdaten vorzuerfassen und im Vier-Augen-Prinzip zu prüfen –
-          mit messbar sinkender Fehlerquote.
+
+      <div class="card" style="background:white; border-radius:16px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+        <h2>Case Study: Dienstleistungsunternehmen</h2>
+        <p class="muted">
+          Viele unterschiedliche Lieferanten, heterogene Rechnungsformate, hoher Abstimmungsaufwand.
         </p>
         <ul>
-          <li>Klarer Prüfprozess statt Excel-Schattenwelt</li>
-          <li>Transparenter Verlauf über die History</li>
-          <li>Exports für interne Revision</li>
+          <li>Klassifizierung nach Kostenstellen und Projekten.</li>
+          <li>Einbindung von Freigabe-Workflows in bestehende Prozesse.</li>
+          <li>Export der Daten in bestehende Finanzsysteme.</li>
         </ul>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">🤝</span>
-        <h3>Partnerschaft mit IT &amp; Fachbereich</h3>
-        <p>
-          SBS-Projekte werden typischerweise gemeinsam mit Finanzbereich, IT und ggf. Kanzlei umgesetzt –
-          mit klaren Rollen.
+        <p style="margin-top:8px;">
+          <em>Ergebnis:</em> Schnellere Monatsabschlüsse und weniger Rückfragen im Team.
         </p>
-        <ul>
-          <li>Fokussierte Workshops statt langwieriger Projekte</li>
-          <li>Transparente Roadmap & Erweiterungsmöglichkeiten</li>
-          <li>Direkter Kontakt zu den Entscheidern bei SBS</li>
-        </ul>
       </div>
     </div>
-  </div>
-</section>
 
-<section class="section">
-  <div class="container">
-    <h2>Überzeugen Sie sich selbst</h2>
-    <p>
-      Gerne zeigen wir Ihnen in einer kurzen Session live im System, wie SBS zu Ihren Prozessen und
-      Ihrem Buchhaltungssystem passt.
-    </p>
-    <a href="/sbshomepage/kontakt.html" class="hero-cta">
-      Live-Demo &amp; Referenzen anfragen →
-    </a>
+    <!-- Testimonials -->
+    <div class="card" style="background:white; border-radius:16px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:40px;">
+      <h2>Was Kunden an SBS schätzen</h2>
+      <div style="display:grid; gap:16px; margin-top:12px;">
+        <blockquote style="margin:0; padding:12px 16px; border-left:4px solid #003856; background:#f9fafb;">
+          „Wir haben endlich Transparenz über unsere Eingangsrechnungen – ohne dass das Team mehr klicken muss.“
+        </blockquote>
+        <blockquote style="margin:0; padding:12px 16px; border-left:4px solid #FFB900; background:#fffbeb;">
+          „Die Kombination aus KI, SAP-Know-how und pragmischer Beratung ist im Alltag Gold wert.“
+        </blockquote>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="card" style="background:linear-gradient(135deg,#003856,#00507a); border-radius:16px; padding:24px; color:white; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px;">
+      <div>
+        <h2 style="margin:0 0 8px 0;">Möchten Sie Ihre eigene Erfolgsgeschichte starten?</h2>
+        <p style="margin:0; max-width:520px;">
+          Wir zeigen Ihnen in einer kurzen Demo, wie SBS in Ihre bestehende Systemlandschaft passt – und
+          welche Schritte konkret nötig sind.
+        </p>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        <a href="https://app.sbsdeutschland.com/" class="primary-btn" style="background:#FFB900; color:#003856; padding:12px 24px; border-radius:999px; font-weight:600; text-decoration:none;">
+          App &amp; Demo öffnen →
+        </a>
+        <a href="/sbshomepage/kontakt.html" class="secondary-btn" style="padding:12px 24px; border-radius:999px; border:1px solid #e5e7eb; background:white; color:#003856; text-decoration:none;">
+          Gespräch vereinbaren →
+        </a>
+      </div>
+    </div>
+
   </div>
 </section>
 
@@ -177,7 +163,7 @@
         </div>
       </div>
       <p class="footer-tagline">
-        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+        Ihr Partner für intelligente Geschäftsprozesse, SAP-Consulting und KI-Lösungen aus der Rhein-Neckar-Region.
       </p>
       <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
     </div>
@@ -187,7 +173,7 @@
       <ul>
         <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
         <li><a href="/preise">Preise &amp; Pakete</a></li>
-        <li><a href="/static/landing/integrationen.html">Integrationen</a></li>
+        <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
       </ul>
     </div>
 
@@ -195,8 +181,9 @@
       <h4>Unternehmen</h4>
       <ul>
         <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
-        <li><a href="/static/landing/kunden.html">Kunden &amp; Referenzen</a></li>
         <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
       </ul>
     </div>
 
@@ -221,8 +208,6 @@
     </button>
   </div>
 </footer>
-
-<script src="/static/js/main.js"></script>
 
 <script>
   (function() {
