@@ -155,7 +155,7 @@ def save_invoices(job_id: str, results: List[Dict]):
             except Exception:
                 einvoice_valid = 0
 
-        einvoice_validation_message = invoice.get("einvoice_validation_message", "")
+        einvoice_validation_message, detected_language = invoice.get("einvoice_validation_message", "")
 
         cursor.execute(
             """
