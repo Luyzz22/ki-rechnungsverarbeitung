@@ -530,6 +530,19 @@
         </a>
         {% endif %}
       </div>
+      
+      <!-- Advanced Exports -->
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 2px dashed #ddd;">
+        <h4 style="color: #003856; margin-bottom: 15px;">🎯 Erweiterte Exports</h4>
+        <div class="download-grid">
+          <a href="/api/job/{{ job_id }}/export/comprehensive" class="download-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            📊 Umfassender Report
+          </a>
+          <a href="/api/job/{{ job_id }}/export/zip" class="download-btn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+            📦 Komplettpaket (ZIP)
+          </a>
+        </div>
+      </div>
     </div>
     
     <!-- Invoices Table -->
