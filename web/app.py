@@ -16,7 +16,7 @@ from pathlib import Path
 # Add parent directory to path to import existing modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.responses import RedirectResponse
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -816,6 +816,12 @@ async def get_supplier_patterns_endpoint(supplier: str):
     
     return patterns
 
+
+@app.get("/upload-progress", response_class=HTMLResponse)
+async def upload_progress_page(request: Request):
+    """Upload page with real-time progress"""
+    return templates.TemplateResponse("upload_progress.html", {"request": request})
+
 @app.get("/email-config", response_class=HTMLResponse)
 async def email_config_page(request: Request):
     """Email inbox configuration page"""
@@ -869,6 +875,28 @@ async def check_emails_now():
         return {"success": True, "message": "Email check completed"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+# === WebSocket Endpoint ===
+from websocket_handler import manager
+
+@app.websocket("/ws/{job_id}")
+async def websocket_endpoint(websocket: WebSocket, job_id: str):
+    """WebSocket endpoint for real-time job updates"""
+    await websocket.accept()
+    await manager.connect(websocket, job_id)
+    
+    try:
+        while True:
+            # Keep connection alive
+            data = await websocket.receive_text()
+            # Echo back for heartbeat
+            await websocket.send_text(json.dumps({"type": "pong"}))
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, job_id)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        manager.disconnect(websocket, job_id)
 
 # Session Management
 from starlette.middleware.sessions import SessionMiddleware
