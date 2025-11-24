@@ -1323,3 +1323,27 @@ def get_duplicates_for_job(job_id: str):
     conn.close()
     
     return results
+
+# --- Invoice-Helper für Job-Details ---------------------------------
+
+def get_invoices_for_job(job_id: str):
+    """
+    Liefert alle Rechnungen zu einem Job als Liste von Dicts.
+
+    Wird von der Job-Details-Seite benutzt. Greift auf dieselbe
+    invoices.db zu wie die Analytics-Funktionen.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM invoices WHERE job_id = ? ORDER BY id DESC",
+        (job_id,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+# Legacy-Name: alle Aufrufer von get_invoices_by_job bekommen jetzt
+# automatisch dieselbe Implementierung.
+get_invoices_by_job = get_invoices_for_job
+

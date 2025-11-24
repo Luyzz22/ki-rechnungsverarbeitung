@@ -17,6 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi.responses import RedirectResponse
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from database import save_job, save_invoices, get_job, get_all_jobs, get_statistics
