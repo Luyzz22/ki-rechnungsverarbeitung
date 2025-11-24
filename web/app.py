@@ -322,6 +322,20 @@ async def process_invoices_background(job_id: str):
         logger.info(f"💾 Saving {len(results)} invoices to database")
         save_invoices(job_id, results)
         logger.info(f"✅ Invoices saved successfully")
+        
+        # Check for duplicates
+        from database import get_invoices_by_job
+        from duplicate_detection import get_duplicates_for_invoice
+        saved_invoices = get_invoices_by_job(job_id)
+        duplicate_count = 0
+        for inv in saved_invoices:
+            duplicates = get_duplicates_for_invoice(inv['id'])
+            if duplicates:
+                duplicate_count += len(duplicates)
+        
+        if duplicate_count > 0:
+            logger.warning(f"⚠️ {duplicate_count} potential duplicate(s) detected!")
+            processing_jobs[job_id]['duplicates_detected'] = duplicate_count
     else:
         logger.warning("⚠️ No results to save!")
     
