@@ -612,6 +612,7 @@ async def job_details_page(request: Request, job_id: str):
         "job": job,
         "invoices": invoices,
         "aussteller_stats": aussteller_list,
+        "plausibility_warnings": get_plausibility_warnings_for_job(job_id),
         "duplicates": duplicates
     })
 
