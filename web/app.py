@@ -319,9 +319,30 @@ async def process_invoices_background(job_id: str):
     logger.info(f"💾 Saving job {job_id} with {len(results)} results")
     save_job(job_id, processing_jobs[job_id], processing_jobs[job_id].get("user_id"))
     logger.info(f"✅ Job saved, now saving invoices")
+    # --- E-Rechnungs-Metadaten anreichern ---------------------------
+    enriched_results = []
+    for invoice in results:
+        source_format = invoice.get("source_format") or "pdf"
+        einvoice_raw_xml = (
+            invoice.get("einvoice_raw_xml")
+            or invoice.get("raw_xml")
+            or invoice.get("xml")
+            or ""
+        )
+        einvoice_profile = invoice.get("einvoice_profile", "")
+        is_valid, message, detected_profile = validate_einvoice(einvoice_raw_xml)
+        if detected_profile and not einvoice_profile:
+            einvoice_profile = detected_profile
+        invoice["source_format"] = source_format
+        invoice["einvoice_raw_xml"] = einvoice_raw_xml
+        invoice["einvoice_profile"] = einvoice_profile
+        invoice["einvoice_valid"] = bool(is_valid)
+        invoice["einvoice_validation_message"] = message or ""
+        enriched_results.append(invoice)
+    # ---------------------------------------------------------------
     if results:
         logger.info(f"💾 Saving {len(results)} invoices to database")
-        save_invoices(job_id, results)
+        save_invoices(job_id, enriched_results)
         logger.info(f"✅ Invoices saved successfully")
         
         # Check for duplicates (Hash + AI)
@@ -556,7 +577,7 @@ async def history_page(request: Request):
 @app.get("/job/{job_id}", response_class=HTMLResponse)
 async def job_details_page(request: Request, job_id: str):
     """Detailed job view from database"""
-    from database import get_job, get_invoices_by_job
+    from database import get_job, get_invoices_by_job, get_plausibility_warnings_for_job
     
     job = get_job(job_id)
     if not job:
@@ -597,7 +618,7 @@ async def job_details_page(request: Request, job_id: str):
 @app.get("/job/{job_id}", response_class=HTMLResponse)
 async def job_details_page(request: Request, job_id: str):
     """Detailed job view from database"""
-    from database import get_job, get_invoices_by_job
+    from database import get_job, get_invoices_by_job, get_plausibility_warnings_for_job
     
     job = get_job(job_id)
     if not job:
@@ -638,7 +659,7 @@ async def job_details_page(request: Request, job_id: str):
 @app.get("/job/{job_id}", response_class=HTMLResponse)
 async def job_details_page(request: Request, job_id: str):
     """Detailed job view from database"""
-    from database import get_job, get_invoices_by_job
+    from database import get_job, get_invoices_by_job, get_plausibility_warnings_for_job
     
     job = get_job(job_id)
     if not job:
@@ -1526,3 +1547,83 @@ async def review_duplicate(detection_id: int, request: Request):
     mark_duplicate_reviewed(detection_id, request.session['user_id'], is_duplicate)
     
     return {"status": "ok", "message": "Reviewed successfully"}
+
+
+
+
+def validate_einvoice(xml_string: str):
+    """
+    Sehr einfache E-Rechnungs-Erkennung / -Validierung:
+    - Versucht XML zu parsen
+    - Erkannt werden grob XRechnung / ZUGFeRD / Factur-X anhand Namespace / Text
+    - Gibt (is_valid, message, detected_profile) zurück
+    """
+    xml = (xml_string or "").strip()
+    if not xml:
+        return False, "Kein XML übergeben – PDF- oder Basis-Rechnung.", ""
+
+    import xml.etree.ElementTree as ET
+
+    try:
+        root = ET.fromstring(xml)
+    except Exception as e:
+        return False, f"XML nicht parsbar: {e}", ""
+
+    text_lower = xml.lower()
+
+    # Heuristik für Profile / Formate
+    profile = ""
+
+    # XRechnung / EN16931 / CII
+    if (
+        "xrechnung" in text_lower
+        or "urn:cen.eu:en16931:2017" in text_lower
+        or "crossindustryinvoice" in root.tag.lower()
+    ):
+        profile = "XRechnung / EN16931 (CII)"
+
+    # ZUGFeRD / Factur-X
+    if (
+        "zugferd" in text_lower
+        or "factur-x" in text_lower
+        or "crossindustrydocument" in root.tag.lower()
+    ):
+        if profile:
+            profile += " + ZUGFeRD/Factur-X"
+        else:
+            profile = "ZUGFeRD / Factur-X"
+
+    # einfache Minimal-Checks
+    # -> wenn wir irgendein Profil erkannt haben und das XML syntaktisch OK ist, werten wir es als 'valid'
+    if profile:
+        return True, f"E-Rechnung erkannt ({profile}), XML syntaktisch gültig.", profile
+
+    # Fallback: generische XML-Rechnung
+    return True, "XML syntaktisch gültig, aber kein spezifisches E-Rechnungs-Profil erkannt.", ""
+
+# === Plausibility API ===
+@app.post("/api/plausibility/{check_id}/review")
+async def review_plausibility(check_id: int, request: Request):
+    """Review a plausibility check"""
+    data = await request.json()
+    status = data.get('status')
+    
+    if status not in ['reviewed', 'ignored']:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    
+    import sqlite3
+    from datetime import datetime
+    
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        UPDATE plausibility_checks
+        SET status = ?, reviewed_at = ?
+        WHERE id = ?
+    ''', (status, datetime.now().isoformat(), check_id))
+    
+    conn.commit()
+    conn.close()
+    
+    return {"status": "ok"}
