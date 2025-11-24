@@ -475,6 +475,40 @@
     </div>
     
     <!-- Downloads -->
+        <!-- Duplicate Warnings -->
+    {% if duplicates and duplicates|length > 0 %}
+    <div class="section-card" style="border: 2px solid #f59e0b; background: #fffbeb;">
+      <h3 class="section-title" style="color: #d97706;">⚠️ Mögliche Duplikate erkannt ({{ duplicates|length }})</h3>
+      <p style="color: #92400e; margin-bottom: 20px;">
+        Es wurden potenzielle Duplikate gefunden. Bitte überprüfen Sie diese Rechnungen.
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        {% for dup in duplicates %}
+        <div style="background: white; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="flex: 1; min-width: 300px;">
+            <strong>Rechnung #{{ dup.invoice_rechnungsnummer }}</strong> ({{ dup.invoice_aussteller }})
+            <br>
+            <span style="color: #6b7280; font-size: 0.9rem;">
+              Ähnlich zu Rechnung #{{ dup.original_rechnungsnummer }} vom {{ dup.original_datum }}
+              <span style="background: {% if dup.confidence > 0.9 %}#dc2626{% elif dup.confidence > 0.7 %}#f59e0b{% else %}#10b981{% endif %}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; margin-left: 8px;">
+                {{ "%.0f"|format(dup.confidence * 100) }}%
+              </span>
+            </span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button onclick="markDuplicate({{ dup.detection_id }}, true)" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
+              ✓ Ist Duplikat
+            </button>
+            <button onclick="markDuplicate({{ dup.detection_id }}, false)" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
+              ✗ Unterschiedlich
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
     <div class="section-card">
       <h3 class="section-title">📥 Dateien herunterladen</h3>
       <div class="download-grid">
@@ -692,5 +726,30 @@
 })();
 </script>
 
+
+<script>
+async function markDuplicate(detectionId, isDuplicate) {
+  if (!confirm(isDuplicate ? 'Als Duplikat markieren?' : 'Als unterschiedlich markieren?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/duplicate/${detectionId}/review`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({is_duplicate: isDuplicate})
+    });
+    
+    if (response.ok) {
+      alert(isDuplicate ? '✓ Als Duplikat markiert' : '✓ Als unterschiedlich markiert');
+      location.reload();
+    } else {
+      alert('Fehler beim Speichern');
+    }
+  } catch (e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+</script>
 </body>
 </html>
