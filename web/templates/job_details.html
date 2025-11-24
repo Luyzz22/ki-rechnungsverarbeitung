@@ -510,65 +510,6 @@
     </div>
     {% endif %}
 
-    <!-- Plausibility Warnings -->
-    {% if plausibility_warnings and plausibility_warnings|length > 0 %}
-    <div class="section-card" style="border: 2px solid #ef4444; background: #fef2f2;">
-      <h3 class="section-title" style="color: #dc2626;">🔍 Plausibilitätsprüfung ({{ plausibility_warnings|length }})</h3>
-      <p style="color: #7f1d1d; margin-bottom: 20px;">
-        Die folgenden Rechnungen weisen Unregelmäßigkeiten auf und sollten überprüft werden.
-      </p>
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-        {% for warning in plausibility_warnings %}
-        <div style="background: white; border-radius: 8px; padding: 16px; border-left: 4px solid {% if warning.severity == 'high' %}#dc2626{% elif warning.severity == 'medium' %}#f59e0b{% else %}#10b981{% endif %};">
-          <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 10px;">
-            <div style="flex: 1; min-width: 300px;">
-              <strong style="font-size: 1.1rem;">
-                {% if warning.check_type == 'amount_outlier' %}
-                  💰 Ungewöhnlicher Betrag
-                {% elif warning.check_type == 'unusual_change' %}
-                  📊 Starke Abweichung
-                {% else %}
-                  ⚠️ {{ warning.check_type }}
-                {% endif %}
-              </strong>
-              <br>
-              <span style="color: #6b7280; font-size: 0.9rem;">
-                Rechnung #{{ warning.invoice_rechnungsnummer }} ({{ warning.invoice_aussteller }})
-              </span>
-              <br>
-              <div style="margin-top: 8px; font-size: 0.85rem; color: #374151;">
-                {% set details = warning.details_json %}
-                {% if warning.check_type == 'amount_outlier' %}
-                  Aktuell: <strong>{{ "%.2f"|format(details.current_amount) }}€</strong> 
-                  | Durchschnitt: {{ "%.2f"|format(details.historical_avg) }}€
-                  | Median: {{ "%.2f"|format(details.historical_median) }}€
-                  <br>
-                  <span style="color: #9ca3af;">Z-Score: {{ details.z_score }} (basierend auf {{ details.sample_size }} Rechnungen)</span>
-                {% elif warning.check_type == 'unusual_change' %}
-                  Aktuell: <strong>{{ "%.2f"|format(details.current_amount) }}€</strong>
-                  | Vorherige: {{ "%.2f"|format(details.last_amount) }}€
-                  | Änderung: <span style="color: {% if details.change_percent > 100 %}#dc2626{% else %}#f59e0b{% endif %}; font-weight: 600;">+{{ "%.1f"|format(details.change_percent) }}%</span>
-                {% endif %}
-              </div>
-              <span style="background: {% if warning.severity == 'high' %}#dc2626{% elif warning.severity == 'medium' %}#f59e0b{% else %}#10b981{% endif %}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; margin-top: 6px; display: inline-block;">
-                {{ warning.severity|upper }} ({{ "%.0f"|format(warning.confidence * 100) }}% Konfidenz)
-              </span>
-            </div>
-            <div style="display: flex; gap: 8px;">
-              <button onclick="reviewPlausibility({{ warning.id }}, 'reviewed')" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
-                ✓ Geprüft
-              </button>
-              <button onclick="reviewPlausibility({{ warning.id }}, 'ignored')" style="background: #6b7280; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
-                ✗ Ignorieren
-              </button>
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-
     <div class="section-card">
       <h3 class="section-title">📥 Dateien herunterladen</h3>
       <div class="download-grid">
@@ -619,6 +560,7 @@
             {% for invoice in invoices %}
             <tr>
               <td>{{ invoice.rechnungsnummer or '-' }}</td>
+              <td>{{ invoice.datum or '-' }}</td>
               <td style="text-align: center;">
                 {% if invoice.detected_language == 'de' %}🇩🇪
                 {% elif invoice.detected_language == 'en' %}🇬🇧
@@ -626,14 +568,6 @@
                 {% elif invoice.detected_language == 'it' %}🇮🇹
                 {% else %}🌍{% endif %}
               </td>
-              <td>
-                {% if invoice.detected_language == 'de' %}🇩🇪
-                {% elif invoice.detected_language == 'en' %}🇬🇧
-                {% elif invoice.detected_language == 'fr' %}🇫🇷
-                {% elif invoice.detected_language == 'it' %}🇮🇹
-                {% else %}🌍{% endif %}
-              </td>
-              <td>{{ invoice.datum or '-' }}</td>
               <td>{{ invoice.rechnungsaussteller or '-' }}</td>
               <td>
                 {% if invoice.categories %}
@@ -816,31 +750,6 @@ async function markDuplicate(detectionId, isDuplicate) {
     
     if (response.ok) {
       alert(isDuplicate ? '✓ Als Duplikat markiert' : '✓ Als unterschiedlich markiert');
-      location.reload();
-    } else {
-      alert('Fehler beim Speichern');
-    }
-  } catch (e) {
-    alert('Fehler: ' + e.message);
-  }
-}
-</script>
-
-<script>
-async function reviewPlausibility(checkId, status) {
-  if (!confirm(status === 'reviewed' ? 'Als geprüft markieren?' : 'Warnung ignorieren?')) {
-    return;
-  }
-  
-  try {
-    const response = await fetch(`/api/plausibility/${checkId}/review`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({status: status})
-    });
-    
-    if (response.ok) {
-      alert(status === 'reviewed' ? '✓ Als geprüft markiert' : '✓ Warnung ignoriert');
       location.reload();
     } else {
       alert('Fehler beim Speichern');
