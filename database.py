@@ -163,6 +163,15 @@ def save_invoices(job_id: str, results: List[Dict]):
             invoice.get('verwendungszweck', ''),
             content_hash
         ))
+        
+        # Check for duplicates AFTER inserting (so we can get the new invoice_id)
+        invoice_id = cursor.lastrowid
+        
+        # Check if this is a duplicate
+        duplicate = check_duplicate_by_hash(invoice)
+        if duplicate and duplicate['id'] != invoice_id:
+            logger.warning(f"⚠️ Duplicate detected for invoice {invoice_id}: matches invoice {duplicate['id']}")
+            save_duplicate_detection(invoice_id, duplicate['id'], method='hash', confidence=1.0)
     
     conn.commit()
     conn.close()
