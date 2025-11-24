@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<style>
+/* sbs-page-flex-layout */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, -system-ui, -system, sans-serif;
+  background: #f5f6f8;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+#sbs-footer-global {
+  margin-top: auto;
+  padding: 18px 24px;
+  font-size: 14px;
+  color: #0f172a;
+  background: #ffffff;
+  border-top: 1px solid rgba(148,163,253,0.15);
+}
+#sbs-footer-global a {
+  color: #0f172a;
+  text-decoration: none;
+  margin: 0 4px;
+}
+#sbs-footer-global a:hover {
+  text-decoration: underline;
+}
+/* /sbs-page-flex-layout */
+</style>
+
+<meta charset="UTF-8"/>
+<title>SBS Deutschland - Upload</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <link rel="stylesheet" href="/static/app-theme.css">
+<link rel="icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/sbs-global.css">
+</head>
+<body>
+
+<!-- SBS GLOBAL HEADER -->
+  <!-- HEADER -->
+  <header class="sbs-header">
+    <div class="sbs-header-inner">
+      <a href="/sbshomepage/" class="sbs-logo-wrap">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="sbs-logo-img" />
+        <div class="sbs-logo-text">
+          <strong>SBS Deutschland GmbH &amp; Co. KG</strong>
+          <span>Smart Business Service · Weinheim</span>
+        </div>
+      </a>
+      <nav class="sbs-nav">
+        <a href="/sbshomepage/">Startseite</a>
+        <a href="/landing/">KI-Rechnungsverarbeitung</a>
+        <a href="/" class="active">Upload</a>
+        <a href="/sbshomepage/kontakt.html">Kontakt</a>
+        <a href="https://app.sbsdeutschland.com/" class="sbs-nav-cta">Login / Demo</a>
+      </nav>
+    </div>
+  </header>
+
+<section class="hero"><div class="wrap hero-content">
+<div class="eyebrow">KI-gestützte Automatisierung</div>
+<h1>🚀 Rechnungen hochladen & verarbeiten</h1>
+<p>Laden Sie Ihre PDF-Rechnungen hoch und lassen Sie unsere KI sie automatisch verarbeiten.</p>
+</div></section>
+<section><div class="wrap"><div class="upload-card">
+<div class="drop-zone" id="dropZone">
+<h3>📄 PDF-Rechnungen hochladen</h3>
+<p>Drag & Drop oder klicken</p>
+<input type="file" id="fileInput" multiple accept=".pdf,.png,.jpg,.jpeg" style="display:none">
+</div>
+<div id="fileList" class="file-list"></div>
+<div style="text-align:center">
+<button class="btn-process" id="processBtn">⚡ Jetzt verarbeiten</button>
+</div>
+<div id="status"></div>
+</div></div></section>
+<script>
+document.getElementById('year').textContent=new Date().getFullYear();
+const dropZone=document.getElementById('dropZone'),fileInput=document.getElementById('fileInput'),fileList=document.getElementById('fileList'),processBtn=document.getElementById('processBtn'),status=document.getElementById('status');
+let selectedFiles=[];
+dropZone.onclick=()=>fileInput.click();
+dropZone.ondragover=e=>{e.preventDefault();dropZone.classList.add('dragover')};
+dropZone.ondragleave=()=>dropZone.classList.remove('dragover');
+dropZone.ondrop=e=>{e.preventDefault();dropZone.classList.remove('dragover');handleFiles(e.dataTransfer.files)};
+fileInput.onchange=e=>handleFiles(e.target.files);
+function handleFiles(files){
+Array.from(files).filter(f=>f.name.match(/\.(pdf|png|jpe?g)$/i)).forEach(f=>{if(!selectedFiles.some(x=>x.name===f.name))selectedFiles.push(f)});
+updateFileList();
+processBtn.style.display=selectedFiles.length?'inline-block':'none';
+}
+function updateFileList(){
+fileList.innerHTML='';
+selectedFiles.forEach((f,i)=>{
+const d=document.createElement('div');
+d.className='file-item';
+d.innerHTML='<span>'+(f.name.endsWith('.pdf')?'📄':'🖼️')+' '+f.name+' <span style="color:var(--text)">('+( f.size/1024).toFixed(1)+' KB)</span></span><button class="btn-remove" onclick="removeFile('+i+')">✕</button>';
+fileList.appendChild(d);
+});
+}
+function removeFile(i){selectedFiles.splice(i,1);updateFileList();processBtn.style.display=selectedFiles.length?'inline-block':'none'}
+processBtn.onclick=async()=>{
+if(!selectedFiles.length)return;
+processBtn.disabled=true;
+status.innerHTML='<div class="alert alert-info"><div class="processing-spinner"></div><p style="margin-top:10px">Upload...</p></div>';
+const fd=new FormData();
+selectedFiles.forEach(f=>fd.append('files',f));
+try{
+const r=await fetch('/api/upload',{method:'POST',body:fd}),d=await r.json();
+if(d.success){
+status.innerHTML='<div class="alert alert-info"><div class="processing-spinner"></div><p style="margin-top:10px">KI-Verarbeitung...</p></div>';
+const pr=await fetch('/api/process/'+d.batch_id,{method:'POST'}),pd=await pr.json();
+if(pd.success)checkStatus(d.batch_id);
+else{status.innerHTML='<div class="alert alert-danger">❌ Fehler</div>';processBtn.disabled=false}
+}
+}catch{status.innerHTML='<div class="alert alert-danger">❌ Fehler</div>';processBtn.disabled=false}
+};
+async function checkStatus(id){
+try{
+const r=await fetch('/api/status/'+id),d=await r.json();
+if(d.status==='processing')setTimeout(()=>checkStatus(id),2000);
+else if(d.status==='completed'){
+status.innerHTML='<div class="alert alert-success"><h4>✅ Fertig!</h4><a href="/results/'+id+'" class="btn-results">📊 Ergebnisse</a></div>';
+processBtn.disabled=false;selectedFiles=[];updateFileList();processBtn.style.display='none';
+}
+}catch{setTimeout(()=>checkStatus(id),3000)}
+}
+</script>
+<!-- SBS GLOBAL FOOTER -->
+  <!-- FOOTER (global) -->
+  <footer id="sbs-footer-global">
+    <div class="footer-inner">
+      <div>
+        © SBS Deutschland GmbH &amp; Co. KG · In der Dell 19, 69469 Weinheim
+      </div>
+      <div class="footer-links">
+        <a href="/sbshomepage/impressum.html">Impressum</a>
+        <a href="/sbshomepage/datenschutz.html">Datenschutz</a>
+        <a href="/sbshomepage/agb.html">AGB</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
+
+<!-- SBS Upload Init v2 -->
+<script id="sbs-upload-init-v2">
+document.addEventListener('DOMContentLoaded', () => {
+  const dropZone   = document.getElementById('dropZone');
+  const fileInput  = document.getElementById('fileInput');
+  const fileListEl = document.getElementById('fileList');
+  const processBtn = document.getElementById('processBtn');
+
+  // Wenn Struktur nicht da ist: nichts tun
+  if (!dropZone || !fileInput || !fileListEl || !processBtn) {
+    return;
+  }
+
+  let files = [];
+
+  function renderFiles() {
+    if (!files.length) {
+      fileListEl.innerHTML = '';
+      return;
+    }
+    fileListEl.innerHTML = files.map((f, i) => `
+      <div class="file-pill">
+        <span>${f.name}</span>
+        <button type="button" class="remove-file" data-index="${i}">×</button>
+      </div>
+    `).join('');
+    fileListEl.querySelectorAll('.remove-file').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-index'), 10);
+        files.splice(idx, 1);
+        renderFiles();
+      });
+    });
+  }
+
+  function addFiles(newFiles) {
+    for (const f of newFiles) {
+      if (f && f.name) {
+        files.push(f);
+      }
+    }
+    renderFiles();
+  }
+
+  // Klick auf Dropzone öffnet Dateidialog
+  dropZone.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  // Drag & Drop
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+
+  dropZone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer && e.dataTransfer.files) {
+      addFiles(e.dataTransfer.files);
+    }
+  });
+
+  // Auswahl über verstecktes FileInput
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files) {
+      addFiles(e.target.files);
+      fileInput.value = ''; // reset
+    }
+  });
+
+  // Jetzt verarbeiten Button
+  processBtn.addEventListener('click', async () => {
+    if (!files.length) {
+      alert('Bitte wählen Sie mindestens eine Datei aus.');
+      return;
+    }
+
+    const formData = new FormData();
+    files.forEach(f => formData.append('files', f));
+
+    processBtn.disabled = true;
+    const originalText = processBtn.textContent;
+    processBtn.textContent = 'Wird verarbeitet...';
+
+    try {
+      // HIER: an dein bestehendes Backend anpassen.
+      // Falls dein FastAPI Endpoint anders heißt, NUR diese URL tauschen.
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!res.ok) {
+        throw new Error('Upload fehlgeschlagen');
+      }
+
+      // Wenn dein Backend eine Ziel-URL zurückgibt, hier auswerten.
+      // Platzhalter: Nach erfolgreichem Upload ggf. Ergebnisseite laden.
+      // const data = await res.json();
+      // if (data.redirect_url) window.location.href = data.redirect_url;
+
+      alert('Upload erfolgreich übermittelt.');
+      files = [];
+      renderFiles();
+    } catch (err) {
+      console.error(err);
+      alert('Fehler beim Hochladen der Dateien. Bitte erneut versuchen.');
+    } finally {
+      processBtn.disabled = false;
+      processBtn.textContent = originalText;
+    }
+  });
+});
+</script>
+
+<style id="sbs-upload-design-v3">
+/* Grundlayout: Footer ans Seitenende, helles Layout wie sbshomepage */
+html, body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f5f6f8;
+  font-family: -apple-system, BlinkMacSystemFont, -system-ui, -system, sans-serif;
+}
+
+/* Hauptbereich soll wachsen, Footer rutscht nach unten */
+main.sbs-main,
+.sbs-main,
+main {
+  flex: 1;
+}
+
+/* Globaler Footer */
+footer#sbs-footer-global {
+  margin-top: auto;
+}
+
+/* Upload-Karte */
+.upload-card {
+  max-width: 1200px;
+  margin: 40px auto 40px;
+  padding: 40px 40px 32px;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 18px 60px rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+/* Dropzone größer & mittig */
+#dropZone {
+  border: 2px dashed rgba(0,56,86,0.26);
+  border-radius: 18px;
+  padding: 38px 24px;
+  background: #fafbff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+#dropZone h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #003856;
+}
+
+#dropZone p {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: #6b7280;
+}
+
+/* Hover/Drag-Optik */
+#dropZone.dragover {
+  background: #fdf7e6;
+  border-color: #ffb900;
+  box-shadow: 0 10px 30px rgba(255,185,0,0.18);
+  transform: translateY(-1px);
+}
+
+/* Datei-Badges unter der Dropzone */
+.file-list {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.file-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #f3f4ff;
+  color: #003856;
+  font-size: 13px;
+}
+
+.file-pill .remove-file {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  color: #9ca3af;
+}
+
+.file-pill .remove-file:hover {
+  color: #ef4444;
+}
+
+/* "Jetzt verarbeiten" Button etwas Abstand nach oben */
+#processBtn,
+.btn-process,
+.upload-card button.btn-process {
+  margin-top: 24px;
+}
+</style>

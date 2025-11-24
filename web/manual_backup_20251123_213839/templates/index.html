@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload - SBS KI-Rechnungsverarbeitung</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+    .hero-compact {
+      background: linear-gradient(135deg, #003856 0%, #004d73 100%);
+      color: white;
+      padding: 60px 24px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,185,0,0.15);
+      color: #FFB900;
+      padding: 8px 20px;
+      border-radius: 24px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .hero-compact h1 {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+      color: white;
+    }
+    .hero-compact p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .footer {
+      background: #003856;
+      color: white;
+      padding: 40px 24px 20px;
+    }
+    .footer-grid {
+      max-width: 1200px;
+      margin: 0 auto 30px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 30px;
+    }
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      text-align: center;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+    
+    /* Animierter Ladebalken */
+    @keyframes loading-wave {
+      0% { left: -100%; }
+      50% { left: 100%; }
+      100% { left: -100%; }
+    }
+    
+    .progress-bar {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, 
+        transparent, 
+        rgba(0,255,0,0.3) 25%, 
+        rgba(0,255,0,0.6) 50%, 
+        rgba(0,255,0,0.3) 75%, 
+        transparent
+      );
+      animation: loading-wave 2s ease-in-out infinite;
+    }
+  
+/* Skeleton Loading Animations */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.skeleton-title {
+  height: 24px;
+  width: 60%;
+  margin-bottom: 16px;
+}
+
+.skeleton-text {
+  height: 16px;
+  margin-bottom: 12px;
+}
+
+.skeleton-text.short { width: 40%; }
+.skeleton-text.medium { width: 70%; }
+.skeleton-text.long { width: 90%; }
+
+.skeleton-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+.skeleton-stat {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.skeleton-chart {
+  height: 200px;
+  width: 100%;
+  border-radius: 12px;
+}
+
+/* Button Loading States */
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Fade-in for content */
+.fade-in {
+  animation: fadeIn 0.4s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="https://sbsdeutschland.com/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
+    </a>
+    <nav class="nav">
+      <div class="dropdown">
+        <span class="dropdown-toggle">Leistungen</span>
+        <div class="dropdown-menu">
+          <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
+        </div>
+      </div>
+      <a href="https://sbsdeutschland.com/preise">Preise</a>
+      <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
+        <div class="account-menu">
+          <a href="/history">📊 Verlauf</a>
+          <a href="/analytics">📈 Analytics</a>
+          <a href="/email-config">📧 Email-Inbox</a>
+          <a href="/profile">⚙️ Einstellungen</a>
+          <div class="divider"></div>
+          <a href="/logout?next=/">🚪 Logout</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main class="main-content">
+  <div class="hero-compact">
+    <div class="hero-content">
+      <div class="hero-badge">🤖 KI-RECHNUNGSVERARBEITUNG</div>
+      <h1>Rechnungen intelligent verarbeiten</h1>
+      <p>Laden Sie Ihre Rechnungen hoch und unsere KI extrahiert automatisch alle relevanten Daten</p>
+    </div>
+  </div>
+
+  <section style="max-width:1200px;margin:60px auto;padding:0 24px;">
+    <div id="uploadBox" style="border:3px dashed #e5e7eb;border-radius:16px;padding:80px 40px;text-align:center;cursor:pointer;background:white;margin-bottom:40px;transition:all 0.3s;">
+      <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none;">
+      <div style="font-size:5rem;margin-bottom:24px;">📁</div>
+      <h2 style="color:#003856;margin-bottom:12px;">Dateien hochladen</h2>
+      <p style="color:#666;font-size:1.1rem;">Klicken oder Dateien hierher ziehen</p>
+      <p style="color:#999;font-size:0.9rem;margin-top:8px;">PDF, JPG oder PNG (max. 20 MB pro Datei)</p>
+    </div>
+
+    <div id="fileListBox" style="display:none;background:white;border-radius:16px;padding:40px;box-shadow:0 4px 16px rgba(0,0,0,0.08);margin-bottom:40px;">
+      <h3 style="color:#003856;margin-bottom:24px;">📋 Hochgeladene Dateien (<span id="fileCount">0</span>)</h3>
+      <div id="fileList" style="max-height:550px;overflow-y:auto;margin-bottom:20px;"></div>
+      <button id="processBtn" style="background:linear-gradient(135deg,#FFB900 0%,#ff9500 100%);color:#003856;border:none;padding:18px 40px;border-radius:12px;font-size:1.2rem;font-weight:bold;cursor:pointer;width:100%;box-shadow:0 4px 16px rgba(255,185,0,0.3);">⚡ Jetzt verarbeiten</button>
+    </div>
+
+    <div id="progressBox" style="display:none;background:white;border-radius:16px;padding:60px 40px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
+      <div style="font-size:4rem;margin-bottom:24px;">⚙️</div>
+      <h2 style="color:#003856;margin-bottom:16px;">Verarbeitung läuft...</h2>
+      <div class="progress-bar" style="width:100%;height:40px;background:#e5e7eb;border-radius:20px;overflow:hidden;margin:30px 0;position:relative;">
+        <div id="progressFill" style="height:100%;background:linear-gradient(90deg,#003856 0%,#FFB900 100%);width:0%;transition:width 0.3s;"></div>
+      </div>
+      <p id="progressText" style="color:#666;font-size:1.1rem;">Bitte warten...</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">
+        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+      </p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+    </div>
+
+    <div>
+      <h4>Produkte</h4>
+      <ul>
+        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="/preise">Preise &amp; Pakete</a></li>
+        <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
+  </div>
+</footer>
+
+
+<script src="/static/js/main.js"></script>
+<script>
+let files=[];
+const fileInput=document.getElementById('fileInput');
+const uploadBox=document.getElementById('uploadBox');
+const fileListBox=document.getElementById('fileListBox');
+const fileList=document.getElementById('fileList');
+uploadBox.onclick=()=>fileInput.click();
+fileInput.onchange=(e)=>addFiles(e.target.files);
+uploadBox.ondragover=(e)=>{e.preventDefault();uploadBox.style.borderColor='#FFB900';};
+uploadBox.ondragleave=()=>uploadBox.style.borderColor='#e5e7eb';
+uploadBox.ondrop=(e)=>{e.preventDefault();uploadBox.style.borderColor='#e5e7eb';addFiles(e.dataTransfer.files);};
+function addFiles(newFiles){for(let f of newFiles){if(f.size>20*1024*1024){showError('file_too_large', f.name + ' ist zu groß (max. 20 MB)');continue;}files.push(f);}showFiles();}
+function showFiles(){if(files.length===0){fileListBox.style.display='none';return;}fileListBox.style.display='block';document.getElementById('fileCount').textContent=files.length;fileList.innerHTML='';files.forEach((f,i)=>{const icon=f.type==='application/pdf'?'📕':'🖼️';const div=document.createElement('div');div.style='display:flex;justify-content:space-between;align-items:center;padding:20px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:12px;';div.innerHTML='<div style="display:flex;align-items:center;gap:20px;"><span style="font-size:2.5rem;">'+icon+'</span><div><div style="font-weight:600;color:#003856;">'+f.name+'</div><div style="font-size:0.9rem;color:#666;">'+(f.size/1024/1024).toFixed(2)+' MB</div></div></div><button onclick="removeFile('+i+')" style="background:#ef4444;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;">✕</button>';fileList.appendChild(div);});}
+function removeFile(i){files.splice(i,1);showFiles();}
+document.getElementById('processBtn').onclick=async()=>{const btn=document.getElementById('processBtn');if(files.length===0)return;btn.classList.add('btn-loading');btn.disabled=true;uploadBox.style.display='none';fileListBox.style.display='none';document.getElementById('progressBox').style.display='block';try{const fd=new FormData();files.forEach(f=>fd.append('files',f));console.log('Uploading',files.length,'files');const r=await fetch('/api/upload',{method:'POST',body:fd});const data=await r.json();console.log('Upload:',data);if(data.error){showToast(data.error, 'error');if(data.redirect)window.location.href=data.redirect;return;}const jobId=data.batch_id;console.log('Job:',jobId);showToast('Upload erfolgreich! Verarbeitung gestartet...', 'success', 2000);await fetch('/api/process/'+jobId,{method:'POST'});pollProgress(jobId);}catch(e){alert('Fehler: '+e.message);console.error(e);document.getElementById('progressBox').style.display='none';fileListBox.style.display='block';}};
+async function pollProgress(jobId){const timer=setInterval(async()=>{try{const r=await fetch('/api/status/'+jobId);const d=await r.json();if(d.status==='completed'){clearInterval(timer);window.location.href='/job/'+jobId;}else if(d.status==='error'){clearInterval(timer);showError('processing_failed', 'Verarbeitung konnte nicht abgeschlossen werden');}document.getElementById('progressFill').style.width=((d.processed||0)/(d.total||1)*100)+'%';document.getElementById('progressText').textContent=(d.processed||0)+' von '+(d.total||0)+' Dateien';}catch(e){}},2000);}
+fetch('/api/user').then(r=>r.json()).then(u=>{
+  const toggle = document.querySelector('.account-toggle');
+  const menu = document.querySelector('.account-menu');
+  if(u.logged_in && u.name) {
+    document.getElementById('accountName').textContent=u.name;
+  } else {
+    toggle.innerHTML = '<a href="/login?next=/" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+    if(menu) menu.style.display = 'none';
+  }
+});
+</script>
+<!-- Toast Container -->
+<div id="toastContainer" style="position:fixed;top:20px;right:20px;z-index:9999;"></div>
+
+<style>
+.toast {
+  min-width: 300px;
+  max-width: 400px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideIn 0.3s ease-out;
+  background: white;
+  border-left: 4px solid;
+}
+
+.toast.success { border-color: #22c55e; }
+.toast.error { border-color: #ef4444; }
+.toast.info { border-color: #3b82f6; }
+.toast.warning { border-color: #f59e0b; }
+
+.toast-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.toast-content {
+  flex: 1;
+}
+
+.toast-title {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.toast-message {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.toast-close:hover {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+<style>
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin: 40px auto;
+  max-width: 500px;
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  margin-bottom: 24px;
+  opacity: 0.5;
+}
+
+.empty-state-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 12px;
+}
+
+.empty-state-description {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.empty-state-action {
+  background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+  color: #003856;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(255,185,0,0.3);
+}
+
+.empty-state-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255,185,0,0.4);
+}
+
+.empty-state-tips {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 24px;
+  text-align: left;
+}
+
+.empty-state-tips h4 {
+  color: #374151;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.empty-state-tips ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.empty-state-tips li {
+  color: #6b7280;
+  font-size: 0.85rem;
+  padding: 8px 0;
+  padding-left: 24px;
+  position: relative;
+}
+
+.empty-state-tips li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #22c55e;
+  font-weight: bold;
+}
+</style>
+
+</style>
+
+<script>
+function showToast(message, type = 'info', duration = 4000) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  const icons = {
+    success: '✅',
+    error: '❌',
+    info: 'ℹ️',
+    warning: '⚠️'
+  };
+  
+  const titles = {
+    success: 'Erfolg',
+    error: 'Fehler',
+    info: 'Information',
+    warning: 'Warnung'
+  };
+  
+  toast.innerHTML = `
+    <div class="toast-icon">${icons[type]}</div>
+    <div class="toast-content">
+      <div class="toast-title">${titles[type]}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Auto-remove nach duration
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease-in';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+</script>
+
+<style>
+/* Onboarding Tour Overlay */
+.onboarding-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  backdrop-filter: blur(3px);
+}
+
+.onboarding-overlay.active {
+  display: block;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Welcome Card */
+.onboarding-welcome {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 20px;
+  padding: 50px 40px;
+  max-width: 500px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: scaleIn 0.4s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.onboarding-welcome h2 {
+  font-size: 2rem;
+  margin-bottom: 16px;
+  color: #1f2937;
+}
+
+.onboarding-welcome p {
+  font-size: 1.1rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.onboarding-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.onboarding-btn {
+  flex: 1;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s;
+  font-size: 1rem;
+}
+
+.onboarding-btn-primary {
+  background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+  color: #003856;
+  box-shadow: 0 4px 12px rgba(255,185,0,0.3);
+}
+
+.onboarding-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255,185,0,0.4);
+}
+
+.onboarding-btn-secondary {
+  background: white;
+  color: #6b7280;
+  border: 2px solid #e5e7eb;
+}
+
+.onboarding-btn-secondary:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+/* Tour Tooltip */
+.tour-tooltip {
+  position: fixed;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 350px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  z-index: 10001;
+  animation: tooltipSlideIn 0.3s ease-out;
+}
+
+@keyframes tooltipSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tour-tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+.tour-tooltip-step {
+  background: linear-gradient(135deg, #FFB900, #ff9500);
+  color: #003856;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+}
+
+.tour-tooltip-close {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.tour-tooltip-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 12px;
+}
+
+.tour-tooltip-description {
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.tour-tooltip-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.tour-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-size: 0.9rem;
+}
+
+.tour-btn-next {
+  background: linear-gradient(135deg, #FFB900, #ff9500);
+  color: #003856;
+  flex: 1;
+}
+
+.tour-btn-skip {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Highlight Element */
+.tour-highlight {
+  position: relative;
+  z-index: 10000;
+  box-shadow: 0 0 0 4px #FFB900, 0 0 0 9999px rgba(0,0,0,0.7);
+  border-radius: 8px;
+}
+</style>
+
+<!-- Onboarding Tour HTML -->
+<div id="onboardingOverlay" class="onboarding-overlay">
+  <!-- Welcome Screen -->
+  <div id="onboardingWelcome" class="onboarding-welcome">
+    <div style="font-size: 3rem; margin-bottom: 20px;">👋</div>
+    <h2>Willkommen bei SBS!</h2>
+    <p>Lass uns gemeinsam einen kurzen Rundgang machen. Wir zeigen dir die wichtigsten Funktionen der KI-Rechnungsverarbeitung.</p>
+    <div class="onboarding-buttons">
+      <button class="onboarding-btn onboarding-btn-secondary" onclick="skipTour()">Überspringen</button>
+      <button class="onboarding-btn onboarding-btn-primary" onclick="startTour()">🚀 Los geht's!</button>
+    </div>
+  </div>
+  
+  <!-- Tour Tooltip (wird dynamisch positioniert) -->
+  <div id="tourTooltip" class="tour-tooltip" style="display: none;">
+    <div class="tour-tooltip-header">
+      <span id="tourStep" class="tour-tooltip-step">Schritt 1 von 4</span>
+      <button class="tour-tooltip-close" onclick="skipTour()">×</button>
+    </div>
+    <h3 id="tourTitle" class="tour-tooltip-title">Titel</h3>
+    <p id="tourDescription" class="tour-tooltip-description">Beschreibung</p>
+    <div class="tour-tooltip-actions">
+      <button class="tour-btn tour-btn-skip" onclick="skipTour()">Überspringen</button>
+      <button class="tour-btn tour-btn-next" onclick="nextTourStep()">Weiter →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const tourSteps = [
+  {
+    target: '#uploadBox',
+    title: '📁 Upload-Bereich',
+    description: 'Hier kannst du deine Rechnungen hochladen. Einfach klicken oder Dateien hierher ziehen. PDFs, JPGs und PNGs werden unterstützt.',
+    position: 'bottom'
+  },
+  {
+    target: '.account-dropdown',
+    title: '👤 Dein Account',
+    description: 'Hier findest du deinen Verlauf, Analytics, Email-Einstellungen und dein Profil. Alles an einem Ort.',
+    position: 'left'
+  },
+  {
+    target: 'a[href="/history"]',
+    title: '📊 Verlauf & Analytics',
+    description: 'Sieh dir alle verarbeiteten Rechnungen an, exportiere Daten und analysiere deine Ausgaben mit intelligenten Insights.',
+    position: 'bottom'
+  },
+  {
+    target: '.hero-compact',
+    title: '✨ Fertig!',
+    description: 'Das war\'s! Du bist jetzt bereit, deine ersten Rechnungen zu verarbeiten. Viel Erfolg!',
+    position: 'center'
+  }
+];
+
+let currentStep = 0;
+
+function checkOnboardingStatus() {
+  const completed = localStorage.getItem('onboarding_completed');
+  if (!completed && window.location.pathname === '/') {
+    setTimeout(() => showOnboarding(), 1000);
+  }
+}
+
+function showOnboarding() {
+  document.getElementById('onboardingOverlay').classList.add('active');
+  document.getElementById('onboardingWelcome').style.display = 'block';
+}
+
+function startTour() {
+  document.getElementById('onboardingWelcome').style.display = 'none';
+  currentStep = 0;
+  showTourStep();
+}
+
+function showTourStep() {
+  const step = tourSteps[currentStep];
+  const tooltip = document.getElementById('tourTooltip');
+  const target = document.querySelector(step.target);
+  
+  if (!target) {
+    nextTourStep();
+    return;
+  }
+  
+  // Update tooltip content
+  document.getElementById('tourStep').textContent = `Schritt ${currentStep + 1} von ${tourSteps.length}`;
+  document.getElementById('tourTitle').textContent = step.title;
+  document.getElementById('tourDescription').textContent = step.description;
+  
+  // Highlight target
+  document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+  target.classList.add('tour-highlight');
+  
+  // Position tooltip
+  const rect = target.getBoundingClientRect();
+  tooltip.style.display = 'block';
+  
+  if (step.position === 'bottom') {
+    tooltip.style.top = (rect.bottom + 20) + 'px';
+    tooltip.style.left = (rect.left + rect.width / 2) + 'px';
+    tooltip.style.transform = 'translateX(-50%)';
+  } else if (step.position === 'left') {
+    tooltip.style.top = (rect.top) + 'px';
+    tooltip.style.left = (rect.left - 370) + 'px';
+    tooltip.style.transform = 'none';
+  } else if (step.position === 'center') {
+    tooltip.style.top = '50%';
+    tooltip.style.left = '50%';
+    tooltip.style.transform = 'translate(-50%, -50%)';
+  }
+  
+  // Last step button
+  if (currentStep === tourSteps.length - 1) {
+    document.querySelector('.tour-btn-next').textContent = '🎉 Fertig!';
+  }
+}
+
+function nextTourStep() {
+  currentStep++;
+  if (currentStep >= tourSteps.length) {
+    completeTour();
+  } else {
+    showTourStep();
+  }
+}
+
+function skipTour() {
+  completeTour();
+}
+
+function completeTour() {
+  localStorage.setItem('onboarding_completed', 'true');
+  document.getElementById('onboardingOverlay').classList.remove('active');
+  document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+  showToast && showToast('Tour abgeschlossen! 🎉', 'success', 3000);
+}
+
+// Check on page load
+if (typeof window !== 'undefined') {
+  checkOnboardingStatus();
+}
+</script>
+
+<style>
+/* Professional Error Display */
+.error-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 24px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  border-left: 4px solid #ef4444;
+}
+
+.error-icon {
+  font-size: 3rem;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.error-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.error-message {
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.error-solutions {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.error-solutions h4 {
+  color: #1f2937;
+  font-weight: 600;
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.error-solutions ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.error-solutions li {
+  padding: 10px 0;
+  padding-left: 28px;
+  position: relative;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+.error-solutions li::before {
+  content: "💡";
+  position: absolute;
+  left: 0;
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.error-btn {
+  flex: 1;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.error-btn-primary {
+  background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+  color: #003856;
+  box-shadow: 0 4px 12px rgba(255,185,0,0.3);
+}
+
+.error-btn-secondary {
+  background: white;
+  color: #6b7280;
+  border: 2px solid #e5e7eb;
+}
+</style>
+
+<script>
+// Enhanced error handler with solutions
+const errorSolutions = {
+  'file_too_large': {
+    icon: '📁',
+    title: 'Datei zu groß',
+    solutions: [
+      'Komprimiere die PDF-Datei vor dem Hochladen',
+      'Teile große Dateien in mehrere kleinere auf',
+      'Maximale Dateigröße: 20 MB pro Datei'
+    ],
+    actions: [
+      { text: 'Neue Datei wählen', type: 'primary', action: 'retry' },
+      { text: 'Hilfe', type: 'secondary', action: 'help' }
+    ]
+  },
+  'invalid_format': {
+    icon: '⚠️',
+    title: 'Ungültiges Dateiformat',
+    solutions: [
+      'Unterstützte Formate: PDF, JPG, PNG',
+      'Konvertiere deine Datei in ein unterstütztes Format',
+      'Stelle sicher, dass die Datei nicht beschädigt ist'
+    ],
+    actions: [
+      { text: 'Andere Datei wählen', type: 'primary', action: 'retry' }
+    ]
+  },
+  'processing_failed': {
+    icon: '🔧',
+    title: 'Verarbeitung fehlgeschlagen',
+    solutions: [
+      'Prüfe ob die Rechnung gut lesbar ist',
+      'Stelle sicher, dass alle relevanten Daten sichtbar sind',
+      'Bei wiederholten Problemen kontaktiere den Support'
+    ],
+    actions: [
+      { text: 'Erneut versuchen', type: 'primary', action: 'retry' },
+      { text: 'Support kontaktieren', type: 'secondary', action: 'support' }
+    ]
+  },
+  'network_error': {
+    icon: '🌐',
+    title: 'Netzwerkfehler',
+    solutions: [
+      'Überprüfe deine Internetverbindung',
+      'Aktualisiere die Seite und versuche es erneut',
+      'Falls das Problem bestehen bleibt, warte kurz und versuche es nochmal'
+    ],
+    actions: [
+      { text: 'Seite neu laden', type: 'primary', action: 'reload' },
+      { text: 'Erneut versuchen', type: 'secondary', action: 'retry' }
+    ]
+  },
+  'authentication_error': {
+    icon: '🔐',
+    title: 'Anmeldefehler',
+    solutions: [
+      'Überprüfe deine Anmeldedaten',
+      'Melde dich erneut an',
+      'Falls du dein Passwort vergessen hast, setze es zurück'
+    ],
+    actions: [
+      { text: 'Zur Anmeldung', type: 'primary', action: 'login' }
+    ]
+  },
+  'quota_exceeded': {
+    icon: '📊',
+    title: 'Kontingent überschritten',
+    solutions: [
+      'Dein monatliches Kontingent ist aufgebraucht',
+      'Upgrade auf einen höheren Plan für mehr Rechnungen',
+      'Warte bis zum nächsten Monat oder kontaktiere den Vertrieb'
+    ],
+    actions: [
+      { text: 'Upgrade ansehen', type: 'primary', action: 'upgrade' },
+      { text: 'Vertrieb kontaktieren', type: 'secondary', action: 'sales' }
+    ]
+  }
+};
+
+function showError(errorType, customMessage = null) {
+  const error = errorSolutions[errorType] || {
+    icon: '❌',
+    title: 'Ein Fehler ist aufgetreten',
+    solutions: ['Bitte versuche es erneut', 'Bei weiteren Problemen kontaktiere den Support'],
+    actions: [{ text: 'Erneut versuchen', type: 'primary', action: 'retry' }]
+  };
+  
+  // Use toast for quick errors
+  if (typeof showToast !== 'undefined' && !['quota_exceeded', 'authentication_error'].includes(errorType)) {
+    showToast(customMessage || error.title, 'error', 5000);
+    return;
+  }
+  
+  // For critical errors, show full error page
+  const errorHTML = `
+    <div class="error-container">
+      <div class="error-icon">${error.icon}</div>
+      <h2 class="error-title">${error.title}</h2>
+      ${customMessage ? `<p class="error-message">${customMessage}</p>` : ''}
+      
+      <div class="error-solutions">
+        <h4>💡 Lösungsvorschläge:</h4>
+        <ul>
+          ${error.solutions.map(s => `<li>${s}</li>`).join('')}
+        </ul>
+      </div>
+      
+      <div class="error-actions">
+        ${error.actions.map(a => `
+          <button class="error-btn error-btn-${a.type}" onclick="handleErrorAction('${a.action}')">
+            ${a.text}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  
+  // Show in modal or dedicated area
+  console.error(`Error: ${errorType}`, customMessage);
+}
+
+function handleErrorAction(action) {
+  switch(action) {
+    case 'retry':
+      window.location.reload();
+      break;
+    case 'reload':
+      window.location.reload();
+      break;
+    case 'login':
+      window.location.href = '/login';
+      break;
+    case 'upgrade':
+      window.location.href = '/pricing';
+      break;
+    case 'support':
+      window.location.href = 'mailto:support@sbsdeutschland.com';
+      break;
+    case 'sales':
+      window.location.href = 'mailto:vertrieb@sbsdeutschland.com';
+      break;
+    case 'help':
+      window.open('https://sbsdeutschland.com/hilfe', '_blank');
+      break;
+  }
+}
+
+// Global error handler
+window.addEventListener('error', function(e) {
+  console.error('Global error:', e);
+  showError('processing_failed', 'Ein unerwarteter Fehler ist aufgetreten');
+});
+
+// Network error detection
+window.addEventListener('offline', function() {
+  showError('network_error', 'Keine Internetverbindung');
+});
+</script>
+
+</body>
+</html>

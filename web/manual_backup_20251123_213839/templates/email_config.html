@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Email-Inbox · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .config-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .config-card {
+      background: var(--sbs-white);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .config-card h2 {
+      margin: 0 0 8px 0;
+      font-size: 1.3rem;
+    }
+    .config-card p {
+      color: var(--sbs-muted);
+      margin: 0 0 24px 0;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--sbs-border-soft);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: var(--sbs-bg);
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--sbs-accent);
+    }
+    .form-group .hint {
+      font-size: 0.8rem;
+      color: var(--sbs-muted);
+      margin-top: 6px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .toggle {
+      position: relative;
+      width: 50px;
+      height: 26px;
+    }
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #ccc;
+      border-radius: 26px;
+      transition: 0.3s;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    .toggle input:checked + .toggle-slider {
+      background: #28a745;
+    }
+    .toggle input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+    .btn-save {
+      background: var(--sbs-accent);
+      color: var(--sbs-dark);
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      width: 100%;
+    }
+    .btn-save:hover {
+      background: #e6a600;
+    }
+    .btn-test {
+      background: var(--sbs-dark);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-right: 12px;
+    }
+    .status-msg {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-top: 16px;
+      display: none;
+    }
+    .status-msg.success {
+      background: #d4edda;
+      color: #155724;
+      display: block;
+    }
+    .status-msg.error {
+      background: #f8d7da;
+      color: #721c24;
+      display: block;
+    }
+    .provider-hint {
+      background: var(--sbs-bg);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .provider-hint h4 {
+      margin: 0 0 8px 0;
+      font-size: 0.9rem;
+    }
+    .provider-hint code {
+      background: rgba(0,0,0,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="https://sbsdeutschland.com/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
+    </a>
+    <nav class="nav">
+      <div class="dropdown">
+        <span class="dropdown-toggle">Leistungen</span>
+        <div class="dropdown-menu">
+          <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
+        </div>
+      </div>
+      <a href="https://sbsdeutschland.com/preise">Preise</a>
+      <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
+        <div class="account-menu">
+          <a href="/history">📊 Verlauf</a>
+          <a href="/analytics">📈 Analytics</a>
+          <a href="/email-config">📧 Email-Inbox</a>
+          <a href="/profile">⚙️ Einstellungen</a>
+          <div class="divider"></div>
+          <a href="/logout">🚪 Logout</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="hero" style="padding: 40px 24px;">
+  <div class="hero-content">
+    <h1>📧 Email-Inbox Integration</h1>
+    <p class="hero-subtitle">Automatisch Rechnungen aus Ihrem Posteingang verarbeiten</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="config-container">
+    
+    <form id="emailConfigForm">
+      <!-- Enable/Disable -->
+      <div class="config-card">
+        <div class="toggle-group">
+          <label class="toggle">
+            <input type="checkbox" name="enabled" id="enabled" {% if config and config.enabled %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </label>
+          <div>
+            <strong>Email-Überwachung aktivieren</strong>
+            <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--sbs-muted);">
+              Automatisch neue Emails mit PDF-Anhängen verarbeiten
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Server Settings -->
+      <div class="config-card">
+        <h2>🔧 Server-Einstellungen</h2>
+        <p>IMAP-Zugangsdaten für Ihren Email-Server</p>
+        
+        <div class="form-group">
+          <label>Email-Adresse</label>
+          <input type="email" name="email_address" value="{{ config.email_address if config else '' }}" placeholder="rechnungen@firma.de">
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>IMAP-Server</label>
+            <input type="text" name="imap_server" value="{{ config.imap_server if config else '' }}" placeholder="imap.gmail.com">
+          </div>
+          <div class="form-group">
+            <label>Port</label>
+            <input type="number" name="imap_port" value="{{ config.imap_port if config else 993 }}" placeholder="993">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Benutzername</label>
+            <input type="text" name="username" value="{{ config.username if config else '' }}" placeholder="rechnungen@firma.de">
+          </div>
+          <div class="form-group">
+            <label>Passwort / App-Passwort</label>
+            <input type="password" name="password" value="{{ config.password if config else '' }}" placeholder="••••••••">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Ordner</label>
+          <input type="text" name="folder" value="{{ config.folder if config else 'INBOX' }}" placeholder="INBOX">
+          <div class="hint">Standard: INBOX. Für Gmail-Labels z.B. "Rechnungen"</div>
+        </div>
+        
+        <div class="provider-hint">
+          <h4>📌 Gmail-Nutzer</h4>
+          <p style="margin: 0; font-size: 0.85rem;">
+            Server: <code>imap.gmail.com</code> · Port: <code>993</code><br>
+            Verwenden Sie ein <a href="https://support.google.com/accounts/answer/185833" target="_blank">App-Passwort</a> statt Ihres normalen Passworts.
+          </p>
+        </div>
+      </div>
+      
+      <!-- Filters -->
+      <div class="config-card">
+        <h2>🔍 Filter (optional)</h2>
+        <p>Nur bestimmte Emails verarbeiten</p>
+        
+        <div class="form-group">
+          <label>Von (Absender enthält)</label>
+          <input type="text" name="filter_from" value="{{ config.filter_from if config else '' }}" placeholder="rechnung@lieferant.de">
+          <div class="hint">Leer = alle Absender</div>
+        </div>
+        
+        <div class="form-group">
+          <label>Betreff enthält</label>
+          <input type="text" name="filter_subject" value="{{ config.filter_subject if config else '' }}" placeholder="Rechnung">
+          <div class="hint">Leer = alle Betreffs</div>
+        </div>
+        
+        <div class="toggle-group" style="margin-top: 16px;">
+          <label class="toggle">
+            <input type="checkbox" name="auto_process" id="auto_process" {% if not config or config.auto_process %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </label>
+          <div>
+            <strong>Automatisch verarbeiten</strong>
+            <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--sbs-muted);">
+              PDFs sofort nach dem Abruf verarbeiten
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Actions -->
+      <div class="config-card">
+        <button type="button" class="btn-test" onclick="testConnection()">🔌 Verbindung testen</button>
+        <button type="submit" class="btn-save">💾 Speichern</button>
+        <div id="statusMsg" class="status-msg"></div>
+      </div>
+      
+    </form>
+    
+  </div>
+</section>
+
+
+
+<script>
+document.getElementById('emailConfigForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const formData = new FormData(e.target);
+  const config = {
+    enabled: formData.get('enabled') === 'on' ? 1 : 0,
+    email_address: formData.get('email_address'),
+    imap_server: formData.get('imap_server'),
+    imap_port: parseInt(formData.get('imap_port')) || 993,
+    username: formData.get('username'),
+    password: formData.get('password'),
+    folder: formData.get('folder') || 'INBOX',
+    filter_from: formData.get('filter_from'),
+    filter_subject: formData.get('filter_subject'),
+    auto_process: formData.get('auto_process') === 'on' ? 1 : 0
+  };
+  
+  try {
+    const response = await fetch('/api/email-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+    
+    const result = await response.json();
+    const statusMsg = document.getElementById('statusMsg');
+    
+    if (result.success) {
+      statusMsg.className = 'status-msg success';
+      statusMsg.textContent = '✓ Konfiguration gespeichert!';
+    } else {
+      statusMsg.className = 'status-msg error';
+      statusMsg.textContent = '✗ ' + (result.error || 'Fehler beim Speichern');
+    }
+  } catch (err) {
+    document.getElementById('statusMsg').className = 'status-msg error';
+    document.getElementById('statusMsg').textContent = '✗ Verbindungsfehler';
+  }
+});
+
+async function testConnection() {
+  const formData = new FormData(document.getElementById('emailConfigForm'));
+  const config = {
+    imap_server: formData.get('imap_server'),
+    imap_port: parseInt(formData.get('imap_port')) || 993,
+    username: formData.get('username'),
+    password: formData.get('password')
+  };
+  
+  const statusMsg = document.getElementById('statusMsg');
+  statusMsg.className = 'status-msg';
+  statusMsg.style.display = 'block';
+  statusMsg.style.background = '#fff3cd';
+  statusMsg.style.color = '#856404';
+  statusMsg.textContent = '⏳ Teste Verbindung...';
+  
+  try {
+    const response = await fetch('/api/email-config/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      statusMsg.className = 'status-msg success';
+      statusMsg.textContent = '✓ Verbindung erfolgreich!';
+    } else {
+      statusMsg.className = 'status-msg error';
+      statusMsg.textContent = '✗ ' + (result.error || 'Verbindung fehlgeschlagen');
+    }
+  } catch (err) {
+    statusMsg.className = 'status-msg error';
+    statusMsg.textContent = '✗ Verbindungsfehler';
+  }
+}
+</script>
+
+
+
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">
+        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+      </p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+    </div>
+
+    <div>
+      <h4>Produkte</h4>
+      <ul>
+        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="/preise">Preise &amp; Pakete</a></li>
+        <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
+  </div>
+</footer>
+
+</body>
+<script>
+async function updateAccountStatus() {
+  try {
+    const r = await fetch('/api/user');
+    const u = await r.json();
+    if (u.logged_in) {
+      document.getElementById('accountName').textContent = u.name;
+    } else {
+      document.getElementById('accountName').textContent = 'Account';
+    }
+  } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', updateAccountStatus);
+</script>
+</html>

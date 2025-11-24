@@ -65,12 +65,33 @@
       overflow-x: auto;
       border-radius: 8px;
       border: 1px solid #e5e7eb;
+      max-height: 600px;
+      overflow-y: auto;
     }
     .invoice-table {
       width: 100%;
       border-collapse: collapse;
     }
     .invoice-table th {
+    .invoice-table th.sortable {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+    .invoice-table th.sortable::after {
+      content: '↕';
+      font-size: 0.65rem;
+      opacity: 0.5;
+      margin-left: 4px;
+    }
+    .invoice-table th.sortable.sort-asc::after {
+      content: '▲';
+      opacity: 0.8;
+    }
+    .invoice-table th.sortable.sort-desc::after {
+      content: '▼';
+      opacity: 0.8;
+    }
       background: #f9fafb;
       padding: 12px 16px;
       text-align: left;
@@ -147,6 +168,160 @@
       font-size: 0.9rem;
     }
     .back-link:hover { color: #003856; }
+    .job-hero {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 16px;
+      background: radial-gradient(circle at top left, rgba(255,255,255,0.12), transparent 40%),
+                  linear-gradient(135deg, #003856 0%, #00507a 50%, #0F4C81 100%);
+      color: #f9fafb;
+      border: none;
+      box-shadow: 0 10px 25px rgba(15,76,129,0.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .job-hero-main {
+      flex: 2;
+      min-width: 240px;
+    }
+    .job-hero-main h1 {
+      margin: 0 0 6px 0;
+      font-size: 1.9rem;
+    }
+    .job-hero-sub {
+      margin: 0 0 10px 0;
+      font-size: 0.95rem;
+      color: #e5e7eb;
+      max-width: 520px;
+    }
+    .job-hero-meta {
+      margin: 0;
+      font-size: 0.8rem;
+      color: #d1d5db;
+    }
+    .job-hero-meta span + span::before {
+      content: "·";
+      margin: 0 6px;
+      color: #9ca3af;
+    }
+    .job-hero-side {
+      flex: 1;
+      min-width: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 10px;
+    }
+    .status-pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.4);
+      background: rgba(15,23,42,0.2);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-pill.status-ok {
+      background: rgba(22,163,74,0.2);
+      border-color: rgba(34,197,94,0.8);
+      color: #bbf7d0;
+    }
+    .status-pill.status-processing {
+      background: rgba(245,158,11,0.2);
+      border-color: rgba(251,191,36,0.9);
+      color: #fef9c3;
+    }
+    .status-pill.status-other {
+      background: rgba(148,163,184,0.2);
+      border-color: rgba(148,163,184,0.8);
+      color: #e5e7eb;
+    }
+    .hero-metric {
+      text-align: right;
+    }
+    .hero-metric-label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #e5e7eb;
+    }
+    .hero-metric-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #facc15;
+    }
+    .hero-metric-secondary .hero-metric-value {
+    .job-hero-cta {
+      margin-top: 12px;
+    }
+    .hero-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #0F172A;
+      background: #FACC15;
+      text-decoration: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+    }
+    .hero-cta-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+      background: #fbbf24;
+    }
+    .status-link {
+      text-decoration: none;
+    }
+    .status-link:hover .status-pill {
+      box-shadow: 0 0 0 2px rgba(250,204,21,0.6);
+      cursor: pointer;
+    }
+      font-size: 1.0rem;
+      color: #e5e7eb;
+    }
+    @media (max-width: 768px) {
+      .job-hero {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .job-hero-side {
+        align-items: flex-start;
+      }
+      .hero-metric, .hero-metric-secondary {
+        text-align: left;
+      }
+    }
+    .table-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+      color: #4b5563;
+    }
+    .table-search-input {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      font-size: 0.85rem;
+      min-width: 200px;
+    }
+    .table-search-input:focus {
+      outline: none;
+      border-color: #003856;
+      box-shadow: 0 0 0 1px rgba(0,56,86,0.15);
+    }
   </style>
 </head>
 <body>
@@ -157,25 +332,34 @@
       <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
       <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
     </a>
-    <nav class="nav">
+    <button class="burger" id="burger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav" id="nav">
       <div class="dropdown">
         <span class="dropdown-toggle">Leistungen</span>
         <div class="dropdown-menu">
           <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
           <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
           <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
         </div>
       </div>
       <a href="https://sbsdeutschland.com/preise">Preise</a>
       <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
       <div class="account-dropdown">
-        <span class="account-toggle">👤 {{ request.session.get('user_name', 'Account') }} ▾</span>
+        <span class="account-toggle">👤 <span id="accountName">App Login</span> ▾</span>
         <div class="account-menu">
-          <a href="/history">📊 Verlauf</a>
-          <a href="/analytics">📈 Analytics</a>
-          <a href="/profile">⚙️ Einstellungen</a>
+          <a href="https://app.sbsdeutschland.com/history">📊 Verlauf</a>
+          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
+          <a href="https://app.sbsdeutschland.com/account">💳 Konto &amp; Nutzung</a>
+          <a href="https://app.sbsdeutschland.com/team">👥 Team &amp; Rollen</a>
+          <a href="https://app.sbsdeutschland.com/audit-log">📜 Audit-Log</a>
+          <a href="https://app.sbsdeutschland.com/email-config">📧 Email-Inbox</a>
+          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
           <div class="divider"></div>
-          <a href="/logout">🚪 Logout</a>
+          <a href="https://app.sbsdeutschland.com/logout">🚪 Logout</a>
         </div>
       </div>
     </nav>
@@ -187,9 +371,49 @@
     
     <a href="/history" class="back-link">← Zurück zum Verlauf</a>
     
-    <div class="section-card" style="margin-bottom: 30px;">
-      <h1 style="margin: 0 0 8px 0; font-size: 1.8rem;">📋 Verarbeitungsdetails</h1>
-      <p style="margin: 0; color: #6b7280;">Job ID: {{ job_id }}</p>
+    <div class="section-card job-hero">
+      <div class="job-hero-main">
+        <h1>📋 Verarbeitungsdetails</h1>
+        <p class="job-hero-sub">
+          Überblick über alle Rechnungen dieses Verarbeitungs-Laufs – inklusive Volumen, Status und Automatisierungsgrad.
+        </p>
+        <p class="job-hero-meta">
+          <span>Job-ID: {{ job_id }}</span>
+          <span>Verarbeitet am {{ job.created_at[:16].replace('T', ' ') if job.created_at else '-' }}</span>
+          <span>{{ job.total_files }} Rechnungen · {{ "%.2f"|format(job.total_amount) }}€ Gesamtvolumen</span>
+        </p>
+        <div class="job-hero-cta">
+          <a href="/analytics" class="hero-cta-btn">
+            📊 Alle Jobs im Analytics-Dashboard ansehen
+          </a>
+        </div>
+      </div>
+      <div class="job-hero-side">
+        <a href="/history?status={{ job.status or 'all' }}" class="status-link">
+          <div class="status-pill
+            {% if job.status == 'completed' %} status-ok
+            {% elif job.status == 'processing' %} status-processing
+            {% else %} status-other{% endif %}">
+            {% if job.status == 'completed' %}
+              ✓ Fertig
+            {% elif job.status == 'processing' %}
+              ⏳ Läuft
+            {% else %}
+              {{ job.status or 'Unbekannt' }}
+            {% endif %}
+          </div>
+        </a>
+        <div class="hero-metric">
+          <span class="hero-metric-label">Automatisierungsgrad</span>
+          <span class="hero-metric-value">
+            {{ "%.0f"|format((job.successful / job.total_files * 100) if job.total_files > 0 else 0) }}%
+          </span>
+        </div>
+        <div class="hero-metric hero-metric-secondary">
+          <span class="hero-metric-label">Erfolgreiche Rechnungen</span>
+          <span class="hero-metric-value">{{ job.successful }} / {{ job.total_files }}</span>
+        </div>
+      </div>
     </div>
     
     <!-- KPI Cards -->
@@ -220,6 +444,30 @@
       </div>
     </div>
     
+    <!-- Insights -->
+    <div class="section-card">
+      <h3 class="section-title">💡 Erkenntnisse zu diesem Job</h3>
+      {% if aussteller_stats %}
+      {% set top = aussteller_stats[0] %}
+      <p style="margin: 0 0 6px; color:#111827; font-size:0.95rem;">
+        Wichtigster Rechnungsaussteller: <strong>{{ top.name or 'Unbekannt' }}</strong>
+        mit {{ "%.2f"|format(top.total) }}€.
+      </p>
+      {% if job.total_amount and job.total_amount > 0 %}
+      <p style="margin: 0 0 6px; color:#4b5563; font-size:0.85rem;">
+        Das entspricht {{ "%.1f"|format(top.total / job.total_amount * 100) }}% des Volumens dieses Jobs.
+      </p>
+      {% endif %}
+      {% else %}
+      <p style="margin: 0; color:#4b5563; font-size:0.9rem;">
+        Für diesen Job konnten keine Rechnungsaussteller ermittelt werden.
+      </p>
+      {% endif %}
+      <p style="margin: 8px 0 0; color:#6b7280; font-size:0.8rem;">
+        Hinweis: Fehlende Felder in den Rechnungen werden in der Tabelle mit „-” gekennzeichnet.
+      </p>
+    </div>
+    
     <!-- Downloads -->
     <div class="section-card">
       <h3 class="section-title">📥 Dateien herunterladen</h3>
@@ -245,6 +493,14 @@
     <!-- Invoices Table -->
     <div class="section-card">
       <h3 class="section-title">📄 Einzelne Rechnungen ({{ invoices|length }})</h3>
+      <div class="table-toolbar">
+        <div>
+          {{ invoices|length }} Rechnungen · {{ aussteller_stats|length }} Aussteller
+        </div>
+        <div>
+          <input type="text" id="invoiceSearch" class="table-search-input" placeholder="Rechnungen durchsuchen …" />
+        </div>
+      </div>
       <div class="table-wrapper">
         <table class="invoice-table">
           <thead>
@@ -301,27 +557,134 @@
           <span>Smart Business Service</span>
         </div>
       </div>
-      <p class="footer-tagline">Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen.</p>
+      <p class="footer-tagline">
+        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+      </p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
     </div>
+
     <div>
       <h4>Produkte</h4>
       <ul>
-        <li><a href="/">KI-Rechnungsverarbeitung</a></li>
-        <li><a href="/preise">Preise & Pakete</a></li>
+        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="/preise">Preise &amp; Pakete</a></li>
+        <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
       </ul>
     </div>
+
+    <div>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+      </ul>
+    </div>
+
     <div>
       <h4>Rechtliches</h4>
       <ul>
         <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
         <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
       </ul>
     </div>
   </div>
+
   <div class="footer-bottom">
-    <p>© 2025 SBS Deutschland GmbH & Co. KG</p>
+    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
   </div>
 </footer>
+
+
+<script>
+// Column sorting for invoice table (kombinierbar mit Suche)
+(function () {
+  const table = document.querySelector('.invoice-table');
+  if (!table) return;
+
+  const thead = table.querySelector('thead');
+  const tbody = table.querySelector('tbody');
+  if (!thead || !tbody) return;
+
+  const headers = Array.from(thead.querySelectorAll('th'));
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  // Header als sortierbar markieren
+  headers.forEach((th, idx) => {
+    th.classList.add('sortable');
+    th.dataset.colIndex = idx;
+  });
+
+  function parseDate(text) {
+    const t = text.trim();
+    if (!t) return 0;
+    const d = Date.parse(t.replace(' ', 'T'));
+    return isNaN(d) ? 0 : d;
+  }
+
+  function parseNumber(text) {
+    const t = text.replace(/[^0-9,\.\-]/g, '').replace(',', '.');
+    const n = parseFloat(t);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function getValue(row, colIdx) {
+    const cells = row.children;
+    if (!cells[colIdx]) return '';
+    const txt = (cells[colIdx].textContent || '').trim();
+    // 0=Rechnungsnr, 1=Datum, 2=Aussteller, 3=Kategorie, 4=Empfänger, 5-7 Beträge
+    if (colIdx === 1) {
+      return parseDate(txt);
+    } else if (colIdx >= 5) {
+      return parseNumber(txt);
+    } else {
+      return txt.toLowerCase();
+    }
+  }
+
+  function sortByColumn(colIdx, direction) {
+    // aktuelle Sichtbarkeit (Suche) merken
+    const visibility = new Map();
+    rows.forEach(r => visibility.set(r, r.style.display));
+
+    const sorted = rows.slice().sort((a, b) => {
+      const va = getValue(a, colIdx);
+      const vb = getValue(b, colIdx);
+      if (va < vb) return direction === 'asc' ? -1 : 1;
+      if (va > vb) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    sorted.forEach(r => tbody.appendChild(r));
+
+    // Sichtbarkeit wiederherstellen
+    sorted.forEach(r => {
+      r.style.display = visibility.get(r);
+    });
+  }
+
+  headers.forEach(th => {
+    th.addEventListener('click', () => {
+      const colIdx = parseInt(th.dataset.colIndex || '0', 10);
+
+      const current = th.classList.contains('sort-asc')
+        ? 'asc'
+        : th.classList.contains('sort-desc')
+          ? 'desc'
+          : null;
+      const next = current === 'asc' ? 'desc' : 'asc';
+
+      headers.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+      th.classList.add(next === 'asc' ? 'sort-asc' : 'sort-desc');
+
+      sortByColumn(colIdx, next);
+    });
+  });
+})();
+</script>
 
 </body>
 </html>

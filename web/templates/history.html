@@ -78,6 +78,25 @@
       border-bottom: 1px solid var(--sbs-border-soft);
     }
     .jobs-table th {
+    .jobs-table th.sortable {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+    .jobs-table th.sortable::after {
+      content: '↕';
+      font-size: 0.65rem;
+      opacity: 0.5;
+      margin-left: 4px;
+    }
+    .jobs-table th.sortable.sort-asc::after {
+      content: '▲';
+      opacity: 0.8;
+    }
+    .jobs-table th.sortable.sort-desc::after {
+      content: '▼';
+      opacity: 0.8;
+    }
       background: var(--sbs-bg);
       font-weight: 600;
       font-size: 0.85rem;
@@ -127,6 +146,166 @@
       font-size: 3rem;
       margin-bottom: 16px;
     }
+
+    .filter-summary {
+      margin: 16px 0;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.85rem;
+      color: #374151;
+    }
+    .filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .filter-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b7280;
+      margin-right: 4px;
+    }
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+    }
+    .filter-reset {
+      font-size: 0.8rem;
+      color: #2563eb;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .filter-reset:hover {
+      text-decoration: underline;
+    }
+
+    .jobs-search-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 24px 0 24px;
+      font-size: 0.85rem;
+      color: #4b5563;
+    }
+    .jobs-search-input {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      font-size: 0.85rem;
+      min-width: 220px;
+    }
+    .jobs-search-input:focus {
+      outline: none;
+      border-color: #003856;
+      box-shadow: 0 0 0 1px rgba(0,56,86,0.15);
+    }
+
+    .filter-summary {
+      margin: 16px 0;
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: #374151;
+    }
+    .filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .filter-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b7280;
+      margin-right: 4px;
+    }
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+    }
+    .filter-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    .filter-month-label {
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+    .filter-month-input {
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      font-size: 0.8rem;
+      background: #ffffff;
+      min-width: 130px;
+    }
+    .filter-month-input:focus {
+      outline: none;
+      border-color: #003856;
+      box-shadow: 0 0 0 1px rgba(0,56,86,0.15);
+    }
+    .filter-month-apply {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: none;
+      font-size: 0.8rem;
+      background: #003856;
+      color: #ffffff;
+      cursor: pointer;
+    }
+    .filter-month-apply:hover {
+      background: #00507a;
+    }
+    .filter-reset {
+      font-size: 0.8rem;
+      color: #2563eb;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .filter-reset:hover {
+      text-decoration: underline;
+    }
+    @media (max-width: 768px) {
+      .filter-summary {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .filter-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
     @media (max-width: 768px) {
       .charts-grid {
         grid-template-columns: 1fr;
@@ -150,6 +329,13 @@
 .skeleton-stat { height: 80px; margin-bottom: 16px; }
 .skeleton-chart { height: 200px; margin-bottom: 24px; }
 </style>
+<style>
+.jobs-table-scroll {
+  max-height: 560px; /* ca. 15 Zeilen sichtbar */
+  overflow-y: auto;
+}
+</style>
+
 </head>
 <body>
 
@@ -159,7 +345,10 @@
       <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
       <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
     </a>
-    <nav class="nav">
+    <button class="burger" id="burger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav" id="nav">
       <div class="dropdown">
         <span class="dropdown-toggle">Leistungen</span>
         <div class="dropdown-menu">
@@ -173,14 +362,17 @@
       <a href="https://sbsdeutschland.com/preise">Preise</a>
       <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
       <div class="account-dropdown">
-        <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
+        <span class="account-toggle">👤 <span id="accountName">App Login</span> ▾</span>
         <div class="account-menu">
-          <a href="/history">📊 Verlauf</a>
-          <a href="/analytics">📈 Analytics</a>
-          <a href="/email-config">📧 Email-Inbox</a>
-          <a href="/profile">⚙️ Einstellungen</a>
+          <a href="https://app.sbsdeutschland.com/history">📊 Verlauf</a>
+          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
+          <a href="https://app.sbsdeutschland.com/account">💳 Konto &amp; Nutzung</a>
+          <a href="https://app.sbsdeutschland.com/team">👥 Team &amp; Rollen</a>
+          <a href="https://app.sbsdeutschland.com/audit-log">📜 Audit-Log</a>
+          <a href="https://app.sbsdeutschland.com/email-config">📧 Email-Inbox</a>
+          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
           <div class="divider"></div>
-          <a href="/logout">🚪 Logout</a>
+          <a href="https://app.sbsdeutschland.com/logout">🚪 Logout</a>
         </div>
       </div>
     </nav>
@@ -231,11 +423,25 @@
     </div>
     {% endif %}
     
-    <!-- Jobs Table -->
+        <!-- Jobs Table -->
+    <div class="filter-summary" id="historyFilterSummary">
+      <div class="filter-chips">
+        <span class="filter-label">Aktive Filter</span>
+        <span class="filter-chip" id="chipStatus" style="display:none;"></span>
+        <span class="filter-chip" id="chipMonth" style="display:none;"></span>
+      </div>
+      <div class="filter-actions">
+        <label for="monthFilterControl" class="filter-month-label">Monat</label>
+        <input type="month" id="monthFilterControl" class="filter-month-input" />
+        <button type="button" id="monthFilterApply" class="filter-month-apply">Anwenden</button>
+        <a href="/history" class="filter-reset">Zurücksetzen</a>
+      </div>
+    </div>
     <div class="jobs-table">
       <h3>📋 Letzte Verarbeitungen</h3>
       {% if jobs %}
-      <table>
+      <div class="jobs-table-scroll">
+        <table>
         <thead>
           <tr>
             <th>Datum</th>
@@ -265,6 +471,7 @@
           {% endfor %}
         </tbody>
       </table>
+        </div>
       {% else %}
       <div class="empty-state">
         <div class="icon">📭</div>
@@ -331,72 +538,384 @@
 
 <script src="/static/js/main.js"></script>
 <script>
-// Theme Toggle
+// Farbpalette für mehrere Aussteller
+const palette = [
+  '#4E79A7', // blau
+  '#F28E2B', // orange
+  '#E15759', // rot
+  '#76B7B2', // teal
+  '#59A14F', // grün
+  '#EDC948', // gelb
+  '#B07AA1', // lila
+  '#FF9DA7', // pink
+  '#9C755F', // braun
+  '#6C757D'  // grau
+];
+
+// Theme Toggle (nur wenn Button existiert)
 const themeToggle = document.getElementById('theme-toggle');
-const savedTheme = localStorage.getItem('theme') || 'light';
-document.documentElement.setAttribute('data-theme', savedTheme);
+if (themeToggle) {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  themeToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  });
+}
 
-themeToggle.addEventListener('click', () => {
-  const current = document.documentElement.getAttribute('data-theme');
-  const next = current === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('theme', next);
-});
-
-// Burger Menu
+// Burger Menu (nur wenn Elemente existieren)
 const burger = document.getElementById('burger');
 const nav = document.getElementById('nav');
-burger.addEventListener('click', () => {
-  nav.classList.toggle('active');
-});
+if (burger && nav) {
+  burger.addEventListener('click', () => {
+    nav.classList.toggle('active');
+  });
+}
 
-// Charts
+// 📈 Verarbeitungen pro Tag
 {% if stats.daily_data %}
-// Daily Chart
-const dailyCtx = document.getElementById('dailyChart').getContext('2d');
-new Chart(dailyCtx, {
-  type: 'bar',
-  data: {
-    labels: {{ stats.daily_data | map(attribute='date') | list | tojson }},
-    datasets: [{
-      label: 'Beträge (€)',
-      data: {{ stats.daily_data | map(attribute='amount') | list | tojson }},
-      backgroundColor: '#FFB900',
-      borderRadius: 4
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      legend: { display: false }
-    },
-    scales: {
-      y: { beginAtZero: true }
-    }
-  }
-});
+(function() {
+  const canvas = document.getElementById('dailyChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
 
-// Top Aussteller Chart
+  const labels = {{ stats.daily_data | map(attribute='date') | list | tojson }};
+  const values = {{ stats.daily_data | map(attribute='amount') | list | tojson }};
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Summe pro Tag (€)',
+        data: values,
+        backgroundColor: 'rgba(240, 184, 98, 0.8)',
+        borderColor: '#F0B762',
+        borderWidth: 1,
+        borderRadius: 6,
+        maxBarThickness: 40
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const v = context.parsed.y || 0;
+              return v.toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: '#E5E7EB' },
+          ticks: {
+            callback: function(value) {
+              if (value >= 1000) {
+                return (value / 1000).toLocaleString('de-DE', { maximumFractionDigits: 1 }) + 'k €';
+              }
+              return value.toLocaleString('de-DE') + ' €';
+            }
+          }
+        }
+      }
+    }
+  });
+})();
+{% endif %}
+
+// 🏢 Top Rechnungsaussteller
 {% if stats.top_aussteller %}
-const topCtx = document.getElementById('topChart').getContext('2d');
-new Chart(topCtx, {
-  type: 'doughnut',
-  data: {
-    labels: {{ stats.top_aussteller | map(attribute='rechnungsaussteller') | list | tojson }},
-    datasets: [{
-      data: {{ stats.top_aussteller | map(attribute='count') | list | tojson }},
-      backgroundColor: ['#003856', '#FFB900', '#00507a', '#FFC933', '#007099']
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      legend: { position: 'bottom' }
+(function() {
+  const canvas = document.getElementById('topChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const labels = {{ stats.top_aussteller | map(attribute='rechnungsaussteller') | list | tojson }};
+  const values = {{ stats.top_aussteller | map(attribute='count') | list | tojson }};
+  const colors = palette.slice(0, labels.length);
+  const total = values.reduce((a, b) => a + b, 0);
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderColor: '#ffffff',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { usePointStyle: true, boxWidth: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const val = context.parsed || 0;
+              const pct = total ? (val / total * 100).toFixed(1) + '%' : '';
+              return context.label + ': ' +
+                     val.toLocaleString('de-DE') + ' Rechnungen' +
+                     (pct ? ' (' + pct + ')' : '');
+            }
+          }
+        }
+      }
+    }
+  });
+})();
+{% endif %}
+
+// Apply status filter from query parameter (e.g. ?status=completed)
+(function () {
+  const table = document.querySelector('.jobs-table');
+  if (!table) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const statusParam = params.get('status');
+
+  if (!statusParam || statusParam === 'all') {
+    return;
+  }
+
+  const rows = table.querySelectorAll('tbody tr');
+  rows.forEach(row => {
+    const badge = row.querySelector('.status');
+    if (!badge) return;
+    const classes = Array.from(badge.classList);
+    const cssStatus = classes.find(c => c !== 'status') || '';
+    if (cssStatus !== statusParam) {
+      row.style.display = 'none';
+    }
+  });
+})();
+
+
+// Apply month filter from query parameter (e.g. ?month=2025-11)
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const month = params.get('month');
+  if (!month) return;
+
+  const table = document.querySelector('.jobs-table table');
+  if (!table) return;
+
+  const rows = table.querySelectorAll('tbody tr');
+  rows.forEach(row => {
+    const dateCell = row.querySelector('td:first-child');
+    if (!dateCell) return;
+    const text = (dateCell.textContent || '').trim();
+    const ym = text.substring(0, 7); // "YYYY-MM"
+    if (ym !== month) {
+      row.style.display = 'none';
+    }
+  });
+})();
+
+// Show active filters summary (status + month)
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get('status');
+  const month = params.get('month');
+
+  const summary = document.getElementById('historyFilterSummary');
+  if (!summary) return;
+
+  const chipStatus = document.getElementById('chipStatus');
+  const chipMonth = document.getElementById('chipMonth');
+  const reset = summary.querySelector('.filter-reset');
+
+  let active = false;
+
+  if (status && status !== 'all' && chipStatus) {
+    let label = 'Status: ';
+    if (status === 'completed') label += 'Fertig';
+    else if (status === 'processing') label += 'Läuft';
+    else label += status;
+    chipStatus.textContent = label;
+    chipStatus.style.display = 'inline-flex';
+    active = true;
+  }
+
+  if (month && chipMonth) {
+    chipMonth.textContent = 'Monat: ' + month;
+    chipMonth.style.display = 'inline-flex';
+    active = true;
+  }
+
+  if (active) {
+    summary.style.display = 'flex';
+    if (reset) reset.href = '/history';
+  }
+})();
+
+
+// Client-side search over jobs table (kombinierbar mit Status/Monatsfilter)
+(function () {
+  const input = document.getElementById('jobsSearch');
+  if (!input) return;
+  const table = document.querySelector('.jobs-table table');
+  if (!table) return;
+
+  const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+  // Ausgangssichtbarkeit merken, damit Status/Monatsfilter nicht überschrieben werden
+  const baseVisible = new Map();
+  rows.forEach(row => {
+    baseVisible.set(row, row.style.display !== 'none');
+  });
+
+  input.addEventListener('input', function () {
+    const q = input.value.toLowerCase();
+    rows.forEach(row => {
+      const wasVisible = baseVisible.get(row);
+      if (!wasVisible) {
+        // durch Status / Monat schon ausgeblendet -> nicht anfassen
+        return;
+      }
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(q) ? '' : 'none';
+    });
+  });
+})();
+
+</script>
+
+<script>
+function historyMonthFilterInit() {
+  var input = document.getElementById('monthFilterControl');
+  var applyBtn = document.getElementById('monthFilterApply');
+  if (!input || !applyBtn) return;
+
+  var params = new URLSearchParams(window.location.search);
+  var month = params.get('month') || '';
+
+  // Input vorbelegen, wenn already ?month=...
+  if (month && month.length >= 7) {
+    input.value = month;
+  }
+
+  applyBtn.addEventListener('click', function () {
+    var val = input.value;
+    var p = new URLSearchParams(window.location.search);
+    if (val) {
+      p.set('month', val);
+    } else {
+      p.delete('month');
+    }
+    window.location.search = p.toString();
+  });
+}
+
+document.addEventListener('DOMContentLoaded', historyMonthFilterInit);
+
+// Column sorting for jobs table (kombinierbar mit Status/Monatsfilter & Suche)
+(function () {
+  const table = document.querySelector('.jobs-table table');
+  if (!table) return;
+
+  const thead = table.querySelector('thead');
+  const tbody = table.querySelector('tbody');
+  if (!thead || !tbody) return;
+
+  const headers = Array.from(thead.querySelectorAll('th'));
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  // markiere alle Header als sortierbar
+  headers.forEach((th, idx) => {
+    th.classList.add('sortable');
+    th.dataset.colIndex = idx;
+  });
+
+  function parseDate(text) {
+    // Erwartetes Format: "YYYY-MM-DD HH:MM" oder ähnliches
+    const t = text.trim();
+    if (!t) return 0;
+    // Versuche direkt Date.parse
+    const d = Date.parse(t.replace(' ', 'T'));
+    return isNaN(d) ? 0 : d;
+  }
+
+  function parseNumber(text) {
+    const t = text.replace(/[^0-9,\.\-]/g, '').replace(',', '.');
+    const n = parseFloat(t);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function getValue(row, colIdx) {
+    const cells = row.children;
+    if (!cells[colIdx]) return '';
+    const txt = (cells[colIdx].textContent || '').trim();
+    // Spalten: 0=Datum, 1=Rechnungen, 2=Erfolgreich, 3=Gesamtsumme, 4=Status, 5=Aktion
+    if (colIdx === 0) {
+      return parseDate(txt);
+    } else if (colIdx === 1 || colIdx === 2 || colIdx === 3) {
+      return parseNumber(txt);
+    } else {
+      return txt.toLowerCase();
     }
   }
-});
-{% endif %}
-{% endif %}
+
+  function sortByColumn(colIdx, direction) {
+    // aktuelle Sichtbarkeit speichern (durch Filter/Monat/Suche)
+    const visibility = new Map();
+    rows.forEach(r => visibility.set(r, r.style.display));
+
+    const sorted = rows.slice().sort((a, b) => {
+      const va = getValue(a, colIdx);
+      const vb = getValue(b, colIdx);
+      if (va < vb) return direction === 'asc' ? -1 : 1;
+      if (va > vb) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // neue Sortierung anwenden
+    sorted.forEach(r => tbody.appendChild(r));
+
+    // Sichtbarkeit wiederherstellen
+    sorted.forEach(r => {
+      r.style.display = visibility.get(r);
+    });
+  }
+
+  headers.forEach(th => {
+    th.addEventListener('click', () => {
+      const colIdx = parseInt(th.dataset.colIndex || '0', 10);
+
+      // Sortierzustand togglen
+      const current = th.classList.contains('sort-asc')
+        ? 'asc'
+        : th.classList.contains('sort-desc')
+          ? 'desc'
+          : null;
+      const next = current === 'asc' ? 'desc' : 'asc';
+
+      // alle Header zurücksetzen
+      headers.forEach(h => {
+        h.classList.remove('sort-asc', 'sort-desc');
+      });
+      th.classList.add(next === 'asc' ? 'sort-asc' : 'sort-desc');
+
+      sortByColumn(colIdx, next);
+    });
+  });
+})();
+
 </script>
 
 </body>
@@ -408,7 +927,7 @@ async function updateAccountStatus() {
     if (u.logged_in) {
       document.getElementById('accountName').textContent = u.name;
     } else {
-      document.getElementById('accountName').textContent = 'Account';
+      document.getElementById('accountName').textContent = 'App Login';
     }
   } catch(e) {}
 }

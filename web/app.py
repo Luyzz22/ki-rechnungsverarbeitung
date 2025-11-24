@@ -1453,3 +1453,17 @@ async def contact_form(request: Request):
 async def test_upload_page(request: Request):
     return templates.TemplateResponse("test_upload.html", {"request": request})
 
+
+
+# Zusätzliche Navigationsseiten (leichte Placeholder)
+@app.get("/account", response_class=HTMLResponse)
+async def account_page(request: Request):
+    return templates.TemplateResponse("account.html", {"request": request})
+
+@app.get("/team", response_class=HTMLResponse)
+async def team_page(request: Request):
+    return templates.TemplateResponse("team.html", {"request": request})
+
+@app.get("/audit-log", response_class=HTMLResponse)
+async def audit_log_page(request: Request):
+    return templates.TemplateResponse("audit_log.html", {"request": request})

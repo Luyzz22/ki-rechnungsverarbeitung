@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>SBS Deutschland GmbH &amp; Co. KG – KI &amp; IT-Lösungen aus Weinheim</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="SBS Deutschland GmbH & Co. KG – KI-Rechnungsverarbeitung, IT Consulting, Quality & Risk Management, SAP Consulting, Metrologie & PMO. Made in Weinheim." />
+
+  <style>
+    :root {
+      --sbs-bg: #f5f6f8;
+      --sbs-white: #ffffff;
+      --sbs-dark: #003856;
+      --sbs-dark-soft: #0b2435;
+      --sbs-accent: #ffb400;
+      --sbs-accent-soft: rgba(255,180,0,0.14);
+      --sbs-border-soft: rgba(15,23,42,0.08);
+      --sbs-text: #17212b;
+      --sbs-muted: #6b7280;
+      --radius-xl: 26px;
+      --radius-lg: 20px;
+      --shadow-soft: 0 14px 40px rgba(15,23,42,0.08);
+      --shadow-subtle: 0 8px 24px rgba(15,23,42,0.06);
+      --transition-fast: all 0.25s ease;
+      --font-sans: -apple-system, BlinkMacSystemFont, system-ui, -system-ui, -system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-sans);
+      background: var(--sbs-bg);
+      color: var(--sbs-text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* HEADER (wie Landing) */
+
+    .sbs-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--sbs-white);
+      box-shadow: 0 1px 12px rgba(15,23,42,0.06);
+    }
+
+    .sbs-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .sbs-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .sbs-logo-img {
+      height: 46px; /* etwas größer wie gewünscht */
+      width: auto;
+      display: block;
+    }
+
+    .sbs-logo-text {
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+      line-height: 1.25;
+      color: var(--sbs-dark-soft);
+    }
+
+    .sbs-logo-text strong {
+      font-size: 14px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .sbs-nav {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 15px;
+      color: var(--sbs-dark-soft);
+    }
+
+    .sbs-nav a {
+      position: relative;
+      padding-bottom: 4px;
+      opacity: 0.85;
+      transition: var(--transition-fast);
+    }
+
+    .sbs-nav a:hover {
+      opacity: 1;
+    }
+
+    .sbs-nav a.active::after,
+    .sbs-nav a:hover::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--sbs-accent);
+    }
+
+    .sbs-nav-cta {
+      padding: 9px 16px;
+      border-radius: 999px;
+      background: var(--sbs-accent);
+      color: #111827;
+      font-weight: 600;
+      box-shadow: 0 8px 18px rgba(255,180,0,0.32);
+    }
+
+    .sbs-nav-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 26px rgba(255,180,0,0.4);
+    }
+
+    /* LAYOUT HELPERS */
+
+    .page-wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    main {
+      flex: 1;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--sbs-accent);
+      font-weight: 600;
+    }
+
+    .highlight {
+      color: var(--sbs-accent);
+    }
+
+    /* HERO */
+
+    .hero {
+      padding: 64px 0 40px;
+    }
+
+    .hero-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 2.1fr) minmax(280px, 1.4fr);
+      gap: 40px;
+      align-items: center;
+      border-radius: var(--radius-xl);
+      padding: 40px 40px 34px;
+      background:
+        radial-gradient(circle at top left, rgba(255,180,0,0.16), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(0,56,86,0.42), #002033);
+      color: #f9fafb;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .hero h1 {
+      font-size: 2.4rem;
+      line-height: 1.18;
+      margin: 8px 0 16px;
+      font-weight: 700;
+    }
+
+    .hero-lead {
+      font-size: 1.02rem;
+      color: rgba(226,232,240,0.92);
+      max-width: 520px;
+      margin-bottom: 20px;
+    }
+
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .hero-tag {
+      font-size: 11px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,253,0.35);
+      background: rgba(15,23,42,0.82);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #e5e7eb;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .btn-primary {
+      padding: 11px 22px;
+      border-radius: 999px;
+      border: none;
+      background: var(--sbs-accent);
+      color: #111827;
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 14px 32px rgba(255,180,0,0.38);
+      transition: var(--transition-fast);
+      text-decoration: none;
+    }
+
+    .btn-primary span.icon {
+      font-size: 16px;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 42px rgba(255,180,0,0.5);
+    }
+
+    .btn-ghost {
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,253,0.35);
+      background: transparent;
+      color: #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      text-decoration: none;
+    }
+
+    .btn-ghost:hover {
+      background: rgba(15,23,42,0.9);
+    }
+
+    .hero-note {
+      font-size: 10.5px;
+      color: rgba(148,163,253,0.9);
+    }
+
+    .hero-panel {
+      background: rgba(255,255,255,0.98);
+      color: var(--sbs-dark-soft);
+      border-radius: 24px;
+      padding: 20px 20px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .hero-panel h3 {
+      margin: 0 0 2px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--sbs-dark-soft);
+    }
+
+    .hero-panel p {
+      margin: 0 0 8px;
+      font-size: 12px;
+      color: var(--sbs-muted);
+    }
+
+    .hero-panel-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 2px;
+      display: grid;
+      gap: 4px;
+      font-size: 11.5px;
+      color: var(--sbs-dark-soft);
+    }
+
+    .hero-panel-list li::before {
+      content: "✓";
+      color: #22c55e;
+      margin-right: 6px;
+      font-weight: 600;
+    }
+
+    .hero-panel-link {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--sbs-accent);
+    }
+
+    /* WHY SECTION */
+
+    .sbs-section {
+      padding: 64px 0 40px;
+    }
+
+    .sbs-section h2 {
+      font-size: 1.8rem;
+      color: var(--sbs-dark);
+      margin-bottom: 8px;
+    }
+
+    .section-intro {
+      font-size: 0.98rem;
+      color: var(--sbs-muted);
+      max-width: 640px;
+      margin-bottom: 26px;
+    }
+
+    .sbs-info-cards,
+    .sbs-service-grid,
+    .sbs-industries-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+      gap: 20px;
+    }
+
+    .info-card {
+      background: var(--sbs-white);
+      padding: 20px 20px 18px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-subtle);
+      border: 1px solid transparent;
+      transition: var(--transition-fast);
+      text-align: left;
+    }
+
+    .info-card h3 {
+      margin: 0 0 6px;
+      font-size: 1.02rem;
+      color: var(--sbs-dark-soft);
+    }
+
+    .info-card p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--sbs-muted);
+    }
+
+    .info-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-soft);
+      border-color: var(--sbs-accent-soft);
+    }
+
+    /* SERVICES GRID */
+
+    .sbs-service-grid .sbs-service-card {
+      background: var(--sbs-white);
+      padding: 22px 20px 18px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-subtle);
+      border: 1px solid rgba(148,163,253,0.12);
+      transition: var(--transition-fast);
+      position: relative;
+      overflow: hidden;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .sbs-service-card h3 {
+      margin: 0 0 4px;
+      font-size: 1.02rem;
+      color: var(--sbs-dark-soft);
+    }
+
+    .sbs-service-card p {
+      margin: 0 0 10px;
+      font-size: 0.9rem;
+      color: var(--sbs-muted);
+    }
+
+    .sbs-service-card a {
+      font-size: 0.88rem;
+      color: var(--sbs-accent);
+      font-weight: 500;
+    }
+
+    .sbs-service-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-soft);
+      background: linear-gradient(to bottom right,#ffffff,#f9fafb);
+    }
+
+    .sbs-service-card:hover a {
+      text-decoration: underline;
+    }
+
+    /* INDUSTRIES */
+
+    .sbs-industries-grid .industry-card {
+      background: var(--sbs-white);
+      padding: 18px 18px 16px;
+      border-radius: 18px;
+      box-shadow: var(--shadow-subtle);
+      transition: var(--transition-fast);
+      text-align: left;
+    }
+
+    .industry-card h3 {
+      margin: 0 0 4px;
+      font-size: 0.98rem;
+      color: var(--sbs-dark-soft);
+    }
+
+    .industry-card p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--sbs-muted);
+    }
+
+    .industry-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-soft);
+    }
+
+    /* PRODUCT TEASER */
+
+    .product-teaser {
+      padding: 54px 0 46px;
+    }
+
+    .product-card {
+      background: radial-gradient(circle at top left, rgba(255,180,0,0.2), transparent 70%), #021827;
+      color: #e5e7eb;
+      border-radius: var(--radius-xl);
+      padding: 28px 26px 24px;
+      display: grid;
+      grid-template-columns: minmax(0,2.2fr) minmax(260px,1.5fr);
+      gap: 26px;
+      align-items: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .product-card h2 {
+      color: #f9fafb;
+      font-size: 1.7rem;
+      margin: 0 0 8px;
+    }
+
+    .product-card p {
+      font-size: 0.96rem;
+      color: rgba(209,213,219,0.96);
+      margin: 0 0 16px;
+      max-width: 640px;
+    }
+
+    .product-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 0.78rem;
+    }
+
+    .product-badges span {
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,253,0.35);
+      background: rgba(2,6,23,0.9);
+    }
+
+    .product-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .product-actions .btn-primary {
+      background: var(--sbs-accent);
+      color: #111827;
+    }
+
+    .product-actions .btn-ghost-alt {
+      padding: 9px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,253,0.32);
+      color: #e5e7eb;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      text-decoration: none;
+    }
+
+    .product-actions .btn-ghost-alt:hover {
+      background: rgba(15,23,42,0.96);
+    }
+
+    .product-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 5px;
+      font-size: 0.86rem;
+      color: rgba(226,232,240,0.96);
+    }
+
+    .product-list li::before {
+      content: "•";
+      margin-right: 6px;
+      color: var(--sbs-accent);
+    }
+
+    /* CTA / KONTAKT */
+
+    .cta-section {
+      padding: 40px 0 40px;
+    }
+
+    .cta-card {
+      background: linear-gradient(to right, #003856, #025070);
+      color: #f9fafb;
+      padding: 26px 26px 24px;
+      border-radius: var(--radius-xl);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .cta-card h2 {
+      margin: 0 0 4px;
+      font-size: 1.45rem;
+    }
+
+    .cta-card p {
+      margin: 0;
+      font-size: 0.94rem;
+      color: rgba(226,232,240,0.95);
+    }
+
+    .cta-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .cta-actions .btn-primary {
+      background: var(--sbs-accent);
+      color: #111827;
+    }
+
+    .cta-actions .btn-ghost-alt {
+      padding: 9px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,253,0.32);
+      color: #e5e7eb;
+      font-size: 0.88rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      text-decoration: none;
+    }
+
+    .cta-actions .btn-ghost-alt:hover {
+      background: rgba(15,23,42,0.96);
+    }
+
+    /* FOOTER (wie Landing) */
+
+    #sbs-footer-global {
+      border-top: 1px solid rgba(148,163,253,0.16);
+      background: #ffffff;
+      padding: 16px 24px 18px;
+      font-size: 12px;
+      color: #4b5563;
+    }
+
+    #sbs-footer-global .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    #sbs-footer-global .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    #sbs-footer-global a {
+      color: #111827;
+      text-decoration: none;
+      opacity: 0.9;
+      transition: var(--transition-fast);
+    }
+
+    #sbs-footer-global a:hover {
+      opacity: 1;
+      color: var(--sbs-accent);
+    }
+
+    /* RESPONSIVE */
+
+    @media (max-width: 900px) {
+      .hero-inner,
+      .product-card {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        padding-top: 40px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .sbs-header-inner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .sbs-nav {
+        flex-wrap: wrap;
+        gap: 16px;
+        padding-bottom: 4px;
+      }
+      .hero-inner {
+        padding: 26px 20px 22px;
+      }
+      .cta-card {
+        padding: 20px 18px 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="page-wrap">
+
+  <!-- HEADER -->
+  <header class="sbs-header">
+    <div class="sbs-header-inner">
+      <a href="/sbshomepage/" class="sbs-logo-wrap">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland Logo" class="sbs-logo-img" />
+        <div class="sbs-logo-text">
+          <strong>SBS Deutschland GmbH &amp; Co. KG</strong>
+          <span>Smart Business Service · Weinheim</span>
+        </div>
+      </a>
+      <nav class="sbs-nav">
+        <a href="/sbshomepage/" class="active">Startseite</a>
+        <a href="/landing">KI-Rechnungsverarbeitung</a>
+        <a href="/sbshomepage/unternehmen.html">Über uns</a>
+        <a href="/sbshomepage/kontakt.html">Kontakt</a>
+        <a href="https://app.sbsdeutschland.com/" class="sbs-nav-cta">Login / Demo</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-inner">
+          <div>
+            <div class="eyebrow">KI AUS WEINHEIM · RHEIN-NECKAR · ODENWALD</div>
+            <h1>Ihr Partner für KI-Rechnungsverarbeitung &amp; digitale Prozesse.</h1>
+            <p class="hero-lead">
+              Die SBS Deutschland GmbH &amp; Co. KG verbindet KI-Lösungen, IT-Consulting und Prozess-Know-how
+              zu skalierbaren Lösungen für Kanzleien, Mittelstand und technisch anspruchsvolle Branchen.
+            </p>
+
+            <div class="hero-tags">
+              <span class="hero-tag">🚀 Multi-Model KI</span>
+              <span class="hero-tag">🔒 DSGVO &amp; Hosting in Deutschland</span>
+              <span class="hero-tag">📂 DATEV-, CSV- &amp; ERP-Export</span>
+              <span class="hero-tag">📍 Regional verankert in Weinheim</span>
+            </div>
+
+            <div class="hero-actions">
+              <a href="/landing" class="btn-primary">
+                <span class="icon">⚡</span> Zur KI-Rechnungsverarbeitung
+              </a>
+              <a href="/sbshomepage/kontakt.html" class="btn-ghost">
+                Mit uns sprechen
+              </a>
+            </div>
+            <div class="hero-note">
+              Anwendung &amp; Login bleiben unter / erreichbar. Diese Seite stellt das Unternehmen &amp; Portfolio vor.
+            </div>
+          </div>
+
+          <aside class="hero-panel">
+            <h3>Fokus: KI-Rechnungsverarbeitung</h3>
+            <p>Automatisierte Erfassung, Prüfung und Übergabe Ihrer Eingangsrechnungen.</p>
+            <ul class="hero-panel-list">
+              <li>Upload mehrerer Rechnungen &amp; automatische Verarbeitung</li>
+              <li>Valider Export für DATEV, Excel &amp; FiBu-Systeme</li>
+              <li>Prüfung von Pflichtangaben &amp; Plausibilität</li>
+              <li>Infrastruktur &amp; Support durch SBS Deutschland in Weinheim</li>
+            </ul>
+            <a href="/landing" class="hero-panel-link">Mehr zur KI-Rechnungsverarbeitung ansehen →</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- WARUM SBS -->
+    <section class="sbs-section">
+      <div class="container">
+        <h2>Warum <span class="highlight">SBS Deutschland</span>?</h2>
+        <p class="section-intro">
+          Wir kombinieren KI-Technologie mit Erfahrung aus IT-Consulting, Qualitäts- &amp; Risikomanagement,
+          SAP &amp; Metrologie. Ein Ansprechpartner, vier Kompetenzfelder.
+        </p>
+
+        <div class="sbs-info-cards">
+          <div class="info-card">
+            <h3>🤝 Partnerschaftlich &amp; nah</h3>
+            <p>Direkte Ansprechpartner in Weinheim, kurze Wege, langfristige Zusammenarbeit.</p>
+          </div>
+          <div class="info-card">
+            <h3>🔒 Sicherheit &amp; Compliance</h3>
+            <p>Hosting in Deutschland, DSGVO-Konzept, Rollen- &amp; Rechte, Audit-Support.</p>
+          </div>
+          <div class="info-card">
+            <h3>⚙️ Technische Tiefe</h3>
+            <p>Von KI &amp; Schnittstellen bis SAP-Reporting, Metrologie &amp; PMO – alles aus einer Hand.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEISTUNGEN -->
+    <section class="sbs-section">
+      <div class="container">
+        <h2>Leistungen der SBS Deutschland GmbH &amp; Co. KG</h2>
+        <p class="section-intro">
+          Neben unserer KI-Rechnungsverarbeitung unterstützen wir Sie mit spezialisierten Services rund um IT, Qualität,
+          Reporting und Projekte.
+        </p>
+
+        <div class="sbs-service-grid">
+
+          <div class="sbs-service-card">
+            <h3>💻 IT Consulting &amp; Entwicklung</h3>
+            <p>Individuelle Schnittstellen, Integrationen &amp; Tools rund um Ihre Geschäftsprozesse.</p>
+            <a href="/sbshomepage/it-consulting.html">Details ansehen →</a>
+          </div>
+
+          <div class="sbs-service-card">
+            <h3>🧭 Quality &amp; Risk Management</h3>
+            <p>Strukturierte Prozesse, Compliance, Dokumentation &amp; Audit-Vorbereitung.</p>
+            <a href="/sbshomepage/quality-risk-management.html">Details ansehen →</a>
+          </div>
+
+          <div class="sbs-service-card">
+            <h3>📊 SAP Consulting &amp; Reporting</h3>
+            <p>Beratung, Reporting, Integration &amp; Datenmodelle für Ihre SAP-Landschaft.</p>
+            <a href="/sbshomepage/sap-consulting.html">Details ansehen →</a>
+          </div>
+
+          <div class="sbs-service-card">
+            <h3>⚙️ Metrologie &amp; PMO</h3>
+            <p>Projektmanagement-Office &amp; Messdienstleistungen für technische Umgebungen.</p>
+            <a href="/sbshomepage/met-pmo.html">Details ansehen →</a>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- FÜR WEN WIR ARBEITEN -->
+    <section class="sbs-section">
+      <div class="container">
+        <h2>Für wen wir <span class="highlight">arbeiten</span></h2>
+        <p class="section-intro">
+          Unsere Lösungen entfalten ihren Mehrwert überall dort, wo Effizienz, Transparenz und Sicherheit entscheidend sind.
+        </p>
+
+        <div class="sbs-industries-grid">
+          <div class="industry-card">
+            <h3>🧾 Steuerberater &amp; Kanzleien</h3>
+            <p>Digitale Mandantenprozesse, automatisierte Rechnungsverarbeitung, valide Exporte.</p>
+          </div>
+          <div class="industry-card">
+            <h3>🏢 Mittelständische Unternehmen</h3>
+            <p>Entlastung der Buchhaltung, integrierte IT-Lösungen &amp; Compliance aus einer Hand.</p>
+          </div>
+          <div class="industry-card">
+            <h3>🔬 Technische &amp; regulierte Branchen</h3>
+            <p>Qualität, Risiko, Metrologie &amp; PMO für anspruchsvolle Projekte mit Auditpflicht.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRODUKT: KI-RECHNUNGSVERARBEITUNG -->
+    <section class="product-teaser">
+      <div class="container">
+        <div class="product-card">
+          <div>
+            <h2>KI-Rechnungsverarbeitung in Sekunden.</h2>
+            <p>
+              Multi-Model KI mit hoher Erkennungsqualität, DSGVO-konformer Verarbeitung und validen Exporten
+              in Ihre Finanz- und ERP-Systeme.
+            </p>
+            <div class="product-badges">
+              <span>🚀 Multi-Model KI</span>
+              <span>🔒 DSGVO-konform</span>
+              <span>📂 DATEV-, CSV-, ERP-Export</span>
+              <span>🇩🇪 Hosting in Deutschland</span>
+            </div>
+            <div class="product-actions">
+              <a href="/landing" class="btn-primary"><span class="icon">⚡</span> Mehr zur KI-Lösung</a>
+              <a href="https://app.sbsdeutschland.com/" class="btn-ghost-alt">Demo testen / Login</a>
+            </div>
+          </div>
+
+          <div>
+            <ul class="product-list">
+              <li>Upload mehrerer Rechnungen, automatische KI-Verarbeitung</li>
+              <li>Plausibilitäts- &amp; Pflichtfeldprüfung für höhere Datenqualität</li>
+              <li>Nahtlose Übergabe an DATEV &amp; bestehende ERP- / FiBu-Systeme</li>
+              <li>Hosting &amp; Betrieb durch SBS Deutschland in Weinheim</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KONTAKT & DEMO -->
+    <section class="cta-section">
+      <div class="container">
+        <div class="cta-card">
+          <div>
+            <h2>Kontakt &amp; Demo</h2>
+            <p>
+              Sie möchten unsere KI-Rechnungsverarbeitung testen oder mehr über unsere Consulting-Leistungen erfahren?
+              Wir melden uns innerhalb von 24 Stunden.
+            </p>
+          </div>
+          <div class="cta-actions">
+            <a href="/landing" class="btn-primary">Zur KI-Rechnungsverarbeitung</a>
+            <a href="/sbshomepage/kontakt.html" class="btn-ghost-alt">Kontakt aufnehmen</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER (global) -->
+  <footer id="sbs-footer-global">
+    <div class="footer-inner">
+      <div>
+        © SBS Deutschland GmbH &amp; Co. KG · In der Dell 19, 69469 Weinheim
+      </div>
+      <div class="footer-links">
+        <a href="/sbshomepage/impressum.html">Impressum</a>
+        <a href="/sbshomepage/datenschutz.html">Datenschutz</a>
+        <a href="/sbshomepage/agb.html">AGB</a>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -12,35 +12,44 @@
 
 <header class="header">
   <div class="header-inner">
-    <a href="/sbshomepage/index.html" class="logo-wrap">
+    <a href="https://sbsdeutschland.com/" class="logo-wrap">
       <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
-      <div class="logo-text">
-        <strong>SBS Deutschland</strong>
-        <span>Smart Business Service · Weinheim</span>
-      </div>
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
     </a>
+
     <button class="burger" id="burger" aria-label="Menü">
       <span></span><span></span><span></span>
     </button>
+
     <nav class="nav" id="nav">
+      <a href="/landing">Produkt</a>
+
       <div class="dropdown">
-        <span class="dropdown-toggle">Leistungen</span>
+        <span class="dropdown-toggle">Lösungen</span>
         <div class="dropdown-menu">
           <a href="/landing">🤖 KI-Rechnungsverarbeitung</a>
           <a href="/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
           <a href="/sbshomepage/it-consulting.html">💻 IT Consulting</a>
-          <a href="/sbshomepage/met-pmo.html">📐 Metrologie &amp; PMO</a>
-          <a href="/sbshomepage/quality-risk-management.html">🎯 Quality &amp; Risk</a>
+          <a href="/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
+          <a href="/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
         </div>
       </div>
+
       <a href="/preise">Preise</a>
-      <a href="/sbshomepage/unternehmen.html">Über uns</a>
+      <a href="/sbshomepage/unternehmen.html">Unternehmen</a>
       <a href="/sbshomepage/kontakt.html">Kontakt</a>
-      <a href="https://app.sbsdeutschland.com/" class="nav-cta">Demo starten</a>
-      <button class="theme-toggle" id="theme-toggle" aria-label="Theme">
-        <span class="sun">☀️</span>
-        <span class="moon">🌙</span>
-      </button>
+
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">App Login</span> ▾</span>
+        <div class="account-menu">
+          <a href="https://app.sbsdeutschland.com/">🚀 Zur App</a>
+          <a href="https://app.sbsdeutschland.com/history">📊 Verlauf</a>
+          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
+          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
+          <div class="divider"></div>
+          <a href="https://app.sbsdeutschland.com/logout">🚪 Logout</a>
+        </div>
+      </div>
     </nav>
   </div>
 </header>
@@ -244,8 +253,46 @@
     <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
     <p>Made with ❤️ in Weinheim</p>
   </div>
+
+  <div class="footer-theme">
+    <button id="theme-toggle" class="theme-toggle-small" type="button">
+      🌗 Darstellung: Hell / Dunkel
+    </button>
+  </div>
 </footer>
 
 <script src="/static/js/main.js"></script>
+
+<script>
+  (function() {
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+      const saved = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+      themeToggle.addEventListener('click', function() {
+        const current = document.documentElement.getAttribute('data-theme') || 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+      });
+    }
+
+    const el = document.getElementById('accountName');
+    if (el) {
+      fetch('https://app.sbsdeutschland.com/api/user', { credentials: 'include' })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(u) {
+          if (!u) return;
+          if (u.logged_in && u.name) {
+            el.textContent = u.name;
+          } else {
+            el.textContent = 'App Login';
+          }
+        })
+        .catch(function() {});
+    }
+  })();
+</script>
+
 </body>
 </html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Team &amp; Rollen · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .team-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 16px;
+    }
+    .team-card {
+      background: var(--sbs-white);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .team-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    .team-table th,
+    .team-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--sbs-border-soft);
+      font-size: 0.9rem;
+    }
+    .role-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+    .role-pill.admin {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .role-pill.manager {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .role-pill.viewer {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+    .team-note {
+      font-size: 0.8rem;
+      color: var(--sbs-muted);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="https://sbsdeutschland.com/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
+    </a>
+    <button class="burger" id="burger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav" id="nav">
+      <div class="dropdown">
+        <span class="dropdown-toggle">Leistungen</span>
+        <div class="dropdown-menu">
+          <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
+        </div>
+      </div>
+      <a href="https://sbsdeutschland.com/preise">Preise</a>
+      <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">App Login</span> ▾</span>
+        <div class="account-menu">
+          <a href="https://app.sbsdeutschland.com/history">📊 Verlauf</a>
+          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
+          <a href="https://app.sbsdeutschland.com/account">💳 Konto &amp; Nutzung</a>
+          <a href="https://app.sbsdeutschland.com/team">👥 Team &amp; Rollen</a>
+          <a href="https://app.sbsdeutschland.com/audit-log">📜 Audit-Log</a>
+          <a href="https://app.sbsdeutschland.com/email-config">📧 Email-Inbox</a>
+          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
+          <div class="divider"></div>
+          <a href="https://app.sbsdeutschland.com/logout">🚪 Logout</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="section">
+  <div class="team-container">
+    <h1 style="margin-bottom: 8px;">👥 Team &amp; Rollen</h1>
+    <p class="hero-subtitle" style="margin-bottom: 24px;">
+      Übersicht über Nutzer und Rollen. Dieses UI ist als Vorschau gedacht – technische Rollenlogik
+      kann nach Bedarf erweitert werden.
+    </p>
+
+    <div class="team-card">
+      <h2 style="margin-top: 0;">Nutzerübersicht (Demo)</h2>
+      <table class="team-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>E-Mail</th>
+            <th>Rolle</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Demo Nutzer</td>
+            <td>demo@example.com</td>
+            <td><span class="role-pill admin">Admin</span></td>
+            <td>Aktiv</td>
+          </tr>
+          <tr>
+            <td>Finance User</td>
+            <td>finance@example.com</td>
+            <td><span class="role-pill manager">Finance Manager</span></td>
+            <td>Aktiv</td>
+          </tr>
+          <tr>
+            <td>Viewer User</td>
+            <td>viewer@example.com</td>
+            <td><span class="role-pill viewer">Viewer</span></td>
+            <td>Aktiv</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="team-note">
+        Hinweis: Diese Seite zeigt aktuell nur eine beispielhafte Struktur. Die reale Anbindung
+        an Nutzerverwaltung und Berechtigungssystem kann schrittweise erfolgen.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">
+        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+      </p>
+    </div>
+    <div>
+      <h4>Account</h4>
+      <ul>
+        <li><a href="/account">Konto &amp; Nutzung</a></li>
+        <li><a href="/team">Team &amp; Rollen</a></li>
+        <li><a href="/audit-log">Audit-Log</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+  </div>
+</footer>
+
+<script src="/static/js/main.js"></script>
+<script>
+async function updateAccountStatus() {
+  try {
+    const r = await fetch('/api/user');
+    const u = await r.json();
+    if (u.logged_in) {
+      document.getElementById('accountName').textContent = u.name;
+    } else {
+      document.getElementById('accountName').textContent = 'App Login';
+    }
+  } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', updateAccountStatus);
+</script>
+</body>
+</html>

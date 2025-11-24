@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Ausgaben-Analyse · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .analytics-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .filter-bar {
+      background: var(--sbs-white);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .filter-bar label {
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+    .filter-bar select,
+    .filter-bar input {
+      padding: 8px 12px;
+      border: 1px solid var(--sbs-border-soft);
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .filter-bar button {
+      background: var(--sbs-dark);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: var(--sbs-white);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .kpi-card .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--sbs-dark);
+    }
+    .kpi-card .label {
+      font-size: 0.85rem;
+      color: var(--sbs-muted);
+      margin-top: 4px;
+    }
+    .kpi-card .trend {
+      font-size: 0.8rem;
+      margin-top: 8px;
+    }
+    .kpi-card .trend.up {
+      color: #dc3545;
+    }
+    .kpi-card .trend.down {
+      color: #28a745;
+    }
+    .kpi-card.highlight {
+      background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+    }
+    .kpi-card.highlight .value,
+    .kpi-card.highlight .label {
+      color: white;
+    }
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    .chart-card {
+      background: var(--sbs-white);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .chart-card h3 {
+      margin: 0 0 20px 0;
+      font-size: 1rem;
+      color: var(--sbs-dark);
+    }
+    .chart-card.full-width {
+      grid-column: 1 / -1;
+    }
+    .top-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .top-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--sbs-border-soft);
+    }
+    .top-list li:last-child {
+      border-bottom: none;
+    }
+    .top-list .rank {
+      width: 28px;
+      height: 28px;
+      background: var(--sbs-bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.8rem;
+      margin-right: 12px;
+    }
+    .top-list .name {
+      flex: 1;
+      font-weight: 500;
+    }
+    .top-list .amount {
+      font-weight: 600;
+      color: var(--sbs-dark);
+    }
+    .top-list .count {
+      font-size: 0.8rem;
+      color: var(--sbs-muted);
+      margin-left: 8px;
+    }
+    .export-btn {
+      background: var(--sbs-accent);
+      color: var(--sbs-dark);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    @media (max-width: 768px) {
+      .charts-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+<style>
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-stat { height: 100px; margin-bottom: 16px; border-radius: 12px; }
+.skeleton-chart { height: 250px; margin-bottom: 24px; border-radius: 12px; }
+</style>
+<style>
+.empty-state {
+  text-align: center;
+  padding: 80px 24px;
+  background: white;
+  border-radius: 16px;
+  margin: 40px 0;
+}
+.empty-state-icon { font-size: 4rem; opacity: 0.4; margin-bottom: 20px; }
+.empty-state-title { font-size: 1.5rem; font-weight: 700; color: #1f2937; margin-bottom: 12px; }
+.empty-state-description { color: #6b7280; margin-bottom: 24px; }
+.empty-state-action {
+  background: linear-gradient(135deg, #FFB900, #ff9500);
+  color: #003856;
+  padding: 14px 32px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="https://sbsdeutschland.com/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
+    </a>
+    <nav class="nav">
+      <div class="dropdown">
+        <span class="dropdown-toggle">Leistungen</span>
+        <div class="dropdown-menu">
+          <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
+        </div>
+      </div>
+      <a href="https://sbsdeutschland.com/preise">Preise</a>
+      <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
+        <div class="account-menu">
+          <a href="/history">📊 Verlauf</a>
+          <a href="/analytics">📈 Analytics</a>
+          <a href="/email-config">📧 Email-Inbox</a>
+          <a href="/profile">⚙️ Einstellungen</a>
+          <div class="divider"></div>
+          <a href="/logout">🚪 Logout</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="hero" style="padding: 40px 24px;">
+  <div class="hero-content">
+    <h1>📊 Ausgaben-Analyse</h1>
+    <p class="hero-subtitle">Übersicht und Trends Ihrer Rechnungsdaten</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="analytics-container">
+    
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <label>Zeitraum:</label>
+      <select id="period">
+        <option value="30">Letzte 30 Tage</option>
+        <option value="90">Letzte 90 Tage</option>
+        <option value="365" selected>Dieses Jahr</option>
+        <option value="all">Alle Daten</option>
+      </select>
+      <button onclick="location.reload()">Aktualisieren</button>
+      <button class="export-btn" onclick="window.print()">📄 Als PDF exportieren</button>
+    </div>
+    
+    <!-- KPI Cards -->
+    <!-- Insights Section -->
+{% if insights %}
+<div style="margin: 40px 0;">
+  <h2 style="margin-bottom: 24px; color: #1f2937;">💡 Erkenntnisse</h2>
+  <div style="display: grid; gap: 16px;">
+    {% for insight in insights %}
+    <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; align-items: start; gap: 16px; border-left: 4px solid {% if insight.type == 'success' %}#22c55e{% elif insight.type == 'warning' %}#f59e0b{% elif insight.type == 'error' %}#ef4444{% else %}#3b82f6{% endif %};">
+      <div style="font-size: 2rem; flex-shrink: 0;">{{ insight.icon }}</div>
+      <div style="flex: 1;">
+        <h3 style="font-size: 1rem; font-weight: 600; color: #1f2937; margin-bottom: 4px;">{{ insight.title }}</h3>
+        <p style="font-size: 0.9rem; color: #6b7280; margin: 0;">{{ insight.message }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="kpi-grid">
+      <div class="kpi-card highlight">
+        <div class="value">{{ "%.2f"|format(stats.total_amount) }}€</div>
+        <div class="label">Gesamtausgaben</div>
+      </div>
+      <div class="kpi-card">
+        <div class="value">{{ stats.total_invoices }}</div>
+        <div class="label">Rechnungen</div>
+      </div>
+      <div class="kpi-card">
+        <div class="value">{{ "%.2f"|format(stats.avg_per_invoice) }}€</div>
+        <div class="label">Ø pro Rechnung</div>
+      </div>
+      <div class="kpi-card">
+        <div class="value">{{ stats.unique_suppliers }}</div>
+        <div class="label">Lieferanten</div>
+      </div>
+      <div class="kpi-card">
+        <div class="value">{{ "%.2f"|format(stats.total_mwst) }}€</div>
+        <div class="label">MwSt. gesamt</div>
+      </div>
+    </div>
+    
+    <!-- Charts Row 1 -->
+    <div class="charts-row">
+      <div class="chart-card full-width">
+        <h3>📈 Ausgaben pro Monat</h3>
+        <canvas id="monthlyChart" height="100"></canvas>
+      </div>
+    </div>
+    
+    <!-- Charts Row 2 -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>🏢 Top 10 Lieferanten</h3>
+        <ul class="top-list">
+          {% for item in top_suppliers[:10] %}
+          <li>
+            <span class="rank">{{ loop.index }}</span>
+            <span class="name">{{ item.name or 'Unbekannt' }}</span>
+            <span class="amount">{{ "%.2f"|format(item.total) }}€</span>
+            <span class="count">({{ item.count }})</span>
+          </li>
+          {% else %}
+          <li style="justify-content: center; color: var(--sbs-muted);">Keine Daten</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="chart-card">
+        <h3>📊 Verteilung nach Lieferant</h3>
+        <canvas id="supplierChart"></canvas>
+      </div>
+    </div>
+    
+    <!-- Charts Row 3 -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>💰 Brutto vs. Netto vs. MwSt.</h3>
+        <canvas id="taxChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>📅 Rechnungen pro Wochentag</h3>
+        <canvas id="weekdayChart"></canvas>
+      </div>
+    </div>
+    
+  </div>
+</section>
+
+
+
+<script src="/static/js/main.js"></script>
+<script>
+// Theme Toggle
+const themeToggle = document.getElementById('theme-toggle');
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+});
+
+// Burger Menu
+const burger = document.getElementById('burger');
+const nav = document.getElementById('nav');
+burger.addEventListener('click', () => {
+  nav.classList.toggle('active');
+});
+
+// Monthly Chart
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+new Chart(monthlyCtx, {
+  type: 'bar',
+  data: {
+    labels: {{ monthly_labels | tojson }},
+    datasets: [{
+      label: 'Brutto (€)',
+      data: {{ monthly_values | tojson }},
+      backgroundColor: '#FFB900',
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      y: { beginAtZero: true }
+    }
+  }
+});
+
+// Supplier Pie Chart
+{% if top_suppliers %}
+const supplierCtx = document.getElementById('supplierChart').getContext('2d');
+new Chart(supplierCtx, {
+  type: 'doughnut',
+  data: {
+    labels: {{ top_suppliers[:5] | map(attribute='name') | list | tojson }},
+    datasets: [{
+      data: {{ top_suppliers[:5] | map(attribute='total') | list | tojson }},
+      backgroundColor: ['#003856', '#FFB900', '#00507a', '#FFC933', '#007099']
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12 } }
+    }
+  }
+});
+{% endif %}
+
+// Tax Breakdown Chart
+const taxCtx = document.getElementById('taxChart').getContext('2d');
+new Chart(taxCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Netto', 'MwSt.'],
+    datasets: [{
+      data: [{{ stats.total_netto }}, {{ stats.total_mwst }}],
+      backgroundColor: ['#003856', '#FFB900']
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom' }
+    }
+  }
+});
+
+// Weekday Chart
+const weekdayCtx = document.getElementById('weekdayChart').getContext('2d');
+new Chart(weekdayCtx, {
+  type: 'bar',
+  data: {
+    labels: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
+    datasets: [{
+      label: 'Rechnungen',
+      data: {{ weekday_data | tojson }},
+      backgroundColor: '#003856',
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      y: { beginAtZero: true }
+    }
+  }
+});
+</script>
+
+
+
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">
+        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+      </p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+    </div>
+
+    <div>
+      <h4>Produkte</h4>
+      <ul>
+        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="/preise">Preise &amp; Pakete</a></li>
+        <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
+  </div>
+</footer>
+
+</body>
+<script>
+async function updateAccountStatus() {
+  try {
+    const r = await fetch('/api/user');
+    const u = await r.json();
+    if (u.logged_in) {
+      document.getElementById('accountName').textContent = u.name;
+    } else {
+      document.getElementById('accountName').textContent = 'Account';
+    }
+  } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', updateAccountStatus);
+</script>
+</html>
