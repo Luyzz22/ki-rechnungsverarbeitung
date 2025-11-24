@@ -340,3 +340,20 @@ def calculate_statistics(results: List[dict]) -> dict:
         'average_brutto': total_brutto / len(results) if results else 0,
         'count': len(results)
     }
+
+# === Plausibility Integration ===
+def run_plausibility_for_invoice(invoice_id: int):
+    """Führe Plausibilitätsprüfung nach Invoice-Speicherung aus"""
+    try:
+        from plausibility import run_plausibility_checks, save_plausibility_check
+        
+        checks = run_plausibility_checks(invoice_id)
+        
+        for check in checks:
+            save_plausibility_check(invoice_id, check)
+            logger.info(f"⚠️ Plausibility: {check['check_type']} ({check['severity']}) für Invoice {invoice_id}")
+        
+        return len(checks)
+    except Exception as e:
+        logger.error(f"❌ Plausibility check failed for invoice {invoice_id}: {e}")
+        return 0

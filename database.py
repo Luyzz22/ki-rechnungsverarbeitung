@@ -115,67 +115,107 @@ def save_job(job_id: str, job_data: Dict, user_id: int = None):
     conn.commit()
     conn.close()
 
+
 def save_invoices(job_id: str, results: List[Dict]):
-    """Save invoice results for a job"""
+    """Save invoice results for a job (inkl. E-Rechnungs-Metadaten)"""
     import sqlite3
+    from logging import getLogger
+    from duplicate_detection import generate_invoice_hash, check_duplicate_by_hash, save_duplicate_detection
+    import json
+
+    logger = getLogger(__name__)
+
     conn = sqlite3.connect('invoices.db', check_same_thread=False)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
     # Delete existing invoices for this job (in case of re-processing)
     cursor.execute('DELETE FROM invoices WHERE job_id = ?', (job_id,))
-    
+
     for invoice in results:
-        # Generate hash for duplicate detection
-        from duplicate_detection import generate_invoice_hash
+        # 1) Hash für Duplikaterkennung
         content_hash = generate_invoice_hash(invoice)
-        
-        cursor.execute('''
+
+        # 2) E-Rechnungs-Felder aus dem (in app.py) angereicherten Dict
+        source_format = invoice.get("source_format", "pdf")
+        einvoice_raw_xml = (
+            invoice.get("einvoice_raw_xml")
+            or invoice.get("raw_xml")
+            or invoice.get("xml")
+            or ""
+        )
+        einvoice_profile = invoice.get("einvoice_profile", "")
+
+        raw_valid = invoice.get("einvoice_valid", False)
+        if isinstance(raw_valid, bool):
+            einvoice_valid = 1 if raw_valid else 0
+        else:
+            try:
+                einvoice_valid = 1 if int(raw_valid) != 0 else 0
+            except Exception:
+                einvoice_valid = 0
+
+        einvoice_validation_message = invoice.get("einvoice_validation_message", "")
+
+        cursor.execute(
+            """
             INSERT INTO invoices (
                 job_id, rechnungsnummer, datum, faelligkeitsdatum, zahlungsziel_tage,
                 rechnungsaussteller, rechnungsaussteller_adresse, rechnungsempfaenger,
                 rechnungsempfaenger_adresse, kundennummer, betrag_brutto, betrag_netto,
                 mwst_betrag, mwst_satz, waehrung, iban, bic, steuernummer, ust_idnr,
-                zahlungsbedingungen, artikel, verwendungszweck, content_hash
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            job_id,
-            invoice.get('rechnungsnummer', ''),
-            invoice.get('datum', ''),
-            invoice.get('faelligkeitsdatum', ''),
-            invoice.get('zahlungsziel_tage', 0),
-            invoice.get('rechnungsaussteller', ''),
-            invoice.get('rechnungsaussteller_adresse', ''),
-            invoice.get('rechnungsempfänger', invoice.get('rechnungsempfaenger', '')),
-            invoice.get('rechnungsempfänger_adresse', invoice.get('rechnungsempfaenger_adresse', '')),
-            invoice.get('kundennummer', ''),
-            invoice.get('betrag_brutto', 0),
-            invoice.get('betrag_netto', 0),
-            invoice.get('mwst_betrag', 0),
-            invoice.get('mwst_satz', 0),
-            invoice.get('waehrung', 'EUR'),
-            invoice.get('iban', ''),
-            invoice.get('bic', ''),
-            invoice.get('steuernummer', ''),
-            invoice.get('ust_idnr', ''),
-            invoice.get('zahlungsbedingungen', ''),
-            json.dumps(invoice.get('artikel', [])),
-            invoice.get('verwendungszweck', ''),
-            content_hash
-        ))
-        
-        # Check for duplicates AFTER inserting (so we can get the new invoice_id)
+                zahlungsbedingungen, artikel, verwendungszweck, content_hash,
+                source_format, einvoice_raw_xml, einvoice_profile,
+                einvoice_valid, einvoice_validation_message
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?
+            )
+            """,
+            (
+                job_id,
+                invoice.get('rechnungsnummer', ''),
+                invoice.get('datum', ''),
+                invoice.get('faelligkeitsdatum', ''),
+                invoice.get('zahlungsziel_tage', 0),
+                invoice.get('rechnungsaussteller', ''),
+                invoice.get('rechnungsaussteller_adresse', ''),
+                invoice.get('rechnungsempfänger', invoice.get('rechnungsempfaenger', '')),
+                invoice.get('rechnungsempfänger_adresse', invoice.get('rechnungsempfaenger_adresse', '')),
+                invoice.get('kundennummer', ''),
+                invoice.get('betrag_brutto', 0),
+                invoice.get('betrag_netto', 0),
+                invoice.get('mwst_betrag', 0),
+                invoice.get('mwst_satz', 0),
+                invoice.get('waehrung', 'EUR'),
+                invoice.get('iban', ''),
+                invoice.get('bic', ''),
+                invoice.get('steuernummer', ''),
+                invoice.get('ust_idnr', ''),
+                invoice.get('zahlungsbedingungen', ''),
+                json.dumps(invoice.get('artikel', [])),
+                invoice.get('verwendungszweck', ''),
+                content_hash,
+                source_format,
+                einvoice_raw_xml,
+                einvoice_profile,
+                einvoice_valid,
+                einvoice_validation_message,
+            ),
+        )
+
         invoice_id = cursor.lastrowid
-        
-        # Check if this is a duplicate
+
+        # 3) Duplikat-Check (Hash)
         duplicate = check_duplicate_by_hash(invoice)
-        if duplicate and duplicate['id'] != invoice_id:
-            logger.warning(f"⚠️ Duplicate detected for invoice {invoice_id}: matches invoice {duplicate['id']}")
+        if duplicate and duplicate.get('id') != invoice_id:
+            logger.warning(
+                f"⚠️ Duplicate detected for invoice {invoice_id}: matches invoice {duplicate['id']}"
+            )
             save_duplicate_detection(invoice_id, duplicate['id'], method='hash', confidence=1.0)
-    
+
     conn.commit()
     conn.close()
-
 
 
 def get_invoices_by_job(job_id: str):
@@ -188,6 +228,7 @@ def get_invoices_by_job(job_id: str):
     invoices = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return invoices
+
 
 def get_job(job_id: str) -> Optional[Dict]:
     """Get a job by ID"""
@@ -1384,3 +1425,49 @@ def get_invoices_by_job(job_id: str):
 def get_invoices_for_job(job_id: str):
     """Alias für get_invoices_by_job (Kompatibilität)."""
     return get_invoices_by_job(job_id)
+
+def get_plausibility_warnings_for_job(job_id: str):
+    """Get all plausibility warnings for a job"""
+    import json
+    
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT 
+            pc.id,
+            pc.check_type,
+            pc.severity,
+            pc.confidence,
+            pc.details,
+            pc.status,
+            i.rechnungsnummer as invoice_rechnungsnummer,
+            i.rechnungsaussteller as invoice_aussteller
+        FROM plausibility_checks pc
+        JOIN invoices i ON pc.invoice_id = i.id
+        WHERE i.job_id = ?
+        AND pc.status = 'pending'
+        ORDER BY 
+            CASE pc.severity
+                WHEN 'high' THEN 1
+                WHEN 'medium' THEN 2
+                ELSE 3
+            END,
+            pc.confidence DESC
+    ''', (job_id,))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    warnings = []
+    for row in rows:
+        warning = dict(row)
+        # Parse JSON details
+        try:
+            warning['details_json'] = json.loads(warning['details'])
+        except:
+            warning['details_json'] = {}
+        warnings.append(warning)
+    
+    return warnings
