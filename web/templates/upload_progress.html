@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload - SBS Deutschland</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; }
+        .upload-area {
+            border: 3px dashed #003856;
+            border-radius: 15px;
+            padding: 60px;
+            text-align: center;
+            background: #f5f5f5;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .upload-area:hover { background: #e8f4f8; border-color: #FFB900; }
+        .upload-area.dragover { background: #FFB900; border-color: #003856; }
+        
+        .progress-container {
+            display: none;
+            margin-top: 30px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 40px;
+            background: #e0e0e0;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #003856 0%, #0066cc 100%);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .file-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .file-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #003856;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .file-item.success { border-left-color: #4CAF50; }
+        .file-item.error { border-left-color: #f44336; }
+        .file-item.processing { border-left-color: #FFB900; }
+        
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        .status-badge.success { background: #4CAF50; color: white; }
+        .status-badge.error { background: #f44336; color: white; }
+        .status-badge.processing { background: #FFB900; color: #003856; }
+        
+        .summary {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            display: none;
+        }
+        .summary.show { display: block; }
+        
+        .btn {
+            padding: 12px 30px;
+            background: #003856;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        .btn:hover { background: #0066cc; }
+    </style>
+</head>
+<body>
+    <h1>📤 Rechnungen hochladen</h1>
+    
+    <div class="upload-area" id="uploadArea">
+        <h2>📎 Dateien hier ablegen</h2>
+        <p>oder klicken zum Auswählen</p>
+        <p style="color: #666; font-size: 0.9em;">Unterstützt: PDF, ZIP</p>
+        <input type="file" id="fileInput" multiple accept=".pdf,.zip" style="display: none;">
+    </div>
+    
+    <div class="progress-container" id="progressContainer">
+        <h3>⚡ Verarbeitung läuft...</h3>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill">0%</div>
+        </div>
+        <p id="progressText" style="text-align: center; margin-top: 10px; color: #666;"></p>
+        
+        <div class="file-list" id="fileList"></div>
+    </div>
+    
+    <div class="summary" id="summary">
+        <h3>✅ Verarbeitung abgeschlossen!</h3>
+        <div id="summaryContent"></div>
+        <button class="btn" onclick="viewJob()">📊 Ergebnisse anzeigen</button>
+    </div>
+    
+    <script>
+        let currentJobId = null;
+        let ws = null;
+        let processedFiles = {};
+        
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const fileList = document.getElementById('fileList');
+        const summary = document.getElementById('summary');
+        
+        // Drag & Drop
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        async function handleFiles(files) {
+            if (files.length === 0) return;
+            
+            // Show progress
+            progressContainer.style.display = 'block';
+            uploadArea.style.display = 'none';
+            
+            // Upload files
+            const formData = new FormData();
+            for (let file of files) {
+                formData.append('files', file);
+            }
+            
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                currentJobId = data.job_id;
+                
+                // Connect WebSocket
+                connectWebSocket(currentJobId);
+                
+            } catch (error) {
+                alert('Upload fehlgeschlagen: ' + error);
+            }
+        }
+        
+        function connectWebSocket(jobId) {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}/ws/${jobId}`);
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                handleWebSocketMessage(message);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket closed');
+            };
+        }
+        
+        function handleWebSocketMessage(message) {
+            switch(message.type) {
+                case 'progress':
+                    updateProgress(message);
+                    break;
+                case 'invoice_complete':
+                    addFileToList(message.invoice);
+                    break;
+                case 'job_complete':
+                    showSummary(message.summary);
+                    break;
+                case 'error':
+                    showError(message);
+                    break;
+            }
+        }
+        
+        function updateProgress(data) {
+            const percentage = data.percentage;
+            progressFill.style.width = percentage + '%';
+            progressFill.textContent = percentage + '%';
+            progressText.textContent = `${data.current} von ${data.total} Rechnungen verarbeitet`;
+        }
+        
+        function addFileToList(invoice) {
+            const item = document.createElement('div');
+            item.className = 'file-item success';
+            item.innerHTML = `
+                <div>
+                    <strong>${invoice.rechnungsnummer || 'N/A'}</strong>
+                    <br><small>${invoice.rechnungsaussteller || 'Unbekannt'} - ${invoice.betrag_brutto}€</small>
+                </div>
+                <span class="status-badge success">✓ Erfolg</span>
+            `;
+            fileList.appendChild(item);
+        }
+        
+        function showSummary(summaryData) {
+            summary.classList.add('show');
+            document.getElementById('summaryContent').innerHTML = `
+                <p><strong>Verarbeitete Rechnungen:</strong> ${summaryData.total_invoices}</p>
+                <p><strong>Gesamtsumme:</strong> ${summaryData.total_amount}€</p>
+                <p><strong>Dauer:</strong> ${summaryData.duration}s</p>
+            `;
+        }
+        
+        function showError(error) {
+            const item = document.createElement('div');
+            item.className = 'file-item error';
+            item.innerHTML = `
+                <div>
+                    <strong>${error.file_name || 'Unbekannt'}</strong>
+                    <br><small>${error.error}</small>
+                </div>
+                <span class="status-badge error">✗ Fehler</span>
+            `;
+            fileList.appendChild(item);
+        }
+        
+        function viewJob() {
+            window.location.href = `/job/${currentJobId}`;
+        }
+    </script>
+</body>
+</html>

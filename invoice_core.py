@@ -1,3 +1,5 @@
+from websocket_handler import manager
+import asyncio
 #!/usr/bin/env python3
 """
 Core invoice processing logic with Hybrid AI
