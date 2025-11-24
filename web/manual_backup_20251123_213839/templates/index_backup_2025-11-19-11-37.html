@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Upload / Demo | KI-Rechnungsverarbeitung | SBS Deutschland</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Upload- und Demo-Seite für die KI-Rechnungsverarbeitung von SBS Deutschland. PDF-Rechnungen hochladen und automatisch verarbeiten lassen." />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="https://sbsdeutschland.com" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text">
+        <strong>SBS Deutschland</strong>
+        <span>Smart Business Service · Weinheim</span>
+      </div>
+    </a>
+
+    <button class="burger" id="burger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav" id="nav">
+      <a href="https://sbsdeutschland.com/">Startseite</a>
+      <a href="https://sbsdeutschland.com/landing">KI-Rechnungsverarbeitung</a>
+      <a href="https://sbsdeutschland.com/preise">Preise</a>
+      <a href="https://sbsdeutschland.com/sbshomepage/unternehmen.html">Über uns</a>
+      <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
+      <a href="https://app.sbsdeutschland.com/" class="nav-cta">Upload / Demo</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Theme">
+        <span class="sun">☀️</span>
+        <span class="moon">🌙</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO-Bereich -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">🤖 KI-RECHNUNGSVERARBEITUNG · DEMO</div>
+    <h1>Rechnungen hochladen &amp;<br>automatisch verarbeiten</h1>
+    <p class="hero-subtitle">
+      Laden Sie Ihre PDF-Rechnungen hoch und lassen Sie unsere KI alle relevanten Daten extrahieren –
+      schnell, sicher und DSGVO-konform.
+    </p>
+  </div>
+</section>
+
+<!-- Erklärung + Upload-Karte ÜBEREINANDER -->
+<section class="section">
+  <div class="container upload-layout">
+    
+    <!-- Erklärung -->
+    <div class="upload-intro">
+      <div class="section-badge">KURZ ERKLÄRT</div>
+      <h2>So nutzen Sie die Demo</h2>
+      <p>
+        Diese Demo zeigt, wie unsere KI-Rechnungsverarbeitung Ihre Belege automatisiert ausliest und
+        für die Buchhaltung aufbereitet.
+      </p>
+      <ul>
+        <li>Beliebig viele PDF-Rechnungen nach und nach hinzufügen</li>
+        <li>Dateien in der Liste prüfen und bei Bedarf wieder entfernen</li>
+        <li>Mit „Jetzt verarbeiten“ startet die KI-Verarbeitung aller ausgewählten Rechnungen</li>
+      </ul>
+      <p>
+        Für produktiven Einsatz, höhere Volumina und Integrationen steht Ihnen unsere
+        <a href="https://sbsdeutschland.com/preise">volle Produktversion</a> zur Verfügung.
+      </p>
+    </div>
+
+    <!-- Upload-Karte -->
+    <div class="upload-card">
+      <div class="upload-card-header">
+        <h2>PDF-Rechnungen hochladen</h2>
+        <p>Drag &amp; Drop oder Dateiauswahl – Ihre Daten bleiben in Deutschland.</p>
+      </div>
+
+      <div class="upload-zone-wrapper">
+        <div class="upload-dropzone" id="upload-dropzone">
+          <span class="upload-dropzone-icon">📄</span>
+          <div class="upload-dropzone-title">Drag &amp; Drop oder klicken</div>
+          <div class="upload-dropzone-text">
+            Ziehen Sie eine oder mehrere PDF-Dateien hierher oder klicken Sie auf „Dateien auswählen“, um weitere Rechnungen hinzuzufügen.
+          </div>
+
+          <form id="upload-form" action="/api/upload" method="post" enctype="multipart/form-data" onsubmit="return false;">
+            <input
+              type="file"
+              name="files"
+              id="files"
+              accept="application/pdf"
+              multiple
+              style="display:none"
+            />
+            <button type="button" class="upload-secondary-btn" id="select-files-button">
+              Dateien auswählen
+            </button>
+          </form>
+        </div>
+
+        <!-- Scrollbare Dateiliste -->
+        <div class="upload-file-list" id="upload-file-list">
+          <div class="upload-file-list-empty">Noch keine Dateien hinzugefügt.</div>
+        </div>
+      </div>
+
+      <!-- Ergebnisbox -->
+      <div id="upload-result" class="upload-result"></div>
+
+      <!-- Haupt-CTA: startet NUR die KI -->
+      <button type="button" class="upload-primary-btn upload-primary-btn-full" id="process-button">
+        ⚡ Jetzt verarbeiten
+      </button>
+
+      <div class="upload-meta">
+        <p><strong>Hinweis:</strong> Diese Demo ist für Testzwecke gedacht. Für größere Volumen
+          und produktive Anbindung (z.B. DATEV-Export, API-Integration) empfehlen wir unsere
+          Produktpakete auf der <a href="https://sbsdeutschland.com/preise">Preise-Seite</a>.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">
+        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+      </p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+    </div>
+
+    <div>
+      <h4>Produkte</h4>
+      <ul>
+        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="/preise">Preise &amp; Pakete</a></li>
+        <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
+  </div>
+</footer>
+
+
+<script src="/static/js/main.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const dropzone = document.getElementById('upload-dropzone');
+    const fileInput = document.getElementById('files');
+    const selectFilesButton = document.getElementById('select-files-button');
+    const processButton = document.getElementById('process-button');
+    const resultEl = document.getElementById('upload-result');
+    const form = document.getElementById('upload-form');
+    const fileListEl = document.getElementById('upload-file-list');
+
+    if (!dropzone || !fileInput || !selectFilesButton || !processButton || !resultEl || !form || !fileListEl) return;
+
+    let filesArray = []; // alle ausgewählten Dateien
+
+    function formatSize(bytes) {
+      if (!bytes && bytes !== 0) return '';
+      if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+      if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return bytes + ' B';
+    }
+
+    function showResult(type, html) {
+      resultEl.className = 'upload-result upload-result--' + type;
+      resultEl.innerHTML = html;
+    }
+
+    function renderFileList() {
+      if (!filesArray.length) {
+        fileListEl.innerHTML = '<div class="upload-file-list-empty">Noch keine Dateien hinzugefügt.</div>';
+        return;
+      }
+
+      const items = filesArray.map((file, idx) => {
+        return (
+          '<div class="upload-file-item">' +
+            '<span class="upload-file-name">' + file.name + '</span>' +
+            '<span class="upload-file-size">' + formatSize(file.size) + '</span>' +
+            '<button type="button" class="upload-file-remove" data-index="' + idx + '" aria-label="Datei entfernen">&times;</button>' +
+          '</div>'
+        );
+      }).join('');
+      fileListEl.innerHTML = items;
+    }
+
+    function addFiles(newFiles) {
+      const arr = Array.from(newFiles);
+      // einfach anhängen, Duplikate kann der Nutzer bei Bedarf löschen
+      filesArray = filesArray.concat(arr);
+      renderFileList();
+      showResult('pending', filesArray.length + ' Datei(en) ausgewählt. Klicken Sie auf „Jetzt verarbeiten“, um die KI zu starten.');
+    }
+
+    async function handleUpload() {
+      if (!filesArray.length) {
+        showResult('error', 'Bitte fügen Sie zuerst PDF-Dateien hinzu.');
+        return;
+      }
+
+      const formData = new FormData();
+      filesArray.forEach(file => formData.append('files', file));
+
+      showResult('pending', 'Rechnungen werden hochgeladen und verarbeitet …');
+
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!res.ok) {
+          throw new Error('Serverfehler: ' + res.status);
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          const fileList = (data.files || [])
+            .map(f => '<li>' + (f.filename || 'Datei') + ' (' + (formatSize(f.size) || '–') + ')</li>')
+            .join('');
+
+          const html =
+            '✅ ' + (data.files_uploaded || filesArray.length) + ' Rechnungen erfolgreich hochgeladen.<br>' +
+            'Batch-ID: <code>' + (data.batch_id || '–') + '</code>' +
+            (fileList ? '<ul style="margin-top:8px;padding-left:20px;">' + fileList + '</ul>' : '');
+
+          showResult('success', html);
+          // Nach erfolgreicher Verarbeitung Liste leeren
+          filesArray = [];
+          renderFileList();
+        } else {
+          showResult('error', 'Die Verarbeitung war nicht erfolgreich. Bitte versuchen Sie es erneut.');
+        }
+      } catch (err) {
+        console.error(err);
+        showResult('error', 'Fehler beim Upload: ' + err.message);
+      }
+    }
+
+    // Dateien auswählen-Button
+    selectFilesButton.addEventListener('click', function (e) {
+      e.stopPropagation();
+      fileInput.click();
+    });
+
+    // Änderung im File-Input → Dateien hinzufügen, aber noch nicht hochladen
+    fileInput.addEventListener('change', function () {
+      if (fileInput.files && fileInput.files.length) {
+        addFiles(fileInput.files);
+        // Input leeren, damit man dieselbe Datei erneut auswählen könnte
+        fileInput.value = '';
+      }
+    });
+
+    // Drag & Drop Styling
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('upload-dropzone--active');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('upload-dropzone--active');
+      });
+    });
+
+    // Dateien per Drag & Drop hinzufügen
+    dropzone.addEventListener('drop', function (e) {
+      const dt = e.dataTransfer;
+      if (dt && dt.files && dt.files.length) {
+        addFiles(dt.files);
+      }
+    });
+
+    // Klick in die Dropzone (ohne den sekundären Button) → Dateidialog
+    dropzone.addEventListener('click', function (e) {
+      if (e.target === dropzone || e.target.classList.contains('upload-dropzone-title') || e.target.classList.contains('upload-dropzone-text') || e.target.classList.contains('upload-dropzone-icon')) {
+        fileInput.click();
+      }
+    });
+
+    // Entfernen von Dateien aus der Liste
+    fileListEl.addEventListener('click', function (e) {
+      const btn = e.target.closest('.upload-file-remove');
+      if (!btn) return;
+      const idx = parseInt(btn.getAttribute('data-index'), 10);
+      if (!isNaN(idx)) {
+        filesArray.splice(idx, 1);
+        renderFileList();
+        if (filesArray.length) {
+          showResult('pending', filesArray.length + ' Datei(en) ausgewählt. Klicken Sie auf „Jetzt verarbeiten“, um die KI zu starten.');
+        } else {
+          resultEl.className = 'upload-result';
+          resultEl.innerHTML = '';
+        }
+      }
+    });
+
+    // Haupt-Button: startet NUR den Upload
+    processButton.addEventListener('click', function () {
+      handleUpload();
+    });
+
+    // Initial: leere Liste rendern
+    renderFileList();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Audit-Log · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .audit-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 16px;
+    }
+    .audit-card {
+      background: var(--sbs-white);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .audit-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    .audit-table th,
+    .audit-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--sbs-border-soft);
+      font-size: 0.85rem;
+    }
+    .audit-table th {
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.75rem;
+      color: var(--sbs-muted);
+    }
+    .audit-type {
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="https://sbsdeutschland.com/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
+    </a>
+    <button class="burger" id="burger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav" id="nav">
+      <div class="dropdown">
+        <span class="dropdown-toggle">Leistungen</span>
+        <div class="dropdown-menu">
+          <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
+        </div>
+      </div>
+      <a href="https://sbsdeutschland.com/preise">Preise</a>
+      <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">App Login</span> ▾</span>
+        <div class="account-menu">
+          <a href="https://app.sbsdeutschland.com/history">📊 Verlauf</a>
+          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
+          <a href="https://app.sbsdeutschland.com/account">💳 Konto &amp; Nutzung</a>
+          <a href="https://app.sbsdeutschland.com/team">👥 Team &amp; Rollen</a>
+          <a href="https://app.sbsdeutschland.com/audit-log">📜 Audit-Log</a>
+          <a href="https://app.sbsdeutschland.com/email-config">📧 Email-Inbox</a>
+          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
+          <div class="divider"></div>
+          <a href="https://app.sbsdeutschland.com/logout">🚪 Logout</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="section">
+  <div class="audit-container">
+    <h1 style="margin-bottom: 8px;">📜 Audit-Log (Vorschau)</h1>
+    <p class="hero-subtitle" style="margin-bottom: 24px;">
+      Übersicht über relevante Aktivitäten im System. Diese Seite dient als Konzept – die Anbindung
+      an die reale Protokollierung kann nach Bedarf umgesetzt werden.
+    </p>
+
+    <div class="audit-card">
+      <h2 style="margin-top: 0;">Beispielhafte Einträge</h2>
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>Zeitpunkt</th>
+            <th>Benutzer</th>
+            <th>Aktion</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2025-11-24 09:14</td>
+            <td>demo@example.com</td>
+            <td><span class="audit-type">Korrektur</span></td>
+            <td>Rechnung #123 – MwSt. von 19,00 € auf 18,90 € angepasst (Beispiel).</td>
+          </tr>
+          <tr>
+            <td>2025-11-24 09:10</td>
+            <td>finance@example.com</td>
+            <td><span class="audit-type">Export</span></td>
+            <td>DATEV-Export für Job 4854c537-… erstellt.</td>
+          </tr>
+          <tr>
+            <td>2025-11-23 17:02</td>
+            <td>demo@example.com</td>
+            <td><span class="audit-type">Login</span></td>
+            <td>Erfolgreicher Login (Beispiel-Eintrag).</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size: 0.8rem; color: var(--sbs-muted); margin-top: 8px;">
+        Hinweis: Die konkrete Ausgestaltung des Audit-Logs hängt von Ihren rechtlichen Anforderungen
+        (z. B. GoBD) und internen Vorgaben ab.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">
+        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+      </p>
+    </div>
+    <div>
+      <h4>Account</h4>
+      <ul>
+        <li><a href="/account">Konto &amp; Nutzung</a></li>
+        <li><a href="/team">Team &amp; Rollen</a></li>
+        <li><a href="/audit-log">Audit-Log</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+  </div>
+</footer>
+
+<script src="/static/js/main.js"></script>
+<script>
+async function updateAccountStatus() {
+  try {
+    const r = await fetch('/api/user');
+    const u = await r.json();
+    if (u.logged_in) {
+      document.getElementById('accountName').textContent = u.name;
+    } else {
+      document.getElementById('accountName').textContent = 'App Login';
+    }
+  } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', updateAccountStatus);
+</script>
+</body>
+</html>

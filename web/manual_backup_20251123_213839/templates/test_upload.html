@@ -1,0 +1,22 @@
+<form id="testForm">
+  <input type="file" id="fileInput" multiple accept=".pdf">
+  <button type="button" onclick="testUpload()">Test Upload</button>
+</form>
+<script>
+async function testUpload() {
+  const formData = new FormData();
+  const files = document.getElementById('fileInput').files;
+  console.log('Files selected:', files.length);
+  for (let i = 0; i < files.length; i++) {
+    console.log('Adding file:', files[i].name);
+    formData.append('files', files[i]);
+  }
+  
+  const response = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData
+  });
+  const data = await response.json();
+  console.log('Response:', data);
+}
+</script>

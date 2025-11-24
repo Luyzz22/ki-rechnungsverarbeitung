@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Job Details · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .detail-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* Hero / Meta */
+    .hero-meta {
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .hero-meta span + span::before {
+      content: "·";
+      margin: 0 6px;
+      color: #9ca3af;
+    }
+
+    /* Filter Chips */
+    .filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0 24px 0;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #e5e7eb;
+      gap: 6px;
+    }
+
+    .chip-label {
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6b7280;
+    }
+
+    .chip-muted {
+      background: #f9fafb;
+      color: #6b7280;
+    }
+
+    /* KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+    .kpi-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      border: 1px solid #e5e7eb;
+    }
+    .kpi-card.highlight {
+      background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+      color: white;
+    }
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .kpi-label {
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+    .kpi-subnote {
+      margin-top: 6px;
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+    
+    /* Section Cards */
+    .section-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      border: 1px solid #e5e7eb;
+    }
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 20px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title span.help-tag {
+      margin-left: auto;
+      font-size: 0.8rem;
+      color: #6b7280;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Insights */
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .insight-card {
+      border-radius: 10px;
+      padding: 14px 16px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .insight-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .insight-badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: 1px solid;
+    }
+    .insight-badge.info {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
+    }
+    .insight-badge.warning {
+      background: #fffbeb;
+      color: #92400e;
+      border-color: #fed7aa;
+    }
+    .insight-badge.success {
+      background: #ecfdf3;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+
+    .insight-body {
+      font-size: 0.85rem;
+      color: #4b5563;
+    }
+
+    .insight-meta {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+    
+    /* Table */
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .invoice-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .invoice-table th {
+      background: #f9fafb;
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6b7280;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .invoice-table td {
+      padding: 16px;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 0.9rem;
+    }
+    .invoice-table tr:hover {
+      background: #f9fafb;
+    }
+    .invoice-table .amount {
+      text-align: right;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    
+    /* Category Badge */
+    .category-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      color: #0369a1;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      border: 1px solid #bae6fd;
+      margin: 2px 0;
+    }
+    .confidence {
+      opacity: 0.7;
+      font-size: 0.75rem;
+    }
+    
+    /* Download Buttons */
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .download-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .btn-excel { background: #28a745; color: white; }
+    .btn-csv { background: #17a2b8; color: white; }
+    .btn-datev { background: #fd7e14; color: white; }
+    
+    .download-note {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #6b7280;
+      text-decoration: none;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+    }
+    .back-link:hover { color: #003856; }
+
+    /* Table Toolbar */
+    .table-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+      color: #4b5563;
+    }
+
+    .table-toolbar small {
+      color: #9ca3af;
+      font-size: 0.8rem;
+      display: block;
+    }
+
+    .table-search-input {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      font-size: 0.85rem;
+      min-width: 200px;
+    }
+    .table-search-input:focus {
+      outline: none;
+      border-color: #003856;
+      box-shadow: 0 0 0 1px rgba(0,56,86,0.15);
+    }
+
+    @media (max-width: 768px) {
+      .table-wrapper {
+        max-height: none;
+      }
+      .detail-container {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="https://sbsdeutschland.com/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
+    </a>
+    <nav class="nav">
+      <div class="dropdown">
+        <span class="dropdown-toggle">Leistungen</span>
+        <div class="dropdown-menu">
+          <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+        </div>
+      </div>
+      <a href="https://sbsdeutschland.com/preise">Preise</a>
+      <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 {{ request.session.get('user_name', 'Account') }} ▾</span>
+        <div class="account-menu">
+          <a href="/history">📊 Verlauf</a>
+          <a href="/analytics">📈 Analytics</a>
+          <a href="/profile">⚙️ Einstellungen</a>
+          <div class="divider"></div>
+          <a href="/logout">🚪 Logout</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="section" style="padding-top: 40px;">
+  <div class="detail-container">
+    
+    <a href="/history" class="back-link">← Zurück zum Verlauf</a>
+    
+    <!-- Hero & Kontext -->
+    <div class="section-card" style="margin-bottom: 24px;">
+      <h1 style="margin: 0 0 8px 0; font-size: 1.8rem; display:flex; align-items:center; gap:12px;">
+        📋 Verarbeitungsdetails
+        <span style="font-size:0.8rem; padding:3px 8px; border-radius:999px; background:#f3f4f6; color:#4b5563; font-weight:500;">
+          Job-ID: {{ job_id }}
+        </span>
+      </h1>
+      <p class="hero-meta">
+        <span>Verarbeitet am {{ job.created_at[:16].replace('T', ' ') if job.created_at else '-' }}</span>
+        <span>Rechnungen: {{ job.total_files }}</span>
+        <span>Lieferanten: {{ aussteller_stats|length }}</span>
+      </p>
+      <p style="margin: 8px 0 0 0; color: #4b5563; font-size: 0.95rem;">
+        Sie haben in dieser Verarbeitung {{ job.total_files }} Rechnungen mit einem Volumen von
+        {{ "%.2f"|format(job.total_amount) }}€ verarbeitet. Die Erfolgsrate liegt bei
+        {{ "%.0f"|format((job.successful / job.total_files * 100) if job.total_files > 0 else 0) }}%.
+      </p>
+    </div>
+
+    <!-- Filter-Chips auf Job-Ebene -->
+    <div class="filter-chips">
+      <div class="chip chip-muted">
+        <span class="chip-label">Zeitraum</span>
+        <span>{{ job.created_at[:10] if job.created_at else '–' }}</span>
+      </div>
+      <div class="chip chip-muted">
+        <span class="chip-label">Status</span>
+        <span>
+          {% if job.status == 'completed' %}
+            ✓ Fertig
+          {% elif job.status == 'processing' %}
+            ⏳ Läuft
+          {% else %}
+            {{ job.status or 'Unbekannt' }}
+          {% endif %}
+        </span>
+      </div>
+      <div class="chip chip-muted">
+        <span class="chip-label">Lieferanten</span>
+        <span>{{ aussteller_stats|length }}</span>
+      </div>
+      <div class="chip chip-muted">
+        <span class="chip-label">Automatisierung</span>
+        <span>{{ "%.0f"|format((job.successful / job.total_files * 100) if job.total_files > 0 else 0) }}%</span>
+      </div>
+    </div>
+    
+    {% set ns = namespace(missing_critical=0) %}
+    {% for invoice in invoices %}
+      {% if (not invoice.rechnungsnummer) or (not invoice.datum) or (not invoice.rechnungsaussteller) %}
+        {% set ns.missing_critical = ns.missing_critical + 1 %}
+      {% endif %}
+    {% endfor %}
+    {% set sorted_suppliers = aussteller_stats|sort(attribute='total', reverse=True) %}
+    {% set top_supplier = sorted_suppliers[0] if sorted_suppliers else None %}
+    {% if top_supplier %}
+      {% set top_share = (top_supplier.total / job.total_amount * 100) if job.total_amount > 0 else 0 %}
+    {% else %}
+      {% set top_share = 0 %}
+    {% endif %}
+    
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-value">{{ job.total_files }}</div>
+        <div class="kpi-label">Rechnungen in diesem Job</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">{{ job.successful }}</div>
+        <div class="kpi-label">Erfolgreich verarbeitet</div>
+        <div class="kpi-subnote">Automatisierungsgrad in diesem Lauf</div>
+      </div>
+      <div class="kpi-card highlight">
+        <div class="kpi-value">{{ "%.2f"|format(job.total_amount) }}€</div>
+        <div class="kpi-label">Brutto Gesamt</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">{{ "%.2f"|format(job.total_netto) }}€</div>
+        <div class="kpi-label">Netto Gesamt</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">{{ "%.2f"|format(job.total_mwst) }}€</div>
+        <div class="kpi-label">MwSt. Gesamt</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">{{ "%.0f"|format((job.successful / job.total_files * 100) if job.total_files > 0 else 0) }}%</div>
+        <div class="kpi-label">Erfolgsrate</div>
+        <div class="kpi-subnote">vollständig durchgelaufene Rechnungen</div>
+      </div>
+    </div>
+
+    <!-- Insights / Auffälligkeiten -->
+    <div class="section-card">
+      <h3 class="section-title">
+        💡 Erkenntnisse zu diesem Job
+        <span class="help-tag">Wie lese ich das? <span title="Diese Hinweise basieren auf den Rechnungsdaten dieses Verarbeitungs-Laufs.">ℹ️</span></span>
+      </h3>
+      <div class="insights-grid">
+        <!-- Auffälligkeiten -->
+        <div class="insight-card">
+          <div class="insight-header">
+            <span>🏢 Top Rechnungsaussteller</span>
+            <span class="insight-badge info">Auffälligkeit</span>
+          </div>
+          {% if top_supplier %}
+          <div class="insight-body">
+            {{ top_supplier.name or 'Unbekannt' }} steht für
+            {{ "%.1f"|format(top_share).replace('.', ',') }} % des Volumens dieses Jobs
+            ({{ "%.2f"|format(top_supplier.total) }}€).
+          </div>
+          <div class="insight-meta">
+            Insgesamt {{ aussteller_stats|length }} Aussteller in diesem Lauf.
+          </div>
+          {% else %}
+          <div class="insight-body">
+            In diesem Job konnten keine Rechnungsaussteller ermittelt werden.
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Datenqualität -->
+        <div class="insight-card">
+          <div class="insight-header">
+            <span>📊 Datenqualität</span>
+            <span class="insight-badge warning">Risiko</span>
+          </div>
+          <div class="insight-body">
+            {% if ns.missing_critical > 0 %}
+              Bei {{ ns.missing_critical }} von {{ invoices|length }} Rechnungen fehlen kritische Felder
+              (Nummer, Datum oder Aussteller).
+            {% else %}
+              Alle kritischen Stammdaten (Nummer, Datum, Aussteller) sind für die Rechnungen dieses Jobs vorhanden.
+            {% endif %}
+          </div>
+          <div class="insight-meta">
+            Grundlage für Freigabe- und Audit-Prozesse.
+          </div>
+        </div>
+
+        <!-- Automatisierung / Chance -->
+        <div class="insight-card">
+          <div class="insight-header">
+            <span>⚙️ Automatisierungsgrad</span>
+            <span class="insight-badge success">Chance</span>
+          </div>
+          <div class="insight-body">
+            {% set auto_rate = (job.successful / job.total_files * 100) if job.total_files > 0 else 0 %}
+            Der Automatisierungsgrad in diesem Job liegt bei
+            {{ "%.0f"|format(auto_rate) }} %. 
+            {% if auto_rate < 90 %}
+              Hier besteht Potenzial, weitere Regeln oder Lieferantenprofile zu hinterlegen.
+            {% else %}
+              Ein sehr hoher Automatisierungsgrad – gut geeignet als Referenzprozess.
+            {% endif %}
+          </div>
+          <div class="insight-meta">
+            Basierend auf erfolgreich verarbeiteten Rechnungen.
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Downloads -->
+    <div class="section-card">
+      <h3 class="section-title">📥 Dateien herunterladen</h3>
+      <div class="download-grid">
+        {% if job.exported_files and 'xlsx' in job.exported_files %}
+        <a href="/api/download/{{ job_id }}/xlsx" class="download-btn btn-excel">
+          📗 Excel (.xlsx)
+        </a>
+        {% endif %}
+        {% if job.exported_files and 'csv' in job.exported_files %}
+        <a href="/api/download/{{ job_id }}/csv" class="download-btn btn-csv">
+          📄 CSV
+        </a>
+        {% endif %}
+        {% if job.exported_files and 'datev' in job.exported_files %}
+        <a href="/api/download/{{ job_id }}/datev" class="download-btn btn-datev">
+          💼 DATEV
+        </a>
+        {% endif %}
+      </div>
+      <p class="download-note">
+        Weitere Exportoptionen (z.&nbsp;B. API- oder Webhook-Anbindung) können auf Wunsch ergänzt werden.
+      </p>
+      <p class="download-note">
+        Hinweis: Diese Daten basieren auf den Rechnungen, auf die Ihr Benutzerkonto aktuell Zugriff hat.
+      </p>
+    </div>
+    
+    <!-- Invoices Table -->
+    <div class="section-card">
+      <h3 class="section-title">📄 Einzelne Rechnungen ({{ invoices|length }})</h3>
+      <div class="table-toolbar">
+        <div>
+          <strong>{{ invoices|length }}</strong> Rechnungen · 
+          <strong>{{ aussteller_stats|length }}</strong> Aussteller
+          <small>Nutzen Sie die Suche, um nach Nummer, Datum, Aussteller oder Betrag zu filtern.</small>
+        </div>
+        <div>
+          <input type="text" id="invoiceSearch" class="table-search-input" placeholder="Rechnungen durchsuchen …" />
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th>Rechnungsnr.</th>
+              <th>Datum</th>
+              <th>Aussteller</th>
+              <th>Kategorie</th>
+              <th>Empfänger</th>
+              <th class="amount">Netto</th>
+              <th class="amount">MwSt.</th>
+              <th class="amount">Brutto</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for invoice in invoices %}
+            <tr>
+              <td>{{ invoice.rechnungsnummer or '-' }}</td>
+              <td>{{ invoice.datum or '-' }}</td>
+              <td>{{ invoice.rechnungsaussteller or '-' }}</td>
+              <td>
+                {% if invoice.categories %}
+                  {% for cat in invoice.categories %}
+                  <span class="category-badge">
+                    {{ cat.icon }} {{ cat.name }}
+                    <span class="confidence">({{ "%.0f"|format(cat.confidence * 100) }}%)</span>
+                  </span>
+                  {% endfor %}
+                {% else %}
+                  <span style="color: #9ca3af;">-</span>
+                {% endif %}
+              </td>
+              <td>{{ invoice.rechnungsempfaenger or '-' }}</td>
+              <td class="amount">{{ "%.2f"|format(invoice.betrag_netto or 0) }}€</td>
+              <td class="amount">{{ "%.2f"|format(invoice.mwst_betrag or 0) }}€</td>
+              <td class="amount">{{ "%.2f"|format(invoice.betrag_brutto or 0) }}€</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen.</p>
+    </div>
+    <div>
+      <h4>Produkte</h4>
+      <ul>
+        <li><a href="/">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="/preise">Preise &amp; Pakete</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 SBS Deutschland GmbH &amp; Co. KG</p>
+  </div>
+</footer>
+
+<script src="/static/js/main.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Einfache Client-Side Suche über alle Rechnungszeilen
+  const input = document.getElementById('invoiceSearch');
+  if (!input) return;
+  const rows = Array.from(document.querySelectorAll('.invoice-table tbody tr'));
+
+  input.addEventListener('input', function () {
+    const q = input.value.toLowerCase();
+    rows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(q) ? '' : 'none';
+    });
+  });
+});
+</script>
+
+</body>
+</html>

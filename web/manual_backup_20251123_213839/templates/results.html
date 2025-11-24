@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Ergebnisse · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="SBS Deutschland KI-Rechnungsverarbeitung – Ihre Ergebnisse." />
+  <link rel="icon" href="/static/favicon.ico" />
+  <style>
+    :root {
+      --sbs-bg: #f5f6f8;
+      --sbs-white: #ffffff;
+      --sbs-dark: #003856;
+      --sbs-dark-soft: #0b2435;
+      --sbs-accent: #ffb900;
+      --sbs-accent-soft: rgba(255,180,0,0.14);
+      --sbs-border-soft: rgba(15,23,42,0.08);
+      --sbs-text: #17212b;
+      --sbs-muted: #6b7280;
+      --sbs-gradient: linear-gradient(135deg, #003856 0%, #00507a 100%);
+      --transition-fast: all 0.25s ease;
+    }
+
+    [data-theme="dark"] {
+      --sbs-bg: #0f172a;
+      --sbs-white: #1e293b;
+      --sbs-dark: #60a5fa;
+      --sbs-dark-soft: #e2e8f0;
+      --sbs-text: #e2e8f0;
+      --sbs-muted: #94a3b8;
+      --sbs-border-soft: rgba(148,163,253,0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--sbs-bg);
+      color: var(--sbs-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* HEADER */
+    .header {
+      background: var(--sbs-white);
+      padding: 12px 0;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      transition: var(--transition-fast);
+    }
+
+    .header.scrolled {
+      padding: 8px 0;
+      box-shadow: 0 4px 20px rgba(15,23,42,0.12);
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+
+    .logo-img {
+      height: 46px;
+      width: auto;
+      transition: height 0.3s ease;
+    }
+
+    .header.scrolled .logo-img {
+      height: 38px;
+    }
+
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+      line-height: 1.25;
+      color: var(--sbs-dark-soft);
+    }
+
+    .logo-text strong {
+      font-size: 14px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    /* NAV */
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 15px;
+    }
+
+    .nav a {
+      position: relative;
+      padding-bottom: 4px;
+      opacity: 0.85;
+      transition: var(--transition-fast);
+      text-decoration: none;
+      color: var(--sbs-text);
+    }
+
+    .nav a:hover {
+      opacity: 1;
+    }
+
+    .nav a:hover::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--sbs-accent);
+    }
+
+    .nav-cta {
+      padding: 9px 16px !important;
+      border-radius: 999px;
+      background: var(--sbs-accent) !important;
+      color: #111827 !important;
+      font-weight: 600;
+      box-shadow: 0 8px 18px rgba(255,180,0,0.32);
+    }
+
+    .nav-cta:hover::after {
+      display: none !important;
+    }
+
+    /* Dropdown */
+    .dropdown {
+      position: relative;
+    }
+
+    .dropdown-toggle {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .dropdown-toggle::after {
+      content: "▾";
+      font-size: 10px;
+      opacity: 0.6;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: var(--sbs-white);
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      padding: 8px 0;
+      min-width: 220px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(10px);
+      transition: var(--transition-fast);
+      z-index: 1000;
+    }
+
+    .dropdown:hover .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown-menu a {
+      display: block;
+      padding: 10px 16px;
+      color: var(--sbs-text);
+      text-decoration: none;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .dropdown-menu a:hover {
+      background: var(--sbs-accent-soft);
+    }
+
+    .dropdown-menu a:hover::after {
+      display: none;
+    }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px;
+    }
+
+    .theme-toggle .sun { display: inline; }
+    .theme-toggle .moon { display: none; }
+    [data-theme="dark"] .theme-toggle .sun { display: none; }
+    [data-theme="dark"] .theme-toggle .moon { display: inline; }
+
+    /* Burger */
+    .burger {
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+    }
+
+    .burger span {
+      width: 24px;
+      height: 2px;
+      background: var(--sbs-dark);
+      border-radius: 2px;
+      transition: var(--transition-fast);
+    }
+
+    /* MAIN CONTENT */
+    .main {
+      flex: 1;
+      padding: 40px 24px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .results-card {
+      background: var(--sbs-white);
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 8px 40px rgba(0,56,86,0.08);
+      border-top: 4px solid var(--sbs-accent);
+      margin-bottom: 24px;
+    }
+
+    .results-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .results-header h1 {
+      color: var(--sbs-dark);
+      font-size: 2rem;
+      margin: 0 0 12px;
+    }
+
+    .results-header p {
+      color: var(--sbs-muted);
+      font-size: 1rem;
+      margin: 0;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-box {
+      background: var(--sbs-dark);
+      color: white;
+      padding: 24px 20px;
+      border-radius: 12px;
+      text-align: center;
+      transition: var(--transition-fast);
+    }
+
+    .stat-box:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,56,86,0.3);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      opacity: 0.85;
+    }
+
+    /* Download Buttons */
+    .download-section {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .download-section h3 {
+      color: var(--sbs-dark);
+      margin: 0 0 20px;
+      font-size: 1.2rem;
+    }
+
+    .download-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 24px;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: var(--transition-fast);
+      border: none;
+      cursor: pointer;
+    }
+
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+
+    .btn-excel {
+      background: #28a745;
+      color: white;
+    }
+
+    .btn-csv {
+      background: #17a2b8;
+      color: white;
+    }
+
+    .btn-datev {
+      background: var(--sbs-accent);
+      color: #111827;
+    }
+
+    /* Email Section */
+    .email-section {
+      background: var(--sbs-bg);
+      padding: 32px;
+      border-radius: 12px;
+      margin-bottom: 32px;
+    }
+
+    .email-section h3 {
+      text-align: center;
+      color: var(--sbs-dark);
+      margin: 0 0 8px;
+      font-size: 1.2rem;
+    }
+
+    .email-section p {
+      text-align: center;
+      color: var(--sbs-muted);
+      margin: 0 0 20px;
+      font-size: 0.9rem;
+    }
+
+    .email-form {
+      max-width: 500px;
+      margin: 0 auto;
+      display: flex;
+      gap: 12px;
+    }
+
+    .email-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid var(--sbs-dark);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: var(--sbs-white);
+      color: var(--sbs-text);
+      transition: var(--transition-fast);
+    }
+
+    .email-input:focus {
+      outline: none;
+      border-color: var(--sbs-accent);
+      box-shadow: 0 0 0 3px var(--sbs-accent-soft);
+    }
+
+    .email-btn {
+      padding: 12px 20px;
+      background: var(--sbs-dark);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .email-btn:hover {
+      background: #004d73;
+    }
+
+    .email-status {
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+
+    .alert-success {
+      background: rgba(40, 167, 69, 0.15);
+      color: #28a745;
+    }
+
+    .alert-warning {
+      background: rgba(255, 185, 0, 0.15);
+      color: #b8860b;
+    }
+
+    .alert-danger {
+      background: rgba(220, 53, 69, 0.15);
+      color: #dc3545;
+    }
+
+    .alert-info {
+      background: rgba(23, 162, 184, 0.15);
+      color: #17a2b8;
+    }
+
+    /* Failed Files */
+    .failed-section {
+      background: rgba(255, 185, 0, 0.1);
+      border-left: 4px solid var(--sbs-accent);
+      padding: 20px 24px;
+      border-radius: 8px;
+      margin-bottom: 32px;
+    }
+
+    .failed-section h4 {
+      margin: 0 0 12px;
+      color: var(--sbs-dark);
+    }
+
+    .failed-section ul {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--sbs-muted);
+    }
+
+    .failed-section li {
+      margin-bottom: 6px;
+    }
+
+    /* Processing Alert */
+    .processing-alert {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .processing-alert h3 {
+      color: var(--sbs-dark);
+      margin: 0 0 12px;
+    }
+
+    .processing-alert p {
+      color: var(--sbs-muted);
+      margin: 0;
+    }
+
+    /* Action Buttons */
+    .action-section {
+      text-align: center;
+      padding-top: 16px;
+      border-top: 1px solid var(--sbs-border-soft);
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: var(--sbs-dark);
+      color: white;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: var(--transition-fast);
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,56,86,0.3);
+    }
+
+    /* FOOTER */
+    .footer {
+      background: linear-gradient(135deg, #001f2e 0%, #003856 100%);
+      color: rgba(255, 255, 255, 0.85);
+      padding: 60px 24px 24px;
+      margin-top: auto;
+    }
+
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+
+    .footer-section h4 {
+      color: var(--sbs-accent);
+      font-weight: 700;
+      margin-bottom: 16px;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-section ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .footer-section ul li {
+      margin-bottom: 10px;
+    }
+
+    .footer-section ul li a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: color 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .footer-section ul li a:hover {
+      color: var(--sbs-accent);
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .footer-logo-img {
+      height: 36px;
+      width: auto;
+    }
+
+    .footer-brand {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .footer-brand strong {
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-brand span {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-tagline {
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+
+    .footer-location {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.85rem;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-bottom p {
+      margin: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--sbs-white);
+        flex-direction: column;
+        padding: 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      }
+
+      .nav.active {
+        display: flex;
+      }
+
+      .burger {
+        display: flex;
+      }
+
+      .results-card {
+        padding: 24px;
+      }
+
+      .results-header h1 {
+        font-size: 1.5rem;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .email-form {
+        flex-direction: column;
+      }
+
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .download-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="https://sbsdeutschland.com/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
+    </a>
+    <nav class="nav">
+      <div class="dropdown">
+        <span class="dropdown-toggle">Leistungen</span>
+        <div class="dropdown-menu">
+          <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
+        </div>
+      </div>
+      <a href="https://sbsdeutschland.com/preise">Preise</a>
+      <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
+        <div class="account-menu">
+          <a href="/history">📊 Verlauf</a>
+          <a href="/analytics">📈 Analytics</a>
+          <a href="/email-config">📧 Email-Inbox</a>
+          <a href="/profile">⚙️ Einstellungen</a>
+          <div class="divider"></div>
+          <a href="/logout">🚪 Logout</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="results-card">
+      <div class="results-header">
+        <h1>📊 Verarbeitungsergebnisse</h1>
+        <p>Job ID: {{ job_id }}</p>
+      </div>
+
+      {% if job.status == 'completed' %}
+      
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-value">{{ job.total }}</div>
+          <div class="stat-label">Dateien gesamt</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">{{ job.successful }}</div>
+          <div class="stat-label">Erfolgreich</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">{{ job.failed|length if job.failed else 0 }}</div>
+          <div class="stat-label">Fehlgeschlagen</div>
+        </div>
+        {% if job.total_amount %}
+        <div class="stat-box">
+          <div class="stat-value">{{ "%.2f"|format(job.total_amount) }}€</div>
+          <div class="stat-label">Gesamtsumme</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Download Buttons -->
+      <div class="download-section">
+        <h3>📥 Dateien herunterladen</h3>
+        <div class="download-buttons">
+          {% if job.exported_files %}
+            {% if 'xlsx' in job.exported_files %}
+            <a href="/api/download/{{ job_id }}/xlsx" class="download-btn btn-excel">
+              📗 Excel herunterladen
+            </a>
+            {% endif %}
+
+            {% if 'csv' in job.exported_files %}
+            <a href="/api/download/{{ job_id }}/csv" class="download-btn btn-csv">
+              📄 CSV herunterladen
+            </a>
+            {% endif %}
+
+            {% if 'datev' in job.exported_files %}
+            <a href="/api/download/{{ job_id }}/datev" class="download-btn btn-datev">
+              💼 DATEV herunterladen
+            </a>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Email Section -->
+      <div class="email-section">
+        <h3>📧 Per Email versenden</h3>
+        <p>Dateien direkt an Email-Adressen senden</p>
+        
+        <div class="email-form">
+          <input type="email" class="email-input" id="emailInput" placeholder="email@beispiel.de, weitere@beispiel.de">
+          <button class="email-btn" id="sendEmailBtn">
+            📤 Senden
+          </button>
+        </div>
+        <div class="email-status" id="emailStatus"></div>
+      </div>
+
+      <!-- Failed Files -->
+      {% if job.failed and job.failed|length > 0 %}
+      <div class="failed-section">
+        <h4>⚠️ Fehlerhafte Dateien ({{ job.failed|length }})</h4>
+        <ul>
+          {% for fail in job.failed %}
+          <li>{{ fail }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% else %}
+      
+      <!-- Processing -->
+      <div class="processing-alert">
+        <h3>⏳ Verarbeitung läuft noch...</h3>
+        <p>Bitte warten Sie einen Moment.</p>
+      </div>
+
+      {% endif %}
+
+      <!-- Action Button -->
+      <div class="action-section">
+        <a href="/" class="action-btn">
+          🔄 Neue Rechnungen verarbeiten
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">
+        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+      </p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+    </div>
+
+    <div>
+      <h4>Produkte</h4>
+      <ul>
+        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="/preise">Preise &amp; Pakete</a></li>
+        <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
+  </div>
+</footer>
+
+
+<script>
+// Theme Toggle
+const themeToggle = document.getElementById('theme-toggle');
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+});
+
+// Burger Menu
+const burger = document.getElementById('burger');
+const nav = document.getElementById('nav');
+burger.addEventListener('click', () => {
+  nav.classList.toggle('active');
+});
+
+// Header Scroll
+window.addEventListener('scroll', () => {
+  const header = document.getElementById('header');
+  if (window.scrollY > 50) {
+    header.classList.add('scrolled');
+  } else {
+    header.classList.remove('scrolled');
+  }
+});
+
+// Email Send
+document.addEventListener('DOMContentLoaded', function() {
+  // Load saved email
+  const savedEmail = localStorage.getItem('savedEmails');
+  if (savedEmail) {
+    document.getElementById('emailInput').value = savedEmail;
+  }
+});
+
+document.getElementById('sendEmailBtn')?.addEventListener('click', async function() {
+  const emailInput = document.getElementById('emailInput');
+  const emails = emailInput.value.split(',').map(e => e.trim()).filter(e => e);
+  const statusDiv = document.getElementById('emailStatus');
+  
+  if (emails.length === 0) {
+    statusDiv.innerHTML = '<div class="alert alert-warning">Bitte Email-Adresse(n) eingeben</div>';
+    return;
+  }
+  
+  // Save email for next time
+  localStorage.setItem('savedEmails', emailInput.value);
+  
+  statusDiv.innerHTML = '<div class="alert alert-info">📤 Versende...</div>';
+  this.disabled = true;
+  
+  try {
+    const response = await fetch('/api/send-email/{{ job_id }}', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({emails: emails})
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      statusDiv.innerHTML = '<div class="alert alert-success">✅ Email erfolgreich versendet!</div>';
+    } else {
+      statusDiv.innerHTML = '<div class="alert alert-danger">❌ Fehler: ' + (result.error || 'Email konnte nicht gesendet werden') + '</div>';
+    }
+  } catch (error) {
+    statusDiv.innerHTML = '<div class="alert alert-danger">❌ Fehler beim Versenden</div>';
+  }
+  
+  this.disabled = false;
+});
+</script>
+
+</body>
+<script>
+async function updateAccountStatus() {
+  try {
+    const r = await fetch('/api/user');
+    const u = await r.json();
+    if (u.logged_in) {
+      document.getElementById('accountName').textContent = u.name;
+    } else {
+      document.getElementById('accountName').textContent = 'Account';
+    }
+  } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', updateAccountStatus);
+</script>
+</html>

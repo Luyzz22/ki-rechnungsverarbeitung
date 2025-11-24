@@ -159,7 +159,14 @@
         grid-template-columns: 1fr;
       }
     }
-  </style>
+  
+.hero-meta {
+  font-size: 0.8rem;
+  color: var(--sbs-muted);
+  margin-top: 4px;
+}
+
+</style>
 <style>
 .skeleton {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -204,7 +211,10 @@
       <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
       <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
     </a>
-    <nav class="nav">
+    <button class="burger" id="burger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav" id="nav">
       <div class="dropdown">
         <span class="dropdown-toggle">Leistungen</span>
         <div class="dropdown-menu">
@@ -218,14 +228,17 @@
       <a href="https://sbsdeutschland.com/preise">Preise</a>
       <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
       <div class="account-dropdown">
-        <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
+        <span class="account-toggle">👤 <span id="accountName">App Login</span> ▾</span>
         <div class="account-menu">
-          <a href="/history">📊 Verlauf</a>
-          <a href="/analytics">📈 Analytics</a>
-          <a href="/email-config">📧 Email-Inbox</a>
-          <a href="/profile">⚙️ Einstellungen</a>
+          <a href="https://app.sbsdeutschland.com/history">📊 Verlauf</a>
+          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
+          <a href="https://app.sbsdeutschland.com/account">💳 Konto &amp; Nutzung</a>
+          <a href="https://app.sbsdeutschland.com/team">👥 Team &amp; Rollen</a>
+          <a href="https://app.sbsdeutschland.com/audit-log">📜 Audit-Log</a>
+          <a href="https://app.sbsdeutschland.com/email-config">📧 Email-Inbox</a>
+          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
           <div class="divider"></div>
-          <a href="/logout">🚪 Logout</a>
+          <a href="https://app.sbsdeutschland.com/logout">🚪 Logout</a>
         </div>
       </div>
     </nav>
@@ -236,6 +249,7 @@
   <div class="hero-content">
     <h1>📊 Ausgaben-Analyse</h1>
     <p class="hero-subtitle">Übersicht und Trends Ihrer Rechnungsdaten</p>
+    <p class="hero-meta">Report erstellt am <span id="analyticsGenerated"></span></p>
   </div>
 </section>
 
@@ -275,23 +289,23 @@
 {% endif %}
 
 <div class="kpi-grid">
-      <div class="kpi-card highlight">
+      <div class="kpi-card highlight" title="Summe aller Bruttobeträge im ausgewählten Zeitraum.">
         <div class="value">{{ "%.2f"|format(stats.total_amount) }}€</div>
         <div class="label">Gesamtausgaben</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card" title="Anzahl der verarbeiteten Rechnungen im ausgewählten Zeitraum.">
         <div class="value">{{ stats.total_invoices }}</div>
         <div class="label">Rechnungen</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card" title="Durchschnittlicher Bruttobetrag pro Rechnung.">
         <div class="value">{{ "%.2f"|format(stats.avg_per_invoice) }}€</div>
         <div class="label">Ø pro Rechnung</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card" title="Anzahl unterschiedlicher Rechnungsaussteller im ausgewählten Zeitraum.">
         <div class="value">{{ stats.unique_suppliers }}</div>
         <div class="label">Lieferanten</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card" title="Summe aller ermittelten Mehrwertsteuerbeträge.">
         <div class="value">{{ "%.2f"|format(stats.total_mwst) }}€</div>
         <div class="label">MwSt. gesamt</div>
       </div>
@@ -347,112 +361,306 @@
 
 <script src="/static/js/main.js"></script>
 <script>
-// Theme Toggle
+// Grundfarben
+const primary = '#0F4C81';
+const accent = '#F0B762';
+const neutral = '#E5E7EB';
+
+// Palette für mehrere Lieferanten
+const palette = [
+  '#4E79A7', // blau
+  '#F28E2B', // orange
+  '#E15759', // rot
+  '#76B7B2', // teal
+  '#59A14F', // grün
+  '#EDC948', // gelb
+  '#B07AA1', // lila
+  '#FF9DA7', // pink
+  '#9C755F', // braun
+  '#6C757D'  // grau
+];
+
+// Theme Toggle (nur wenn Button existiert)
 const themeToggle = document.getElementById('theme-toggle');
-const savedTheme = localStorage.getItem('theme') || 'light';
-document.documentElement.setAttribute('data-theme', savedTheme);
+if (themeToggle) {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  themeToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  });
+}
 
-themeToggle.addEventListener('click', () => {
-  const current = document.documentElement.getAttribute('data-theme');
-  const next = current === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('theme', next);
-});
-
-// Burger Menu
+// Burger Menu (nur wenn Elemente existieren)
 const burger = document.getElementById('burger');
 const nav = document.getElementById('nav');
-burger.addEventListener('click', () => {
-  nav.classList.toggle('active');
+if (burger && nav) {
+  burger.addEventListener('click', () => {
+    nav.classList.toggle('active');
+  });
+}
+
+// Timestamp im Header setzen
+document.addEventListener('DOMContentLoaded', function () {
+  const ts = document.getElementById('analyticsGenerated');
+  if (ts) {
+    ts.textContent = new Date().toLocaleString('de-DE');
+  }
 });
 
-// Monthly Chart
-const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
-new Chart(monthlyCtx, {
-  type: 'bar',
-  data: {
-    labels: {{ monthly_labels | tojson }},
-    datasets: [{
-      label: 'Brutto (€)',
-      data: {{ monthly_values | tojson }},
-      backgroundColor: '#FFB900',
-      borderRadius: 4
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      legend: { display: false }
+// 📈 Ausgaben pro Monat mit Trend & Drilldown
+(function () {
+  const canvas = document.getElementById('monthlyChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const labels = {{ monthly_labels | tojson }};
+  const values = {{ monthly_values | tojson }};
+
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Brutto je Monat',
+        data: values,
+        backgroundColor: 'rgba(15, 76, 129, 0.85)',
+        borderColor: primary,
+        borderWidth: 1,
+        borderRadius: 6,
+        maxBarThickness: 40
+      }]
     },
-    scales: {
-      y: { beginAtZero: true }
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const v = context.parsed.y || 0;
+              return v.toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: neutral },
+          ticks: {
+            callback: function (value) {
+              if (value >= 1000) {
+                return (value / 1000).toLocaleString('de-DE', { maximumFractionDigits: 1 }) + 'k €';
+              }
+              return value.toLocaleString('de-DE') + ' €';
+            }
+          }
+        }
+      },
+      onClick: (evt, elements) => {
+        if (!elements.length) return;
+        const idx = elements[0].index;
+        const label = labels[idx];
+        if (label) {
+          // Drilldown: Monat -> History
+          window.location.href = '/history?month=' + encodeURIComponent(label);
+        }
+      }
     }
-  }
-});
+  });
 
-// Supplier Pie Chart
-{% if top_suppliers %}
-const supplierCtx = document.getElementById('supplierChart').getContext('2d');
-new Chart(supplierCtx, {
-  type: 'doughnut',
-  data: {
-    labels: {{ top_suppliers[:5] | map(attribute='name') | list | tojson }},
-    datasets: [{
-      data: {{ top_suppliers[:5] | map(attribute='total') | list | tojson }},
-      backgroundColor: ['#003856', '#FFB900', '#00507a', '#FFC933', '#007099']
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      legend: { position: 'bottom', labels: { boxWidth: 12 } }
+  // Trend für Gesamtausgaben (erste KPI-Karte)
+  if (Array.isArray(values) && values.length >= 2) {
+    const last = values[values.length - 1];
+    let prev = null;
+    for (let i = values.length - 2; i >= 0; i--) {
+      if (values[i] !== null && values[i] !== 0) {
+        prev = values[i];
+        break;
+      }
+    }
+    if (prev && prev !== 0) {
+      const diff = last - prev;
+      const pct = diff / prev * 100;
+      const cards = document.querySelectorAll('.kpi-grid .kpi-card');
+      if (cards[0]) {
+        const trend = document.createElement('div');
+        trend.classList.add('trend');
+        const pctText = Math.abs(pct).toFixed(1).replace('.', ',') + '%';
+        if (pct > 1.5) {
+          trend.classList.add('up');
+          trend.textContent = '▲ ' + pctText + ' vs. Vormonat';
+        } else if (pct < -1.5) {
+          trend.classList.add('down');
+          trend.textContent = '▼ ' + pctText + ' vs. Vormonat';
+        } else {
+          trend.textContent = '≈ ' + pctText + ' vs. Vormonat';
+        }
+        cards[0].appendChild(trend);
+      }
     }
   }
-});
+})();
+
+// 📊 Verteilung nach Lieferant mit Prozent & Drilldown
+{% if top_suppliers %}
+(function () {
+  const canvas = document.getElementById('supplierChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const labels = {{ top_suppliers[:5] | map(attribute='name') | list | tojson }};
+  const values = {{ top_suppliers[:5] | map(attribute='total') | list | tojson }};
+  const colors = palette.slice(0, labels.length);
+  const total = values.reduce((a, b) => a + b, 0);
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderColor: '#ffffff',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { usePointStyle: true, boxWidth: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const val = context.parsed || 0;
+              const pct = total ? (val / total * 100).toFixed(1).replace('.', ',') + '%' : '';
+              return context.label + ': ' +
+                val.toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €' +
+                (pct ? ' (' + pct + ')' : '');
+            }
+          }
+        }
+      },
+      onClick: (evt, elements) => {
+        if (!elements.length) return;
+        const idx = elements[0].index;
+        const label = labels[idx];
+        if (label) {
+          // Drilldown: Lieferant -> History
+          window.location.href = '/history?supplier=' + encodeURIComponent(label);
+        }
+      }
+    }
+  });
+})();
 {% endif %}
 
-// Tax Breakdown Chart
-const taxCtx = document.getElementById('taxChart').getContext('2d');
-new Chart(taxCtx, {
-  type: 'doughnut',
-  data: {
-    labels: ['Netto', 'MwSt.'],
-    datasets: [{
-      data: [{{ stats.total_netto }}, {{ stats.total_mwst }}],
-      backgroundColor: ['#003856', '#FFB900']
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      legend: { position: 'bottom' }
-    }
-  }
-});
+// 💰 Brutto vs. Netto vs. MwSt.
+(function () {
+  const canvas = document.getElementById('taxChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
 
-// Weekday Chart
-const weekdayCtx = document.getElementById('weekdayChart').getContext('2d');
-new Chart(weekdayCtx, {
-  type: 'bar',
-  data: {
-    labels: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
-    datasets: [{
-      label: 'Rechnungen',
-      data: {{ weekday_data | tojson }},
-      backgroundColor: '#003856',
-      borderRadius: 4
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      legend: { display: false }
+  const netto = {{ stats.total_netto or 0 }};
+  const mwst  = {{ stats.total_mwst  or 0 }};
+  const total = netto + mwst;
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Netto', 'MwSt.'],
+      datasets: [{
+        data: [netto, mwst],
+        backgroundColor: ['rgba(15, 76, 129, 0.85)', 'rgba(240, 184, 98, 0.8)'],
+        borderColor: '#ffffff',
+        borderWidth: 1
+      }]
     },
-    scales: {
-      y: { beginAtZero: true }
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { usePointStyle: true }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const val = context.parsed || 0;
+              const pct = total ? (val / total * 100).toFixed(1).replace('.', ',') + '%' : '';
+              return context.label + ': ' +
+                     val.toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €' +
+                     (pct ? ' (' + pct + ')' : '');
+            }
+          }
+        }
+      }
     }
-  }
-});
+  });
+})();
+
+// 📅 Rechnungen pro Wochentag
+(function () {
+  const canvas = document.getElementById('weekdayChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const labels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  const values = {{ weekday_data | tojson }};
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Rechnungen',
+        data: values,
+        backgroundColor: 'rgba(79, 117, 147, 0.85)',
+        borderColor: '#4F7593',
+        borderWidth: 1,
+        borderRadius: 6,
+        maxBarThickness: 40
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const v = context.parsed.y || 0;
+              return v.toLocaleString('de-DE') + ' Rechnungen';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: neutral },
+          ticks: {
+            precision: 0
+          }
+        }
+      }
+    }
+  });
+})();
 </script>
 
 
@@ -518,7 +726,7 @@ async function updateAccountStatus() {
     if (u.logged_in) {
       document.getElementById('accountName').textContent = u.name;
     } else {
-      document.getElementById('accountName').textContent = 'Account';
+      document.getElementById('accountName').textContent = 'App Login';
     }
   } catch(e) {}
 }

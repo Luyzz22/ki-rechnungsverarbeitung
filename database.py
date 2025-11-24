@@ -126,14 +126,18 @@ def save_invoices(job_id: str, results: List[Dict]):
     cursor.execute('DELETE FROM invoices WHERE job_id = ?', (job_id,))
     
     for invoice in results:
+        # Generate hash for duplicate detection
+        from duplicate_detection import generate_invoice_hash
+        content_hash = generate_invoice_hash(invoice)
+        
         cursor.execute('''
             INSERT INTO invoices (
                 job_id, rechnungsnummer, datum, faelligkeitsdatum, zahlungsziel_tage,
                 rechnungsaussteller, rechnungsaussteller_adresse, rechnungsempfaenger,
                 rechnungsempfaenger_adresse, kundennummer, betrag_brutto, betrag_netto,
                 mwst_betrag, mwst_satz, waehrung, iban, bic, steuernummer, ust_idnr,
-                zahlungsbedingungen, artikel, verwendungszweck
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                zahlungsbedingungen, artikel, verwendungszweck, content_hash
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             job_id,
             invoice.get('rechnungsnummer', ''),
@@ -156,7 +160,8 @@ def save_invoices(job_id: str, results: List[Dict]):
             invoice.get('ust_idnr', ''),
             invoice.get('zahlungsbedingungen', ''),
             json.dumps(invoice.get('artikel', [])),
-            invoice.get('verwendungszweck', '')
+            invoice.get('verwendungszweck', ''),
+            content_hash
         ))
     
     conn.commit()

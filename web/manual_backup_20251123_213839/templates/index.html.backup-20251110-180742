@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<title>SBS Deutschland - Upload</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="icon" href="/static/favicon.ico">
+<style>
+:root{--navy:#003856;--gold:#FFB900;--white:#fff;--grey:#f4f7fa;--text:#6b7280}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--white);color:#111;line-height:1.6}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border-bottom:1px solid #e5e7eb}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:12px 0;gap:24px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo img{height:34px}
+.logo-text{display:flex;flex-direction:column;line-height:1.1}
+.logo-text span:first-child{font-weight:700;letter-spacing:.08em;font-size:12px;text-transform:uppercase;color:var(--navy)}
+.logo-text span:last-child{font-size:10px;color:var(--text)}
+.nav-links{display:flex;align-items:center;gap:20px;font-size:13px}
+.nav-links a{padding:4px 0;border-bottom:2px solid transparent}
+.nav-links a:hover,.nav-links a.active{border-color:var(--gold);color:var(--navy)}
+.hero{background:radial-gradient(circle at top left,rgba(255,185,0,.16),transparent),var(--navy);color:#fff;padding:40px 0 36px;position:relative}
+.hero-content{position:relative;z-index:1;text-align:center}
+.eyebrow{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;font-weight:600}
+.hero h1{font-size:28px;font-weight:700;margin-bottom:8px}
+.hero p{font-size:14px;opacity:.96;max-width:600px;margin:0 auto}
+section{padding:42px 0}
+.upload-card{background:#fff;border-radius:18px;border:1px solid #e5e7eb;padding:32px;box-shadow:0 4px 16px rgba(0,56,86,.06);max-width:800px;margin:0 auto}
+.drop-zone{border:3px dashed var(--navy);border-radius:14px;padding:50px 20px;text-align:center;cursor:pointer;transition:all .3s;background:var(--grey);margin-bottom:20px}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--gold);background:#FFF9E6}
+.drop-zone h3{color:var(--navy);font-size:17px;margin-bottom:6px;font-weight:600}
+.drop-zone p{color:var(--text);font-size:12px}
+.file-list{margin-top:18px}
+.file-item{padding:11px 14px;background:var(--grey);border-radius:10px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;border-left:3px solid var(--gold);font-size:12px}
+.btn-remove{background:#ef4444;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600}
+.btn-process{background:var(--navy);color:#fff;border:none;padding:12px 36px;font-size:14px;font-weight:600;border-radius:999px;cursor:pointer;margin-top:18px;display:none}
+.btn-process:hover{background:#004d73}
+.btn-process:disabled{background:#9ca3af;cursor:not-allowed}
+.alert{padding:18px;border-radius:12px;margin-top:20px;text-align:center;font-size:13px}
+.alert-info{background:#dbeafe;border:1px solid #60a5fa;color:#1e40af}
+.alert-success{background:#d1fae5;border:1px solid #34d399;color:#065f46}
+.alert-danger{background:#fee2e2;border:1px solid #f87171;color:#991b1b}
+.processing-spinner{border:3px solid #e5e7eb;border-top:3px solid var(--gold);border-radius:50%;width:36px;height:36px;animation:spin 1s linear infinite;display:inline-block;margin:8px auto}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.btn-results{background:var(--gold);color:#111;padding:10px 28px;border-radius:999px;font-weight:600;font-size:13px;display:inline-block;margin-top:10px}
+footer{background:#0b1820;color:#9ca3af;font-size:10px;padding:16px 0 22px;margin-top:60px}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center}
+.foot a{color:#9ca3af}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div class="nav">
+<div class="logo">
+<img src="/static/sbs-logo-new.png" alt="SBS">
+<div class="logo-text">
+<span>SBS Deutschland GmbH & Co. KG</span>
+<span>Smart Business Service · Weinheim</span>
+</div>
+</div>
+<nav class="nav-links">
+<a href="/sbshomepage/">Startseite</a>
+<a href="/landing">KI-Rechnungsverarbeitung</a>
+<a href="/" class="active">Upload</a>
+<a href="/sbshomepage/kontakt.html">Kontakt</a>
+</nav>
+</div></div></header>
+<section class="hero"><div class="wrap hero-content">
+<div class="eyebrow">KI-gestützte Automatisierung</div>
+<h1>🚀 Rechnungen hochladen & verarbeiten</h1>
+<p>Laden Sie Ihre PDF-Rechnungen hoch und lassen Sie unsere KI sie automatisch verarbeiten.</p>
+</div></section>
+<section><div class="wrap"><div class="upload-card">
+<div class="drop-zone" id="dropZone">
+<h3>📄 PDF-Rechnungen hochladen</h3>
+<p>Drag & Drop oder klicken</p>
+<input type="file" id="fileInput" multiple accept=".pdf,.png,.jpg,.jpeg" style="display:none">
+</div>
+<div id="fileList" class="file-list"></div>
+<div style="text-align:center">
+<button class="btn-process" id="processBtn">⚡ Jetzt verarbeiten</button>
+</div>
+<div id="status"></div>
+</div></div></section>
+<footer><div class="wrap"><div class="foot">
+<div>© <span id="year"></span> SBS Deutschland GmbH & Co. KG</div>
+<div><a href="/static/landing/impressum.html">Impressum</a> · <a href="/static/landing/agb.html">AGB</a> · <a href="/static/landing/datenschutz.html">Datenschutz</a></div>
+</div></div></footer>
+<script>
+document.getElementById('year').textContent=new Date().getFullYear();
+const dropZone=document.getElementById('dropZone'),fileInput=document.getElementById('fileInput'),fileList=document.getElementById('fileList'),processBtn=document.getElementById('processBtn'),status=document.getElementById('status');
+let selectedFiles=[];
+dropZone.onclick=()=>fileInput.click();
+dropZone.ondragover=e=>{e.preventDefault();dropZone.classList.add('dragover')};
+dropZone.ondragleave=()=>dropZone.classList.remove('dragover');
+dropZone.ondrop=e=>{e.preventDefault();dropZone.classList.remove('dragover');handleFiles(e.dataTransfer.files)};
+fileInput.onchange=e=>handleFiles(e.target.files);
+function handleFiles(files){
+Array.from(files).filter(f=>f.name.match(/\.(pdf|png|jpe?g)$/i)).forEach(f=>{if(!selectedFiles.some(x=>x.name===f.name))selectedFiles.push(f)});
+updateFileList();
+processBtn.style.display=selectedFiles.length?'inline-block':'none';
+}
+function updateFileList(){
+fileList.innerHTML='';
+selectedFiles.forEach((f,i)=>{
+const d=document.createElement('div');
+d.className='file-item';
+d.innerHTML='<span>'+(f.name.endsWith('.pdf')?'📄':'🖼️')+' '+f.name+' <span style="color:var(--text)">('+( f.size/1024).toFixed(1)+' KB)</span></span><button class="btn-remove" onclick="removeFile('+i+')">✕</button>';
+fileList.appendChild(d);
+});
+}
+function removeFile(i){selectedFiles.splice(i,1);updateFileList();processBtn.style.display=selectedFiles.length?'inline-block':'none'}
+processBtn.onclick=async()=>{
+if(!selectedFiles.length)return;
+processBtn.disabled=true;
+status.innerHTML='<div class="alert alert-info"><div class="processing-spinner"></div><p style="margin-top:10px">Upload...</p></div>';
+const fd=new FormData();
+selectedFiles.forEach(f=>fd.append('files',f));
+try{
+const r=await fetch('/api/upload',{method:'POST',body:fd}),d=await r.json();
+if(d.success){
+status.innerHTML='<div class="alert alert-info"><div class="processing-spinner"></div><p style="margin-top:10px">KI-Verarbeitung...</p></div>';
+const pr=await fetch('/api/process/'+d.batch_id,{method:'POST'}),pd=await pr.json();
+if(pd.success)checkStatus(d.batch_id);
+else{status.innerHTML='<div class="alert alert-danger">❌ Fehler</div>';processBtn.disabled=false}
+}
+}catch{status.innerHTML='<div class="alert alert-danger">❌ Fehler</div>';processBtn.disabled=false}
+};
+async function checkStatus(id){
+try{
+const r=await fetch('/api/status/'+id),d=await r.json();
+if(d.status==='processing')setTimeout(()=>checkStatus(id),2000);
+else if(d.status==='completed'){
+status.innerHTML='<div class="alert alert-success"><h4>✅ Fertig!</h4><a href="/results/'+id+'" class="btn-results">📊 Ergebnisse</a></div>';
+processBtn.disabled=false;selectedFiles=[];updateFileList();processBtn.style.display='none';
+}
+}catch{setTimeout(()=>checkStatus(id),3000)}
+}
+</script>
+</body>
+</html>
