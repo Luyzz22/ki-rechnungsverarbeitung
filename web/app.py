@@ -1676,3 +1676,46 @@ async def analytics_costs(request: Request):
         "total_invoices": total_invoices,
         "avg_cost_per_invoice": avg_cost_per_invoice
     })
+
+# === Advanced Export Routes ===
+@app.get("/api/job/{job_id}/export/comprehensive")
+async def export_comprehensive_excel(job_id: str, request: Request):
+    """Download umfassendes Excel mit allen Daten"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    from advanced_export import create_comprehensive_excel
+    
+    try:
+        excel_bytes = create_comprehensive_excel(job_id)
+        
+        return Response(
+            content=excel_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename=invoice_report_{job_id[:8]}.xlsx"
+            }
+        )
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.get("/api/job/{job_id}/export/zip")
+async def export_job_zip(job_id: str, request: Request):
+    """Download komplettes Paket als ZIP"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    from advanced_export import create_zip_export
+    
+    try:
+        zip_bytes = create_zip_export(job_id)
+        
+        return Response(
+            content=zip_bytes,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": f"attachment; filename=invoice_package_{job_id[:8]}.zip"
+            }
+        )
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
