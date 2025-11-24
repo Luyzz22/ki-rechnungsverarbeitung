@@ -580,12 +580,17 @@ async def job_details_page(request: Request, job_id: str):
     
     aussteller_list = sorted(aussteller_stats.values(), key=lambda x: x['total'], reverse=True)
     
+    # Load duplicates
+    from database import get_duplicates_for_job
+    duplicates = get_duplicates_for_job(job_id)
+    
     return templates.TemplateResponse("job_details.html", {
         "request": request,
         "job_id": job_id,
         "job": job,
         "invoices": invoices,
-        "aussteller_stats": aussteller_list
+        "aussteller_stats": aussteller_list,
+        "duplicates": duplicates
     })
 
 @app.get("/job/{job_id}", response_class=HTMLResponse)
@@ -616,12 +621,17 @@ async def job_details_page(request: Request, job_id: str):
     
     aussteller_list = sorted(aussteller_stats.values(), key=lambda x: x['total'], reverse=True)
     
+    # Load duplicates
+    from database import get_duplicates_for_job
+    duplicates = get_duplicates_for_job(job_id)
+    
     return templates.TemplateResponse("job_details.html", {
         "request": request,
         "job_id": job_id,
         "job": job,
         "invoices": invoices,
-        "aussteller_stats": aussteller_list
+        "aussteller_stats": aussteller_list,
+        "duplicates": duplicates
     })
 
 @app.get("/job/{job_id}", response_class=HTMLResponse)
@@ -652,12 +662,17 @@ async def job_details_page(request: Request, job_id: str):
     
     aussteller_list = sorted(aussteller_stats.values(), key=lambda x: x['total'], reverse=True)
     
+    # Load duplicates
+    from database import get_duplicates_for_job
+    duplicates = get_duplicates_for_job(job_id)
+    
     return templates.TemplateResponse("job_details.html", {
         "request": request,
         "job_id": job_id,
         "job": job,
         "invoices": invoices,
-        "aussteller_stats": aussteller_list
+        "aussteller_stats": aussteller_list,
+        "duplicates": duplicates
     })
 
 @app.get("/analytics", response_class=HTMLResponse)
@@ -1495,3 +1510,18 @@ async def team_page(request: Request):
 @app.get("/audit-log", response_class=HTMLResponse)
 async def audit_log_page(request: Request):
     return templates.TemplateResponse("audit_log.html", {"request": request})
+
+
+@app.post("/api/duplicate/{detection_id}/review")
+async def review_duplicate(detection_id: int, request: Request):
+    """Mark duplicate as reviewed"""
+    if "user_id" not in request.session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    body = await request.json()
+    is_duplicate = body.get('is_duplicate', False)
+    
+    from duplicate_detection import mark_duplicate_reviewed
+    mark_duplicate_reviewed(detection_id, request.session['user_id'], is_duplicate)
+    
+    return {"status": "ok", "message": "Reviewed successfully"}
