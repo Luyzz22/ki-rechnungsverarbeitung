@@ -325,9 +325,9 @@ async def process_invoices_background(job_id: str):
         logger.info(f"✅ Invoices saved successfully")
         
         # Check for duplicates (Hash + AI)
-        from database import get_invoices_for_job
+        from database import get_invoices_by_job
         from duplicate_detection import get_duplicates_for_invoice, detect_all_duplicates
-        saved_invoices = get_invoices_for_job(job_id)
+        saved_invoices = get_invoices_by_job(job_id)
         duplicate_count = 0
         similar_count = 0
         
@@ -356,9 +356,9 @@ async def process_invoices_background(job_id: str):
     
     # Auto-Kategorisierung
     try:
-        from database import assign_category_to_invoice, get_invoices_for_job
+        from database import assign_category_to_invoice, get_invoices_by_job
         # Hole die gespeicherten Invoices mit IDs
-        saved_invoices = get_invoices_for_job(job_id)
+        saved_invoices = get_invoices_by_job(job_id)
         for invoice in saved_invoices:
             category_id, confidence, reasoning = predict_category(invoice, job.get("user_id"))
             assign_category_to_invoice(invoice['id'], category_id, confidence, 'ai')
@@ -556,14 +556,14 @@ async def history_page(request: Request):
 @app.get("/job/{job_id}", response_class=HTMLResponse)
 async def job_details_page(request: Request, job_id: str):
     """Detailed job view from database"""
-    from database import get_job, get_invoices_for_job
+    from database import get_job, get_invoices_by_job
     
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
     # Get invoices from database with categories
-    invoices = get_invoices_for_job(job_id)
+    invoices = get_invoices_by_job(job_id)
     
     # Add categories to each invoice
     from database import get_invoice_categories
@@ -597,14 +597,14 @@ async def job_details_page(request: Request, job_id: str):
 @app.get("/job/{job_id}", response_class=HTMLResponse)
 async def job_details_page(request: Request, job_id: str):
     """Detailed job view from database"""
-    from database import get_job, get_invoices_for_job
+    from database import get_job, get_invoices_by_job
     
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
     # Get invoices from database with categories
-    invoices = get_invoices_for_job(job_id)
+    invoices = get_invoices_by_job(job_id)
     
     # Add categories to each invoice
     from database import get_invoice_categories
@@ -638,14 +638,14 @@ async def job_details_page(request: Request, job_id: str):
 @app.get("/job/{job_id}", response_class=HTMLResponse)
 async def job_details_page(request: Request, job_id: str):
     """Detailed job view from database"""
-    from database import get_job, get_invoices_for_job
+    from database import get_job, get_invoices_by_job
     
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
     # Get invoices from database with categories
-    invoices = get_invoices_for_job(job_id)
+    invoices = get_invoices_by_job(job_id)
     
     # Add categories to each invoice
     from database import get_invoice_categories
