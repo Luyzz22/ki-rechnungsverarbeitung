@@ -70,3 +70,38 @@
     }
   });
 })();
+
+
+/* NAV ACTIVE MARKER */
+document.addEventListener('DOMContentLoaded', function () {
+  try {
+    var path = window.location.pathname;
+
+    function normalize(p) {
+      if (!p) return "/";
+      p = p.split("?")[0].split("#")[0];
+      p = p.replace(/\/+$/, "");
+      return p === "" ? "/" : p;
+    }
+
+    var current = normalize(path);
+
+    var links = document.querySelectorAll('.nav a[href]');
+    links.forEach(function (link) {
+      var href = link.getAttribute('href');
+      if (!href) return;
+
+      // externe Links (http/https) nicht markieren
+      if (/^https?:\/\//i.test(href)) return;
+
+      var target = normalize(href);
+
+      // exakte Übereinstimmung oder Prefix-Match (z.B. /history vs /history/xyz)
+      if (target === current || (target !== "/" && current.startsWith(target))) {
+        link.classList.add('active');
+      }
+    });
+  } catch (e) {
+    console && console.warn && console.warn('nav active marker failed', e);
+  }
+});

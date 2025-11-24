@@ -1933,3 +1933,14 @@ body {
 .footer-theme .theme-toggle-small:hover {
   background: var(--sbs-bg);
 }
+
+
+/* Sektionen im Account-Dropdown (App) */
+.account-menu .section-label {
+  padding: 4px 14px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sbs-muted);
+  opacity: 0.9;
+}

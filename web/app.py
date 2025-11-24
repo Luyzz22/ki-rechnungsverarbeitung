@@ -323,19 +323,33 @@ async def process_invoices_background(job_id: str):
         save_invoices(job_id, results)
         logger.info(f"✅ Invoices saved successfully")
         
-        # Check for duplicates
+        # Check for duplicates (Hash + AI)
         from database import get_invoices_by_job
-        from duplicate_detection import get_duplicates_for_invoice
+        from duplicate_detection import get_duplicates_for_invoice, detect_all_duplicates
         saved_invoices = get_invoices_by_job(job_id)
         duplicate_count = 0
+        similar_count = 0
+        
         for inv in saved_invoices:
+            # Check existing duplicates from hash
             duplicates = get_duplicates_for_invoice(inv['id'])
             if duplicates:
                 duplicate_count += len(duplicates)
+            
+            # Run AI similarity check (only if no hash duplicate found)
+            if not duplicates:
+                dup_results = detect_all_duplicates(dict(inv), job.get('user_id'))
+                if dup_results['similar']:
+                    similar_count += len(dup_results['similar'])
+                    # Save AI-detected similarities
+                    from duplicate_detection import save_duplicate_detection
+                    for sim in dup_results['similar']:
+                        save_duplicate_detection(inv['id'], sim['id'], method='ai', confidence=sim['confidence'])
         
-        if duplicate_count > 0:
-            logger.warning(f"⚠️ {duplicate_count} potential duplicate(s) detected!")
-            processing_jobs[job_id]['duplicates_detected'] = duplicate_count
+        total_issues = duplicate_count + similar_count
+        if total_issues > 0:
+            logger.warning(f"⚠️ {duplicate_count} exact + {similar_count} similar duplicate(s) detected!")
+            processing_jobs[job_id]['duplicates_detected'] = total_issues
     else:
         logger.warning("⚠️ No results to save!")
     

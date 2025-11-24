@@ -131,3 +131,128 @@ def mark_duplicate_reviewed(detection_id: int, user_id: int, is_duplicate: bool)
     conn.close()
     
     logger.info(f"✅ Duplicate reviewed: {detection_id} -> {status}")
+
+
+def check_similarity_ai(invoice: dict, user_id: int = None) -> List[Dict]:
+    """
+    Use Claude to detect similar invoices
+    Returns: list of similar invoices with confidence scores
+    """
+    import sqlite3
+    from anthropic import Anthropic
+    import os
+    
+    client = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+    
+    # Get recent invoices from same supplier
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    aussteller = invoice.get('rechnungsaussteller', '')
+    
+    if user_id:
+        cursor.execute('''
+            SELECT i.id, i.rechnungsnummer, i.datum, i.betrag_brutto, i.rechnungsaussteller
+            FROM invoices i
+            JOIN jobs j ON i.job_id = j.job_id
+            WHERE j.user_id = ? 
+            AND LOWER(i.rechnungsaussteller) LIKE LOWER(?)
+            ORDER BY i.datum DESC
+            LIMIT 20
+        ''', (user_id, f'%{aussteller}%'))
+    else:
+        cursor.execute('''
+            SELECT id, rechnungsnummer, datum, betrag_brutto, rechnungsaussteller
+            FROM invoices
+            WHERE LOWER(rechnungsaussteller) LIKE LOWER(?)
+            ORDER BY datum DESC
+            LIMIT 20
+        ''', (f'%{aussteller}%',))
+    
+    existing_invoices = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    if not existing_invoices:
+        return []
+    
+    # Ask Claude to compare
+    prompt = f"""Analysiere ob diese Rechnung ein Duplikat ist:
+
+NEUE RECHNUNG:
+- Aussteller: {invoice.get('rechnungsaussteller')}
+- Nummer: {invoice.get('rechnungsnummer')}
+- Datum: {invoice.get('datum')}
+- Betrag: {invoice.get('betrag_brutto')}€
+
+EXISTIERENDE RECHNUNGEN:
+{json.dumps(existing_invoices, indent=2, ensure_ascii=False)}
+
+Prüfe ob die neue Rechnung ein Duplikat oder sehr ähnlich zu einer existierenden ist.
+Berücksichtige:
+- Gleiche Rechnungsnummer = 100% Duplikat
+- Gleiches Datum + gleicher Betrag = sehr wahrscheinlich
+- Ähnlicher Betrag (±5€) + nahes Datum (±3 Tage) = möglich
+- Unterschiedliche Nummer aber alles andere gleich = verdächtig
+
+Antworte NUR mit JSON:
+{
+  "is_duplicate": true/false,
+  "similar_to": [invoice_id1, invoice_id2],
+  "confidence": 0.0-1.0,
+  "reason": "Kurze Erklärung"
+}"""
+
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        result_text = response.content[0].text.strip()
+        # Remove markdown code blocks if present
+        result_text = result_text.replace('```json', '').replace('```', '').strip()
+        result = json.loads(result_text)
+        
+        logger.info(f"🤖 AI similarity check: {result['confidence']:.2f} - {result['reason']}")
+        
+        similar = []
+        if result.get('is_duplicate') or result.get('confidence', 0) > 0.7:
+            for inv_id in result.get('similar_to', []):
+                similar.append({
+                    'id': inv_id,
+                    'confidence': result['confidence'],
+                    'reason': result['reason']
+                })
+        
+        return similar
+        
+    except Exception as e:
+        logger.error(f"AI similarity check failed: {e}")
+        return []
+
+
+def detect_all_duplicates(invoice: dict, user_id: int = None) -> Dict:
+    """
+    Complete duplicate detection: hash + AI
+    Returns: {'hash_duplicate': {...}, 'similar': [...]}
+    """
+    results = {
+        'hash_duplicate': None,
+        'similar': []
+    }
+    
+    # 1. Hash-based check (fast, exact)
+    hash_dup = check_duplicate_by_hash(invoice, user_id)
+    if hash_dup:
+        results['hash_duplicate'] = hash_dup
+        logger.warning(f"🔴 Exact duplicate found: Invoice #{hash_dup['id']}")
+    
+    # 2. AI-based similarity (slower, fuzzy)
+    similar = check_similarity_ai(invoice, user_id)
+    if similar:
+        results['similar'] = similar
+        logger.warning(f"🟡 {len(similar)} similar invoice(s) found")
+    
+    return results
