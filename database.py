@@ -1289,3 +1289,37 @@ def get_learned_category(supplier_name: str, user_id: int = None):
     result = cursor.fetchone()
     conn.close()
     return dict(result) if result else None
+
+
+def get_duplicates_for_job(job_id: str):
+    """Get all duplicate detections for a job"""
+    import sqlite3
+    
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT 
+            dd.id as detection_id,
+            dd.confidence,
+            dd.detection_method,
+            i1.id as invoice_id,
+            i1.rechnungsnummer as invoice_rechnungsnummer,
+            i1.rechnungsaussteller as invoice_aussteller,
+            i1.betrag_brutto as invoice_betrag,
+            i2.id as original_id,
+            i2.rechnungsnummer as original_rechnungsnummer,
+            i2.datum as original_datum,
+            i2.betrag_brutto as original_betrag
+        FROM duplicate_detections dd
+        JOIN invoices i1 ON dd.invoice_id = i1.id
+        JOIN invoices i2 ON dd.duplicate_of_id = i2.id
+        WHERE i1.job_id = ? AND dd.status = 'pending'
+        ORDER BY dd.confidence DESC
+    ''', (job_id,))
+    
+    results = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    return results

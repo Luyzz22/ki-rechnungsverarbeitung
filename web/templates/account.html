@@ -6,80 +6,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/css/main.css" />
-  <style>
-    .account-container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 32px 16px;
-    }
-    .account-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 24px;
-    }
-    .account-card {
-      background: var(--sbs-white);
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-    .account-card h2 {
-      margin-top: 0;
-      margin-bottom: 12px;
-      font-size: 1.2rem;
-    }
-    .account-label {
-      font-size: 0.85rem;
-      color: var(--sbs-muted);
-    }
-    .account-value {
-      font-size: 1.3rem;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    .usage-bar {
-      position: relative;
-      height: 12px;
-      background: #e5e7eb;
-      border-radius: 999px;
-      overflow: hidden;
-      margin-top: 8px;
-      margin-bottom: 4px;
-    }
-    .usage-bar-inner {
-      position: absolute;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      width: 40%;
-      background: linear-gradient(90deg, #003856, #FFB900);
-    }
-    .usage-meta {
-      font-size: 0.8rem;
-      color: var(--sbs-muted);
-    }
-    .account-section-title {
-      font-size: 0.95rem;
-      font-weight: 600;
-      margin-top: 16px;
-      margin-bottom: 8px;
-    }
-    .account-kv {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.85rem;
-      padding: 4px 0;
-      border-bottom: 1px dashed #e5e7eb;
-    }
-    .account-kv:last-child {
-      border-bottom: none;
-    }
-    @media (max-width: 900px) {
-      .account-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
 </head>
 <body>
 
@@ -87,7 +13,10 @@
   <div class="header-inner">
     <a href="/" class="logo-wrap">
       <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
-      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
+      <div class="logo-text">
+        <strong>SBS Deutschland</strong>
+        <span>Smart Business Service · Weinheim</span>
+      </div>
     </a>
 
     <button class="burger" id="burger" aria-label="Menü">
@@ -111,7 +40,7 @@
 
           <div class="divider"></div>
           <div class="section-label">Konto</div>
-          <a href="/account">💳 Konto &amp; Nutzung</a>
+          <a href="/account" class="active">💳 Konto &amp; Nutzung</a>
           <a href="/team">👥 Team &amp; Rollen</a>
           <a href="/audit-log">📜 Audit-Log</a>
           <a href="/profile">⚙️ Einstellungen</a>
@@ -129,54 +58,37 @@
   </div>
 </header>
 
-<section class="section">
-  <div class="account-container">
-    <h1 style="margin-bottom: 8px;">💳 Konto &amp; Nutzung</h1>
-    <p class="hero-subtitle" style="margin-bottom: 24px;">
-      Überblick über Plan, Nutzung und Optionen für Ihr SBS-Konto.
+<section class="hero" style="padding: 40px 24px 10px;">
+  <div class="hero-content">
+    <h1>💳 Konto &amp; Nutzung</h1>
+    <p class="hero-subtitle">
+      Plan, Verbrauch und verfügbare Rechnungen im Überblick.
     </p>
+  </div>
+</section>
 
-    <div class="account-grid">
-      <div class="account-card">
-        <h2>Plan &amp; Nutzung</h2>
+<section class="section">
+  <div class="container">
 
-        <div class="account-label">Aktueller Plan</div>
-        <div class="account-value">Business (Beispiel)</div>
-        <div class="account-label">Abrechnung</div>
-        <div>Monatlich, kündbar mit 1 Monat Frist (Beispieltext)</div>
-
-        <div class="account-section-title">Rechnungsvolumen (Beispiel)</div>
-        <div class="usage-bar">
-          <div class="usage-bar-inner"></div>
-        </div>
-        <div class="usage-meta">Beispiel: 420 von 1.000 Rechnungen im aktuellen Monat.</div>
-
-        <div class="account-section-title">Monatliche Orientierung</div>
-        <div class="account-kv">
-          <span>Ø Rechnungen pro Monat</span>
-          <span>~ 450 (Demo-Werte)</span>
-        </div>
-        <div class="account-kv">
-          <span>Typischer Upload-Kanal</span>
-          <span>E-Mail + Direkt-Upload</span>
-        </div>
-      </div>
-
-      <div class="account-card">
-        <h2>Abrechnung &amp; Kontakt</h2>
-        <p class="account-label">Rechnungsstellung &amp; Anpassungen</p>
-        <p>
-          Anpassungen des Plans oder der Kontingente erfolgen aktuell direkt über unser Team.
-          Sprechen Sie uns gerne an.
+    <!-- Hauptkarte "Ihr Abonnement" -->
+    <div style="max-width: 960px; margin: 0 auto;">
+      <div style="
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 32px 28px;
+        box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+      ">
+        <h2 style="margin: 0 0 4px 0; font-size: 1.6rem;">Ihr Abonnement</h2>
+        <p style="margin: 0 0 24px 0; color: var(--sbs-muted);">
+          Verwalten Sie Ihren Plan und Verbrauch.
         </p>
-        <p><a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt aufnehmen →</a></p>
-        <p class="account-label" style="margin-top: 16px;">Hinweis</p>
-        <p>
-          Diese Seite zeigt heute bewusst eine kompakte Übersicht. Eine detaillierte, automatisierte
-          Abrechnungsübersicht kann später ergänzt werden.
-        </p>
+
+        <div id="subscriptionInfo"></div>
+
+        <div id="subscriptionActions" style="margin-top: 24px;"></div>
       </div>
     </div>
+
   </div>
 </section>
 
@@ -206,11 +118,12 @@
     </div>
 
     <div>
-      <h4>Account</h4>
+      <h4>Unternehmen</h4>
       <ul>
-        <li><a href="/account">Konto &amp; Nutzung</a></li>
-        <li><a href="/team">Team &amp; Rollen</a></li>
-        <li><a href="/audit-log">Audit-Log</a></li>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
       </ul>
     </div>
 
@@ -231,6 +144,71 @@
 </footer>
 
 <script src="/static/js/main.js"></script>
+
+<!-- Abo-Logik 1:1 aus profile.html -->
+<script>
+async function loadSubscription() {
+  try {
+    const r = await fetch("/api/subscription/status");
+    const data = await r.json();
+    const info = document.getElementById("subscriptionInfo");
+    const actions = document.getElementById("subscriptionActions");
+    
+    if (data.error) {
+      info.innerHTML = `<p style="color: var(--sbs-muted);">${data.error}</p>`;
+      actions.innerHTML = `<a href="https://sbsdeutschland.com/preise" class="btn-save">Plan wählen</a>`;
+      return;
+    }
+    
+    const planNames = {starter: "Starter", professional: "Professional", enterprise: "Enterprise"};
+    const percent = Math.round((data.used / data.limit) * 100);
+    
+    info.innerHTML = `
+      <div style="display: grid; gap: 16px;">
+        <div style="padding: 16px; background: var(--sbs-bg); border-radius: 8px;">
+          <strong style="font-size: 1.2rem;">Plan: ${planNames[data.plan] || data.plan}</strong>
+        </div>
+        <div style="padding: 16px; background: var(--sbs-bg); border-radius: 8px;">
+          <div style="margin-bottom: 8px;">Verbrauch: <strong>${data.used} / ${data.limit}</strong> Rechnungen</div>
+          <div style="background: #e5e7eb; border-radius: 4px; height: 8px;">
+            <div style="background: ${percent > 80 ? "#ef4444" : "#22c55e"}; width: ${percent}%; height: 100%; border-radius: 4px;"></div>
+          </div>
+          <div style="margin-top: 8px; font-size: 0.85rem; color: var(--sbs-muted);">Noch ${data.remaining} Rechnungen verfügbar</div>
+        </div>
+      </div>
+    `;
+    
+    actions.innerHTML = `
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="https://sbsdeutschland.com/preise" class="btn-save">Plan ändern</a>
+        <button onclick="cancelSubscription()" style="padding: 12px 24px; border: 1px solid #ef4444; background: transparent; color: #ef4444; border-radius: 8px; cursor: pointer;">Kündigen</button>
+      </div>
+    `;
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function cancelSubscription() {
+  if (!confirm("Möchten Sie Ihr Abonnement wirklich kündigen? Sie können den Service bis zum Ende der Laufzeit weiter nutzen.")) return;
+  
+  try {
+    const r = await fetch("/api/subscription/cancel", {method: "POST"});
+    const data = await r.json();
+    if (data.success) {
+      alert(data.message);
+      loadSubscription();
+    } else {
+      alert("Fehler: " + data.error);
+    }
+  } catch(e) {
+    alert("Verbindungsfehler");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadSubscription);
+</script>
+
 <script>
 async function updateAccountStatus() {
   try {
@@ -239,11 +217,12 @@ async function updateAccountStatus() {
     if (u.logged_in) {
       document.getElementById('accountName').textContent = u.name;
     } else {
-      document.getElementById('accountName').textContent = 'App Login';
+      document.getElementById('accountName').textContent = 'Account';
     }
   } catch(e) {}
 }
 document.addEventListener('DOMContentLoaded', updateAccountStatus);
 </script>
+
 </body>
 </html>
