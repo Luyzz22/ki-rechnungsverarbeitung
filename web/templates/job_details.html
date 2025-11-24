@@ -619,6 +619,20 @@
             {% for invoice in invoices %}
             <tr>
               <td>{{ invoice.rechnungsnummer or '-' }}</td>
+              <td style="text-align: center;">
+                {% if invoice.detected_language == 'de' %}🇩🇪
+                {% elif invoice.detected_language == 'en' %}🇬🇧
+                {% elif invoice.detected_language == 'fr' %}🇫🇷
+                {% elif invoice.detected_language == 'it' %}🇮🇹
+                {% else %}🌍{% endif %}
+              </td>
+              <td>
+                {% if invoice.detected_language == 'de' %}🇩🇪
+                {% elif invoice.detected_language == 'en' %}🇬🇧
+                {% elif invoice.detected_language == 'fr' %}🇫🇷
+                {% elif invoice.detected_language == 'it' %}🇮🇹
+                {% else %}🌍{% endif %}
+              </td>
               <td>{{ invoice.datum or '-' }}</td>
               <td>{{ invoice.rechnungsaussteller or '-' }}</td>
               <td>
