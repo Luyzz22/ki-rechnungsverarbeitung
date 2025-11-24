@@ -1628,3 +1628,51 @@ async def review_plausibility(check_id: int, request: Request):
     conn.close()
     
     return {"status": "ok"}
+
+# === Analytics Dashboard ===
+@app.get("/analytics/costs")
+async def analytics_costs(request: Request):
+    """Analytics Dashboard für Kosten"""
+    if "user_id" not in request.session:
+        return RedirectResponse("/login")
+    
+    from cost_tracker import get_monthly_costs
+    import sqlite3
+    
+    monthly_costs = get_monthly_costs()
+    
+    # Hole alle Jobs mit Kosten
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT 
+            j.job_id,
+            j.created_at,
+            j.total_files,
+            COALESCE(SUM(ac.cost_usd), 0) as total_cost
+        FROM jobs j
+        LEFT JOIN api_costs ac ON j.job_id = ac.job_id
+        WHERE j.user_id = ?
+        GROUP BY j.job_id
+        ORDER BY j.created_at DESC
+        LIMIT 50
+    ''', (request.session["user_id"],))
+    
+    jobs = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    
+    # Berechne Gesamt-Statistiken
+    total_cost = sum(m['total_cost'] for m in monthly_costs)
+    total_invoices = sum(j['total_files'] for j in jobs if j['total_files'])
+    avg_cost_per_invoice = total_cost / total_invoices if total_invoices > 0 else 0
+    
+    return templates.TemplateResponse("analytics_costs.html", {
+        "request": request,
+        "monthly_costs": monthly_costs,
+        "jobs": jobs,
+        "total_cost": total_cost,
+        "total_invoices": total_invoices,
+        "avg_cost_per_invoice": avg_cost_per_invoice
+    })
