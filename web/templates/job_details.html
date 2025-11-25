@@ -387,8 +387,8 @@
         </p>
         <p class="job-hero-meta">
           <span>Job-ID: {{ job_id }}</span>
-          <span>Verarbeitet am {{ job.created_at[:16].replace('T', ' ') if job.created_at else '-' }}</span>
-          <span>{{ job.get('total_files', 0) }} Rechnungen · {{ "%.2f"|format(job.get('total', 0)_amount) }}€ Gesamtvolumen</span>
+          <span>Verarbeitet am {{ job.get('created_at', '')[:16].replace('T', ' ') if job.get('created_at', '') else '-' }}</span>
+          <span>{{ job.get('total_files', 0) }} Rechnungen · {{ "%.2f"|format(job.get('total_amount', 0)) }}€ Gesamtvolumen</span>
         </p>
         <div class="job-hero-cta">
           <a href="/analytics" class="hero-cta-btn">
@@ -397,17 +397,17 @@
         </div>
       </div>
       <div class="job-hero-side">
-        <a href="/history?status={{ job.status or 'all' }}" class="status-link">
+        <a href="/history?status={{ job.get('status', 'unknown') or 'all' }}" class="status-link">
           <div class="status-pill
-            {% if job.status == 'completed' %} status-ok
-            {% elif job.status == 'processing' %} status-processing
+            {% if job.get('status', 'unknown') == 'completed' %} status-ok
+            {% elif job.get('status', 'unknown') == 'processing' %} status-processing
             {% else %} status-other{% endif %}">
-            {% if job.status == 'completed' %}
+            {% if job.get('status', 'unknown') == 'completed' %}
               ✓ Fertig
-            {% elif job.status == 'processing' %}
+            {% elif job.get('status', 'unknown') == 'processing' %}
               ⏳ Läuft
             {% else %}
-              {{ job.status or 'Unbekannt' }}
+              {{ job.get('status', 'unknown') or 'Unbekannt' }}
             {% endif %}
           </div>
         </a>
@@ -435,15 +435,15 @@
         <div class="kpi-label">Erfolgreich</div>
       </div>
       <div class="kpi-card highlight">
-        <div class="kpi-value">{{ "%.2f"|format(job.get('total', 0)_amount) }}€</div>
+        <div class="kpi-value">{{ "%.2f"|format(job.get('total_amount', 0)) }}€</div>
         <div class="kpi-label">Brutto Gesamt</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-value">{{ "%.2f"|format(job.get('total', 0)_netto) }}€</div>
+        <div class="kpi-value">{{ "%.2f"|format(job.get('total_netto', 0)) }}€</div>
         <div class="kpi-label">Netto Gesamt</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-value">{{ "%.2f"|format(job.get('total', 0)_mwst) }}€</div>
+        <div class="kpi-value">{{ "%.2f"|format(job.get('total_mwst', 0)) }}€</div>
         <div class="kpi-label">MwSt. Gesamt</div>
       </div>
       <div class="kpi-card">
@@ -461,9 +461,9 @@
         Wichtigster Rechnungsaussteller: <strong>{{ top.name or 'Unbekannt' }}</strong>
         mit {{ "%.2f"|format(top.total) }}€.
       </p>
-      {% if job.get('total', 0)_amount and job.get('total', 0)_amount > 0 %}
+      {% if job.get('total_amount', 0) and job.get('total_amount', 0) > 0 %}
       <p style="margin: 0 0 6px; color:#4b5563; font-size:0.85rem;">
-        Das entspricht {{ "%.1f"|format(top.total / job.get('total', 0)_amount * 100) }}% des Volumens dieses Jobs.
+        Das entspricht {{ "%.1f"|format(top.total / job.get('total_amount', 0) * 100) }}% des Volumens dieses Jobs.
       </p>
       {% endif %}
       {% else %}
