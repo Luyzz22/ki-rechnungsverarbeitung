@@ -45,7 +45,7 @@ def check_duplicate_by_hash(invoice: dict, user_id: int = None, conn=None) -> Op
     
     # Find existing invoice with same hash
     if user_id:
-        cursor.execute(''')
+        cursor.execute('''
             SELECT i.id, i.rechnungsnummer, i.datum, i.rechnungsaussteller, i.betrag_brutto, i.job_id
             FROM invoices i
             JOIN jobs j ON i.job_id = j.job_id
@@ -53,7 +53,7 @@ def check_duplicate_by_hash(invoice: dict, user_id: int = None, conn=None) -> Op
             LIMIT 1
         ''', (content_hash, user_id))
     else:
-        cursor.execute(''')
+        cursor.execute('''
             SELECT id, rechnungsnummer, datum, rechnungsaussteller, betrag_brutto, job_id
             FROM invoices
             WHERE content_hash = ?
