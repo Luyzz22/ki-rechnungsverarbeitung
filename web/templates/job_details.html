@@ -388,7 +388,7 @@
         <p class="job-hero-meta">
           <span>Job-ID: {{ job_id }}</span>
           <span>Verarbeitet am {{ job.created_at[:16].replace('T', ' ') if job.created_at else '-' }}</span>
-          <span>{{ job.total_files }} Rechnungen · {{ "%.2f"|format(job.total_amount) }}€ Gesamtvolumen</span>
+          <span>{{ job.get('total_files', 0) }} Rechnungen · {{ "%.2f"|format(job.get('total', 0)_amount) }}€ Gesamtvolumen</span>
         </p>
         <div class="job-hero-cta">
           <a href="/analytics" class="hero-cta-btn">
@@ -414,12 +414,12 @@
         <div class="hero-metric">
           <span class="hero-metric-label">Automatisierungsgrad</span>
           <span class="hero-metric-value">
-            {{ "%.0f"|format((job.successful / job.total_files * 100) if job.total_files > 0 else 0) }}%
+            {{ "%.0f"|format((job.get('successful', 0) / job.get('total_files', 0) * 100) if job.get('total_files', 0) > 0 else 0) }}%
           </span>
         </div>
         <div class="hero-metric hero-metric-secondary">
           <span class="hero-metric-label">Erfolgreiche Rechnungen</span>
-          <span class="hero-metric-value">{{ job.successful }} / {{ job.total_files }}</span>
+          <span class="hero-metric-value">{{ job.get('successful', 0) }} / {{ job.get('total_files', 0) }}</span>
         </div>
       </div>
     </div>
@@ -427,27 +427,27 @@
     <!-- KPI Cards -->
     <div class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-value">{{ job.total_files }}</div>
+        <div class="kpi-value">{{ job.get('total_files', 0) }}</div>
         <div class="kpi-label">Rechnungen</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-value">{{ job.successful }}</div>
+        <div class="kpi-value">{{ job.get('successful', 0) }}</div>
         <div class="kpi-label">Erfolgreich</div>
       </div>
       <div class="kpi-card highlight">
-        <div class="kpi-value">{{ "%.2f"|format(job.total_amount) }}€</div>
+        <div class="kpi-value">{{ "%.2f"|format(job.get('total', 0)_amount) }}€</div>
         <div class="kpi-label">Brutto Gesamt</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-value">{{ "%.2f"|format(job.total_netto) }}€</div>
+        <div class="kpi-value">{{ "%.2f"|format(job.get('total', 0)_netto) }}€</div>
         <div class="kpi-label">Netto Gesamt</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-value">{{ "%.2f"|format(job.total_mwst) }}€</div>
+        <div class="kpi-value">{{ "%.2f"|format(job.get('total', 0)_mwst) }}€</div>
         <div class="kpi-label">MwSt. Gesamt</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-value">{{ "%.0f"|format((job.successful / job.total_files * 100) if job.total_files > 0 else 0) }}%</div>
+        <div class="kpi-value">{{ "%.0f"|format((job.get('successful', 0) / job.get('total_files', 0) * 100) if job.get('total_files', 0) > 0 else 0) }}%</div>
         <div class="kpi-label">Erfolgsrate</div>
       </div>
     </div>
@@ -461,9 +461,9 @@
         Wichtigster Rechnungsaussteller: <strong>{{ top.name or 'Unbekannt' }}</strong>
         mit {{ "%.2f"|format(top.total) }}€.
       </p>
-      {% if job.total_amount and job.total_amount > 0 %}
+      {% if job.get('total', 0)_amount and job.get('total', 0)_amount > 0 %}
       <p style="margin: 0 0 6px; color:#4b5563; font-size:0.85rem;">
-        Das entspricht {{ "%.1f"|format(top.total / job.total_amount * 100) }}% des Volumens dieses Jobs.
+        Das entspricht {{ "%.1f"|format(top.total / job.get('total', 0)_amount * 100) }}% des Volumens dieses Jobs.
       </p>
       {% endif %}
       {% else %}

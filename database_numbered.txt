@@ -1,0 +1,1473 @@
+     1	#!/usr/bin/env python3
+     2	"""
+     3	SQLite Database für Job-Persistenz
+     4	"""
+     5	
+     6	import sqlite3
+     7	import json
+     8	import logging
+     9	from datetime import datetime
+    10	from pathlib import Path
+    11	from typing import Dict, List, Optional
+    12	
+    13	logger = logging.getLogger(__name__)
+    14	
+    15	DB_PATH = Path(__file__).parent / "invoices.db"
+    16	
+    17	def get_connection():
+    18	    """Get database connection"""
+    19	    conn = sqlite3.connect(str(DB_PATH))
+    20	    conn.row_factory = sqlite3.Row
+    21	    return conn
+    22	
+    23	def init_database():
+    24	    """Initialize database tables"""
+    25	    conn = get_connection()
+    26	    cursor = conn.cursor()
+    27	    
+    28	    # Jobs table
+    29	    cursor.execute('''
+    30	        CREATE TABLE IF NOT EXISTS jobs (
+    31	            job_id TEXT PRIMARY KEY,
+    32	            created_at TEXT,
+    33	            completed_at TEXT,
+    34	            status TEXT DEFAULT 'uploaded',
+    35	            total_files INTEGER DEFAULT 0,
+    36	            successful INTEGER DEFAULT 0,
+    37	            failed_count INTEGER DEFAULT 0,
+    38	            total_amount REAL DEFAULT 0,
+    39	            total_netto REAL DEFAULT 0,
+    40	            total_mwst REAL DEFAULT 0,
+    41	            average_amount REAL DEFAULT 0,
+    42	            exported_files TEXT,
+    43	            upload_path TEXT,
+    44	            failed_list TEXT
+    45	        )
+    46	    ''')
+    47	    
+    48	    # Results table (individual invoices)
+    49	    cursor.execute('''
+    50	        CREATE TABLE IF NOT EXISTS invoices (
+    51	            id INTEGER PRIMARY KEY AUTOINCREMENT,
+    52	            job_id TEXT,
+    53	            rechnungsnummer TEXT,
+    54	            datum TEXT,
+    55	            faelligkeitsdatum TEXT,
+    56	            zahlungsziel_tage INTEGER,
+    57	            rechnungsaussteller TEXT,
+    58	            rechnungsaussteller_adresse TEXT,
+    59	            rechnungsempfaenger TEXT,
+    60	            rechnungsempfaenger_adresse TEXT,
+    61	            kundennummer TEXT,
+    62	            betrag_brutto REAL,
+    63	            betrag_netto REAL,
+    64	            mwst_betrag REAL,
+    65	            mwst_satz REAL,
+    66	            waehrung TEXT,
+    67	            iban TEXT,
+    68	            bic TEXT,
+    69	            steuernummer TEXT,
+    70	            ust_idnr TEXT,
+    71	            zahlungsbedingungen TEXT,
+    72	            artikel TEXT,
+    73	            verwendungszweck TEXT,
+    74	            FOREIGN KEY (job_id) REFERENCES jobs(job_id)
+    75	        )
+    76	    ''')
+    77	    
+    78	    conn.commit()
+    79	    conn.close()
+    80	    logger.info("Database initialized")
+    81	
+    82	def save_job(job_id: str, job_data: Dict, user_id: int = None):
+    83	    """Save or update a job"""
+    84	    conn = get_connection()
+    85	    cursor = conn.cursor()
+    86	    
+    87	    # Prepare data
+    88	    exported_files = json.dumps(job_data.get('exported_files', {}))
+    89	    failed_list = json.dumps(job_data.get('failed', []))
+    90	    
+    91	    cursor.execute('''
+    92	        INSERT OR REPLACE INTO jobs (
+    93	            job_id, created_at, completed_at, status, total_files,
+    94	            successful, failed_count, total_amount, total_netto, total_mwst,
+    95	            average_amount, exported_files, upload_path, failed_list, user_id
+    96	        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    97	    ''', (
+    98	        job_id,
+    99	        job_data.get('created_at', datetime.now().isoformat()),
+   100	        job_data.get('completed_at'),
+   101	        job_data.get('status', 'uploaded'),
+   102	        job_data.get('total', 0),
+   103	        job_data.get('successful', 0),
+   104	        len(job_data.get('failed', [])),
+   105	        job_data.get('total_amount', 0),
+   106	        job_data.get('stats', {}).get('total_netto', 0) if job_data.get('stats') else 0,
+   107	        job_data.get('stats', {}).get('total_mwst', 0) if job_data.get('stats') else 0,
+   108	        job_data.get('stats', {}).get('average_brutto', 0) if job_data.get('stats') else 0,
+   109	        exported_files,
+   110	        job_data.get('path', ''),
+   111	        failed_list,
+   112	        user_id
+   113	    ))
+   114	    
+   115	    conn.commit()
+   116	    conn.close()
+   117	
+   118	
+   119	def save_invoices(job_id: str, results: List[Dict]):
+   120	    """Save invoice results for a job (inkl. E-Rechnungs-Metadaten)"""
+   121	    import sqlite3
+   122	    from logging import getLogger
+   123	    from duplicate_detection import generate_invoice_hash, check_duplicate_by_hash, save_duplicate_detection
+   124	    import json
+   125	
+   126	    logger = getLogger(__name__)
+   127	
+   128	    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+   129	    conn.row_factory = sqlite3.Row
+   130	    cursor = conn.cursor()
+   131	    
+   132	    # Delete existing invoices for this job (in case of re-processing)
+   133	    cursor.execute('DELETE FROM invoices WHERE job_id = ?', (job_id,))
+   134	
+   135	    for invoice in results:
+   136	        # 1) Hash für Duplikaterkennung
+   137	        content_hash = generate_invoice_hash(invoice)
+   138	
+   139	        # 2) E-Rechnungs-Felder aus dem (in app.py) angereicherten Dict
+   140	        source_format = invoice.get("source_format", "pdf")
+   141	        einvoice_raw_xml = (
+   142	            invoice.get("einvoice_raw_xml")
+   143	            or invoice.get("raw_xml")
+   144	            or invoice.get("xml")
+   145	            or ""
+   146	        )
+   147	        einvoice_profile = invoice.get("einvoice_profile", "")
+   148	
+   149	        raw_valid = invoice.get("einvoice_valid", False)
+   150	        if isinstance(raw_valid, bool):
+   151	            einvoice_valid = 1 if raw_valid else 0
+   152	        else:
+   153	            try:
+   154	                einvoice_valid = 1 if int(raw_valid) != 0 else 0
+   155	            except Exception:
+   156	                einvoice_valid = 0
+   157	
+   158	        einvoice_validation_message, detected_language = invoice.get("einvoice_validation_message", "")
+   159	
+   160	        cursor.execute(
+   161	            """
+   162	            INSERT INTO invoices (
+   163	                job_id, rechnungsnummer, datum, faelligkeitsdatum, zahlungsziel_tage,
+   164	                rechnungsaussteller, rechnungsaussteller_adresse, rechnungsempfaenger,
+   165	                rechnungsempfaenger_adresse, kundennummer, betrag_brutto, betrag_netto,
+   166	                mwst_betrag, mwst_satz, waehrung, iban, bic, steuernummer, ust_idnr,
+   167	                zahlungsbedingungen, artikel, verwendungszweck, content_hash,
+   168	                source_format, einvoice_raw_xml, einvoice_profile,
+   169	                einvoice_valid, einvoice_validation_message
+   170	            ) VALUES (
+   171	                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+   172	                ?, ?, ?, ?, ?
+   173	            )
+   174	            """,
+   175	            (
+   176	                job_id,
+   177	                invoice.get('rechnungsnummer', ''),
+   178	                invoice.get('datum', ''),
+   179	                invoice.get('faelligkeitsdatum', ''),
+   180	                invoice.get('zahlungsziel_tage', 0),
+   181	                invoice.get('rechnungsaussteller', ''),
+   182	                invoice.get('rechnungsaussteller_adresse', ''),
+   183	                invoice.get('rechnungsempfänger', invoice.get('rechnungsempfaenger', '')),
+   184	                invoice.get('rechnungsempfänger_adresse', invoice.get('rechnungsempfaenger_adresse', '')),
+   185	                invoice.get('kundennummer', ''),
+   186	                invoice.get('betrag_brutto', 0),
+   187	                invoice.get('betrag_netto', 0),
+   188	                invoice.get('mwst_betrag', 0),
+   189	                invoice.get('mwst_satz', 0),
+   190	                invoice.get('waehrung', 'EUR'),
+   191	                invoice.get('iban', ''),
+   192	                invoice.get('bic', ''),
+   193	                invoice.get('steuernummer', ''),
+   194	                invoice.get('ust_idnr', ''),
+   195	                invoice.get('zahlungsbedingungen', ''),
+   196	                json.dumps(invoice.get('artikel', [])),
+   197	                invoice.get('verwendungszweck', ''),
+   198	                content_hash,
+   199	                source_format,
+   200	                einvoice_raw_xml,
+   201	                einvoice_profile,
+   202	                einvoice_valid,
+   203	                einvoice_validation_message,
+   204	            ),
+   205	        )
+   206	
+   207	        invoice_id = cursor.lastrowid
+   208	
+   209	        # 3) Duplikat-Check (Hash)
+   210	        duplicate = check_duplicate_by_hash(invoice)
+   211	        if duplicate and duplicate.get('id') != invoice_id:
+   212	            logger.warning(
+   213	                f"⚠️ Duplicate detected for invoice {invoice_id}: matches invoice {duplicate['id']}"
+   214	            )
+   215	            save_duplicate_detection(invoice_id, duplicate['id'], method='hash', confidence=1.0)
+   216	
+   217	    conn.commit()
+   218	    conn.close()
+   219	
+   220	
+   221	def get_invoices_by_job(job_id: str):
+   222	    """Get all invoices for a job with their IDs"""
+   223	    import sqlite3
+   224	    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+   225	    conn.row_factory = sqlite3.Row
+   226	    cursor = conn.cursor()
+   227	    cursor.execute('SELECT * FROM invoices WHERE job_id = ?', (job_id,))
+   228	    invoices = [dict(row) for row in cursor.fetchall()]
+   229	    conn.close()
+   230	    return invoices
+   231	
+   232	
+   233	def get_job(job_id: str) -> Optional[Dict]:
+   234	    """Get a job by ID"""
+   235	    conn = get_connection()
+   236	    cursor = conn.cursor()
+   237	    
+   238	    cursor.execute('SELECT * FROM jobs WHERE job_id = ?', (job_id,))
+   239	    row = cursor.fetchone()
+   240	    
+   241	    if not row:
+   242	        conn.close()
+   243	        return None
+   244	    
+   245	    job = dict(row)
+   246	    job['exported_files'] = json.loads(job['exported_files'] or '{}')
+   247	    job['failed'] = json.loads(job['failed_list'] or '[]')
+   248	    
+   249	    # Get invoices
+   250	    cursor.execute('SELECT * FROM invoices WHERE job_id = ?', (job_id,))
+   251	    invoices = [dict(r) for r in cursor.fetchall()]
+   252	    job['results'] = invoices
+   253	    
+   254	    conn.close()
+   255	    return job
+   256	
+   257	def get_all_jobs(limit: int = 50, offset: int = 0, user_id: int = None) -> List[Dict]:
+   258	    """Get all jobs for a user, newest first"""
+   259	    conn = get_connection()
+   260	    cursor = conn.cursor()
+   261	    
+   262	    if user_id:
+   263	        cursor.execute('''
+   264	            SELECT * FROM jobs 
+   265	            WHERE user_id = ?
+   266	            ORDER BY created_at DESC 
+   267	            LIMIT ? OFFSET ?
+   268	        ''', (user_id, limit, offset))
+   269	    else:
+   270	        cursor.execute('''
+   271	            SELECT * FROM jobs 
+   272	            ORDER BY created_at DESC 
+   273	            LIMIT ? OFFSET ?
+   274	        ''', (limit, offset))
+   275	    
+   276	    jobs = []
+   277	    for row in cursor.fetchall():
+   278	        job = dict(row)
+   279	        job['exported_files'] = json.loads(job['exported_files'] or '{}')
+   280	        job['failed'] = json.loads(job['failed_list'] or '[]')
+   281	        jobs.append(job)
+   282	    
+   283	    conn.close()
+   284	    return jobs
+   285	
+   286	def get_statistics(user_id: int = None) -> Dict:
+   287	    """Get overall statistics"""
+   288	    conn = get_connection()
+   289	    cursor = conn.cursor()
+   290	    
+   291	    # Total jobs
+   292	    if user_id:
+   293	        cursor.execute('SELECT COUNT(*) FROM jobs WHERE status = "completed" AND user_id = ?', (user_id,))
+   294	    else:
+   295	        cursor.execute('SELECT COUNT(*) FROM jobs WHERE status = "completed"')
+   296	    total_jobs = cursor.fetchone()[0]
+   297	    
+   298	    # Total invoices
+   299	    cursor.execute('SELECT COUNT(*) FROM invoices')
+   300	    total_invoices = cursor.fetchone()[0]
+   301	    
+   302	    # Total amount
+   303	    cursor.execute('SELECT SUM(total_amount) FROM jobs WHERE status = "completed"')
+   304	    total_amount = cursor.fetchone()[0] or 0
+   305	    
+   306	    # Success rate
+   307	    cursor.execute('SELECT SUM(successful), SUM(total_files) FROM jobs WHERE status = "completed"')
+   308	    row = cursor.fetchone()
+   309	    successful = row[0] or 0
+   310	    total_files = row[1] or 0
+   311	    success_rate = (successful / total_files * 100) if total_files > 0 else 0
+   312	    
+   313	    # Average per invoice
+   314	    avg_per_invoice = (total_amount / total_invoices) if total_invoices > 0 else 0
+   315	    
+   316	    # Jobs per day (last 30 days)
+   317	    cursor.execute('''
+   318	        SELECT DATE(created_at) as date, COUNT(*) as count, SUM(total_amount) as amount
+   319	        FROM jobs 
+   320	        WHERE status = "completed" 
+   321	        AND created_at >= DATE('now', '-30 days')
+   322	        GROUP BY DATE(created_at)
+   323	        ORDER BY date
+   324	    ''')
+   325	    daily_data = [dict(r) for r in cursor.fetchall()]
+   326	    
+   327	    # Top Rechnungsaussteller
+   328	    cursor.execute('''
+   329	        SELECT rechnungsaussteller, COUNT(*) as count, SUM(betrag_brutto) as total
+   330	        FROM invoices
+   331	        WHERE rechnungsaussteller != ''
+   332	        GROUP BY rechnungsaussteller
+   333	        ORDER BY count DESC
+   334	        LIMIT 5
+   335	    ''')
+   336	    top_aussteller = [dict(r) for r in cursor.fetchall()]
+   337	    
+   338	    conn.close()
+   339	    
+   340	    return {
+   341	        'total_jobs': total_jobs,
+   342	        'total_invoices': total_invoices,
+   343	        'total_amount': round(total_amount, 2),
+   344	        'success_rate': round(success_rate, 1),
+   345	        'avg_per_invoice': round(avg_per_invoice, 2),
+   346	        'daily_data': daily_data,
+   347	        'top_aussteller': top_aussteller
+   348	    }
+   349	
+   350	# Initialize on import
+   351	init_database()
+   352	
+   353	def get_analytics_data():
+   354	    """Get comprehensive analytics data"""
+   355	    conn = get_connection()
+   356	    cursor = conn.cursor()
+   357	    
+   358	    # Basic stats
+   359	    cursor.execute('SELECT COUNT(*) FROM invoices')
+   360	    total_invoices = cursor.fetchone()[0]
+   361	    
+   362	    cursor.execute('SELECT SUM(betrag_brutto), SUM(betrag_netto), SUM(mwst_betrag) FROM invoices')
+   363	    row = cursor.fetchone()
+   364	    total_brutto = row[0] or 0
+   365	    total_netto = row[1] or 0
+   366	    total_mwst = row[2] or 0
+   367	    
+   368	    # Unique suppliers
+   369	    cursor.execute('SELECT COUNT(DISTINCT rechnungsaussteller) FROM invoices WHERE rechnungsaussteller != ""')
+   370	    unique_suppliers = cursor.fetchone()[0]
+   371	    
+   372	    # Average per invoice
+   373	    avg_per_invoice = (total_brutto / total_invoices) if total_invoices > 0 else 0
+   374	    
+   375	    # Monthly data
+   376	    cursor.execute('''
+   377	        SELECT strftime('%Y-%m', datum) as month, SUM(betrag_brutto) as total
+   378	        FROM invoices
+   379	        WHERE datum != '' AND datum IS NOT NULL
+   380	        GROUP BY month
+   381	        ORDER BY month
+   382	        LIMIT 12
+   383	    ''')
+   384	    monthly_data = cursor.fetchall()
+   385	    monthly_labels = [r[0] for r in monthly_data] if monthly_data else []
+   386	    monthly_values = [r[1] or 0 for r in monthly_data] if monthly_data else []
+   387	    
+   388	    # Top suppliers
+   389	    cursor.execute('''
+   390	        SELECT rechnungsaussteller as name, COUNT(*) as count, SUM(betrag_brutto) as total
+   391	        FROM invoices
+   392	        WHERE rechnungsaussteller != '' AND rechnungsaussteller IS NOT NULL
+   393	        GROUP BY rechnungsaussteller
+   394	        ORDER BY total DESC
+   395	        LIMIT 10
+   396	    ''')
+   397	    top_suppliers = [dict(r) for r in cursor.fetchall()]
+   398	    
+   399	    # Weekday distribution
+   400	    cursor.execute('''
+   401	        SELECT strftime('%w', datum) as weekday, COUNT(*) as count
+   402	        FROM invoices
+   403	        WHERE datum != '' AND datum IS NOT NULL
+   404	        GROUP BY weekday
+   405	    ''')
+   406	    weekday_raw = {int(r[0]): r[1] for r in cursor.fetchall()}
+   407	    weekday_data = [weekday_raw.get((i + 1) % 7, 0) for i in range(7)]
+   408	    
+   409	    conn.close()
+   410	    
+   411	    return {
+   412	        'stats': {
+   413	            'total_invoices': total_invoices,
+   414	            'total_amount': round(total_brutto, 2),
+   415	            'total_netto': round(total_netto, 2),
+   416	            'total_mwst': round(total_mwst, 2),
+   417	            'avg_per_invoice': round(avg_per_invoice, 2),
+   418	            'unique_suppliers': unique_suppliers
+   419	        },
+   420	        'monthly_labels': monthly_labels,
+   421	        'monthly_values': monthly_values,
+   422	        'top_suppliers': top_suppliers,
+   423	        'weekday_data': weekday_data
+   424	    }
+   425	
+   426	def init_feedback_table():
+   427	    """Initialize feedback/corrections table"""
+   428	    conn = get_connection()
+   429	    cursor = conn.cursor()
+   430	    
+   431	    cursor.execute('''
+   432	        CREATE TABLE IF NOT EXISTS corrections (
+   433	            id INTEGER PRIMARY KEY AUTOINCREMENT,
+   434	            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+   435	            supplier TEXT,
+   436	            field_name TEXT,
+   437	            original_value TEXT,
+   438	            corrected_value TEXT,
+   439	            invoice_id INTEGER,
+   440	            FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+   441	        )
+   442	    ''')
+   443	    
+   444	    # Supplier patterns table - learned patterns per supplier
+   445	    cursor.execute('''
+   446	        CREATE TABLE IF NOT EXISTS supplier_patterns (
+   447	            id INTEGER PRIMARY KEY AUTOINCREMENT,
+   448	            supplier TEXT UNIQUE,
+   449	            patterns TEXT,
+   450	            confidence REAL DEFAULT 0,
+   451	            invoice_count INTEGER DEFAULT 0,
+   452	            last_updated TEXT
+   453	        )
+   454	    ''')
+   455	    
+   456	    conn.commit()
+   457	    conn.close()
+   458	
+   459	# Initialize feedback tables
+   460	init_feedback_table()
+   461	
+   462	def save_correction(invoice_id: int, supplier: str, field_name: str, original_value: str, corrected_value: str):
+   463	    """Save a user correction for learning"""
+   464	    conn = get_connection()
+   465	    cursor = conn.cursor()
+   466	    
+   467	    cursor.execute('''
+   468	        INSERT INTO corrections (supplier, field_name, original_value, corrected_value, invoice_id)
+   469	        VALUES (?, ?, ?, ?, ?)
+   470	    ''', (supplier, field_name, original_value, corrected_value, invoice_id))
+   471	    
+   472	    conn.commit()
+   473	    conn.close()
+   474	    
+   475	    # Update supplier patterns
+   476	    update_supplier_patterns(supplier)
+   477	
+   478	def update_supplier_patterns(supplier: str):
+   479	    """Update learned patterns for a supplier based on corrections"""
+   480	    import json
+   481	    from datetime import datetime
+   482	    
+   483	    conn = get_connection()
+   484	    cursor = conn.cursor()
+   485	    
+   486	    # Get all corrections for this supplier
+   487	    cursor.execute('''
+   488	        SELECT field_name, corrected_value, COUNT(*) as count
+   489	        FROM corrections
+   490	        WHERE supplier = ?
+   491	        GROUP BY field_name, corrected_value
+   492	        ORDER BY count DESC
+   493	    ''', (supplier,))
+   494	    
+   495	    corrections = cursor.fetchall()
+   496	    
+   497	    # Build patterns
+   498	    patterns = {}
+   499	    for field, value, count in corrections:
+   500	        if field not in patterns:
+   501	            patterns[field] = []
+   502	        patterns[field].append({'value': value, 'count': count})
+   503	    
+   504	    # Count total invoices for this supplier
+   505	    cursor.execute('SELECT COUNT(*) FROM invoices WHERE rechnungsaussteller = ?', (supplier,))
+   506	    invoice_count = cursor.fetchone()[0]
+   507	    
+   508	    # Calculate confidence (more corrections = higher confidence)
+   509	    total_corrections = sum(c[2] for c in corrections)
+   510	    confidence = min(total_corrections / 10, 1.0)  # Max confidence at 10 corrections
+   511	    
+   512	    # Save patterns
+   513	    cursor.execute('''
+   514	        INSERT OR REPLACE INTO supplier_patterns (supplier, patterns, confidence, invoice_count, last_updated)
+   515	        VALUES (?, ?, ?, ?, ?)
+   516	    ''', (supplier, json.dumps(patterns), confidence, invoice_count, datetime.now().isoformat()))
+   517	    
+   518	    conn.commit()
+   519	    conn.close()
+   520	
+   521	def get_supplier_patterns(supplier: str) -> dict:
+   522	    """Get learned patterns for a supplier"""
+   523	    import json
+   524	    
+   525	    conn = get_connection()
+   526	    cursor = conn.cursor()
+   527	    
+   528	    cursor.execute('SELECT patterns, confidence FROM supplier_patterns WHERE supplier = ?', (supplier,))
+   529	    row = cursor.fetchone()
+   530	    
+   531	    conn.close()
+   532	    
+   533	    if row:
+   534	        return {
+   535	            'patterns': json.loads(row[0]),
+   536	            'confidence': row[1]
+   537	        }
+   538	    return {'patterns': {}, 'confidence': 0}
+   539	
+   540	def update_invoice(invoice_id: int, updates: dict):
+   541	    """Update invoice with corrected values"""
+   542	    conn = get_connection()
+   543	    cursor = conn.cursor()
+   544	    
+   545	    # Build UPDATE query dynamically
+   546	    set_clauses = []
+   547	    values = []
+   548	    for field, value in updates.items():
+   549	        set_clauses.append(f"{field} = ?")
+   550	        values.append(value)
+   551	    
+   552	    values.append(invoice_id)
+   553	    
+   554	    query = f"UPDATE invoices SET {', '.join(set_clauses)} WHERE id = ?"
+   555	    cursor.execute(query, values)
+   556	    
+   557	    conn.commit()
+   558	    conn.close()
+   559	
+   560	def get_invoice_by_id(invoice_id: int) -> dict:
+   561	    """Get single invoice by ID"""
+   562	    conn = get_connection()
+   563	    cursor = conn.cursor()
+   564	    
+   565	    cursor.execute('SELECT * FROM invoices WHERE id = ?', (invoice_id,))
+   566	    row = cursor.fetchone()
+   567	    
+   568	    conn.close()
+   569	    
+   570	    if row:
+   571	        return dict(row)
+   572	    return None
+   573	
+   574	def init_feedback_table():
+   575	    """Initialize feedback/corrections table"""
+   576	    conn = get_connection()
+   577	    cursor = conn.cursor()
+   578	    
+   579	    cursor.execute('''
+   580	        CREATE TABLE IF NOT EXISTS corrections (
+   581	            id INTEGER PRIMARY KEY AUTOINCREMENT,
+   582	            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+   583	            supplier TEXT,
+   584	            field_name TEXT,
+   585	            original_value TEXT,
+   586	            corrected_value TEXT,
+   587	            invoice_id INTEGER,
+   588	            FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+   589	        )
+   590	    ''')
+   591	    
+   592	    # Supplier patterns table - learned patterns per supplier
+   593	    cursor.execute('''
+   594	        CREATE TABLE IF NOT EXISTS supplier_patterns (
+   595	            id INTEGER PRIMARY KEY AUTOINCREMENT,
+   596	            supplier TEXT UNIQUE,
+   597	            patterns TEXT,
+   598	            confidence REAL DEFAULT 0,
+   599	            invoice_count INTEGER DEFAULT 0,
+   600	            last_updated TEXT
+   601	        )
+   602	    ''')
+   603	    
+   604	    conn.commit()
+   605	    conn.close()
+   606	
+   607	# Initialize feedback tables
+   608	init_feedback_table()
+   609	
+   610	def save_correction(invoice_id: int, supplier: str, field_name: str, original_value: str, corrected_value: str):
+   611	    """Save a user correction for learning"""
+   612	    conn = get_connection()
+   613	    cursor = conn.cursor()
+   614	    
+   615	    cursor.execute('''
+   616	        INSERT INTO corrections (supplier, field_name, original_value, corrected_value, invoice_id)
+   617	        VALUES (?, ?, ?, ?, ?)
+   618	    ''', (supplier, field_name, original_value, corrected_value, invoice_id))
+   619	    
+   620	    conn.commit()
+   621	    conn.close()
+   622	    
+   623	    # Update supplier patterns
+   624	    update_supplier_patterns(supplier)
+   625	
+   626	def update_supplier_patterns(supplier: str):
+   627	    """Update learned patterns for a supplier based on corrections"""
+   628	    import json
+   629	    from datetime import datetime
+   630	    
+   631	    conn = get_connection()
+   632	    cursor = conn.cursor()
+   633	    
+   634	    # Get all corrections for this supplier
+   635	    cursor.execute('''
+   636	        SELECT field_name, corrected_value, COUNT(*) as count
+   637	        FROM corrections
+   638	        WHERE supplier = ?
+   639	        GROUP BY field_name, corrected_value
+   640	        ORDER BY count DESC
+   641	    ''', (supplier,))
+   642	    
+   643	    corrections = cursor.fetchall()
+   644	    
+   645	    # Build patterns
+   646	    patterns = {}
+   647	    for field, value, count in corrections:
+   648	        if field not in patterns:
+   649	            patterns[field] = []
+   650	        patterns[field].append({'value': value, 'count': count})
+   651	    
+   652	    # Count total invoices for this supplier
+   653	    cursor.execute('SELECT COUNT(*) FROM invoices WHERE rechnungsaussteller = ?', (supplier,))
+   654	    invoice_count = cursor.fetchone()[0]
+   655	    
+   656	    # Calculate confidence (more corrections = higher confidence)
+   657	    total_corrections = sum(c[2] for c in corrections)
+   658	    confidence = min(total_corrections / 10, 1.0)  # Max confidence at 10 corrections
+   659	    
+   660	    # Save patterns
+   661	    cursor.execute('''
+   662	        INSERT OR REPLACE INTO supplier_patterns (supplier, patterns, confidence, invoice_count, last_updated)
+   663	        VALUES (?, ?, ?, ?, ?)
+   664	    ''', (supplier, json.dumps(patterns), confidence, invoice_count, datetime.now().isoformat()))
+   665	    
+   666	    conn.commit()
+   667	    conn.close()
+   668	
+   669	def get_supplier_patterns(supplier: str) -> dict:
+   670	    """Get learned patterns for a supplier"""
+   671	    import json
+   672	    
+   673	    conn = get_connection()
+   674	    cursor = conn.cursor()
+   675	    
+   676	    cursor.execute('SELECT patterns, confidence FROM supplier_patterns WHERE supplier = ?', (supplier,))
+   677	    row = cursor.fetchone()
+   678	    
+   679	    conn.close()
+   680	    
+   681	    if row:
+   682	        return {
+   683	            'patterns': json.loads(row[0]),
+   684	            'confidence': row[1]
+   685	        }
+   686	    return {'patterns': {}, 'confidence': 0}
+   687	
+   688	def update_invoice(invoice_id: int, updates: dict):
+   689	    """Update invoice with corrected values"""
+   690	    conn = get_connection()
+   691	    cursor = conn.cursor()
+   692	    
+   693	    # Build UPDATE query dynamically
+   694	    set_clauses = []
+   695	    values = []
+   696	    for field, value in updates.items():
+   697	        set_clauses.append(f"{field} = ?")
+   698	        values.append(value)
+   699	    
+   700	    values.append(invoice_id)
+   701	    
+   702	    query = f"UPDATE invoices SET {', '.join(set_clauses)} WHERE id = ?"
+   703	    cursor.execute(query, values)
+   704	    
+   705	    conn.commit()
+   706	    conn.close()
+   707	
+   708	def get_invoice_by_id(invoice_id: int) -> dict:
+   709	    """Get single invoice by ID"""
+   710	    conn = get_connection()
+   711	    cursor = conn.cursor()
+   712	    
+   713	    cursor.execute('SELECT * FROM invoices WHERE id = ?', (invoice_id,))
+   714	    row = cursor.fetchone()
+   715	    
+   716	    conn.close()
+   717	    
+   718	    if row:
+   719	        return dict(row)
+   720	    return None
+   721	
+   722	def init_email_inbox_table():
+   723	    """Initialize email inbox configuration table"""
+   724	    conn = get_connection()
+   725	    cursor = conn.cursor()
+   726	    
+   727	    cursor.execute('''
+   728	        CREATE TABLE IF NOT EXISTS email_inbox_config (
+   729	            id INTEGER PRIMARY KEY AUTOINCREMENT,
+   730	            enabled INTEGER DEFAULT 0,
+   731	            email_address TEXT,
+   732	            imap_server TEXT,
+   733	            imap_port INTEGER DEFAULT 993,
+   734	            username TEXT,
+   735	            password TEXT,
+   736	            folder TEXT DEFAULT 'INBOX',
+   737	            filter_from TEXT,
+   738	            filter_subject TEXT,
+   739	            auto_process INTEGER DEFAULT 1,
+   740	            last_check TEXT,
+   741	            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+   742	        )
+   743	    ''')
+   744	    
+   745	    cursor.execute('''
+   746	        CREATE TABLE IF NOT EXISTS email_processed (
+   747	            id INTEGER PRIMARY KEY AUTOINCREMENT,
+   748	            message_id TEXT UNIQUE,
+   749	            from_address TEXT,
+   750	            subject TEXT,
+   751	            received_at TEXT,
+   752	            processed_at TEXT,
+   753	            job_id TEXT,
+   754	            status TEXT,
+   755	            attachments_count INTEGER
+   756	        )
+   757	    ''')
+   758	    
+   759	    conn.commit()
+   760	    conn.close()
+   761	
+   762	init_email_inbox_table()
+   763	
+   764	def get_email_config():
+   765	    """Get email inbox configuration"""
+   766	    conn = get_connection()
+   767	    cursor = conn.cursor()
+   768	    cursor.execute('SELECT * FROM email_inbox_config ORDER BY id DESC LIMIT 1')
+   769	    row = cursor.fetchone()
+   770	    conn.close()
+   771	    return dict(row) if row else None
+   772	
+   773	def save_email_config(config: dict):
+   774	    """Save email inbox configuration"""
+   775	    conn = get_connection()
+   776	    cursor = conn.cursor()
+   777	    
+   778	    # Delete existing config
+   779	    cursor.execute('DELETE FROM email_inbox_config')
+   780	    
+   781	    cursor.execute('''
+   782	        INSERT INTO email_inbox_config 
+   783	        (enabled, email_address, imap_server, imap_port, username, password, folder, filter_from, filter_subject, auto_process)
+   784	        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+   785	    ''', (
+   786	        config.get('enabled', 0),
+   787	        config.get('email_address', ''),
+   788	        config.get('imap_server', ''),
+   789	        config.get('imap_port', 993),
+   790	        config.get('username', ''),
+   791	        config.get('password', ''),
+   792	        config.get('folder', 'INBOX'),
+   793	        config.get('filter_from', ''),
+   794	        config.get('filter_subject', ''),
+   795	        config.get('auto_process', 1)
+   796	    ))
+   797	    
+   798	    conn.commit()
+   799	    conn.close()
+   800	
+   801	def save_processed_email(message_id: str, from_addr: str, subject: str, job_id: str, attachments: int):
+   802	    """Save record of processed email"""
+   803	    from datetime import datetime
+   804	    
+   805	    conn = get_connection()
+   806	    cursor = conn.cursor()
+   807	    
+   808	    cursor.execute('''
+   809	        INSERT OR REPLACE INTO email_processed 
+   810	        (message_id, from_address, subject, received_at, processed_at, job_id, status, attachments_count)
+   811	        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+   812	    ''', (message_id, from_addr, subject, datetime.now().isoformat(), datetime.now().isoformat(), job_id, 'processed', attachments))
+   813	    
+   814	    conn.commit()
+   815	    conn.close()
+   816	
+   817	def is_email_processed(message_id: str) -> bool:
+   818	    """Check if email was already processed"""
+   819	    conn = get_connection()
+   820	    cursor = conn.cursor()
+   821	    cursor.execute('SELECT id FROM email_processed WHERE message_id = ?', (message_id,))
+   822	    exists = cursor.fetchone() is not None
+   823	    conn.close()
+   824	    return exists
+   825	
+   826	def init_users_table():
+   827	    """Initialize users table"""
+   828	    conn = get_connection()
+   829	    cursor = conn.cursor()
+   830	    
+   831	    cursor.execute('''
+   832	        CREATE TABLE IF NOT EXISTS users (
+   833	            id INTEGER PRIMARY KEY AUTOINCREMENT,
+   834	            email TEXT UNIQUE NOT NULL,
+   835	            password_hash TEXT NOT NULL,
+   836	            name TEXT,
+   837	            company TEXT,
+   838	            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+   839	            last_login TEXT,
+   840	            is_active INTEGER DEFAULT 1
+   841	        )
+   842	    ''')
+   843	    
+   844	    # Add user_id to jobs table if not exists
+   845	    cursor.execute("PRAGMA table_info(jobs)")
+   846	    columns = [col[1] for col in cursor.fetchall()]
+   847	    if 'user_id' not in columns:
+   848	        cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
+   849	    
+   850	    conn.commit()
+   851	    conn.close()
+   852	
+   853	init_users_table()
+   854	
+   855	def create_user(email: str, password: str, name: str = '', company: str = '') -> int:
+   856	    """Create new user, returns user_id"""
+   857	    import hashlib
+   858	    
+   859	    password_hash = hashlib.sha256(password.encode()).hexdigest()
+   860	    
+   861	    conn = get_connection()
+   862	    cursor = conn.cursor()
+   863	    
+   864	    cursor.execute('''
+   865	        INSERT INTO users (email, password_hash, name, company)
+   866	        VALUES (?, ?, ?, ?)
+   867	    ''', (email, password_hash, name, company))
+   868	    
+   869	    user_id = cursor.lastrowid
+   870	    conn.commit()
+   871	    conn.close()
+   872	    
+   873	    return user_id
+   874	
+   875	def verify_user(email: str, password: str) -> dict:
+   876	    """Verify user credentials, returns user dict or None"""
+   877	    import hashlib
+   878	    from datetime import datetime
+   879	    
+   880	    password_hash = hashlib.sha256(password.encode()).hexdigest()
+   881	    
+   882	    conn = get_connection()
+   883	    cursor = conn.cursor()
+   884	    
+   885	    cursor.execute('''
+   886	        SELECT id, email, name, company, is_active 
+   887	        FROM users 
+   888	        WHERE email = ? AND password_hash = ?
+   889	    ''', (email, password_hash))
+   890	    
+   891	    row = cursor.fetchone()
+   892	    
+   893	    if row and row[4]:  # is_active
+   894	        # Update last login
+   895	        cursor.execute('UPDATE users SET last_login = ? WHERE id = ?', 
+   896	                      (datetime.now().isoformat(), row[0]))
+   897	        conn.commit()
+   898	        conn.close()
+   899	        return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
+   900	    
+   901	    conn.close()
+   902	    return None
+   903	
+   904	def get_user_by_id(user_id: int) -> dict:
+   905	    """Get user by ID"""
+   906	    conn = get_connection()
+   907	    cursor = conn.cursor()
+   908	    
+   909	    cursor.execute('SELECT id, email, name, company FROM users WHERE id = ?', (user_id,))
+   910	    row = cursor.fetchone()
+   911	    
+   912	    conn.close()
+   913	    
+   914	    if row:
+   915	        return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
+   916	    return None
+   917	
+   918	def email_exists(email: str) -> bool:
+   919	    """Check if email already exists"""
+   920	    conn = get_connection()
+   921	    cursor = conn.cursor()
+   922	    cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
+   923	    exists = cursor.fetchone() is not None
+   924	    conn.close()
+   925	    return exists
+   926	
+   927	def init_users_table():
+   928	    """Initialize users table"""
+   929	    conn = get_connection()
+   930	    cursor = conn.cursor()
+   931	    
+   932	    cursor.execute('''
+   933	        CREATE TABLE IF NOT EXISTS users (
+   934	            id INTEGER PRIMARY KEY AUTOINCREMENT,
+   935	            email TEXT UNIQUE NOT NULL,
+   936	            password_hash TEXT NOT NULL,
+   937	            name TEXT,
+   938	            company TEXT,
+   939	            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+   940	            last_login TEXT,
+   941	            is_active INTEGER DEFAULT 1
+   942	        )
+   943	    ''')
+   944	    
+   945	    # Add user_id to jobs table if not exists
+   946	    cursor.execute("PRAGMA table_info(jobs)")
+   947	    columns = [col[1] for col in cursor.fetchall()]
+   948	    if 'user_id' not in columns:
+   949	        cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
+   950	    
+   951	    conn.commit()
+   952	    conn.close()
+   953	
+   954	init_users_table()
+   955	
+   956	def create_user(email: str, password: str, name: str = '', company: str = '') -> int:
+   957	    """Create new user, returns user_id"""
+   958	    import hashlib
+   959	    
+   960	    password_hash = hashlib.sha256(password.encode()).hexdigest()
+   961	    
+   962	    conn = get_connection()
+   963	    cursor = conn.cursor()
+   964	    
+   965	    cursor.execute('''
+   966	        INSERT INTO users (email, password_hash, name, company)
+   967	        VALUES (?, ?, ?, ?)
+   968	    ''', (email, password_hash, name, company))
+   969	    
+   970	    user_id = cursor.lastrowid
+   971	    conn.commit()
+   972	    conn.close()
+   973	    
+   974	    return user_id
+   975	
+   976	def verify_user(email: str, password: str) -> dict:
+   977	    """Verify user credentials, returns user dict or None"""
+   978	    import hashlib
+   979	    from datetime import datetime
+   980	    
+   981	    password_hash = hashlib.sha256(password.encode()).hexdigest()
+   982	    
+   983	    conn = get_connection()
+   984	    cursor = conn.cursor()
+   985	    
+   986	    cursor.execute('''
+   987	        SELECT id, email, name, company, is_active 
+   988	        FROM users 
+   989	        WHERE email = ? AND password_hash = ?
+   990	    ''', (email, password_hash))
+   991	    
+   992	    row = cursor.fetchone()
+   993	    
+   994	    if row and row[4]:  # is_active
+   995	        # Update last login
+   996	        cursor.execute('UPDATE users SET last_login = ? WHERE id = ?', 
+   997	                      (datetime.now().isoformat(), row[0]))
+   998	        conn.commit()
+   999	        conn.close()
+  1000	        return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
+  1001	    
+  1002	    conn.close()
+  1003	    return None
+  1004	
+  1005	def get_user_by_id(user_id: int) -> dict:
+  1006	    """Get user by ID"""
+  1007	    conn = get_connection()
+  1008	    cursor = conn.cursor()
+  1009	    
+  1010	    cursor.execute('SELECT id, email, name, company FROM users WHERE id = ?', (user_id,))
+  1011	    row = cursor.fetchone()
+  1012	    
+  1013	    conn.close()
+  1014	    
+  1015	    if row:
+  1016	        return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
+  1017	    return None
+  1018	
+  1019	def email_exists(email: str) -> bool:
+  1020	    """Check if email already exists"""
+  1021	    conn = get_connection()
+  1022	    cursor = conn.cursor()
+  1023	    cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
+  1024	    exists = cursor.fetchone() is not None
+  1025	    conn.close()
+  1026	    return exists
+  1027	
+  1028	def init_subscriptions_table():
+  1029	    """Initialize subscriptions table"""
+  1030	    conn = get_connection()
+  1031	    cursor = conn.cursor()
+  1032	    
+  1033	    cursor.execute('''
+  1034	        CREATE TABLE IF NOT EXISTS subscriptions (
+  1035	            id INTEGER PRIMARY KEY AUTOINCREMENT,
+  1036	            user_id INTEGER NOT NULL,
+  1037	            plan TEXT NOT NULL,
+  1038	            stripe_customer_id TEXT,
+  1039	            stripe_subscription_id TEXT,
+  1040	            status TEXT DEFAULT 'active',
+  1041	            invoices_limit INTEGER,
+  1042	            invoices_used INTEGER DEFAULT 0,
+  1043	            current_period_start TEXT,
+  1044	            current_period_end TEXT,
+  1045	            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  1046	            FOREIGN KEY (user_id) REFERENCES users(id)
+  1047	        )
+  1048	    ''')
+  1049	    
+  1050	    conn.commit()
+  1051	    conn.close()
+  1052	
+  1053	init_subscriptions_table()
+  1054	
+  1055	def get_user_subscription(user_id: int) -> dict:
+  1056	    """Get user's active subscription"""
+  1057	    conn = get_connection()
+  1058	    cursor = conn.cursor()
+  1059	    cursor.execute('''
+  1060	        SELECT * FROM subscriptions 
+  1061	        WHERE user_id = ? AND status = 'active' 
+  1062	        ORDER BY created_at DESC LIMIT 1
+  1063	    ''', (user_id,))
+  1064	    row = cursor.fetchone()
+  1065	    conn.close()
+  1066	    return dict(row) if row else None
+  1067	
+  1068	def create_subscription(user_id: int, plan: str, stripe_customer_id: str, stripe_subscription_id: str):
+  1069	    """Create new subscription"""
+  1070	    limits = {'starter': 100, 'professional': 600, 'enterprise': 999999}
+  1071	    
+  1072	    conn = get_connection()
+  1073	    cursor = conn.cursor()
+  1074	    cursor.execute('''
+  1075	        INSERT INTO subscriptions 
+  1076	        (user_id, plan, stripe_customer_id, stripe_subscription_id, invoices_limit, status)
+  1077	        VALUES (?, ?, ?, ?, ?, 'active')
+  1078	    ''', (user_id, plan, stripe_customer_id, stripe_subscription_id, limits.get(plan, 100)))
+  1079	    conn.commit()
+  1080	    conn.close()
+  1081	
+  1082	def check_invoice_limit(user_id: int) -> dict:
+  1083	    """Check if user can process more invoices"""
+  1084	    conn = get_connection()
+  1085	    cursor = conn.cursor()
+  1086	    
+  1087	    # Get active subscription
+  1088	    cursor.execute('''
+  1089	        SELECT plan, invoices_limit, invoices_used 
+  1090	        FROM subscriptions 
+  1091	        WHERE user_id = ? AND status = 'active' 
+  1092	        ORDER BY created_at DESC LIMIT 1
+  1093	    ''', (user_id,))
+  1094	    row = cursor.fetchone()
+  1095	    conn.close()
+  1096	    
+  1097	    if not row:
+  1098	        return {
+  1099	            'allowed': False,
+  1100	            'reason': 'no_subscription',
+  1101	            'message': 'Kein aktives Abonnement. Bitte wählen Sie einen Plan.'
+  1102	        }
+  1103	    
+  1104	    plan, limit, used = row[0], row[1], row[2]
+  1105	    remaining = limit - used
+  1106	    
+  1107	    if remaining <= 0:
+  1108	        return {
+  1109	            'allowed': False,
+  1110	            'reason': 'limit_reached',
+  1111	            'message': f'Monatliches Limit erreicht ({used}/{limit}). Bitte upgraden Sie Ihren Plan.',
+  1112	            'plan': plan,
+  1113	            'limit': limit,
+  1114	            'used': used
+  1115	        }
+  1116	    
+  1117	    return {
+  1118	        'allowed': True,
+  1119	        'plan': plan,
+  1120	        'limit': limit,
+  1121	        'used': used,
+  1122	        'remaining': remaining
+  1123	    }
+  1124	
+  1125	def increment_invoice_usage(user_id: int, count: int = 1):
+  1126	    """Increment the invoice usage counter"""
+  1127	    conn = get_connection()
+  1128	    cursor = conn.cursor()
+  1129	    
+  1130	    cursor.execute('''
+  1131	        UPDATE subscriptions 
+  1132	        SET invoices_used = invoices_used + ?
+  1133	        WHERE user_id = ? AND status = 'active'
+  1134	    ''', (count, user_id))
+  1135	    
+  1136	    conn.commit()
+  1137	    conn.close()
+  1138	
+  1139	def reset_monthly_usage():
+  1140	    """Reset all usage counters (call monthly via cron)"""
+  1141	    conn = get_connection()
+  1142	    cursor = conn.cursor()
+  1143	    cursor.execute('UPDATE subscriptions SET invoices_used = 0 WHERE status = "active"')
+  1144	    conn.commit()
+  1145	    conn.close()
+  1146	
+  1147	# Add user_id column to existing jobs table if not exists
+  1148	def add_user_id_to_jobs():
+  1149	    conn = get_connection()
+  1150	    cursor = conn.cursor()
+  1151	    try:
+  1152	        cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
+  1153	        conn.commit()
+  1154	        print("Added user_id column to jobs table")
+  1155	    except:
+  1156	        pass  # Column already exists
+  1157	    conn.close()
+  1158	
+  1159	add_user_id_to_jobs()
+  1160	
+  1161	def get_analytics_insights(user_id: int = None) -> list:
+  1162	    """Generate actionable insights from analytics data"""
+  1163	    conn = get_connection()
+  1164	    cursor = conn.cursor()
+  1165	    insights = []
+  1166	    
+  1167	    # Insight 1: Top Suppliers
+  1168	    cursor.execute('''
+  1169	        SELECT rechnungsaussteller, COUNT(*) as count, SUM(betrag_brutto) as total
+  1170	        FROM invoices
+  1171	        WHERE rechnungsaussteller != ''
+  1172	        GROUP BY rechnungsaussteller
+  1173	        ORDER BY total DESC
+  1174	        LIMIT 3
+  1175	    ''')
+  1176	    top_suppliers = cursor.fetchall()
+  1177	    if top_suppliers:
+  1178	        total_all = sum(r[2] for r in top_suppliers)
+  1179	        cursor.execute('SELECT SUM(betrag_brutto) FROM invoices')
+  1180	        grand_total = cursor.fetchone()[0] or 1
+  1181	        percentage = (total_all / grand_total * 100) if grand_total > 0 else 0
+  1182	        insights.append({
+  1183	            'icon': '💡',
+  1184	            'type': 'info',
+  1185	            'title': 'Top-Lieferanten Konzentration',
+  1186	            'message': f'Deine Top-3 Lieferanten machen {percentage:.1f}% der Gesamtausgaben aus'
+  1187	        })
+  1188	    
+  1189	    # Insight 2: Monthly Trend
+  1190	    cursor.execute('''
+  1191	        SELECT strftime('%Y-%m', datum) as month, SUM(betrag_brutto) as total
+  1192	        FROM invoices
+  1193	        WHERE datum != '' AND datum IS NOT NULL
+  1194	        GROUP BY month
+  1195	        ORDER BY month DESC
+  1196	        LIMIT 2
+  1197	    ''')
+  1198	    months = cursor.fetchall()
+  1199	    if len(months) == 2:
+  1200	        current, previous = months[0][1], months[1][1]
+  1201	        if current and previous:
+  1202	            change = ((current - previous) / previous * 100)
+  1203	            icon = '📈' if change > 0 else '📉'
+  1204	            direction = 'höher' if change > 0 else 'niedriger'
+  1205	            insights.append({
+  1206	                'icon': icon,
+  1207	                'type': 'warning' if change > 20 else 'info',
+  1208	                'title': 'Monatlicher Trend',
+  1209	                'message': f'Ausgaben sind {abs(change):.1f}% {direction} als letzter Monat'
+  1210	            })
+  1211	    
+  1212	    # Insight 3: Processing Stats
+  1213	    cursor.execute('SELECT COUNT(*), AVG(betrag_brutto) FROM invoices')
+  1214	    stats = cursor.fetchone()
+  1215	    if stats[0]:
+  1216	        insights.append({
+  1217	            'icon': '✨',
+  1218	            'type': 'success',
+  1219	            'title': 'Verarbeitungs-Performance',
+  1220	            'message': f'{stats[0]} Rechnungen verarbeitet · Ø {stats[1]:.2f}€ pro Rechnung'
+  1221	        })
+  1222	    
+  1223	    conn.close()
+  1224	    return insights
+  1225	
+  1226	# ==================== CATEGORIES ====================
+  1227	
+  1228	def get_all_categories(user_id: int = None):
+  1229	    """Get all categories (user-specific or global)"""
+  1230	    import sqlite3
+  1231	    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+  1232	    conn.row_factory = sqlite3.Row
+  1233	    cursor = conn.cursor()
+  1234	    if user_id:
+  1235	        cursor.execute('SELECT * FROM categories WHERE user_id IS NULL OR user_id = ?', (user_id,))
+  1236	    else:
+  1237	        cursor.execute('SELECT * FROM categories WHERE user_id IS NULL')
+  1238	    categories = [dict(row) for row in cursor.fetchall()]
+  1239	    conn.close()
+  1240	    return categories
+  1241	
+  1242	def create_category(name: str, description: str = None, account_number: str = None, 
+  1243	                   color: str = '#3B82F6', icon: str = '📁', user_id: int = None):
+  1244	    """Create new category"""
+  1245	    import sqlite3
+  1246	    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+  1247	    conn.row_factory = sqlite3.Row
+  1248	    cursor = conn.cursor()
+  1249	    cursor.execute('''
+  1250	        INSERT INTO categories (name, description, account_number, color, icon, user_id)
+  1251	        VALUES (?, ?, ?, ?, ?, ?)
+  1252	    ''', (name, description, account_number, color, icon, user_id))
+  1253	    conn.commit()
+  1254	    category_id = cursor.lastrowid
+  1255	    conn.close()
+  1256	    return category_id
+  1257	
+  1258	def assign_category_to_invoice(invoice_id: int, category_id: int, confidence: float = 1.0, assigned_by: str = 'user'):
+  1259	    """Assign category to invoice"""
+  1260	    import sqlite3
+  1261	    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+  1262	    conn.row_factory = sqlite3.Row
+  1263	    cursor = conn.cursor()
+  1264	    cursor.execute('''
+  1265	        INSERT OR REPLACE INTO invoice_categories (invoice_id, category_id, confidence, assigned_by)
+  1266	        VALUES (?, ?, ?, ?)
+  1267	    ''', (invoice_id, category_id, confidence, assigned_by))
+  1268	    conn.commit()
+  1269	    conn.close()
+  1270	
+  1271	def get_invoice_categories(invoice_id: int):
+  1272	    """Get categories for an invoice"""
+  1273	    import sqlite3
+  1274	    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+  1275	    conn.row_factory = sqlite3.Row
+  1276	    cursor = conn.cursor()
+  1277	    cursor.execute('''
+  1278	        SELECT c.*, ic.confidence, ic.assigned_by
+  1279	        FROM categories c
+  1280	        JOIN invoice_categories ic ON c.id = ic.category_id
+  1281	        WHERE ic.invoice_id = ?
+  1282	    ''', (invoice_id,))
+  1283	    categories = [dict(row) for row in cursor.fetchall()]
+  1284	    conn.close()
+  1285	    return categories
+  1286	
+  1287	def save_category_learning(supplier_name: str, category_id: int, invoice_text: str, user_id: int = None):
+  1288	    """Save learning data for future predictions"""
+  1289	    conn = get_connection()
+  1290	    cursor = conn.cursor()
+  1291	    snippet = invoice_text[:500] if invoice_text else ""
+  1292	    
+  1293	    # Check if exists
+  1294	    cursor.execute('''
+  1295	        SELECT id, times_confirmed FROM category_learning 
+  1296	        WHERE supplier_name = ? AND category_id = ? AND user_id = ?
+  1297	    ''', (supplier_name, category_id, user_id))
+  1298	    
+  1299	    existing = cursor.fetchone()
+  1300	    if existing:
+  1301	        # Update existing
+  1302	        cursor.execute('''
+  1303	            UPDATE category_learning 
+  1304	            SET times_confirmed = times_confirmed + 1, updated_at = CURRENT_TIMESTAMP
+  1305	            WHERE id = ?
+  1306	        ''', (existing['id'],))
+  1307	    else:
+  1308	        # Insert new
+  1309	        cursor.execute('''
+  1310	            INSERT INTO category_learning (supplier_name, category_id, invoice_text_snippet, user_id)
+  1311	            VALUES (?, ?, ?, ?)
+  1312	        ''', (supplier_name, category_id, snippet, user_id))
+  1313	    
+  1314	    conn.commit()
+  1315	    conn.close()
+  1316	
+  1317	def get_learned_category(supplier_name: str, user_id: int = None):
+  1318	    """Get learned category for a supplier"""
+  1319	    import sqlite3
+  1320	    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+  1321	    conn.row_factory = sqlite3.Row
+  1322	    cursor = conn.cursor()
+  1323	    cursor.execute('''
+  1324	        SELECT category_id, times_confirmed 
+  1325	        FROM category_learning 
+  1326	        WHERE supplier_name = ? AND (user_id IS NULL OR user_id = ?)
+  1327	        ORDER BY times_confirmed DESC, updated_at DESC
+  1328	        LIMIT 1
+  1329	    ''', (supplier_name, user_id))
+  1330	    result = cursor.fetchone()
+  1331	    conn.close()
+  1332	    return dict(result) if result else None
+  1333	
+  1334	
+  1335	def get_duplicates_for_job(job_id: str):
+  1336	    """Get all duplicate detections for a job"""
+  1337	    import sqlite3
+  1338	    
+  1339	    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+  1340	    conn.row_factory = sqlite3.Row
+  1341	    cursor = conn.cursor()
+  1342	    
+  1343	    cursor.execute('''
+  1344	        SELECT 
+  1345	            dd.id as detection_id,
+  1346	            dd.confidence,
+  1347	            dd.detection_method,
+  1348	            i1.id as invoice_id,
+  1349	            i1.rechnungsnummer as invoice_rechnungsnummer,
+  1350	            i1.rechnungsaussteller as invoice_aussteller,
+  1351	            i1.betrag_brutto as invoice_betrag,
+  1352	            i2.id as original_id,
+  1353	            i2.rechnungsnummer as original_rechnungsnummer,
+  1354	            i2.datum as original_datum,
+  1355	            i2.betrag_brutto as original_betrag
+  1356	        FROM duplicate_detections dd
+  1357	        JOIN invoices i1 ON dd.invoice_id = i1.id
+  1358	        JOIN invoices i2 ON dd.duplicate_of_id = i2.id
+  1359	        WHERE i1.job_id = ? AND dd.status = 'pending'
+  1360	        ORDER BY dd.confidence DESC
+  1361	    ''', (job_id,))
+  1362	    
+  1363	    results = [dict(row) for row in cursor.fetchall()]
+  1364	    conn.close()
+  1365	    
+  1366	    return results
+  1367	
+  1368	# --- Job-bezogene Rechnungsabfragen (einheitliche Implementierung) ---
+  1369	
+  1370	import sqlite3
+  1371	from pathlib import Path as _Path
+  1372	
+  1373	def _get_invoice_conn():
+  1374	    """
+  1375	    Öffnet direkt die invoices.db im Projektverzeichnis.
+  1376	    Nutzt sqlite3.Row, damit wir Dicts zurückgeben können.
+  1377	    """
+  1378	    db_path = _Path(__file__).resolve().parent / "invoices.db"
+  1379	    conn = sqlite3.connect(db_path)
+  1380	    conn.row_factory = sqlite3.Row
+  1381	    return conn
+  1382	
+  1383	def get_invoices_by_job(job_id: str):
+  1384	    """
+  1385	    Liefert alle Rechnungen zu einem Job als Liste von Dicts.
+  1386	    """
+  1387	    conn = _get_invoice_conn()
+  1388	    cur = conn.cursor()
+  1389	
+  1390	    # 1) Direkter Match auf invoices.job_id
+  1391	    cur.execute(
+  1392	        "SELECT * FROM invoices WHERE job_id = ? ORDER BY id DESC",
+  1393	        (job_id,),
+  1394	    )
+  1395	    rows = cur.fetchall()
+  1396	
+  1397	    # 2) Fallback: versuche interne ID / verschiedene Repräsentationen
+  1398	    if not rows:
+  1399	        try:
+  1400	            cur.execute(
+  1401	                "SELECT id, job_id FROM jobs WHERE job_id = ? OR id = ?",
+  1402	                (job_id, job_id),
+  1403	            )
+  1404	            job_row = cur.fetchone()
+  1405	        except Exception:
+  1406	            job_row = None
+  1407	
+  1408	        if job_row:
+  1409	            internal_id, uuid_val = job_row[0], job_row[1]
+  1410	            cur.execute(
+  1411	                """
+  1412	                SELECT * FROM invoices
+  1413	                WHERE job_id = ?
+  1414	                   OR job_id = ?
+  1415	                   OR job_id = ?
+  1416	                ORDER BY id DESC
+  1417	                """,
+  1418	                (uuid_val, str(internal_id), internal_id),
+  1419	            )
+  1420	            rows = cur.fetchall()
+  1421	
+  1422	    conn.close()
+  1423	    return [dict(r) for r in rows]
+  1424	
+  1425	def get_invoices_for_job(job_id: str):
+  1426	    """Alias für get_invoices_by_job (Kompatibilität)."""
+  1427	    return get_invoices_by_job(job_id)
+  1428	
+  1429	def get_plausibility_warnings_for_job(job_id: str):
+  1430	    """Get all plausibility warnings for a job"""
+  1431	    import json
+  1432	    
+  1433	    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+  1434	    conn.row_factory = sqlite3.Row
+  1435	    cursor = conn.cursor()
+  1436	    
+  1437	    cursor.execute('''
+  1438	        SELECT 
+  1439	            pc.id,
+  1440	            pc.check_type,
+  1441	            pc.severity,
+  1442	            pc.confidence,
+  1443	            pc.details,
+  1444	            pc.status,
+  1445	            i.rechnungsnummer as invoice_rechnungsnummer,
+  1446	            i.rechnungsaussteller as invoice_aussteller
+  1447	        FROM plausibility_checks pc
+  1448	        JOIN invoices i ON pc.invoice_id = i.id
+  1449	        WHERE i.job_id = ?
+  1450	        AND pc.status = 'pending'
+  1451	        ORDER BY 
+  1452	            CASE pc.severity
+  1453	                WHEN 'high' THEN 1
+  1454	                WHEN 'medium' THEN 2
+  1455	                ELSE 3
+  1456	            END,
+  1457	            pc.confidence DESC
+  1458	    ''', (job_id,))
+  1459	    
+  1460	    rows = cursor.fetchall()
+  1461	    conn.close()
+  1462	    
+  1463	    warnings = []
+  1464	    for row in rows:
+  1465	        warning = dict(row)
+  1466	        # Parse JSON details
+  1467	        try:
+  1468	            warning['details_json'] = json.loads(warning['details'])
+  1469	        except:
+  1470	            warning['details_json'] = {}
+  1471	        warnings.append(warning)
+  1472	    
+  1473	    return warnings

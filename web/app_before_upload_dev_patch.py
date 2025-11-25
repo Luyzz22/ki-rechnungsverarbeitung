@@ -25,7 +25,6 @@ from notifications import send_completion_email
 from category_ai import predict_category
 from logging.handlers import RotatingFileHandler
 import sys
-import json
 
 # Logging Setup
 log_formatter = logging.Formatter(
@@ -119,9 +118,8 @@ async def home(request: Request):
 async def upload_files(request: Request, files: List[UploadFile] = File(default=[])):
     print(f"Upload request received, files count: {len(files) if files else 0}")
     """
-    DEV-VERSION:
-    - Keine Abo-/Limit-Prüfung
-    - Speichert PDFs und legt einen Job in processing_jobs an
+    Upload PDF files with (derzeit deaktiviertem) Subscription-Limit-Check.
+    Gibt job_id für das Tracking zurück.
     """
 
     # 1) Nur eingeloggte User dürfen hochladen
@@ -133,7 +131,25 @@ async def upload_files(request: Request, files: List[UploadFile] = File(default=
 
     user_id = request.session["user_id"]
 
-    # 2) Job-ID & Upload-Ordner
+    # 2) Limit-Check (im Moment: immer allowed durch unseren Patch)
+    from database import check_invoice_limit
+
+    limit_check = check_invoice_limit(user_id)
+
+    # Falls du später wieder echte Limits willst, kannst du diesen Block wieder aktivieren.
+    # if not limit_check.get("allowed"):
+    #     return JSONResponse(
+    #         status_code=403,
+    #         content={
+    #             "error": limit_check.get("message"),
+    #             "reason": limit_check.get("reason"),
+    #             "redirect": "https://sbsdeutschland.com/preise"
+    #             if limit_check.get("reason") == "no_subscription"
+    #             else None,
+    #         },
+    #     )
+
+    # 3) Job-ID & Upload-Ordner
     job_id = str(uuid.uuid4())
     upload_path = UPLOAD_DIR / job_id
     upload_path.mkdir(exist_ok=True)
@@ -142,17 +158,11 @@ async def upload_files(request: Request, files: List[UploadFile] = File(default=
     MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 
     for file in files:
-        # Nur PDFs verarbeiten
         if not file.filename.lower().endswith(".pdf"):
+            # Andere Dateitypen werden einfach ignoriert
             continue
 
         file_path = upload_path / file.filename
-
-        # Optional: rudimentärer Größen-Check (wenn verfügbar)
-        size = getattr(file, "size", None)
-        if size is not None and size > MAX_FILE_SIZE:
-            # Im DEV: einfach überspringen
-            continue
 
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
@@ -164,44 +174,41 @@ async def upload_files(request: Request, files: List[UploadFile] = File(default=
             }
         )
 
-    # 3) Wenn keine einzige gültige Datei dabei war
-    if not uploaded_files:
+    # 4) Quota-Prüfung (nutzt jetzt die riesigen dev-Werte aus check_invoice_limit)
+    remaining = limit_check.get("remaining", 0)
+    if len(uploaded_files) > remaining:
         return JSONResponse(
-            status_code=400,
-            content={"error": "Keine gültigen PDF-Dateien hochgeladen."},
+            status_code=403,
+            content={
+                "error": f"Nicht genug Kontingent. Verbleibend: {remaining}, Hochgeladen: {len(uploaded_files)}",
+                "remaining": remaining,
+            },
         )
 
-    # 4) Job in processing_jobs ablegen (RAM – wird von /api/process genutzt)
+    # 5) Job-Info im RAM ablegen (für /api/process)
     processing_jobs[job_id] = {
         "user_id": user_id,
         "status": "uploaded",
         "files": uploaded_files,
         "created_at": datetime.now().isoformat(),
         "path": str(upload_path),
-        "total": len(uploaded_files),
-        "successful": 0,
-        "failed": [],
-        "failed_count": 0,
-        "total_amount": 0.0,
-        "stats": {},
     }
 
-    # 5) DEV-"Subscription"-Info (Frontend-kompatibel, aber ohne Limit)
-    dev_limit = {
-        "plan": "dev-unlimited",
-        "used": 0,
-        "limit": 1_000_000,
-        "remaining": 1_000_000 - len(uploaded_files),
-    }
-
+    # 6) Antwort an Frontend
     return {
         "success": True,
         "batch_id": job_id,
         "job_id": job_id,
         "files_uploaded": len(uploaded_files),
         "files": uploaded_files,
-        "subscription": dev_limit,
+        "subscription": {
+            "plan": limit_check.get("plan"),
+            "used": limit_check.get("used"),
+            "limit": limit_check.get("limit"),
+            "remaining": remaining - len(uploaded_files),
+        },
     }
+
 @app.post("/api/process/{job_id}")
 async def process_job(job_id: str, background_tasks: BackgroundTasks):
     """
@@ -586,65 +593,127 @@ async def history_page(request: Request):
 
 @app.get("/job/{job_id}", response_class=HTMLResponse)
 async def job_details_page(request: Request, job_id: str):
-    # Detailed job view mit RAM + DB Fallback
-    from database import (
-        get_job,
-        get_invoices_by_job,
-        get_plausibility_warnings_for_job,
-        get_invoice_categories,
-        get_duplicates_for_job,
-    )
-
-    # 1) Erst im RAM nachschauen (frisch verarbeitete Jobs)
-    job = processing_jobs.get(job_id)
-
-    # 2) Falls nicht im RAM, aus der Datenbank laden
-    if not job:
-        job = get_job(job_id)
-
-    # 3) Wenn weder RAM noch DB etwas kennen → echter 404
+    """Detailed job view from database"""
+    from database import get_job, get_invoices_by_job, get_plausibility_warnings_for_job
+    
+    job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-
-    # 4) Rechnungen zum Job aus der DB laden
+    
+    # Get invoices from database with categories
     invoices = get_invoices_by_job(job_id)
-
-    # Kategorien zu den Rechnungen anhängen
+    
+    # Add categories to each invoice
+    from database import get_invoice_categories
     for inv in invoices:
-        inv["categories"] = get_invoice_categories(inv["id"])
-
-    # 5) Aussteller-Statistik berechnen
+        inv['categories'] = get_invoice_categories(inv['id'])
+    
+    # Calculate aussteller statistics
     aussteller_stats = {}
     for inv in invoices:
-        name = inv.get("rechnungsaussteller", "Unbekannt")
-        stats = aussteller_stats.setdefault(
-            name, {"name": name, "count": 0, "total": 0}
-        )
-        stats["count"] += 1
-        stats["total"] += inv.get("betrag_brutto", 0) or 0
-
-    aussteller_list = sorted(
-        aussteller_stats.values(), key=lambda x: x["total"], reverse=True
-    )
-
-    # 6) Duplikate & Plausibilitätsprüfungen laden
+        name = inv.get('rechnungsaussteller', 'Unbekannt')
+        if name not in aussteller_stats:
+            aussteller_stats[name] = {'name': name, 'count': 0, 'total': 0}
+        aussteller_stats[name]['count'] += 1
+        aussteller_stats[name]['total'] += inv.get('betrag_brutto', 0) or 0
+    
+    aussteller_list = sorted(aussteller_stats.values(), key=lambda x: x['total'], reverse=True)
+    
+    # Load duplicates
+    from database import get_duplicates_for_job
     duplicates = get_duplicates_for_job(job_id)
-    plausibility_warnings = get_plausibility_warnings_for_job(job_id)
+    
+    return templates.TemplateResponse("job_details.html", {
+        "request": request,
+        "job_id": job_id,
+        "job": job,
+        "invoices": invoices,
+        "aussteller_stats": aussteller_list,
+        "plausibility_warnings": get_plausibility_warnings_for_job(job_id),
+        "duplicates": duplicates
+    })
 
-    # 7) Template rendern
-    return templates.TemplateResponse(
-        "job_details.html",
-        {
-            "request": request,
-            "job_id": job_id,
-            "job": job,
-            "invoices": invoices,
-            "aussteller_stats": aussteller_list,
-            "plausibility_warnings": plausibility_warnings,
-            "duplicates": duplicates,
-        },
-    )
+@app.get("/job/{job_id}", response_class=HTMLResponse)
+async def job_details_page(request: Request, job_id: str):
+    """Detailed job view from database"""
+    from database import get_job, get_invoices_by_job, get_plausibility_warnings_for_job
+    
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Get invoices from database with categories
+    invoices = get_invoices_by_job(job_id)
+    
+    # Add categories to each invoice
+    from database import get_invoice_categories
+    for inv in invoices:
+        inv['categories'] = get_invoice_categories(inv['id'])
+    
+    # Calculate aussteller statistics
+    aussteller_stats = {}
+    for inv in invoices:
+        name = inv.get('rechnungsaussteller', 'Unbekannt')
+        if name not in aussteller_stats:
+            aussteller_stats[name] = {'name': name, 'count': 0, 'total': 0}
+        aussteller_stats[name]['count'] += 1
+        aussteller_stats[name]['total'] += inv.get('betrag_brutto', 0) or 0
+    
+    aussteller_list = sorted(aussteller_stats.values(), key=lambda x: x['total'], reverse=True)
+    
+    # Load duplicates
+    from database import get_duplicates_for_job
+    duplicates = get_duplicates_for_job(job_id)
+    
+    return templates.TemplateResponse("job_details.html", {
+        "request": request,
+        "job_id": job_id,
+        "job": job,
+        "invoices": invoices,
+        "aussteller_stats": aussteller_list,
+        "duplicates": duplicates
+    })
 
+@app.get("/job/{job_id}", response_class=HTMLResponse)
+async def job_details_page(request: Request, job_id: str):
+    """Detailed job view from database"""
+    from database import get_job, get_invoices_by_job, get_plausibility_warnings_for_job
+    
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Get invoices from database with categories
+    invoices = get_invoices_by_job(job_id)
+    
+    # Add categories to each invoice
+    from database import get_invoice_categories
+    for inv in invoices:
+        inv['categories'] = get_invoice_categories(inv['id'])
+    
+    # Calculate aussteller statistics
+    aussteller_stats = {}
+    for inv in invoices:
+        name = inv.get('rechnungsaussteller', 'Unbekannt')
+        if name not in aussteller_stats:
+            aussteller_stats[name] = {'name': name, 'count': 0, 'total': 0}
+        aussteller_stats[name]['count'] += 1
+        aussteller_stats[name]['total'] += inv.get('betrag_brutto', 0) or 0
+    
+    aussteller_list = sorted(aussteller_stats.values(), key=lambda x: x['total'], reverse=True)
+    
+    # Load duplicates
+    from database import get_duplicates_for_job
+    duplicates = get_duplicates_for_job(job_id)
+    
+    return templates.TemplateResponse("job_details.html", {
+        "request": request,
+        "job_id": job_id,
+        "job": job,
+        "invoices": invoices,
+        "aussteller_stats": aussteller_list,
+        "duplicates": duplicates
+    })
 
 @app.get("/analytics", response_class=HTMLResponse)
 async def analytics_page(request: Request):
@@ -1696,67 +1765,3 @@ async def export_job_zip(job_id: str, request: Request):
         )
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
-
-# === Überschriebene Job-Detail-Seite mit RAM + DB Fallback ===
-@app.get("/job/{job_id}", response_class=HTMLResponse)
-async def job_details_page(request: Request, job_id: str):
-    """
-    Detailed job view from in-memory jobs (laufende Session) UND Datenbank.
-    - Zuerst wird in processing_jobs geschaut (aktuelle Verarbeitung)
-    - Fallback: get_job(job_id) aus der Datenbank
-    """
-    from database import (
-        get_job,
-        get_invoices_by_job,
-        get_plausibility_warnings_for_job,
-        get_invoice_categories,
-        get_duplicates_for_job,
-    )
-
-    # 1) RAM: laufender oder gerade fertig verarbeiteter Job
-    job = processing_jobs.get(job_id)
-
-    # 2) Fallback: Datenbank (History / ältere Jobs)
-    if not job:
-        job = get_job(job_id)
-
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-
-    # Rechnungen aus der DB holen (inkl. IDs etc.)
-    invoices = get_invoices_by_job(job_id)
-
-    # Kategorien anreichern
-    for inv in invoices:
-        inv["categories"] = get_invoice_categories(inv["id"])
-
-    # Aussteller-Statistik
-    aussteller_stats = {}
-    for inv in invoices:
-        name = inv.get("rechnungsaussteller", "Unbekannt")
-        if name not in aussteller_stats:
-            aussteller_stats[name] = {"name": name, "count": 0, "total": 0}
-        aussteller_stats[name]["count"] += 1
-        aussteller_stats[name]["total"] += inv.get("betrag_brutto", 0) or 0
-
-    aussteller_list = sorted(
-        aussteller_stats.values(),
-        key=lambda x: x["total"],
-        reverse=True,
-    )
-
-    duplicates = get_duplicates_for_job(job_id)
-    plausibility_warnings = get_plausibility_warnings_for_job(job_id)
-
-    return templates.TemplateResponse(
-        "job_details.html",
-        {
-            "request": request,
-            "job_id": job_id,
-            "job": job,
-            "invoices": invoices,
-            "aussteller_stats": aussteller_list,
-            "plausibility_warnings": plausibility_warnings,
-            "duplicates": duplicates,
-        },
-    )
