@@ -79,7 +79,8 @@ def save_duplicate_detection(invoice_id: int, duplicate_of_id: int, method: str 
     ''', (invoice_id, duplicate_of_id, method, confidence))
     
     conn.commit()
-    conn.close()
+    if should_close:
+        conn.close()
     
     logger.info(f"📝 Saved duplicate detection: {invoice_id} -> {duplicate_of_id}")
 
@@ -128,7 +129,8 @@ def mark_duplicate_reviewed(detection_id: int, user_id: int, is_duplicate: bool)
     ''', (status, user_id, datetime.now().isoformat(), detection_id))
     
     conn.commit()
-    conn.close()
+    if should_close:
+        conn.close()
     
     logger.info(f"✅ Duplicate reviewed: {detection_id} -> {status}")
 

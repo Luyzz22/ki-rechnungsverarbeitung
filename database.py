@@ -222,7 +222,7 @@ def save_invoices(job_id: str, results: List[Dict]):
                 f"matches invoice {duplicate['id']}"
             )
             save_duplicate_detection(
-                invoice_id, duplicate["id"], method="hash", confidence=1.0
+                invoice_id, duplicate["id"], method="hash", confidence=1.0, conn=conn
             )
 
     conn.commit()
