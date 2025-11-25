@@ -31,17 +31,21 @@ def check_duplicate_by_hash(invoice: dict, user_id: int = None, conn=None) -> Op
     Check if invoice is duplicate based on hash
     Returns: dict with duplicate info or None
     """
-    import sqlite3
+    from database import get_connection
+    import logging
     
+    logger = logging.getLogger(__name__)
     content_hash = generate_invoice_hash(invoice)
     
-    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    should_close = conn is None
+    if conn is None:
+        conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
     # Find existing invoice with same hash
     if user_id:
-        cursor.execute('''
+        cursor.execute(''')
             SELECT i.id, i.rechnungsnummer, i.datum, i.rechnungsaussteller, i.betrag_brutto, i.job_id
             FROM invoices i
             JOIN jobs j ON i.job_id = j.job_id
@@ -49,7 +53,7 @@ def check_duplicate_by_hash(invoice: dict, user_id: int = None, conn=None) -> Op
             LIMIT 1
         ''', (content_hash, user_id))
     else:
-        cursor.execute('''
+        cursor.execute(''')
             SELECT id, rechnungsnummer, datum, rechnungsaussteller, betrag_brutto, job_id
             FROM invoices
             WHERE content_hash = ?
@@ -65,7 +69,6 @@ def check_duplicate_by_hash(invoice: dict, user_id: int = None, conn=None) -> Op
         return dict(result)
     
     return None
-
 
 def save_duplicate_detection(invoice_id: int, duplicate_of_id: int, method: str = 'hash', confidence: float = 1.0, conn=None):
     """Save duplicate detection to database"""
