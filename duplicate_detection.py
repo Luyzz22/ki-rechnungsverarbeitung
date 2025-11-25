@@ -57,7 +57,8 @@ def check_duplicate_by_hash(invoice: dict, user_id: int = None) -> Optional[Dict
         ''', (content_hash,))
     
     result = cursor.fetchone()
-    conn.close()
+    if should_close:
+        conn.close()
     
     if result:
         logger.info(f"🔍 Duplicate detected: {result['rechnungsaussteller']} - {result['betrag_brutto']}€")
@@ -80,6 +81,7 @@ def save_duplicate_detection(invoice_id: int, duplicate_of_id: int, method: str 
     
     conn.commit()
     if should_close:
+        if should_close:
         conn.close()
     
     logger.info(f"📝 Saved duplicate detection: {invoice_id} -> {duplicate_of_id}")
@@ -107,7 +109,8 @@ def get_duplicates_for_invoice(invoice_id: int) -> List[Dict]:
     ''', (invoice_id,))
     
     results = [dict(row) for row in cursor.fetchall()]
-    conn.close()
+    if should_close:
+        conn.close()
     
     return results
 
@@ -130,6 +133,7 @@ def mark_duplicate_reviewed(detection_id: int, user_id: int, is_duplicate: bool)
     
     conn.commit()
     if should_close:
+        if should_close:
         conn.close()
     
     logger.info(f"✅ Duplicate reviewed: {detection_id} -> {status}")
@@ -173,7 +177,8 @@ def check_similarity_ai(invoice: dict, user_id: int = None) -> List[Dict]:
         ''', (f'%{aussteller}%',))
     
     existing_invoices = [dict(row) for row in cursor.fetchall()]
-    conn.close()
+    if should_close:
+        conn.close()
     
     if not existing_invoices:
         return []
