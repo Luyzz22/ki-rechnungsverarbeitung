@@ -26,7 +26,7 @@ def generate_invoice_hash(invoice: dict) -> str:
     return hashlib.sha256(content.encode()).hexdigest()
 
 
-def check_duplicate_by_hash(invoice: dict, user_id: int = None) -> Optional[Dict]:
+def check_duplicate_by_hash(invoice: dict, user_id: int = None, conn=None) -> Optional[Dict]:
     """
     Check if invoice is duplicate based on hash
     Returns: dict with duplicate info or None
