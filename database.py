@@ -215,7 +215,7 @@ def save_invoices(job_id: str, results: List[Dict]):
         invoice_id = cursor.lastrowid
 
         # 3) Duplikat-Check (Hash)
-        duplicate = check_duplicate_by_hash(invoice)
+        duplicate = check_duplicate_by_hash(invoice, conn=conn)
         if duplicate and duplicate.get("id") != invoice_id:
             logger.warning(
                 f"⚠️ Duplicate detected for invoice {invoice_id}: "
