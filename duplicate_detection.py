@@ -67,11 +67,13 @@ def check_duplicate_by_hash(invoice: dict, user_id: int = None) -> Optional[Dict
     return None
 
 
-def save_duplicate_detection(invoice_id: int, duplicate_of_id: int, method: str = 'hash', confidence: float = 1.0):
+def save_duplicate_detection(invoice_id: int, duplicate_of_id: int, method: str = 'hash', confidence: float = 1.0, conn=None):
     """Save duplicate detection to database"""
-    import sqlite3
+    from database import get_connection
     
-    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    should_close = conn is None
+    if conn is None:
+        conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -81,7 +83,6 @@ def save_duplicate_detection(invoice_id: int, duplicate_of_id: int, method: str 
     
     conn.commit()
     if should_close:
-        if should_close:
         conn.close()
     
     logger.info(f"📝 Saved duplicate detection: {invoice_id} -> {duplicate_of_id}")
@@ -133,7 +134,6 @@ def mark_duplicate_reviewed(detection_id: int, user_id: int, is_duplicate: bool)
     
     conn.commit()
     if should_close:
-        if should_close:
         conn.close()
     
     logger.info(f"✅ Duplicate reviewed: {detection_id} -> {status}")
