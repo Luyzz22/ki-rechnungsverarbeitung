@@ -1,5 +1,3 @@
-from websocket_handler import manager
-import asyncio
 #!/usr/bin/env python3
 """
 Core invoice processing logic with Hybrid AI
@@ -359,3 +357,4 @@ def run_plausibility_for_invoice(invoice_id: int):
     except Exception as e:
         logger.error(f"❌ Plausibility check failed for invoice {invoice_id}: {e}")
         return 0
+
