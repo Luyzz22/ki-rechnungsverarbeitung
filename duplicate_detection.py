@@ -4,6 +4,7 @@ Duplicate Detection System
 - KI-based similarity detection
 """
 import hashlib
+import sqlite3
 import json
 from typing import Optional, Tuple, List, Dict
 import logging
@@ -113,8 +114,7 @@ def get_duplicates_for_invoice(invoice_id: int) -> List[Dict]:
     ''', (invoice_id,))
     
     results = [dict(row) for row in cursor.fetchall()]
-    if should_close:
-        conn.close()
+    conn.close()
     
     return results
 
@@ -136,8 +136,7 @@ def mark_duplicate_reviewed(detection_id: int, user_id: int, is_duplicate: bool)
     ''', (status, user_id, datetime.now().isoformat(), detection_id))
     
     conn.commit()
-    if should_close:
-        conn.close()
+    conn.close()
     
     logger.info(f"✅ Duplicate reviewed: {detection_id} -> {status}")
 
@@ -180,8 +179,7 @@ def check_similarity_ai(invoice: dict, user_id: int = None) -> List[Dict]:
         ''', (f'%{aussteller}%',))
     
     existing_invoices = [dict(row) for row in cursor.fetchall()]
-    if should_close:
-        conn.close()
+    conn.close()
     
     if not existing_invoices:
         return []

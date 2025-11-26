@@ -20,7 +20,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, H
 from fastapi.responses import RedirectResponse
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from database import save_job, save_invoices, get_job, get_all_jobs, get_statistics
+from database import save_job, save_invoices, get_job, get_all_jobs, get_statistics, get_invoices_by_job
 from notifications import send_completion_email
 from category_ai import predict_category
 from logging.handlers import RotatingFileHandler
@@ -380,7 +380,7 @@ async def process_invoices_background(job_id: str):
     
     # Auto-Kategorisierung
     try:
-        from database import assign_category_to_invoice, get_invoices_for_job
+        from database import assign_category_to_invoice, get_invoices_by_job
         # Hole die gespeicherten Invoices mit IDs
         saved_invoices = get_invoices_by_job(job_id)
         for invoice in saved_invoices:
@@ -1726,6 +1726,19 @@ async def job_details_page(request: Request, job_id: str):
     # Rechnungen aus der DB holen (inkl. IDs etc.)
     invoices = get_invoices_by_job(job_id)
 
+    # Header-Zahlen (Rechnungen, Erfolgreich, Gesamtvolumen) aus echten Daten ableiten
+    # Besonders wichtig für frische Jobs aus processing_jobs, wo total_files evtl. fehlt
+    if not job.get("total_files"):
+        job["total_files"] = len(invoices)
+    if not job.get("successful"):
+        # Wenn erfolgreich noch 0 ist, setzen wir es auf die Anzahl verarbeiteter Rechnungen
+        job["successful"] = len(invoices)
+    if not job.get("total_amount"):
+        # Gesamt-Bruttobetrag aus den Rechnungen summieren
+        job["total_amount"] = sum(
+            (inv.get("betrag_brutto") or 0) for inv in invoices
+        )
+
     # Kategorien anreichern
     for inv in invoices:
         inv["categories"] = get_invoice_categories(inv["id"])
@@ -1744,6 +1757,42 @@ async def job_details_page(request: Request, job_id: str):
         key=lambda x: x["total"],
         reverse=True,
     )
+
+    # Header-Kacheln / Statistiken robust aus den Rechnungen ableiten
+    stats = job.get("stats") or {}
+    # Falls in der DB als JSON-String gespeichert
+    if isinstance(stats, str):
+        import json as _json
+        try:
+            stats = _json.loads(stats)
+        except Exception:
+            stats = {}
+
+    # Anzahl Rechnungen immer aus der echten Liste ableiten
+    stats.setdefault("total_invoices", len(invoices))
+    job["stats"] = stats
+
+    # Sicherstellen, dass die Header-Kacheln immer korrekte Werte anzeigen
+    if not job.get("total_files"):
+        job["total_files"] = len(invoices)
+    if not job.get("successful"):
+        job["successful"] = len(invoices)
+
+    # Fallback für Header-Kacheln: auch RAM-Jobs haben korrekte Werte
+    if not job.get("total_files"):
+        job["total_files"] = len(invoices)
+    if not job.get("successful"):
+        job["successful"] = len(invoices)
+    if not job.get("total_amount"):
+        job["total_amount"] = sum(inv.get("betrag_brutto", 0) or 0 for inv in invoices)
+
+    # total_files / successful / total_amount notfalls ausrechnen
+    if not job.get("total_files"):
+        job["total_files"] = len(invoices)
+    if not job.get("successful"):
+        job["successful"] = len(invoices)
+    if not job.get("total_amount"):
+        job["total_amount"] = sum(inv.get("betrag_brutto", 0) or 0 for inv in invoices)
 
     duplicates = get_duplicates_for_job(job_id)
     plausibility_warnings = get_plausibility_warnings_for_job(job_id)

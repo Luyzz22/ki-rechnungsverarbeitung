@@ -229,40 +229,45 @@ def save_invoices(job_id: str, results: List[Dict]):
     conn.close()
 
 
-def get_invoices_by_job(job_id: str):
+def get_invoices_by_job(job_id: str) -> List[Dict]:
     """Get all invoices for a job with their IDs"""
-    conn = get_connection()  # nutzt jetzt ebenfalls DB_PATH => invoices.db
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM invoices WHERE job_id = ?", (job_id,))
     invoices = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return invoices
-
-
 def get_job(job_id: str) -> Optional[Dict]:
-    """Get a job by ID"""
+    """Get a job by ID (inkl. Rechnungen & Basis-Statistiken)"""
     conn = get_connection()
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    
-    cursor.execute('SELECT * FROM jobs WHERE job_id = ?', (job_id,))
+
+    cursor.execute("SELECT * FROM jobs WHERE job_id = ?", (job_id,))
     row = cursor.fetchone()
-    
+
     if not row:
         conn.close()
         return None
-    
-    job = dict(row)
-    job['exported_files'] = json.loads(job['exported_files'] or '{}')
-    job['failed'] = json.loads(job['failed_list'] or '[]')
-    
-    # Get invoices
-    cursor.execute('SELECT * FROM invoices WHERE job_id = ?', (job_id,))
+
+    job: Dict = dict(row)
+    job['exported_files'] = json.loads(job.get('exported_files') or '{}')
+    job['failed'] = json.loads(job.get('failed_list') or '[]')
+
+    # Alle Rechnungen zu diesem Job
+    cursor.execute("SELECT * FROM invoices WHERE job_id = ?", (job_id,))
     invoices = [dict(r) for r in cursor.fetchall()]
     job['results'] = invoices
-    
+
+    # Fallback: wenn total_files / successful leer oder 0 sind, aus Rechnungen ableiten
+    if not job.get('total_files'):
+        job['total_files'] = len(invoices)
+    if not job.get('successful'):
+        job['successful'] = len(invoices)
+
     conn.close()
     return job
-
 def get_all_jobs(limit: int = 50, offset: int = 0, user_id: int = None) -> List[Dict]:
     """Get all jobs for a user, newest first"""
     conn = get_connection()
@@ -1389,16 +1394,15 @@ def _get_invoice_conn():
     conn.row_factory = sqlite3.Row
     return conn
 
-def get_invoices_by_job(job_id: str):
+def get_invoices_by_job(job_id: str) -> List[Dict]:
     """Get all invoices for a job with their IDs"""
-    conn = get_connection()  # nutzt jetzt ebenfalls DB_PATH => invoices.db
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM invoices WHERE job_id = ?", (job_id,))
     invoices = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return invoices
-
-
 def get_invoices_for_job(job_id: str):
     """Alias für get_invoices_by_job (Kompatibilität)."""
     return get_invoices_by_job(job_id)
