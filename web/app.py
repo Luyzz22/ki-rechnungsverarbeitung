@@ -566,6 +566,152 @@ async def startup_event():
     from email_scheduler import email_scheduler
     email_scheduler.start()
 
+
+
+# =====================================================
+# PASSWORD RESET ROUTES
+# =====================================================
+
+@app.get("/password-reset/request", response_class=HTMLResponse)
+async def password_reset_request_page(request: Request):
+    """Show password reset request form"""
+    return templates.TemplateResponse("password_reset_request.html", {
+        "request": request,
+        "success": False,
+        "error": None
+    })
+
+
+@app.post("/password-reset/request")
+async def password_reset_request_submit(request: Request):
+    """Handle password reset request"""
+    from database import create_password_reset_token
+    from notifications import send_sendgrid_email
+    
+    form = await request.form()
+    email = form.get('email', '').strip()
+    
+    # Always show success (security: don't reveal if email exists)
+    token = create_password_reset_token(email)
+    
+    if token:
+        # Send reset email
+        reset_url = f"https://app.sbsdeutschland.com/password-reset/confirm?token={token}"
+        
+        # Create simple HTML email
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; padding: 40px; background-color: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px;">
+                <h2 style="color: #003856;">🔐 Passwort zurücksetzen</h2>
+                <p>Sie haben eine Anfrage zum Zurücksetzen Ihres Passworts gestellt.</p>
+                <p>Klicken Sie auf den folgenden Link, um ein neues Passwort festzulegen:</p>
+                <p style="margin: 30px 0;">
+                    <a href="{reset_url}" style="background: #003856; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                        Passwort zurücksetzen
+                    </a>
+                </p>
+                <p style="color: #666; font-size: 14px;">Dieser Link ist 24 Stunden gültig.</p>
+                <p style="color: #666; font-size: 14px;">Falls Sie diese Anfrage nicht gestellt haben, ignorieren Sie diese E-Mail.</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        try:
+            import os
+            from sendgrid import SendGridAPIClient
+            from sendgrid.helpers.mail import Mail
+            
+            message = Mail(
+                from_email=os.getenv('SENDGRID_FROM_EMAIL', 'luis220195@gmail.com'),
+                to_emails=email,
+                subject='Passwort zurücksetzen - SBS Deutschland',
+                html_content=html_content
+            )
+            
+            sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
+            sg.send(message)
+            logger.info(f"Password reset email sent to {email}")
+        except Exception as e:
+            logger.error(f"Failed to send reset email: {e}")
+    
+    # Always show success (security)
+    return templates.TemplateResponse("password_reset_request.html", {
+        "request": request,
+        "success": True,
+        "error": None
+    })
+
+
+@app.get("/password-reset/confirm", response_class=HTMLResponse)
+async def password_reset_confirm_page(request: Request, token: str = None):
+    """Show password reset form"""
+    from database import verify_reset_token
+    
+    if not token:
+        return templates.TemplateResponse("password_reset_confirm.html", {
+            "request": request,
+            "token": None,
+            "error": "Ungültiger oder fehlender Token"
+        })
+    
+    # Verify token
+    user_id = verify_reset_token(token)
+    if not user_id:
+        return templates.TemplateResponse("password_reset_confirm.html", {
+            "request": request,
+            "token": None,
+            "error": "Token ist ungültig oder abgelaufen"
+        })
+    
+    return templates.TemplateResponse("password_reset_confirm.html", {
+        "request": request,
+        "token": token,
+        "error": None
+    })
+
+
+@app.post("/password-reset/confirm")
+async def password_reset_confirm_submit(request: Request):
+    """Handle password reset"""
+    from database import reset_password
+    
+    form = await request.form()
+    token = form.get('token', '')
+    password = form.get('password', '')
+    password_confirm = form.get('password_confirm', '')
+    
+    # Validate
+    if not password or len(password) < 8:
+        return templates.TemplateResponse("password_reset_confirm.html", {
+            "request": request,
+            "token": token,
+            "error": "Passwort muss mindestens 8 Zeichen lang sein"
+        })
+    
+    if password != password_confirm:
+        return templates.TemplateResponse("password_reset_confirm.html", {
+            "request": request,
+            "token": token,
+            "error": "Passwörter stimmen nicht überein"
+        })
+    
+    # Reset password
+    success = reset_password(token, password)
+    
+    if not success:
+        return templates.TemplateResponse("password_reset_confirm.html", {
+            "request": request,
+            "token": None,
+            "error": "Token ist ungültig oder abgelaufen"
+        })
+    
+    # Success -> redirect to login with message
+    return RedirectResponse(url="/login?reset=success", status_code=303)
+
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

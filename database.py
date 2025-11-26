@@ -1452,3 +1452,142 @@ def get_plausibility_warnings_for_job(job_id: str):
         warnings.append(warning)
     
     return warnings
+
+
+# =====================================================
+# PASSWORD RESET & EMAIL VERIFICATION
+# =====================================================
+
+def create_password_reset_token(email: str) -> Optional[str]:
+    """Create password reset token for user"""
+    import secrets
+    from datetime import datetime, timedelta
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Get user
+    cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
+    user = cursor.fetchone()
+    
+    if not user:
+        conn.close()
+        return None
+    
+    # Generate token
+    token = secrets.token_urlsafe(32)
+    expires_at = (datetime.now() + timedelta(hours=24)).isoformat()
+    
+    # Save token
+    cursor.execute('''
+        INSERT INTO password_reset_tokens (user_id, token, expires_at)
+        VALUES (?, ?, ?)
+    ''', (user['id'], token, expires_at))
+    
+    conn.commit()
+    conn.close()
+    
+    return token
+
+
+def verify_reset_token(token: str) -> Optional[int]:
+    """Verify password reset token and return user_id"""
+    from datetime import datetime
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT user_id, expires_at, used 
+        FROM password_reset_tokens 
+        WHERE token = ?
+    ''', (token,))
+    
+    result = cursor.fetchone()
+    conn.close()
+    
+    if not result:
+        return None
+    
+    if result['used']:
+        return None
+    
+    # Check expiration
+    expires_at = datetime.fromisoformat(result['expires_at'])
+    if datetime.now() > expires_at:
+        return None
+    
+    return result['user_id']
+
+
+def reset_password(token: str, new_password: str) -> bool:
+    """Reset user password with token"""
+    import bcrypt
+    
+    user_id = verify_reset_token(token)
+    if not user_id:
+        return False
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Hash new password
+    password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+    
+    # Update password
+    cursor.execute('''
+        UPDATE users 
+        SET password_hash = ?
+        WHERE id = ?
+    ''', (password_hash.decode('utf-8'), user_id))
+    
+    # Mark token as used
+    cursor.execute('''
+        UPDATE password_reset_tokens 
+        SET used = 1 
+        WHERE token = ?
+    ''', (token,))
+    
+    conn.commit()
+    conn.close()
+    
+    return True
+
+
+def create_email_verification_token(user_id: int) -> str:
+    """Create email verification token"""
+    import secrets
+    
+    token = secrets.token_urlsafe(32)
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        UPDATE users 
+        SET verification_token = ?
+        WHERE id = ?
+    ''', (token, user_id))
+    
+    conn.commit()
+    conn.close()
+    
+    return token
+
+
+def verify_email(token: str) -> bool:
+    """Verify user email with token"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        UPDATE users 
+        SET email_verified = 1, verification_token = NULL
+        WHERE verification_token = ?
+    ''', (token,))
+    
+    success = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    
+    return success
