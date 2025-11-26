@@ -21,7 +21,7 @@ from fastapi.responses import RedirectResponse
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from database import save_job, save_invoices, get_job, get_all_jobs, get_statistics, get_invoices_by_job
-from notifications import send_completion_email
+from notifications import send_sendgrid_email
 from category_ai import predict_category
 from logging.handlers import RotatingFileHandler
 import sys
@@ -584,8 +584,8 @@ async def history_page(request: Request):
         "stats": stats
     })
 
-@app.get("/job/{job_id}", response_class=HTMLResponse)
-async def job_details_page(request: Request, job_id: str):
+@app.get("/job_old/{job_id}", response_class=HTMLResponse)
+async def job_details_page_old(request: Request, job_id: str):
     # Detailed job view mit RAM + DB Fallback
     from database import (
         get_job,
