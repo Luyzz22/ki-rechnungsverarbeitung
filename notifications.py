@@ -10,11 +10,17 @@ import base64
 from pathlib import Path
 from typing import Dict, List
 import requests
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
-from dotenv import load_dotenv
-
-load_dotenv()
+try:
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+    SENDGRID_AVAILABLE = True
+except ImportError:
+    SENDGRID_AVAILABLE = False
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -390,4 +396,52 @@ Jetzt ansehen: {job_url}
         return True
     except Exception as e:
         print(f"❌ Email error: {e}")
+        return False
+def send_sendgrid_email(user_email: str, job_data: dict, stats: dict) -> bool:
+    """Send professional HTML email via SendGrid API"""
+    import os
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail
+    
+    api_key = os.getenv('SENDGRID_API_KEY')
+    from_email = os.getenv('SENDGRID_FROM_EMAIL', 'noreply@sbsdeutschland.com')
+    
+    if not api_key:
+        logger.warning("SendGrid API key not found")
+        return False
+    
+    # Load HTML template
+    template_path = '/var/www/invoice-app/email_templates/completion.html'
+    try:
+        with open(template_path, 'r') as f:
+            html_template = f.read()
+    except Exception as e:
+        logger.error(f"Email template not found: {e}")
+        return False
+    
+    # Replace placeholders
+    job_url = f"https://app.sbsdeutschland.com/job/{job_data.get('batch_id', job_data.get('job_id', ''))}"
+    html_content = html_template.replace('{{total_invoices}}', str(stats.get('total_invoices', 0)))
+    html_content = html_content.replace('{{successful}}', str(job_data.get('successful', 0)))
+    html_content = html_content.replace('{{total_amount}}', f"{stats.get('total_brutto', 0):.2f}")
+    html_content = html_content.replace('{{total_netto}}', f"{stats.get('total_netto', 0):.2f}")
+    html_content = html_content.replace('{{total_mwst}}', f"{stats.get('total_mwst', 0):.2f}")
+    html_content = html_content.replace('{{job_url}}', job_url)
+    
+    # Create SendGrid message
+    message = Mail(
+        from_email=from_email,
+        to_emails=user_email,
+        subject=f"✅ {stats.get('total_invoices', 0)} Rechnungen verarbeitet ({stats.get('total_brutto', 0):.2f}€)",
+        html_content=html_content
+    )
+    
+    # Send via SendGrid
+    try:
+        sg = SendGridAPIClient(api_key)
+        response = sg.send(message)
+        logger.info(f"✅ SendGrid email sent to {user_email} (Status: {response.status_code})")
+        return True
+    except Exception as e:
+        logger.error(f"❌ SendGrid error: {e}")
         return False
