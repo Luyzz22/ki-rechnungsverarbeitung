@@ -12,7 +12,7 @@ from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = Path("/var/www/invoice-app/invoices.db").resolve()
+DB_PATH = Path(__file__).parent / "invoices.db"
 
 def get_connection():
     """Get database connection"""
@@ -1242,7 +1242,7 @@ def get_analytics_insights(user_id: int = None) -> list:
 def get_all_categories(user_id: int = None):
     """Get all categories (user-specific or global)"""
     import sqlite3
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     if user_id:
@@ -1257,7 +1257,7 @@ def create_category(name: str, description: str = None, account_number: str = No
                    color: str = '#3B82F6', icon: str = '📁', user_id: int = None):
     """Create new category"""
     import sqlite3
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('''
@@ -1272,7 +1272,7 @@ def create_category(name: str, description: str = None, account_number: str = No
 def assign_category_to_invoice(invoice_id: int, category_id: int, confidence: float = 1.0, assigned_by: str = 'user'):
     """Assign category to invoice"""
     import sqlite3
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('''
@@ -1285,7 +1285,7 @@ def assign_category_to_invoice(invoice_id: int, category_id: int, confidence: fl
 def get_invoice_categories(invoice_id: int):
     """Get categories for an invoice"""
     import sqlite3
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('''
@@ -1331,7 +1331,7 @@ def save_category_learning(supplier_name: str, category_id: int, invoice_text: s
 def get_learned_category(supplier_name: str, user_id: int = None):
     """Get learned category for a supplier"""
     import sqlite3
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('''
@@ -1350,7 +1350,7 @@ def get_duplicates_for_job(job_id: str):
     """Get all duplicate detections for a job"""
     import sqlite3
     
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -1389,7 +1389,8 @@ def _get_invoice_conn():
     Öffnet direkt die invoices.db im Projektverzeichnis.
     Nutzt sqlite3.Row, damit wir Dicts zurückgeben können.
     """
-    conn = sqlite3.connect(str(DB_PATH))
+    db_path = _Path(__file__).resolve().parent / "invoices.db"
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -1410,7 +1411,7 @@ def get_plausibility_warnings_for_job(job_id: str):
     """Get all plausibility warnings for a job"""
     import json
     
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    conn = sqlite3.connect('invoices.db', check_same_thread=False)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -1590,112 +1591,3 @@ def verify_email(token: str) -> bool:
     conn.close()
     
     return success
-
-# ===========================================
-# ### OVERRIDE: password reset helpers (saubere Version)
-# ===========================================
-from typing import Optional
-
-def create_password_reset_token(email: str) -> Optional[str]:
-    """Create password reset token for user (24h gültig)."""
-    import secrets
-    from datetime import datetime, timedelta
-
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row if hasattr(conn, "row_factory") else conn.row_factory
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
-    row = cursor.fetchone()
-    if not row:
-        conn.close()
-        return None
-
-    user_id = row["id"]
-
-    token = secrets.token_urlsafe(32)
-    expires_at = (datetime.now() + timedelta(hours=24)).isoformat()
-
-    # used-Spalte, falls vorhanden, direkt mit 0 setzen
-    try:
-        cursor.execute(
-            "INSERT INTO password_reset_tokens (user_id, token, expires_at, used) VALUES (?, ?, ?, 0)",
-            (user_id, token, expires_at),
-        )
-    except Exception:
-        # Fallback, falls alte Tabelle ohne 'used' existiert
-        cursor.execute(
-            "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)",
-            (user_id, token, expires_at),
-        )
-
-    conn.commit()
-    conn.close()
-    return token
-
-
-def verify_reset_token(token: str) -> Optional[int]:
-    """Verify password reset token and return user_id or None."""
-    from datetime import datetime
-
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row if hasattr(conn, "row_factory") else conn.row_factory
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT user_id, expires_at, used FROM password_reset_tokens WHERE token = ?",
-        (token,),
-    )
-    row = cursor.fetchone()
-    conn.close()
-
-    if not row:
-        return None
-
-    user_id = row["user_id"]
-    expires_at = row["expires_at"]
-    used = row["used"]
-
-    if used:
-        return None
-
-    try:
-        expires_dt = datetime.fromisoformat(expires_at)
-    except Exception:
-        return None
-
-    if datetime.now() > expires_dt:
-        return None
-
-    return user_id
-
-
-def reset_password(token: str, new_password: str) -> bool:
-    """Reset user password with token, using sha256 hashing (wie create_user)."""
-    import hashlib
-
-    user_id = verify_reset_token(token)
-    if not user_id:
-        return False
-
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    password_hash = hashlib.sha256(new_password.encode("utf-8")).hexdigest()
-    cursor.execute(
-        "UPDATE users SET password_hash = ? WHERE id = ?",
-        (password_hash, user_id),
-    )
-
-    # Token als benutzt markieren, falls Spalte existiert
-    try:
-        cursor.execute(
-            "UPDATE password_reset_tokens SET used = 1 WHERE token = ?",
-            (token,),
-        )
-    except Exception:
-        pass
-
-    conn.commit()
-    conn.close()
-    return True
-
