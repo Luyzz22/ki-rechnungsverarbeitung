@@ -1,7 +1,3 @@
-from fastapi.responses import HTMLResponse, RedirectResponse
-from database import create_password_reset_token, verify_reset_token, reset_password
-# FIXED (was broken): from database import create_password_reset_token, verify_reset_token, reset_password\nfrom fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi import FastAPI, Request, Form
 #!/usr/bin/env python3
 from dotenv import load_dotenv
 import os
@@ -23,8 +19,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.responses import RedirectResponse
 import logging
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from database import save_job, save_invoices, get_job, get_all_jobs, get_statistics, get_invoices_by_job
 from notifications import send_sendgrid_email
@@ -64,7 +58,6 @@ app_logger = logging.getLogger('invoice_app')
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-templates = Jinja2Templates(directory="web/templates")
 from fastapi import Request
 import shutil
 from typing import List
@@ -119,10 +112,6 @@ processing_jobs = {}
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-
-    redirect = require_login(request)
-    if redirect:
-        return redirect
     """Main upload page"""
     return templates.TemplateResponse("index.html", {"request": request})
 
@@ -583,38 +572,154 @@ async def startup_event():
 # PASSWORD RESET ROUTES
 # =====================================================
 
+@app.get("/password-reset/request", response_class=HTMLResponse)
+async def password_reset_request_page(request: Request):
+    """Show password reset request form"""
+    return templates.TemplateResponse("password_reset_request.html", {
+        "request": request,
+        "success": False,
+        "error": None
+    })
 
 
+@app.post("/password-reset/request")
+async def password_reset_request_submit(request: Request):
+    """Handle password reset request"""
+    from database import create_password_reset_token
+    from notifications import send_sendgrid_email
+    
+    form = await request.form()
+    email = form.get('email', '').strip()
+    logger.info(f"🔐 Password reset requested for: {email}")
+    
+    # Always show success (security: don't reveal if email exists)
+    token = create_password_reset_token(email)
+    logger.info(f"🔑 Token created: {bool(token)}")
+    
+    if token:
+        # Send reset email
+        reset_url = f"https://app.sbsdeutschland.com/password-reset/confirm?token={token}"
+        
+        # Create simple HTML email
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; padding: 40px; background-color: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px;">
+                <h2 style="color: #003856;">🔐 Passwort zurücksetzen</h2>
+                <p>Sie haben eine Anfrage zum Zurücksetzen Ihres Passworts gestellt.</p>
+                <p>Klicken Sie auf den folgenden Link, um ein neues Passwort festzulegen:</p>
+                <p style="margin: 30px 0;">
+                    <a href="{reset_url}" style="background: #003856; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                        Passwort zurücksetzen
+                    </a>
+                </p>
+                <p style="color: #666; font-size: 14px;">Dieser Link ist 24 Stunden gültig.</p>
+                <p style="color: #666; font-size: 14px;">Falls Sie diese Anfrage nicht gestellt haben, ignorieren Sie diese E-Mail.</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        try:
+            import os
+            from sendgrid import SendGridAPIClient
+            from sendgrid.helpers.mail import Mail
+            
+            message = Mail(
+                from_email=os.getenv('SENDGRID_FROM_EMAIL', 'luis220195@gmail.com'),
+                to_emails=email,
+                subject='Passwort zurücksetzen - SBS Deutschland',
+                html_content=html_content
+            )
+            
+            sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
+            sg.send(message)
+            logger.info(f"Password reset email sent to {email}")
+        except Exception as e:
+            logger.error(f"Failed to send reset email: {e}")
+    
+    # Always show success (security)
+    return templates.TemplateResponse("password_reset_request.html", {
+        "request": request,
+        "success": True,
+        "error": None
+    })
 
 
-
-def require_login(request: Request):
-    """
-    Alter Helper für geschützte Seiten.
-    Gibt eine RedirectResponse zurück, wenn der Nutzer nicht eingeloggt ist,
-    sonst None.
-    """
-    try:
-        user_id = None
-        # Nur wenn SessionMiddleware aktiv ist
-        if "session" in request.scope:
-            user_id = request.session.get("user_id")
-    except AssertionError:
-        user_id = None
-
+@app.get("/password-reset/confirm", response_class=HTMLResponse)
+async def password_reset_confirm_page(request: Request, token: str = None):
+    """Show password reset form"""
+    from database import verify_reset_token
+    
+    if not token:
+        return templates.TemplateResponse("password_reset_confirm.html", {
+            "request": request,
+            "token": None,
+            "error": "Ungültiger oder fehlender Token"
+        })
+    
+    # Verify token
+    user_id = verify_reset_token(token)
     if not user_id:
-        from fastapi.responses import RedirectResponse
-        next_url = request.url.path
-        return RedirectResponse(url=f"/login?next={next_url}", status_code=303)
-    return None
+        return templates.TemplateResponse("password_reset_confirm.html", {
+            "request": request,
+            "token": None,
+            "error": "Token ist ungültig oder abgelaufen"
+        })
+    
+    return templates.TemplateResponse("password_reset_confirm.html", {
+        "request": request,
+        "token": token,
+        "error": None
+    })
 
+
+@app.post("/password-reset/confirm")
+async def password_reset_confirm_submit(request: Request):
+    """Handle password reset"""
+    from database import reset_password
+    
+    form = await request.form()
+    token = form.get('token', '')
+    password = form.get('password', '')
+    password_confirm = form.get('password_confirm', '')
+    
+    # Validate
+    if not password or len(password) < 8:
+        return templates.TemplateResponse("password_reset_confirm.html", {
+            "request": request,
+            "token": token,
+            "error": "Passwort muss mindestens 8 Zeichen lang sein"
+        })
+    
+    if password != password_confirm:
+        return templates.TemplateResponse("password_reset_confirm.html", {
+            "request": request,
+            "token": token,
+            "error": "Passwörter stimmen nicht überein"
+        })
+    
+    # Reset password
+    success = reset_password(token, password)
+    
+    if not success:
+        return templates.TemplateResponse("password_reset_confirm.html", {
+            "request": request,
+            "token": None,
+            "error": "Token ist ungültig oder abgelaufen"
+        })
+    
+    # Success -> redirect to login with message
+    return RedirectResponse(url="/login?reset=success", status_code=303)
+
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
 
 @app.get("/history", response_class=HTMLResponse)
 async def history_page(request: Request):
-
-    redirect = require_login(request)
-    if redirect:
-        return redirect
     """Dashboard with job history"""
     if "user_id" not in request.session:
         return RedirectResponse(url="/login", status_code=303)
@@ -890,102 +995,6 @@ from email_scheduler import email_scheduler
 # Add session middleware (muss nach app = FastAPI() kommen)
 app.add_middleware(SessionMiddleware, secret_key='sbs-invoice-app-secret-key-2025', domain='.sbsdeutschland.com')
 
-@app.middleware("http")
-async def enforce_login(request: Request, call_next):
-    """
-    Erzwingt Login für alle Seiten außer:
-    - Startseite (/)
-    - Login (/login)
-    - Passwort-Reset (/password-reset/...)
-    - Logout (/logout)
-    - Öffentliche Job-Ansicht (/jobs/{job_id})
-    - Static Assets (/static/...)
-    """
-    path = request.url.path
-
-    public_paths = {
-        "/",
-        "/login",
-        "/password-reset/request",
-        "/password-reset/confirm",
-        "/logout",
-    }
-
-    # Jobs-Demo und Static-Dateien sind immer öffentlich
-    if path in public_paths or path.startswith("/static/") or path.startswith("/jobs/"):
-        return await call_next(request)
-
-    # Primitive Login-Erkennung nur über Vorhandensein des session-Cookies
-    session_cookie = request.cookies.get("session")
-    if not session_cookie:
-        from fastapi.responses import RedirectResponse
-        login_url = f"/login?next={path}"
-        return RedirectResponse(url=login_url, status_code=303)
-
-    return await call_next(request)
-
-@app.middleware("http")
-async def auth_guard(request: Request, call_next):
-    """
-    Historischer Auth-Guard – aktuell No-Op.
-    Der eigentliche Login-Zwang läuft über enforce_login_middleware.
-    """
-    return await call_next(request)
-
-@app.middleware("http")
-async def enforce_login_middleware(request: Request, call_next):
-    """
-    Erzwingt Login für alle internen Seiten außer:
-
-    - "/" (Landing Page)
-    - "/login"
-    - "/password-reset/request"
-    - "/password-reset/confirm"
-    - "/logout"
-    - Pfade unter "/static/..." (Assets)
-    - Pfade unter "/jobs/..." (öffentliche Demo-Ansicht)
-    """
-    path = request.url.path
-
-    public_paths = {
-        "/",
-        "/login",
-        "/password-reset/request",
-        "/password-reset/confirm",
-        "/logout",
-    }
-    public_prefixes = ("/static/", "/jobs/")
-
-    # OPTIONS (CORS / Preflight) immer durchlassen
-    if request.method == "OPTIONS":
-        return await call_next(request)
-
-    # Öffentliche Pfade/Prefixe durchlassen
-    if path in public_paths or any(path.startswith(p) for p in public_prefixes):
-        return await call_next(request)
-
-    # Session prüfen; wenn keine SessionMiddleware aktiv ist, nicht blocken
-    try:
-        user_id = request.session.get("user_id")  # type: ignore[attr-defined]
-    except AssertionError:
-        return await call_next(request)
-
-    # Eingeloggt -> Request normal weiterreichen
-    if user_id:
-        return await call_next(request)
-
-    # Nicht eingeloggt: Redirect zur Login-Seite mit "next"
-    next_path = path
-    if request.url.query:
-        next_path += "?" + request.url.query
-
-    # Sicherheit: nur interne Pfade als next erlauben
-    if not next_path.startswith("/"):
-        next_path = "/"
-
-    login_url = f"/login?next={next_path}"
-    return RedirectResponse(url=login_url, status_code=303)
-
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     """Login page"""
@@ -998,23 +1007,22 @@ async def login_page(request: Request):
 async def login_submit(request: Request):
     """Handle login"""
     from database import verify_user
-
+    
     form = await request.form()
     email = form.get('email', '')
     password = form.get('password', '')
-
+    
     user = verify_user(email, password)
-
+    
     if user:
         request.session['user_id'] = user['id']
         request.session['user_name'] = user['name'] or user['email'].split('@')[0]
         request.session['user_email'] = user['email']
-
-        # Redirect auf "next" oder Home
-        next_url = request.query_params.get("next") or "/history"
-        return RedirectResponse(url=next_url, status_code=303)
-
-    # Falls Login fehlschlägt: Login-Seite mit Fehlermeldung anzeigen
+        
+        from starlette.responses import RedirectResponse
+        next_url = request.query_params.get('next', '/')
+    return RedirectResponse(url=next_url, status_code=303)
+    
     return templates.TemplateResponse("login.html", {
         "request": request,
         "error": "Ungültige Email oder Passwort"
@@ -1079,24 +1087,11 @@ async def register_submit(request: Request):
 
 @app.get("/logout")
 async def logout(request: Request):
-    """
-    Logout und Redirect auf die SBS Homepage.
-    """
-    # Session leeren, falls vorhanden
-    try:
-        session = getattr(request, "session", None)
-        if isinstance(session, dict):
-            session.pop("user_id", None)
-            session.pop("user_name", None)
-            session.pop("user_email", None)
-    except AssertionError:
-        # Keine SessionMiddleware aktiv – nichts zu tun
-        pass
-
-    return RedirectResponse(
-        url="https://sbsdeutschland.com/sbshomepage/",
-        status_code=303,
-    )
+    """Logout user"""
+    request.session.clear()
+    from starlette.responses import RedirectResponse
+    next_url = request.query_params.get('next', '/')
+    return RedirectResponse(url=next_url, status_code=303)
 
 @app.get("/api/user")
 async def get_current_user(request: Request):
@@ -1654,10 +1649,6 @@ async def test_upload_page(request: Request):
 # Zusätzliche Navigationsseiten (leichte Placeholder)
 @app.get("/account", response_class=HTMLResponse)
 async def account_page(request: Request):
-
-    redirect = require_login(request)
-    if redirect:
-        return redirect
     return templates.TemplateResponse("account.html", {"request": request})
 
 @app.get("/team", response_class=HTMLResponse)
@@ -1966,307 +1957,3 @@ async def job_details_page(request: Request, job_id: str):
             "duplicates": duplicates,
         },
     )
-
-def send_password_reset_email(to_email: str, token: str):
-    """Sendet die Passwort-Zurücksetzen-E-Mail via SendGrid."""
-    api_key = os.getenv("SENDGRID_API_KEY")
-    from_email = os.getenv("SENDGRID_FROM_EMAIL", "noreply@sbsdeutschland.com")
-
-    logger.info(
-        f"📧 [RESET] SENDGRID_API_KEY present: {bool(api_key)} length={len(api_key) if api_key else 0}"
-    )
-    logger.info(
-        f"📧 [RESET] Using from_email='{from_email}', to_email='{to_email}'"
-    )
-
-    if not api_key:
-        logger.error("❌ SENDGRID_API_KEY not set – cannot send password reset email")
-        raise RuntimeError("SENDGRID_API_KEY not set")
-
-    # Basis-URL deiner App
-    base_url = os.getenv("APP_BASE_URL", "https://app.sbsdeutschland.com")
-
-    # 🔑 HIER: Token als Query-Parameter anfügen
-    reset_url = f"{base_url}/password-reset/confirm?token={token}"
-    logger.info(f"📧 [RESET] reset_url='{reset_url}'")
-
-    html_content = f"""
-        <h1>Passwort zurücksetzen</h1>
-        <p>Sie haben angefordert, Ihr Passwort zurückzusetzen.</p>
-        <p>Klicken Sie auf den folgenden Button, um ein neues Passwort zu vergeben:</p>
-        <p>
-            <a href='{reset_url}' style='display:inline-block;padding:12px 24px;
-               background-color:#003856;color:#ffffff;text-decoration:none;
-               border-radius:6px;font-weight:bold;'>
-                Passwort zurücksetzen
-            </a>
-        </p>
-        <p>Oder öffnen Sie diesen Link in Ihrem Browser:</p>
-        <p><a href='{reset_url}'>{reset_url}</a></p>
-        <p>Wenn Sie diese Anfrage nicht gestellt haben, können Sie diese E-Mail ignorieren.</p>
-    """
-
-    message = Mail(
-        from_email=from_email,
-        to_emails=to_email,
-        subject="Passwort zurücksetzen – SBS Deutschland",
-        html_content=html_content,
-    )
-
-    sg = SendGridAPIClient(api_key)
-    response = sg.send(message)
-    logger.info(f"📧 [RESET] SendGrid response: status_code={response.status_code}")
-
-    if response.status_code >= 400:
-        raise RuntimeError(f"SendGrid error: status_code={response.status_code}")
-
-    return True
-
-
-# ====================
-# Password reset routes
-# ====================
-
-def send_password_reset_email(to_email: str, token: str):
-    """Sendet die Passwort-Zurücksetzen-E-Mail via SendGrid."""
-    api_key = os.getenv("SENDGRID_API_KEY")
-    from_email = os.getenv("SENDGRID_FROM_EMAIL", "noreply@sbsdeutschland.com")
-
-    logger.info(
-        "📧 [RESET] SENDGRID_API_KEY present: %s length=%s",
-        bool(api_key),
-        len(api_key) if api_key else 0,
-    )
-    logger.info(
-        "📧 [RESET] Using from_email='%s', to_email='%s'",
-        from_email,
-        to_email,
-    )
-
-    if not api_key:
-        logger.error("❌ SENDGRID_API_KEY not set – cannot send password reset email")
-        raise RuntimeError("SENDGRID_API_KEY not configured")
-
-    reset_url = f"https://app.sbsdeutschland.com/password-reset/confirm?token={token}"
-
-    html_content = f"""
-    <p>Sie haben angefordert, Ihr Passwort zurückzusetzen.</p>
-    <p>Klicken Sie auf den folgenden Button, um ein neues Passwort zu vergeben:</p>
-    <p>
-        <a href='{reset_url}' style='display:inline-block;padding:10px 20px;
-           background:#003856;color:#ffffff;text-decoration:none;border-radius:4px;'>
-           Passwort zurücksetzen
-        </a>
-    </p>
-    <p>Oder öffnen Sie diesen Link in Ihrem Browser:<br>{reset_url}</p>
-    """
-
-    message = Mail(
-        from_email=from_email,
-        to_emails=to_email,
-        subject="Passwort zurücksetzen – SBS Deutschland",
-        html_content=html_content,
-    )
-
-    sg = SendGridAPIClient(api_key)
-    response = sg.send(message)
-    logger.info(
-        "📧 [RESET] SendGrid response: status_code=%s",
-        getattr(response, "status_code", None),
-    )
-    if getattr(response, "status_code", None) and response.status_code >= 400:
-        raise RuntimeError(f"SendGrid error: status_code={response.status_code}")
-
-
-@app.get("/password-reset/request", response_class=HTMLResponse)
-async def password_reset_request_page(request: Request):
-    """Zeigt Formular zum Anfordern eines Reset-Links."""
-    return templates.TemplateResponse(
-        "password_reset_request.html",
-        {"request": request, "error": None, "success": None},
-    )
-
-
-@app.post("/password-reset/request", response_class=HTMLResponse)
-async def password_reset_request_submit(request: Request, email: str = Form(...)):
-    """Verarbeitet Formular: erstellt Token, sendet E-Mail."""
-    logger.info("🔐 Password reset requested for: %s", email)
-    token = create_password_reset_token(email)
-    logger.info("🔑 Token created (not None): %s", token is not None)
-
-    generic_success = "E-Mail wurde gesendet! Prüfen Sie Ihr Postfach."
-
-    if not token:
-        # Kein User zu dieser Mail – nach außen trotzdem Erfolgsmeldung
-        logger.warning("🔐 Password reset requested for unknown email: %s", email)
-        return templates.TemplateResponse(
-            "password_reset_request.html",
-            {"request": request, "error": None, "success": generic_success},
-        )
-
-    try:
-        send_password_reset_email(email, token)
-        return templates.TemplateResponse(
-            "password_reset_request.html",
-            {"request": request, "error": None, "success": generic_success},
-        )
-    except Exception as e:
-        logger.exception("❌ Fehler beim Versenden der Reset-E-Mail: %s", e)
-        error = "Beim Versenden der E-Mail ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut."
-        return templates.TemplateResponse(
-            "password_reset_request.html",
-            {"request": request, "error": error, "success": None},
-        )
-
-
-@app.get("/password-reset/confirm", response_class=HTMLResponse)
-async def password_reset_confirm_page(request: Request):
-    """Formular zum Setzen eines neuen Passworts (über ?token=...)."""
-    token = request.query_params.get("token") or ""
-    logger.info("🔐 [RESET-CONFIRM-GET] called with token=%s", token)
-
-    token_valid = False
-    error = None
-
-    if token:
-        user_id = verify_reset_token(token)
-        logger.info("🔐 [RESET-CONFIRM-GET] verify_reset_token -> %s", user_id)
-        token_valid = user_id is not None
-        if not token_valid:
-            error = "Der Link ist ungültig oder abgelaufen."
-    else:
-        error = "Der Link ist ungültig oder abgelaufen."
-
-    return templates.TemplateResponse(
-        "password_reset_confirm.html",
-        {
-            "request": request,
-            "token": token,
-            "token_valid": token_valid,
-            "error": error,
-            "success": None,
-        },
-    )
-
-
-@app.post("/password-reset/confirm", response_class=HTMLResponse)
-async def password_reset_confirm_submit(
-    request: Request,
-    token: str = Form(...),
-    new_password: str | None = Form(None),
-    confirm_password: str | None = Form(None),
-    password: str | None = Form(None),
-    password_confirm: str | None = Form(None),
-):
-    """Verarbeitet das Formular: setzt neues Passwort, wenn Token gültig."""
-    logger.info("🔐 [RESET-CONFIRM-POST] called with token=%s", token)
-
-    # Alternativen Feldnamen auflösen (je nach Template-Version)
-    if new_password is None:
-        new_password = password
-    if confirm_password is None:
-        confirm_password = password_confirm
-
-    if not new_password or not confirm_password:
-        error = "Bitte füllen Sie beide Passwort-Felder aus."
-        return templates.TemplateResponse(
-            "password_reset_confirm.html",
-            {
-                "request": request,
-                "token": token,
-                "token_valid": True,
-                "error": error,
-                "success": None,
-            },
-        )
-
-    if new_password != confirm_password:
-        error = "Die Passwörter stimmen nicht überein."
-        return templates.TemplateResponse(
-            "password_reset_confirm.html",
-            {
-                "request": request,
-                "token": token,
-                "token_valid": True,
-                "error": error,
-                "success": None,
-            },
-        )
-
-    if len(new_password) < 8:
-        error = "Das Passwort muss mindestens 8 Zeichen lang sein."
-        return templates.TemplateResponse(
-            "password_reset_confirm.html",
-            {
-                "request": request,
-                "token": token,
-                "token_valid": True,
-                "error": error,
-                "success": None,
-            },
-        )
-
-    try:
-        ok = reset_password(token, new_password)
-        logger.info("🔐 [RESET-CONFIRM-POST] reset_password result=%s", ok)
-    except Exception as e:
-        logger.exception("❌ [RESET-CONFIRM-POST] reset_password raised: %s", e)
-        ok = False
-
-    if not ok:
-        error = "Der Link ist ungültig oder abgelaufen."
-        return templates.TemplateResponse(
-            "password_reset_confirm.html",
-            {
-                "request": request,
-                "token": token,
-                "token_valid": False,
-                "error": error,
-                "success": None,
-            },
-        )
-
-    success = "Ihr Passwort wurde erfolgreich geändert. Sie können sich jetzt anmelden."
-    return templates.TemplateResponse(
-        "password_reset_confirm.html",
-        {
-            "request": request,
-            "token": token,
-            "token_valid": False,
-            "error": None,
-            "success": success,
-        },
-    )
-
-
-@app.get("/logout")
-async def logout(request: Request):
-    """
-    Logout und Redirect auf die SBS Homepage.
-    """
-    # Session leeren, falls vorhanden
-    try:
-        session = getattr(request, "session", None)
-        if isinstance(session, dict):
-            session.pop("user_id", None)
-            session.pop("user_name", None)
-            session.pop("user_email", None)
-    except AssertionError:
-        # Keine SessionMiddleware aktiv – nichts zu tun
-        pass
-
-    return RedirectResponse(
-        url="https://sbsdeutschland.com/sbshomepage/",
-        status_code=303,
-    )
-
-@app.get("/jobs/{job_id}", response_class=HTMLResponse)
-async def demo_job_page(request: Request, job_id: str):
-    """
-    Öffentliche Demo-Seite für einen Job. Hier kann die kostenlose Demo
-    ohne Login den Status einsehen (aktuell noch Platzhalter).
-    """
-    return templates.TemplateResponse("demo_job.html", {
-        "request": request,
-        "job_id": job_id,
-    })
