@@ -352,11 +352,11 @@ async def process_invoices_background(job_id: str):
         "failed": failed,
         "exported_files": exported_files,
         "completed_at": datetime.now().isoformat(),
-    log_job_event(app_logger, job_id, "completed", total=total_files, successful=len(results), failed=len(failed))
         "total_amount": stats.get('total_brutto', 0) if stats else 0,
         "total": total_files,
         "successful": len(results)
     })
+    log_job_event(app_logger, job_id, "completed", total=total_files, successful=len(results), failed=len(failed))
     
     # Save to database
     logger.info(f"💾 Saving job {job_id} with {len(results)} results")
