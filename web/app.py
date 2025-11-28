@@ -268,6 +268,7 @@ async def process_job(job_id: str, background_tasks: BackgroundTasks):
     }
 
 async def process_invoices_background(job_id: str):
+    log_job_event(app_logger, job_id, "processing_started")
     """Background task to process invoices with parallel processing"""
     job = processing_jobs[job_id]
     upload_path = Path(job["path"])
@@ -332,7 +333,7 @@ async def process_invoices_background(job_id: str):
                 exported_files['datev'] = datev_file
             
         except Exception as e:
-            print(f"Export error: {e}")
+            app_logger.error(f"Export error: {e}")
     
     # Email Notification
     try:
@@ -341,7 +342,7 @@ async def process_invoices_background(job_id: str):
         if notification_config.get('email', {}).get('enabled', False):
             send_notifications(config.config, stats, exported_files)
     except Exception as e:
-        print(f"Notification error: {e}")
+        app_logger.error(f"Notification error: {e}")
     
     # Update job with results
     processing_jobs[job_id].update({
@@ -351,6 +352,7 @@ async def process_invoices_background(job_id: str):
         "failed": failed,
         "exported_files": exported_files,
         "completed_at": datetime.now().isoformat(),
+    log_job_event(app_logger, job_id, "completed", total=total_files, successful=len(results), failed=len(failed))
         "total_amount": stats.get('total_brutto', 0) if stats else 0,
         "total": total_files,
         "successful": len(results)
