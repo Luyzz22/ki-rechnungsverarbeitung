@@ -95,7 +95,7 @@ from exceptions import (
 )
 from fastapi.responses import JSONResponse
 from logging_utils import LogContext, log_job_event
-from models import Invoice, InvoiceStatus
+from models import Invoice, InvoiceStatus, Job, JobStatus
 
 @app.exception_handler(InvoiceAppError)
 async def invoice_app_error_handler(request, exc: InvoiceAppError):
@@ -213,7 +213,7 @@ async def upload_files(request: Request, files: List[UploadFile] = File(default=
     # 4) Job in processing_jobs ablegen (RAM – wird von /api/process genutzt)
     processing_jobs[job_id] = {
         "user_id": user_id,
-        "status": "uploaded",
+        "status": JobStatus.UPLOADED.value,
         "files": uploaded_files,
         "created_at": datetime.now().isoformat(),
         "path": str(upload_path),
@@ -264,7 +264,7 @@ async def process_job(job_id: str, background_tasks: BackgroundTasks):
     return {
         "success": True,
         "job_id": job_id,
-        "status": "processing",
+        "status": JobStatus.PROCESSING.value,
         "message": "Processing started" 
     }
 
@@ -350,7 +350,7 @@ async def process_invoices_background(job_id: str):
     
     # Update job with results
     processing_jobs[job_id].update({
-        "status": "completed",
+        "status": JobStatus.COMPLETED.value,
         "results": results,
         "stats": stats,
         "failed": failed,

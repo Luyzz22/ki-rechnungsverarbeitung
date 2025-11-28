@@ -11,6 +11,7 @@ from typing import Optional, List, Dict, Any
 
 class JobStatus(str, Enum):
     """Status eines Verarbeitungs-Jobs"""
+    UPLOADED = "uploaded"
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
