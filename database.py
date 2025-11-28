@@ -1699,3 +1699,214 @@ def reset_password(token: str, new_password: str) -> bool:
     conn.close()
     return True
 
+
+
+# =============================================================================
+# REPOSITORY FUNKTIONEN (neu hinzugefügt)
+# =============================================================================
+
+def find_potential_duplicates(
+    invoice_number: str,
+    supplier_name: str,
+    gross_amount: float,
+    exclude_job_id: str = None
+) -> List[Dict]:
+    """Findet potenzielle Duplikate basierend auf Rechnungsnummer, Lieferant und Betrag"""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    query = """
+        SELECT * FROM invoices 
+        WHERE (invoice_number = ? OR (supplier_name = ? AND gross_amount = ?))
+    """
+    params = [invoice_number, supplier_name, gross_amount]
+    
+    if exclude_job_id:
+        query += " AND job_id != ?"
+        params.append(exclude_job_id)
+    
+    cursor.execute(query, params)
+    results = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return results
+
+
+def get_invoice_stats(user_id: int = None) -> Dict:
+    """Holt aggregierte Statistiken für Rechnungen"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    base_query = """
+        SELECT 
+            COUNT(*) as total_invoices,
+            SUM(CASE WHEN status = 'ok' THEN 1 ELSE 0 END) as successful,
+            SUM(CASE WHEN is_duplicate = 1 THEN 1 ELSE 0 END) as duplicates,
+            SUM(gross_amount) as total_gross,
+            SUM(net_amount) as total_net,
+            SUM(vat_amount) as total_vat,
+            COUNT(DISTINCT supplier_name) as unique_suppliers
+        FROM invoices i
+    """
+    
+    if user_id:
+        base_query += " JOIN jobs j ON i.job_id = j.job_id WHERE j.user_id = ?"
+        cursor.execute(base_query, (user_id,))
+    else:
+        cursor.execute(base_query)
+    
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row:
+        return {
+            "total_invoices": row[0] or 0,
+            "successful": row[1] or 0,
+            "duplicates": row[2] or 0,
+            "total_gross": row[3] or 0.0,
+            "total_net": row[4] or 0.0,
+            "total_vat": row[5] or 0.0,
+            "unique_suppliers": row[6] or 0
+        }
+    return {}
+
+
+def get_jobs_by_status(status: str, user_id: int = None, limit: int = 50) -> List[Dict]:
+    """Holt Jobs nach Status"""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    if user_id:
+        cursor.execute(
+            "SELECT * FROM jobs WHERE status = ? AND user_id = ? ORDER BY created_at DESC LIMIT ?",
+            (status, user_id, limit)
+        )
+    else:
+        cursor.execute(
+            "SELECT * FROM jobs WHERE status = ? ORDER BY created_at DESC LIMIT ?",
+            (status, limit)
+        )
+    
+    results = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return results
+
+
+def get_invoices_by_supplier(supplier_name: str, user_id: int = None, limit: int = 100) -> List[Dict]:
+    """Holt alle Rechnungen eines Lieferanten"""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    if user_id:
+        cursor.execute("""
+            SELECT i.* FROM invoices i
+            JOIN jobs j ON i.job_id = j.job_id
+            WHERE i.supplier_name LIKE ? AND j.user_id = ?
+            ORDER BY i.invoice_date DESC
+            LIMIT ?
+        """, (f"%{supplier_name}%", user_id, limit))
+    else:
+        cursor.execute("""
+            SELECT * FROM invoices 
+            WHERE supplier_name LIKE ?
+            ORDER BY invoice_date DESC
+            LIMIT ?
+        """, (f"%{supplier_name}%", limit))
+    
+    results = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return results
+
+
+def get_monthly_summary(user_id: int = None, months: int = 12) -> List[Dict]:
+    """Holt monatliche Zusammenfassung der Rechnungen"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    query = """
+        SELECT 
+            strftime('%Y-%m', invoice_date) as month,
+            COUNT(*) as invoice_count,
+            SUM(gross_amount) as total_gross,
+            SUM(net_amount) as total_net,
+            SUM(vat_amount) as total_vat
+        FROM invoices i
+    """
+    
+    if user_id:
+        query += " JOIN jobs j ON i.job_id = j.job_id WHERE j.user_id = ?"
+        query += " GROUP BY month ORDER BY month DESC LIMIT ?"
+        cursor.execute(query, (user_id, months))
+    else:
+        query += " GROUP BY month ORDER BY month DESC LIMIT ?"
+        cursor.execute(query, (months,))
+    
+    results = []
+    for row in cursor.fetchall():
+        results.append({
+            "month": row[0],
+            "invoice_count": row[1],
+            "total_gross": row[2] or 0.0,
+            "total_net": row[3] or 0.0,
+            "total_vat": row[4] or 0.0
+        })
+    
+    conn.close()
+    return results
+
+
+def delete_job(job_id: str, user_id: int = None) -> bool:
+    """Löscht einen Job und alle zugehörigen Rechnungen (mit User-Check)"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Prüfen ob Job existiert und User berechtigt ist
+    if user_id:
+        cursor.execute("SELECT job_id FROM jobs WHERE job_id = ? AND user_id = ?", (job_id, user_id))
+    else:
+        cursor.execute("SELECT job_id FROM jobs WHERE job_id = ?", (job_id,))
+    
+    if not cursor.fetchone():
+        conn.close()
+        return False
+    
+    # Rechnungen löschen
+    cursor.execute("DELETE FROM invoices WHERE job_id = ?", (job_id,))
+    
+    # Job löschen
+    cursor.execute("DELETE FROM jobs WHERE job_id = ?", (job_id,))
+    
+    conn.commit()
+    conn.close()
+    return True
+
+
+def update_job_status(job_id: str, status: str, **extra_fields) -> bool:
+    """Aktualisiert den Job-Status und optionale weitere Felder"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Basis-Update
+    updates = ["status = ?"]
+    params = [status]
+    
+    # Optionale Felder
+    allowed_fields = ['processed_files', 'successful_files', 'failed_files', 
+                      'total_net', 'total_vat', 'total_gross', 'completed_at']
+    
+    for field, value in extra_fields.items():
+        if field in allowed_fields:
+            updates.append(f"{field} = ?")
+            params.append(value)
+    
+    params.append(job_id)
+    
+    query = f"UPDATE jobs SET {', '.join(updates)} WHERE job_id = ?"
+    cursor.execute(query, params)
+    
+    success = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return success
