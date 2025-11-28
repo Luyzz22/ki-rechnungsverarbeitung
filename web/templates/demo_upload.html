@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Kostenlose Demo · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .demo-container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px 40px;
+    }
+    .demo-card {
+      background: var(--sbs-white);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    h1 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 1.9rem;
+    }
+    .subtitle {
+      color: var(--sbs-muted);
+      margin-bottom: 24px;
+    }
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 32px;
+      align-items: flex-start;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+    input[type="file"] {
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--sbs-border-soft);
+      background: var(--sbs-bg);
+      box-sizing: border-box;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: var(--sbs-accent);
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--sbs-dark);
+      margin-top: 8px;
+    }
+    .btn-primary:hover {
+      background: #e6a600;
+    }
+    .demo-hint {
+      font-size: 0.9rem;
+      color: var(--sbs-muted);
+      margin-top: 12px;
+    }
+    .demo-aside {
+      font-size: 0.9rem;
+      background: var(--sbs-bg);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .demo-aside h2 {
+      font-size: 1rem;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    ul {
+      padding-left: 18px;
+      margin: 0;
+    }
+    li { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <div class="demo-card">
+      <h1>Kostenlose Demo starten</h1>
+      <p class="subtitle">
+        Laden Sie zwei Beispielrechnungen hoch und sehen Sie, wie die KI die Daten strukturiert –
+        ganz ohne Registrierung oder Login.
+      </p>
+      <div class="demo-grid">
+        <form method="POST" action="/demo" enctype="multipart/form-data">
+          <div class="form-group">
+            <label>Rechnungs-PDFs (Demo)</label>
+            <input type="file" name="files" accept="application/pdf" multiple />
+          </div>
+          <button type="submit" class="btn-primary">
+            🚀 Rechnungen verarbeiten
+          </button>
+          <div class="demo-hint">
+            Hinweis: In dieser kostenlosen Demo werden vorbereitete Beispielrechnungen verarbeitet.
+            Die hochgeladenen Dateien werden nicht dauerhaft gespeichert.
+          </div>
+        </form>
+        <div class="demo-aside">
+          <h2>Was passiert in der Demo?</h2>
+          <ul>
+            <li>Die KI liest alle relevanten Rechnungsdaten aus.</li>
+            <li>Sie sehen eine strukturierte Übersicht aller Positionen.</li>
+            <li>Perfekt, um den Prozess einmal komplett nachzuempfinden.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
