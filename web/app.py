@@ -89,6 +89,7 @@ app = FastAPI(
 
 # === Exception Handlers ===
 from exceptions import (
+    JobNotFoundError,
     InvoiceAppError, NotFoundError, ValidationError,
     ProcessingError, AuthError, QuotaExceededError
 )
@@ -244,7 +245,7 @@ async def process_job(job_id: str, background_tasks: BackgroundTasks):
     Returns immediately, processing happens in background
     """
     if job_id not in processing_jobs:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise JobNotFoundError(job_id)
     
     job = processing_jobs[job_id]
     
@@ -437,7 +438,7 @@ async def process_invoices_background(job_id: str):
 async def get_status(job_id: str):
     """Get processing status"""
     if job_id not in processing_jobs:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise JobNotFoundError(job_id)
     
     job = processing_jobs[job_id]
     
@@ -455,7 +456,7 @@ async def get_status(job_id: str):
 async def get_results(job_id: str):
     """Get processing results"""
     if job_id not in processing_jobs:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise JobNotFoundError(job_id)
     
     job = processing_jobs[job_id]
     
@@ -487,7 +488,7 @@ async def download_export(job_id: str, format: str):
     else:
         job = get_job(job_id)
         if not job:
-            raise HTTPException(status_code=404, detail="Job not found")
+            raise JobNotFoundError(job_id)
     
     if job["status"] != "completed":
         raise HTTPException(status_code=400, detail="Processing not complete")
@@ -521,7 +522,7 @@ async def results_page(request: Request, job_id: str):
         # Fallback to DB (for completed jobs)
         job = get_job(job_id)
         if not job:
-            raise HTTPException(status_code=404, detail="Job not found")
+            raise JobNotFoundError(job_id)
     
     return templates.TemplateResponse(
         "results.html",
@@ -684,7 +685,7 @@ async def job_details_page_old(request: Request, job_id: str):
 
     # 3) Wenn weder RAM noch DB etwas kennen → echter 404
     if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise JobNotFoundError(job_id)
 
     # 4) Rechnungen zum Job aus der DB laden
     invoices = get_invoices_by_job(job_id)
@@ -1908,7 +1909,7 @@ async def job_details_page(request: Request, job_id: str):
         job = get_job(job_id)
 
     if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise JobNotFoundError(job_id)
 
     # Rechnungen aus der DB holen (inkl. IDs etc.)
     invoices = get_invoices_by_job(job_id)
