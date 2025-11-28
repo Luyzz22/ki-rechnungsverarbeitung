@@ -94,7 +94,7 @@ from exceptions import (
     ProcessingError, AuthError, QuotaExceededError
 )
 from fastapi.responses import JSONResponse
-from logging_utils import LogContext, log_job_event
+from logging_utils import LogContext, log_job_event, log_error_with_context
 from models import Invoice, InvoiceStatus, Job, JobStatus
 
 @app.exception_handler(InvoiceAppError)
@@ -309,6 +309,7 @@ async def process_invoices_background(job_id: str):
                 results.append(data)
             else:
                 failed.append(filename if status == "success" else f"{filename}: {data}")
+                app_logger.warning(f"Invoice failed: {filename} - {data if status != 'success' else 'empty result'}", extra={"job_id": job_id, "filename": filename})
             
             # Update progress
             processing_jobs[job_id]["processed"] = len(results) + len(failed)
