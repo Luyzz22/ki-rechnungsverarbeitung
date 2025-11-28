@@ -1,97 +1,135 @@
 <!DOCTYPE html>
-<html lang=\"de\">
+<html lang="de">
 <head>
-    <meta charset=\"UTF-8\">
-    <title>Demo-Job · SBS KI-Rechnungsverarbeitung</title>
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-    <style>
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;
-            background: linear-gradient(135deg, #003856 0%, #005580 100%);
-            min-height: 100vh;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
-        .card {
-            background: #fff;
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 520px;
-            width: 100%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.18);
-        }
-        h1 {
-            margin-top: 0;
-            text-align: center;
-            color: #003856;
-        }
-        .subtitle {
-            text-align: center;
-            color: #555;
-            margin-bottom: 24px;
-        }
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            background: #003856;
-            color: #fff;
-            margin-bottom: 8px;
-        }
-        .job-id {
-            font-family: monospace;
-            font-size: 13px;
-            background: #f2f4f8;
-            padding: 8px 10px;
-            border-radius: 8px;
-            word-break: break-all;
-        }
-        .hint {
-            margin-top: 16px;
-            font-size: 14px;
-            color: #555;
-        }
-        .footer-link {
-            margin-top: 24px;
-            text-align: center;
-            font-size: 14px;
-        }
-        .footer-link a {
-            color: #003856;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .footer-link a:hover {
-            text-decoration: underline;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <title>Demo-Ergebnis · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .demo-container {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 20px 40px;
+    }
+    .demo-card {
+      background: var(--sbs-white);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    h1 {
+      margin-top: 0;
+      margin-bottom: 4px;
+      font-size: 1.9rem;
+    }
+    .subtitle {
+      color: var(--sbs-muted);
+      margin-bottom: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.95rem;
+    }
+    th, td {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--sbs-border-soft);
+      text-align: left;
+    }
+    th {
+      font-weight: 600;
+      background: var(--sbs-bg);
+    }
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--sbs-bg);
+      font-size: 0.8rem;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 28px;
+      margin-top: 24px;
+    }
+    .box {
+      background: var(--sbs-bg);
+      border-radius: 12px;
+      padding: 16px 18px;
+      font-size: 0.9rem;
+    }
+    .box h2 {
+      font-size: 1rem;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+  </style>
 </head>
 <body>
-<div class=\"card\">
-    <div style=\"text-align:center;margin-bottom:16px;\">
-        <span class=\"badge\">Demo-Job</span>
+  <div class="demo-container">
+    <div class="demo-card">
+      <h1>Demo-Ergebnis</h1>
+      <p class="subtitle">
+        Sie sehen hier eine <strong>Beispieldemo</strong> mit zwei Rechnungen.  
+        So könnte das Ergebnis nach einer echten Verarbeitung aussehen.
+      </p>
+
+      <div class="grid-2">
+        <div class="box">
+          <h2>Übersicht</h2>
+          <p><span class="pill">2 Rechnungen verarbeitet</span></p>
+          <p>Lieferant: Muster GmbH, Beispiel AG</p>
+          <p>Zeitraum: Januar 2025</p>
+        </div>
+        <div class="box">
+          <h2>Nächste Schritte</h2>
+          <p>In der echten Anwendung können diese Daten:</p>
+          <ul>
+            <li>in Ihr ERP exportiert werden</li>
+            <li>für Freigabe-Workflows genutzt werden</li>
+            <li>für Analysen und Reportings dienen</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 32px;">Rechnungsdetails</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Rechnung</th>
+            <th>Lieferant</th>
+            <th>Rechnungsdatum</th>
+            <th>Rechnungsnummer</th>
+            <th>Nettobetrag</th>
+            <th>USt</th>
+            <th>Brutto</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Demo-Rechnung 1</td>
+            <td>Muster GmbH</td>
+            <td>02.01.2025</td>
+            <td>RG-2025-001</td>
+            <td>1.000,00 €</td>
+            <td>190,00 €</td>
+            <td>1.190,00 €</td>
+          </tr>
+          <tr>
+            <td>Demo-Rechnung 2</td>
+            <td>Beispiel AG</td>
+            <td>10.01.2025</td>
+            <td>INV-2025-017</td>
+            <td>2.500,00 €</td>
+            <td>475,00 €</td>
+            <td>2.975,00 €</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <h1>Ihre Rechnung wird verarbeitet</h1>
-    <p class=\"subtitle\">
-        Dies ist die kostenlose Demo-Ansicht. Wir verarbeiten Ihre Rechnung
-        im Hintergrund und senden Ihnen das Ergebnis per E-Mail.
-    </p>
-
-    <p><strong>Job-ID:</strong></p>
-    <p class=\"job-id\">{{ job_id }}</p>
-
-    <p class=\"hint\">
-        Diese Seite wird in einem späteren Schritt noch erweitert, um den
-        Live-Status und die extrahierten Daten direkt anzuzeigen.
-    </p>
-
-    <div class=\"footer-link\">
-        Zurück zur <a href=\"https://sbsdeutschland.com/sbshomepage/\">SBS Homepage</a>
-    </div>
-</div>
+  </div>
 </body>
 </html>

@@ -589,18 +589,31 @@ async def startup_event():
 
 
 def require_login(request: Request):
+    """Prüft, ob ein Benutzer eingeloggt ist.
+
+    Rückgabe:
+      - None, wenn eingeloggt
+      - RedirectResponse auf /login, wenn nicht
     """
-    Alter Helper für geschützte Seiten.
-    Gibt eine RedirectResponse zurück, wenn der Nutzer nicht eingeloggt ist,
-    sonst None.
-    """
+    from fastapi.responses import RedirectResponse
+
+    # Session auslesen
     try:
+        user_id = request.session.get("user_id")
+    except Exception:
         user_id = None
-        # Nur wenn SessionMiddleware aktiv ist
-        if "session" in request.scope:
-            user_id = request.session.get("user_id")
-    except AssertionError:
-        user_id = None
+
+    if user_id:
+        return None
+
+    # Zielseite merken
+    next_url = str(request.url.path or "/")
+    if request.url.query:
+        next_url += "?" + str(request.url.query)
+
+    login_url = f"/login?next={next_url}"
+    return RedirectResponse(url=login_url, status_code=303)
+
 
     if not user_id:
         from fastapi.responses import RedirectResponse
@@ -890,101 +903,69 @@ from email_scheduler import email_scheduler
 # Add session middleware (muss nach app = FastAPI() kommen)
 app.add_middleware(SessionMiddleware, secret_key='sbs-invoice-app-secret-key-2025', domain='.sbsdeutschland.com')
 
-@app.middleware("http")
-async def enforce_login(request: Request, call_next):
+# -------------------------------------------------
+# Login-Helper & globale Login-Pflicht
+# -------------------------------------------------
+
+def require_login(request: Request):
+    """Prüft, ob ein Benutzer eingeloggt ist.
+
+    Rückgabe:
+      - None, wenn eingeloggt
+      - RedirectResponse auf /login, wenn nicht
     """
-    Erzwingt Login für alle Seiten außer:
-    - Startseite (/)
-    - Login (/login)
-    - Passwort-Reset (/password-reset/...)
-    - Logout (/logout)
-    - Öffentliche Job-Ansicht (/jobs/{job_id})
-    - Static Assets (/static/...)
-    """
-    path = request.url.path
+    from fastapi.responses import RedirectResponse
 
-    public_paths = {
-        "/",
-        "/login",
-        "/password-reset/request",
-        "/password-reset/confirm",
-        "/logout",
-    }
+    # Session auslesen
+    try:
+        user_id = request.session.get("user_id")
+    except Exception:
+        user_id = None
 
-    # Jobs-Demo und Static-Dateien sind immer öffentlich
-    if path in public_paths or path.startswith("/static/") or path.startswith("/jobs/"):
-        return await call_next(request)
+    if user_id:
+        return None
 
-    # Primitive Login-Erkennung nur über Vorhandensein des session-Cookies
-    session_cookie = request.cookies.get("session")
-    if not session_cookie:
-        from fastapi.responses import RedirectResponse
-        login_url = f"/login?next={path}"
+    # Zielseite merken
+    next_url = str(request.url.path or "/")
+    if request.url.query:
+        next_url += "?" + str(request.url.query)
+
+    login_url = f"/login?next={next_url}"
+    return RedirectResponse(url=login_url, status_code=303)
+
+
+    if not user_id:
+        login_url = f"/login?next={request.url.path}"
         return RedirectResponse(url=login_url, status_code=303)
 
-    return await call_next(request)
+    return None
 
-@app.middleware("http")
-async def auth_guard(request: Request, call_next):
+
+
+
+@app.get("/demo", response_class=HTMLResponse)
+async def demo_page(request: Request):
+    """Öffentliche Schwarzes-Loch-Demo ohne Login."""
+    return templates.TemplateResponse("demo.html", {"request": request})
+
+@app.post("/demo", response_class=HTMLResponse)
+async def demo_start(request: Request):
     """
-    Historischer Auth-Guard – aktuell No-Op.
-    Der eigentliche Login-Zwang läuft über enforce_login_middleware.
+    Startet die Demo und leitet auf eine statische Demo-Job-Seite um.
+    Hochgeladene Dateien werden in dieser kostenlosen Demo nicht dauerhaft gespeichert.
     """
-    return await call_next(request)
+    return RedirectResponse(url="/jobs/demo", status_code=303)
 
-@app.middleware("http")
-async def enforce_login_middleware(request: Request, call_next):
+@app.get("/jobs/demo", response_class=HTMLResponse)
+async def demo_job(request: Request):
     """
-    Erzwingt Login für alle internen Seiten außer:
-
-    - "/" (Landing Page)
-    - "/login"
-    - "/password-reset/request"
-    - "/password-reset/confirm"
-    - "/logout"
-    - Pfade unter "/static/..." (Assets)
-    - Pfade unter "/jobs/..." (öffentliche Demo-Ansicht)
+    Statische Job-Seite für die kostenlose Demo mit zwei Beispielrechnungen.
     """
-    path = request.url.path
+    return templates.TemplateResponse(
+        "demo_job.html",
+        {"request": request}
+    )
 
-    public_paths = {
-        "/",
-        "/login",
-        "/password-reset/request",
-        "/password-reset/confirm",
-        "/logout",
-    }
-    public_prefixes = ("/static/", "/jobs/")
-
-    # OPTIONS (CORS / Preflight) immer durchlassen
-    if request.method == "OPTIONS":
-        return await call_next(request)
-
-    # Öffentliche Pfade/Prefixe durchlassen
-    if path in public_paths or any(path.startswith(p) for p in public_prefixes):
-        return await call_next(request)
-
-    # Session prüfen; wenn keine SessionMiddleware aktiv ist, nicht blocken
-    try:
-        user_id = request.session.get("user_id")  # type: ignore[attr-defined]
-    except AssertionError:
-        return await call_next(request)
-
-    # Eingeloggt -> Request normal weiterreichen
-    if user_id:
-        return await call_next(request)
-
-    # Nicht eingeloggt: Redirect zur Login-Seite mit "next"
-    next_path = path
-    if request.url.query:
-        next_path += "?" + request.url.query
-
-    # Sicherheit: nur interne Pfade als next erlauben
-    if not next_path.startswith("/"):
-        next_path = "/"
-
-    login_url = f"/login?next={next_path}"
-    return RedirectResponse(url=login_url, status_code=303)
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
@@ -996,29 +977,54 @@ async def login_page(request: Request):
 
 @app.post("/login")
 async def login_submit(request: Request):
-    """Handle login"""
+    """Verarbeitet das Login-Formular.
+
+    - prüft Credentials
+    - setzt Session
+    - leitet auf gewünschte Seite weiter
+    """
+    from fastapi.responses import RedirectResponse
     from database import verify_user
+    import logging
+
+    logger = logging.getLogger("invoice_app")
 
     form = await request.form()
-    email = form.get('email', '')
-    password = form.get('password', '')
+    email = (form.get("email") or "").strip()
+    password = form.get("password") or ""
+    next_url = form.get("next") or request.query_params.get("next") or "/history"
+
+    logger.info(f"LOGIN_DEBUG: POST /login email={email}, next={next_url}")
 
     user = verify_user(email, password)
 
-    if user:
-        request.session['user_id'] = user['id']
-        request.session['user_name'] = user['name'] or user['email'].split('@')[0]
-        request.session['user_email'] = user['email']
+    if not user:
+        logger.info("LOGIN_DEBUG: ungültige Credentials")
+        return templates.TemplateResponse(
+            "login.html",
+            {
+                "request": request,
+                "error": "Ungültige Email oder Passwort",
+                "next": next_url,
+                "email": email,
+            },
+            status_code=400,
+        )
 
-        # Redirect auf "next" oder Home
-        next_url = request.query_params.get("next") or "/history"
-        return RedirectResponse(url=next_url, status_code=303)
+    # Session setzen
+    try:
+        request.session["user_id"] = user["id"]
+        request.session["user_name"] = user.get("name") or email.split("@")[0]
+        logger.info(f"LOGIN_DEBUG: Session gesetzt user_id={user['id']}")
+    except Exception as exc:
+        logger.error(f"LOGIN_DEBUG: Fehler beim Setzen der Session: {exc}")
 
-    # Falls Login fehlschlägt: Login-Seite mit Fehlermeldung anzeigen
-    return templates.TemplateResponse("login.html", {
-        "request": request,
-        "error": "Ungültige Email oder Passwort"
-    })
+    # Sicherheit: nur interne relative Pfade
+    if not next_url.startswith("/") or "://" in next_url:
+        next_url = "/history"
+
+    logger.info(f"LOGIN_DEBUG: redirect -> {next_url}")
+    return RedirectResponse(url=next_url, status_code=303)
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
