@@ -236,19 +236,19 @@
   </div>
 
   <section style="max-width:1200px;margin:60px auto;padding:0 24px;">
-    <div id="uploadBox" style="border:3px dashed #e5e7eb;border-radius:16px;padding:80px 40px;text-align:center;cursor:pointer;background:white;margin-bottom:40px;transition:all 0.3s;">
+    <div id="uploadBox" class="upload-dropzone" style="margin-bottom:40px;">
       <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none;">
-      <div style="font-size:5rem;margin-bottom:24px;">📁</div>
-      <h2 style="color:#003856;margin-bottom:12px;">Dateien hochladen</h2>
+      <div class="dropzone-icon">📁</div>
+      <h2 class="dropzone-text"><strong>Dateien hochladen</strong></h2>
         <div id="upload-status" style="margin-top: 20px;"></div>
-      <p style="color:#666;font-size:1.1rem;">Klicken oder Dateien hierher ziehen</p>
-      <p style="color:#999;font-size:0.9rem;margin-top:8px;">PDF, JPG oder PNG (max. 20 MB pro Datei)</p>
+      <p class="dropzone-text">Klicken oder Dateien hierher ziehen</p>
+      <p class="dropzone-formats">PDF, JPG oder PNG (max. 20 MB pro Datei)</p>
     </div>
 
-    <div id="fileListBox" style="display:none;background:white;border-radius:16px;padding:40px;box-shadow:0 4px 16px rgba(0,0,0,0.08);margin-bottom:40px;">
+    <div id="fileListBox" class="card" style="display:none;margin-bottom:40px;"><div class="card-body">
       <h3 style="color:#003856;margin-bottom:24px;">📋 Hochgeladene Dateien (<span id="fileCount">0</span>)</h3>
       <div id="fileList" style="max-height:550px;overflow-y:auto;margin-bottom:20px;"></div>
-      <button id="processBtn" style="background:linear-gradient(135deg,#FFB900 0%,#ff9500 100%);color:#003856;border:none;padding:18px 40px;border-radius:12px;font-size:1.2rem;font-weight:bold;cursor:pointer;width:100%;box-shadow:0 4px 16px rgba(255,185,0,0.3);">⚡ Jetzt verarbeiten</button>
+      <button id="processBtn" class="btn btn-accent btn-lg btn-block">⚡ Jetzt verarbeiten</button>
     </div>
 
     <div id="progressBox" style="display:none;background:white;border-radius:16px;padding:60px 40px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
@@ -323,9 +323,9 @@ const fileListBox=document.getElementById('fileListBox');
 const fileList=document.getElementById('fileList');
 uploadBox.onclick=()=>fileInput.click();
 fileInput.onchange=(e)=>addFiles(e.target.files);
-uploadBox.ondragover=(e)=>{e.preventDefault();uploadBox.style.borderColor='#FFB900';};
-uploadBox.ondragleave=()=>uploadBox.style.borderColor='#e5e7eb';
-uploadBox.ondrop=(e)=>{e.preventDefault();uploadBox.style.borderColor='#e5e7eb';addFiles(e.dataTransfer.files);};
+uploadBox.ondragover=(e)=>{e.preventDefault();uploadBox.classList.add('dropzone--active');};
+uploadBox.ondragleave=()=>uploadBox.classList.remove('dropzone--active');
+uploadBox.ondrop=(e)=>{e.preventDefault();uploadBox.classList.remove('dropzone--active');addFiles(e.dataTransfer.files);};
 function addFiles(newFiles){for(let f of newFiles){if(f.size>20*1024*1024){showError('file_too_large', f.name + ' ist zu groß (max. 20 MB)');continue;}files.push(f);}showFiles();}
 function showFiles(){if(files.length===0){fileListBox.style.display='none';return;}fileListBox.style.display='block';document.getElementById('fileCount').textContent=files.length;fileList.innerHTML='';files.forEach((f,i)=>{const icon=f.type==='application/pdf'?'📕':'🖼️';const div=document.createElement('div');div.style='display:flex;justify-content:space-between;align-items:center;padding:20px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:12px;';div.innerHTML='<div style="display:flex;align-items:center;gap:20px;"><span style="font-size:2.5rem;">'+icon+'</span><div><div style="font-weight:600;color:#003856;">'+f.name+'</div><div style="font-size:0.9rem;color:#666;">'+(f.size/1024/1024).toFixed(2)+' MB</div></div></div><button onclick="removeFile('+i+')" style="background:#ef4444;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;">✕</button>';fileList.appendChild(div);});}
 function removeFile(i){files.splice(i,1);showFiles();}
