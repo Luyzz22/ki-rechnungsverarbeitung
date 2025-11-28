@@ -1740,7 +1740,7 @@ def get_invoice_stats(user_id: int = None) -> Dict:
     base_query = """
         SELECT 
             COUNT(*) as total_invoices,
-            SUM(CASE WHEN status = 'ok' THEN 1 ELSE 0 END) as successful,
+            SUM(CASE WHEN i.status = 'ok' THEN 1 ELSE 0 END) as successful,
             SUM(CASE WHEN is_duplicate = 1 THEN 1 ELSE 0 END) as duplicates,
             SUM(gross_amount) as total_gross,
             SUM(net_amount) as total_net,
