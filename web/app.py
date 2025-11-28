@@ -95,6 +95,7 @@ from exceptions import (
 )
 from fastapi.responses import JSONResponse
 from logging_utils import LogContext, log_job_event
+from models import Invoice, InvoiceStatus
 
 @app.exception_handler(InvoiceAppError)
 async def invoice_app_error_handler(request, exc: InvoiceAppError):
@@ -288,7 +289,10 @@ async def process_invoices_background(job_id: str):
     def process_single_pdf(pdf_path):
         try:
             data = processor.process_invoice(pdf_path)
-            return ("success", data, pdf_path.name)
+            # Invoice-Model für Validierung und Standardwerte
+            invoice = Invoice.from_dict(data)
+            invoice.filename = pdf_path.name
+            return ("success", invoice.to_dict(), pdf_path.name)
         except Exception as e:
             return ("error", str(e), pdf_path.name)
     
