@@ -89,12 +89,12 @@ app = FastAPI(
 
 # === Exception Handlers ===
 from exceptions import (
-from logging_utils import LogContext, log_job_event
     JobNotFoundError,
     InvoiceAppError, NotFoundError, ValidationError,
     ProcessingError, AuthError, QuotaExceededError
 )
 from fastapi.responses import JSONResponse
+from logging_utils import LogContext, log_job_event
 
 @app.exception_handler(InvoiceAppError)
 async def invoice_app_error_handler(request, exc: InvoiceAppError):
