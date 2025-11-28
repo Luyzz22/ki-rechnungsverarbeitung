@@ -89,6 +89,7 @@ app = FastAPI(
 
 # === Exception Handlers ===
 from exceptions import (
+from logging_utils import LogContext, log_job_event
     JobNotFoundError,
     InvoiceAppError, NotFoundError, ValidationError,
     ProcessingError, AuthError, QuotaExceededError
@@ -153,7 +154,7 @@ async def home(request: Request):
 
 @app.post("/api/upload")
 async def upload_files(request: Request, files: List[UploadFile] = File(default=[])):
-    print(f"Upload request received, files count: {len(files) if files else 0}")
+    app_logger.info(f"Upload request: {len(files) if files else 0} files from user")
     """
     DEV-VERSION:
     - Keine Abo-/Limit-Prüfung
@@ -171,6 +172,7 @@ async def upload_files(request: Request, files: List[UploadFile] = File(default=
 
     # 2) Job-ID & Upload-Ordner
     job_id = str(uuid.uuid4())
+    log_job_event(app_logger, job_id, "created", user_id=user_id, file_count=len(files))
     upload_path = UPLOAD_DIR / job_id
     upload_path.mkdir(exist_ok=True)
 
