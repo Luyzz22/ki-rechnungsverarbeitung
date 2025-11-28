@@ -86,6 +86,30 @@ app = FastAPI(
     description="Automatische Rechnungsverarbeitung mit KI",
     version="1.0.0"
 )
+
+# === Exception Handlers ===
+from exceptions import (
+    InvoiceAppError, NotFoundError, ValidationError,
+    ProcessingError, AuthError, QuotaExceededError
+)
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(InvoiceAppError)
+async def invoice_app_error_handler(request, exc: InvoiceAppError):
+    """Handler für alle App-Exceptions"""
+    app_logger.error(f"{exc.code}: {exc.message}", extra=exc.details)
+    return JSONResponse(status_code=exc.status_code, content=exc.to_dict())
+
+@app.exception_handler(NotFoundError)
+async def not_found_handler(request, exc: NotFoundError):
+    app_logger.warning(f"Not found: {exc.message}")
+    return JSONResponse(status_code=404, content=exc.to_dict())
+
+@app.exception_handler(ValidationError)
+async def validation_handler(request, exc: ValidationError):
+    app_logger.warning(f"Validation error: {exc.message}")
+    return JSONResponse(status_code=422, content=exc.to_dict())
+
 @app.middleware("http")
 async def log_requests(request, call_next):
     """Log alle HTTP Requests"""
