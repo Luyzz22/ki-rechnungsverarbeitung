@@ -319,3 +319,226 @@ if __name__ == "__main__":
         print(res["answer"])
         print("Intent:", res["intent"])
         print()
+
+# ---------------------------------------------------------------------------
+# Robuste Finance-Copilot-Antwort (überschreibt frühere Implementationen)
+# ---------------------------------------------------------------------------
+from typing import Any, Dict, List
+
+
+def _fc_format_eur(value: Any) -> str:
+    """Einfache EUR-Formatierung im de-DE Stil, z.B. 14141.65 -> '14.141,65 €'."""
+    try:
+        number = float(value or 0.0)
+    except (TypeError, ValueError):
+        number = 0.0
+    s = f"{number:,.2f}"            # 14141.65 -> '14,141.65'
+    s = s.replace(",", "X").replace(".", ",").replace("X", ".")
+    return s + " €"
+
+
+def _fc_describe_period(days: int) -> str:
+    """Lesbarer Zeitraum-Text für die Antwort."""
+    try:
+        d = int(days)
+    except (TypeError, ValueError):
+        d = 90
+    if d >= 365:
+        return "die letzten 12 Monate"
+    if d == 30:
+        return "die letzten 30 Tage"
+    if d == 90:
+        return "die letzten 90 Tage"
+    return f"die letzten {d} Tage"
+
+
+def _fc_detect_intent(question: str) -> str:
+    """Sehr einfache Intent-Erkennung aus der Frage."""
+    q = (question or "").lower()
+    if "mehrwertsteuer" in q or "mwst" in q or "mwst." in q:
+        return "vat"
+    if "lieferant" in q or "lieferanten" in q:
+        return "suppliers"
+    if "trend" in q or "verlauf" in q or "entwicklung" in q or "monaten" in q:
+        return "trend"
+    if "überblick" in q or "ueberblick" in q or "kurzer" in q:
+        return "overview"
+    return "overview"
+
+
+def generate_finance_answer(question: str, days: int = 90) -> Dict[str, Any]:
+    """
+    Robuste, regelbasierte Antwortgenerierung für den Finance Copilot.
+
+    - Nutzt analytics_service.get_finance_snapshot()
+    - Erkennt einfache Intents (Overview, Suppliers, VAT, Trend) aus der Frage
+    - Behandelt den No-Data-Fall explizit, ohne Exceptions zu werfen
+    """
+    # Lazy-Import, damit es keine Zyklen gibt
+    from analytics_service import get_finance_snapshot
+
+    # Tage-Fenster absichern
+    try:
+        d = int(days or 90)
+    except (TypeError, ValueError):
+        d = 90
+    if d < 1:
+        d = 1
+    if d > 365:
+        d = 365
+
+    snapshot = get_finance_snapshot(days=d)
+    kpis = snapshot.get("kpis") or {}
+
+    def _num(key: str, default: float = 0.0) -> float:
+        try:
+            return float(kpis.get(key, default) or 0.0)
+        except (TypeError, ValueError):
+            return float(default)
+
+    def _int(key: str, default: int = 0) -> int:
+        try:
+            return int(kpis.get(key, default) or 0)
+        except (TypeError, ValueError):
+            return int(default)
+
+    total_invoices = _int("total_invoices", 0)
+    total_gross = _num("total_gross", 0.0)
+    total_net = _num("total_net", 0.0)
+    total_vat = _num("total_vat", 0.0)
+    duplicates = _int("duplicates_count", 0)
+
+    period_text = _fc_describe_period(d)
+
+    # ---------- No-Data-Case ----------
+    if total_invoices == 0:
+        answer = (
+            f"Für {period_text} liegen in SBS KI-Rechnungsverarbeitung aktuell keine verarbeiteten "
+            f"Eingangsrechnungen vor. "
+            "Sobald erste Rechnungen verarbeitet wurden, kann der Finance Copilot beispielsweise Fragen beantworten wie:\n"
+            "• \"Kurzer Überblick über unsere Ausgaben der letzten 90 Tage\"\n"
+            "• \"Wer sind unsere teuersten Lieferanten?\"\n"
+            "• \"Wie haben sich unsere Ausgaben in den letzten Monaten entwickelt?\"\n"
+            "• \"Wie viel Mehrwertsteuer steckt in den letzten 12 Monaten?\"\n"
+        )
+        suggested = [
+            "Kurzer Überblick über unsere Ausgaben der letzten 90 Tage.",
+            "Wer sind unsere teuersten Lieferanten?",
+            "Wie haben sich unsere Ausgaben in den letzten 6 Monaten entwickelt?",
+            "Wie viel Mehrwertsteuer steckt in den letzten 12 Monaten?",
+        ]
+        return {
+            "answer": answer,
+            "question": question,
+            "days": d,
+            "snapshot": snapshot,
+            "suggested_questions": suggested,
+        }
+
+    # ---------- Mit Daten ----------
+    intent = _fc_detect_intent(question or "")
+    top_vendors: List[Dict[str, Any]] = snapshot.get("top_vendors") or []
+    monthly_trend: List[Dict[str, Any]] = snapshot.get("monthly_trend") or []
+
+    base = (
+        f"In den letzten {d} Tagen wurden insgesamt {total_invoices} Rechnungen "
+        f"mit einem Bruttogesamtbetrag von rund {_fc_format_eur(total_gross)} verarbeitet. "
+        f"Der Nettobetrag liegt bei ca. {_fc_format_eur(total_net)}, "
+        f"darin enthalten sind etwa {_fc_format_eur(total_vat)} Mehrwertsteuer. "
+        f"Davon wurden {duplicates} Rechnungen als potenzielle Dubletten markiert. "
+        "Diese sollten vor der Zahlung noch einmal geprüft werden."
+    )
+
+    vendor_sentence = ""
+    if top_vendors:
+        top = top_vendors[0]
+        name = top.get("rechnungsaussteller") or "Ihr größter Lieferant"
+        try:
+            inv_count = int(top.get("invoice_count") or 0)
+        except (TypeError, ValueError):
+            inv_count = 0
+        gross_vendor = _fc_format_eur(top.get("total_gross") or 0.0)
+        vendor_sentence = (
+            f" Ihr größter Lieferant im Zeitraum ist {name} "
+            f"mit {inv_count} Rechnung(en) und einem Volumen von rund {gross_vendor}."
+        )
+
+    trend_sentence = ""
+    if len(monthly_trend) >= 2:
+        last = monthly_trend[-1]
+        prev = monthly_trend[-2]
+        last_month = last.get("year_month") or "letzten Monat"
+        prev_month = prev.get("year_month") or "Vormonat"
+        try:
+            last_total = float(last.get("total_gross") or 0.0)
+            prev_total = float(prev.get("total_gross") or 0.0)
+        except (TypeError, ValueError):
+            last_total = prev_total = 0.0
+        delta = last_total - prev_total
+        if abs(delta) > 0.01:
+            richtung = "höher" if delta > 0 else "niedriger"
+            trend_sentence = (
+                f" Die Ausgaben im letzten Monat ({last_month}) lagen "
+                f"{_fc_format_eur(abs(delta))} {richtung} als im Vormonat ({prev_month})."
+            )
+
+    # Intent-spezifische Ergänzungen
+    intent_tail = ""
+    if intent == "suppliers":
+        if top_vendors:
+            names = [
+                (v.get("rechnungsaussteller") or "Unbekannter Lieferant")
+                for v in top_vendors[:3]
+            ]
+            intent_tail = (
+                " Im Fokus stehen dabei insbesondere folgende Lieferanten: "
+                + ", ".join(names)
+                + "."
+            )
+        else:
+            intent_tail = (
+                " Aktuell liegen im gewählten Zeitraum keine größeren Lieferantenkonzentrationen vor."
+            )
+    elif intent == "vat":
+        quote = 0.0
+        if total_net > 0:
+            quote = (total_vat / total_net) * 100.0
+        intent_tail = (
+            f" Insgesamt steckt in diesem Zeitraum Mehrwertsteuer in Höhe von {_fc_format_eur(total_vat)} "
+            f"in Ihren Rechnungen, das entspricht einer MwSt-Quote von grob {quote:.1f} % bezogen auf den Nettobetrag."
+        )
+    elif intent == "trend":
+        if trend_sentence:
+            intent_tail = trend_sentence
+        else:
+            intent_tail = (
+                " Für eine aussagekräftige Trendanalyse benötigen wir mindestens zwei unterschiedliche Monate mit Daten."
+            )
+
+    # Für Overview, Suppliers, VAT nehmen wir Basis + Vendor + Trend, plus Intent-Tail.
+    full_answer = base + vendor_sentence + trend_sentence
+    if intent in ("suppliers", "vat", "trend"):
+        full_answer += intent_tail
+
+    full_answer += (
+        " Stellen Sie mir gerne eine spezifische Frage, z.B.: "
+        "„Welche Lieferanten sind aktuell am teuersten?“, "
+        "„Wie haben sich unsere Ausgaben in den letzten Monaten entwickelt?“ "
+        "oder „Wie viel Mehrwertsteuer steckt in den letzten 12 Monaten?“. "
+    )
+
+    suggested = [
+        "Gib mir einen Überblick über unsere Ausgaben der letzten 90 Tage.",
+        "Welche Lieferanten verursachen aktuell die höchsten Kosten?",
+        "Wie haben sich unsere Ausgaben in den letzten 6 Monaten entwickelt?",
+        "Wie viel Mehrwertsteuer steckt in den letzten 12 Monaten?",
+    ]
+
+    return {
+        "answer": full_answer,
+        "question": question,
+        "days": d,
+        "snapshot": snapshot,
+        "suggested_questions": suggested,
+    }
+
