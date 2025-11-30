@@ -116,6 +116,17 @@ async def validation_handler(request, exc: ValidationError):
     return JSONResponse(status_code=422, content=exc.to_dict())
 
 @app.middleware("http")
+async def add_security_headers(request, call_next):
+    """Fügt Security Headers zu allen Responses hinzu"""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    return response
+
+@app.middleware("http")
 async def log_requests(request, call_next):
     """Log alle HTTP Requests mit Timing"""
     import time
