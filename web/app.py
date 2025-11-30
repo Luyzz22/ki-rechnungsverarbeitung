@@ -96,6 +96,7 @@ from exceptions import (
 from fastapi.responses import JSONResponse
 from logging_utils import LogContext, log_job_event, log_error_with_context
 from models import Invoice, InvoiceStatus, Job, JobStatus
+from schemas import JobStatusResponse, UserResponse, SuccessResponse, ErrorResponse
 
 @app.exception_handler(InvoiceAppError)
 async def invoice_app_error_handler(request, exc: InvoiceAppError):
