@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from cache import cached, CACHE_TTLS
 """
 SQLite Database für Job-Persistenz
 """
@@ -297,6 +298,7 @@ def get_all_jobs(limit: int = 50, offset: int = 0, user_id: int = None) -> List[
     conn.close()
     return jobs
 
+@cached("statistics", ttl=300)
 def get_statistics(user_id: int = None) -> Dict:
     """Get overall statistics"""
     conn = get_connection()
@@ -1820,6 +1822,7 @@ def get_invoices_by_supplier(supplier_name: str, user_id: int = None, limit: int
     return results
 
 
+@cached("monthly_summary", ttl=600)
 def get_monthly_summary(user_id: int = None, months: int = 12) -> List[Dict]:
     """Holt monatliche Zusammenfassung der Rechnungen"""
     conn = get_connection()
