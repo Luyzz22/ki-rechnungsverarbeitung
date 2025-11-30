@@ -116,13 +116,17 @@ async def validation_handler(request, exc: ValidationError):
 
 @app.middleware("http")
 async def log_requests(request, call_next):
-    """Log alle HTTP Requests"""
+    """Log alle HTTP Requests mit Timing"""
+    import time
+    start_time = time.time()
     app_logger.info(f"Request: {request.method} {request.url.path} from {request.client.host}")
     response = await call_next(request)
-    app_logger.info(f"Response: {response.status_code}")
+    duration_ms = (time.time() - start_time) * 1000
+    app_logger.info(f"Response: {response.status_code} in {duration_ms:.1f}ms")
+    if duration_ms > 1000:
+        app_logger.warning(f"Slow request: {request.url.path} took {duration_ms:.1f}ms")
     return response
 
-# Setup directories
 BASE_DIR = Path(__file__).parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
