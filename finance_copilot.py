@@ -196,6 +196,56 @@ def generate_finance_answer(question: str, days: int = 90) -> Dict[str, Any]:
     - perfekt für Live-Copilot im Analytics-Dashboard
     """
     snapshot = get_finance_snapshot(days=days)
+
+    kpis = snapshot.get("kpis", {}) or {}
+    total_invoices = int(kpis.get("total_invoices") or 0)
+
+    # Spezieller Fall: im gewählten Zeitraum gibt es keine Rechnungen
+    if total_invoices == 0:
+        answer = (
+            "Für den gewählten Zeitraum liegen noch keine verarbeiteten Rechnungen vor. "
+            "Bitte laden Sie Rechnungen hoch oder wählen Sie einen längeren Zeitraum "
+            "(z. B. 90 oder 365 Tage)."
+        )
+        result = FinanceCopilotResult(
+            answer=answer,
+            question=question,
+            days=days,
+            snapshot=snapshot,
+            suggested_questions=[
+                "Gib mir einen Überblick über unsere Ausgaben der letzten 90 Tage.",
+                "Wie haben sich unsere Ausgaben in den letzten Monaten entwickelt?",
+                "Welche Lieferanten verursachen aktuell die höchsten Kosten?"
+            ],
+            intent="no_data",
+        )
+        return result.to_dict()
+
+
+    kpis = snapshot.get("kpis", {}) or {}
+    total_invoices = int(kpis.get("total_invoices") or 0)
+
+    # Spezieller Fall: im gewählten Zeitraum gibt es keine Rechnungen
+    if total_invoices == 0:
+        answer = (
+            "Für den gewählten Zeitraum liegen noch keine verarbeiteten Rechnungen vor. "
+            "Bitte laden Sie Rechnungen hoch oder wählen Sie einen längeren Zeitraum "
+            "(z. B. 90 oder 365 Tage)."
+        )
+        result = FinanceCopilotResult(
+            answer=answer,
+            question=question,
+            days=days,
+            snapshot=snapshot,
+            suggested_questions=[
+                "Gib mir einen Überblick über unsere Ausgaben der letzten 90 Tage.",
+                "Wie haben sich unsere Ausgaben in den letzten Monaten entwickelt?",
+                "Welche Lieferanten verursachen aktuell die höchsten Kosten?"
+            ],
+            intent="no_data",
+        )
+        return result.to_dict()
+
     kpis = snapshot.get("kpis", {})
     top_vendors = snapshot.get("top_vendors", [])
     monthly_trend = snapshot.get("monthly_trend", [])
