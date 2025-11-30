@@ -1218,30 +1218,9 @@ document.addEventListener('DOMContentLoaded', function () {
           </button>
         </div>
       </div>
-      <form class="finance-copilot-form" id="finance-copilot-form">
+                  <form class="finance-copilot-form" id="finance-copilot-form">
         <input
           type="text"
-        <div class="finance-copilot-suggestions">
-          <div class="finance-copilot-suggestions-label">Schnellstart-Fragen</div>
-          <div class="finance-copilot-suggestions-row">
-            <button type="button"
-                    class="finance-copilot-chip"
-                    data-finance-question="Kurzer Überblick über unsere Ausgaben, bitte.">
-              Überblick 90 Tage
-            </button>
-            <button type="button"
-                    class="finance-copilot-chip"
-                    data-finance-question="Wer sind unsere teuersten Lieferanten?">
-              Teuerste Lieferanten
-            </button>
-            <button type="button"
-                    class="finance-copilot-chip"
-                    data-finance-question="Wie viel Mehrwertsteuer steckt im letzten Jahr?">
-              Mehrwertsteuer letztes Jahr
-            </button>
-          </div>
-        </div>
-
           id="finance-copilot-input"
           class="finance-copilot-input"
           placeholder="Frage an den Copilot – z.B. Überblick über die letzten 90 Tage"
@@ -1479,7 +1458,45 @@ document.addEventListener('DOMContentLoaded', function () {
     })();
     </script>
     
-</body>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var form  = document.getElementById('finance-copilot-form');
+  var input = document.getElementById('finance-copilot-input');
+  if (!form || !input) {
+    return;
+  }
+
+  var buttons = document.querySelectorAll('[data-finance-question]');
+  if (!buttons || !buttons.length) {
+    return;
+  }
+
+  function submitWithQuestion(q) {
+    if (!q) return;
+    input.value = q;
+    input.focus();
+
+    var evt;
+    if (typeof Event === 'function') {
+      evt = new Event('submit', { bubbles: true, cancelable: true });
+    } else {
+      // Fallback für ältere Browser
+      evt = document.createEvent('Event');
+      evt.initEvent('submit', true, true);
+    }
+    form.dispatchEvent(evt);
+  }
+
+  buttons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var q = btn.getAttribute('data-finance-question') || '';
+      submitWithQuestion(q);
+    });
+  });
+});
+</script>
+\n</body>
 <script>
 async function updateAccountStatus() {
   try {
