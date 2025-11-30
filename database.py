@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from cache import cached, CACHE_TTLS
+from cache import cached, CACHE_TTLS, invalidate_cache
 """
 SQLite Database für Job-Persistenz
 """
@@ -77,6 +77,9 @@ def init_database():
     ''')
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
     logger.info("Database initialized")
 
@@ -114,6 +117,9 @@ def save_job(job_id: str, job_data: Dict, user_id: int = None):
     ))
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 
@@ -227,6 +233,9 @@ def save_invoices(job_id: str, results: List[Dict]):
             )
 
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 
@@ -470,6 +479,9 @@ def init_feedback_table():
     ''')
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 # Initialize feedback tables
@@ -486,6 +498,9 @@ def save_correction(invoice_id: int, supplier: str, field_name: str, original_va
     ''', (supplier, field_name, original_value, corrected_value, invoice_id))
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
     
     # Update supplier patterns
@@ -532,6 +547,9 @@ def update_supplier_patterns(supplier: str):
     ''', (supplier, json.dumps(patterns), confidence, invoice_count, datetime.now().isoformat()))
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 def get_supplier_patterns(supplier: str) -> dict:
@@ -571,6 +589,9 @@ def update_invoice(invoice_id: int, updates: dict):
     cursor.execute(query, values)
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 def get_invoice_by_id(invoice_id: int) -> dict:
@@ -618,6 +639,9 @@ def init_feedback_table():
     ''')
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 # Initialize feedback tables
@@ -634,6 +658,9 @@ def save_correction(invoice_id: int, supplier: str, field_name: str, original_va
     ''', (supplier, field_name, original_value, corrected_value, invoice_id))
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
     
     # Update supplier patterns
@@ -680,6 +707,9 @@ def update_supplier_patterns(supplier: str):
     ''', (supplier, json.dumps(patterns), confidence, invoice_count, datetime.now().isoformat()))
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 def get_supplier_patterns(supplier: str) -> dict:
@@ -719,6 +749,9 @@ def update_invoice(invoice_id: int, updates: dict):
     cursor.execute(query, values)
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 def get_invoice_by_id(invoice_id: int) -> dict:
@@ -773,6 +806,9 @@ def init_email_inbox_table():
     ''')
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 init_email_inbox_table()
@@ -812,6 +848,9 @@ def save_email_config(config: dict):
     ))
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 def save_processed_email(message_id: str, from_addr: str, subject: str, job_id: str, attachments: int):
@@ -828,6 +867,9 @@ def save_processed_email(message_id: str, from_addr: str, subject: str, job_id: 
     ''', (message_id, from_addr, subject, datetime.now().isoformat(), datetime.now().isoformat(), job_id, 'processed', attachments))
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 def is_email_processed(message_id: str) -> bool:
@@ -864,6 +906,9 @@ def init_users_table():
         cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 init_users_table()
@@ -884,6 +929,9 @@ def create_user(email: str, password: str, name: str = '', company: str = '') ->
     
     user_id = cursor.lastrowid
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
     
     return user_id
@@ -965,6 +1013,9 @@ def init_users_table():
         cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 init_users_table()
@@ -985,6 +1036,9 @@ def create_user(email: str, password: str, name: str = '', company: str = '') ->
     
     user_id = cursor.lastrowid
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
     
     return user_id
@@ -1064,6 +1118,9 @@ def init_subscriptions_table():
     ''')
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 init_subscriptions_table()
@@ -1093,6 +1150,9 @@ def create_subscription(user_id: int, plan: str, stripe_customer_id: str, stripe
         VALUES (?, ?, ?, ?, ?, 'active')
     ''', (user_id, plan, stripe_customer_id, stripe_subscription_id, limits.get(plan, 100)))
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 def check_invoice_limit(user_id: int) -> dict:
@@ -1150,6 +1210,9 @@ def increment_invoice_usage(user_id: int, count: int = 1):
     ''', (count, user_id))
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 def reset_monthly_usage():
@@ -1158,6 +1221,9 @@ def reset_monthly_usage():
     cursor = conn.cursor()
     cursor.execute('UPDATE subscriptions SET invoices_used = 0 WHERE status = "active"')
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 # Add user_id column to existing jobs table if not exists
@@ -1267,6 +1333,9 @@ def create_category(name: str, description: str = None, account_number: str = No
         VALUES (?, ?, ?, ?, ?, ?)
     ''', (name, description, account_number, color, icon, user_id))
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     category_id = cursor.lastrowid
     conn.close()
     return category_id
@@ -1282,6 +1351,9 @@ def assign_category_to_invoice(invoice_id: int, category_id: int, confidence: fl
         VALUES (?, ?, ?, ?)
     ''', (invoice_id, category_id, confidence, assigned_by))
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 def get_invoice_categories(invoice_id: int):
@@ -1328,6 +1400,9 @@ def save_category_learning(supplier_name: str, category_id: int, invoice_text: s
         ''', (supplier_name, category_id, snippet, user_id))
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
 
 def get_learned_category(supplier_name: str, user_id: int = None):
@@ -1486,6 +1561,9 @@ def create_password_reset_token(email: str) -> Optional[str]:
     ''', (user['id'], token, expires_at))
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
     
     return token
@@ -1550,6 +1628,9 @@ def reset_password(token: str, new_password: str) -> bool:
     ''', (token,))
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
     
     return True
@@ -1571,6 +1652,9 @@ def create_email_verification_token(user_id: int) -> str:
     ''', (token, user_id))
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
     
     return token
@@ -1589,6 +1673,9 @@ def verify_email(token: str) -> bool:
     
     success = cursor.rowcount > 0
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
     
     return success
@@ -1632,6 +1719,9 @@ def create_password_reset_token(email: str) -> Optional[str]:
         )
 
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
     return token
 
@@ -1698,6 +1788,9 @@ def reset_password(token: str, new_password: str) -> bool:
         pass
 
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
     return True
 
@@ -1882,6 +1975,9 @@ def delete_job(job_id: str, user_id: int = None) -> bool:
     cursor.execute("DELETE FROM jobs WHERE job_id = ?", (job_id,))
     
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
     return True
 
@@ -1911,5 +2007,8 @@ def update_job_status(job_id: str, status: str, **extra_fields) -> bool:
     
     success = cursor.rowcount > 0
     conn.commit()
+    # Cache invalidieren nach neuen Invoices
+    invalidate_cache("statistics")
+    invalidate_cache("monthly_summary")
     conn.close()
     return success
