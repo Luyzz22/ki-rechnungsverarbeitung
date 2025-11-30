@@ -1139,7 +1139,7 @@ async def logout(request: Request):
         status_code=303,
     )
 
-@app.get("/api/user")
+@app.get("/api/user", response_model=UserResponse)
 async def get_current_user(request: Request):
     """Get current logged in user"""
     if 'user_id' in request.session:
