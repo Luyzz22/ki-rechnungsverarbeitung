@@ -148,6 +148,7 @@ processor = InvoiceProcessor(config)
 
 # In-memory storage for results (in production: use database)
 processing_jobs = {}
+app_start_time = __import__("time").time()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -553,11 +554,29 @@ async def results_page(request: Request, job_id: str):
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint mit DB-Status und Uptime"""
+    import time
+    from database import get_connection
+    
+    # DB-Check
+    db_status = "healthy"
+    try:
+        conn = get_connection()
+        conn.execute("SELECT 1")
+        conn.close()
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+    
+    # Uptime (seit App-Start)
+    uptime_seconds = time.time() - app_start_time if "app_start_time" in globals() else 0
+    uptime_hours = round(uptime_seconds / 3600, 1)
+    
     return {
-        "status": "healthy",
+        "status": "healthy" if db_status == "healthy" else "degraded",
         "version": "1.0.0",
-        "jobs_count": len(processing_jobs)
+        "database": db_status,
+        "jobs_in_memory": len(processing_jobs),
+        "uptime_hours": uptime_hours
     }
 @app.post("/api/send-email/{job_id}")
 async def send_email_route(job_id: str, request: Request):
