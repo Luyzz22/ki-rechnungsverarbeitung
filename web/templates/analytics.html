@@ -963,6 +963,425 @@ document.addEventListener('DOMContentLoaded', function () {
       })();
     </script>
     
+
+    <!-- Finance Copilot – In-App Chat für CFOs -->
+    <style>
+      .finance-copilot-toggle {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        z-index: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 16px;
+        border-radius: 999px;
+        border: none;
+        background: var(--sbs-dark, #003856);
+        color: var(--sbs-white, #ffffff);
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+      }
+      .finance-copilot-toggle:hover {
+        background: #00263f;
+      }
+      .finance-copilot-icon {
+        font-size: 1.1rem;
+      }
+
+      .finance-copilot-panel {
+        position: fixed;
+        right: 24px;
+        bottom: 90px;
+        width: 380px;
+        max-width: calc(100% - 32px);
+        z-index: 500;
+        background: var(--sbs-white, #ffffff);
+        border-radius: 16px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.26);
+        display: flex;
+        flex-direction: column;
+        max-height: 70vh;
+        transform: translateY(8px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.18s ease-out, transform 0.18s ease-out;
+        overflow: hidden;
+      }
+      .finance-copilot-panel.is-open {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+      }
+      .finance-copilot-header {
+        padding: 14px 16px 10px 16px;
+        border-bottom: 1px solid var(--sbs-border-soft, #e2e8f0);
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .finance-copilot-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--sbs-dark, #0f172a);
+      }
+      .finance-copilot-subtitle {
+        font-size: 0.8rem;
+        color: var(--sbs-muted, #64748b);
+        margin-top: 2px;
+      }
+      .finance-copilot-close {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 1.1rem;
+        line-height: 1;
+        color: var(--sbs-muted, #64748b);
+      }
+      .finance-copilot-body {
+        padding: 10px 16px 8px 16px;
+        overflow-y: auto;
+        flex: 1;
+      }
+      .finance-copilot-answer p {
+        margin: 0 0 8px 0;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        color: var(--sbs-dark, #0f172a);
+      }
+      .finance-copilot-meta {
+        font-size: 0.75rem;
+        color: var(--sbs-muted, #64748b);
+        margin-top: 4px;
+      }
+      .finance-copilot-status {
+        font-size: 0.75rem;
+        color: var(--sbs-muted, #64748b);
+        margin-top: 4px;
+      }
+      .finance-copilot-suggestions {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .finance-copilot-suggestion {
+        border-radius: 999px;
+        border: 1px solid var(--sbs-border-soft, #e2e8f0);
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        background: var(--sbs-bg, #f8fafc);
+        color: var(--sbs-dark, #0f172a);
+        cursor: pointer;
+      }
+      .finance-copilot-suggestion:hover {
+        background: #e2e8f0;
+      }
+      .finance-copilot-form {
+        padding: 8px 8px 10px 8px;
+        border-top: 1px solid var(--sbs-border-soft, #e2e8f0);
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        background: var(--sbs-bg, #f8fafc);
+      }
+      .finance-copilot-input {
+        flex: 1;
+        border-radius: 999px;
+        border: 1px solid var(--sbs-border-soft, #e2e8f0);
+        padding: 7px 11px;
+        font-size: 0.8rem;
+      }
+      .finance-copilot-send {
+        border-radius: 999px;
+        border: none;
+        padding: 7px 14px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        background: var(--sbs-dark, #003856);
+        color: var(--sbs-white, #ffffff);
+        cursor: pointer;
+      }
+      .finance-copilot-send:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      .finance-copilot-footnote {
+        padding: 0 16px 10px 16px;
+        font-size: 0.7rem;
+        color: var(--sbs-muted, #64748b);
+      }
+      @media (max-width: 640px) {
+        .finance-copilot-panel {
+          right: 12px;
+          left: 12px;
+          width: auto;
+          bottom: 80px;
+          max-height: 65vh;
+        }
+        .finance-copilot-toggle {
+          right: 12px;
+          bottom: 16px;
+        }
+      }
+    </style>
+
+    <div class="finance-copilot-panel" id="finance-copilot-panel" aria-hidden="true">
+      <div class="finance-copilot-header">
+        <div>
+          <div class="finance-copilot-title">Finance Copilot</div>
+          <div class="finance-copilot-subtitle">
+            Stellen Sie Fragen direkt an Ihre verarbeiteten Rechnungsdaten.
+          </div>
+        </div>
+        <button type="button" class="finance-copilot-close" id="finance-copilot-close" aria-label="Fenster schließen">×</button>
+      </div>
+      <div class="finance-copilot-body">
+        <div class="finance-copilot-answer" id="finance-copilot-answer">
+          <p>
+            Hallo! Ich gebe Ihnen in wenigen Sekunden einen Überblick über Ihre Eingangsrechnungen –
+            z.B. „Kurzer Überblick über unsere Ausgaben, bitte.“ oder
+            „Welche Lieferanten verursachen aktuell die höchsten Kosten?“.
+          </p>
+        </div>
+        <div class="finance-copilot-status" id="finance-copilot-status"></div>
+        <div class="finance-copilot-suggestions" id="finance-copilot-suggestions">
+          <button type="button" class="finance-copilot-suggestion"
+            data-question="Gib mir einen Überblick über unsere Ausgaben der letzten 90 Tage.">
+            Überblick letzte 90 Tage
+          </button>
+          <button type="button" class="finance-copilot-suggestion"
+            data-question="Welche Lieferanten verursachen aktuell die höchsten Kosten?">
+            Teuerste Lieferanten
+          </button>
+          <button type="button" class="finance-copilot-suggestion"
+            data-question="Wie haben sich unsere Ausgaben in den letzten 6 Monaten entwickelt?">
+            Trend letzte 6 Monate
+          </button>
+        </div>
+      </div>
+      <form class="finance-copilot-form" id="finance-copilot-form">
+        <input
+          type="text"
+          id="finance-copilot-input"
+          class="finance-copilot-input"
+          placeholder="Frage an den Copilot – z.B. Überblick über die letzten 90 Tage"
+          autocomplete="off"
+        />
+        <button type="submit" class="finance-copilot-send" id="finance-copilot-send-btn" disabled>
+          Senden
+        </button>
+      </form>
+      <div class="finance-copilot-footnote">
+        Nutzt ausschließlich bereits verarbeitete Rechnungsdaten aus Ihrem Account.
+      </div>
+    </div>
+
+    <button type="button" class="finance-copilot-toggle" id="finance-copilot-toggle">
+      <span class="finance-copilot-icon">💬</span>
+      <span class="finance-copilot-label">Finance Copilot</span>
+    </button>
+
+    <script>
+    (function() {
+      var panel = document.getElementById('finance-copilot-panel');
+      if (!panel) { return; }
+
+      var toggle = document.getElementById('finance-copilot-toggle');
+      var closeBtn = document.getElementById('finance-copilot-close');
+      var form = document.getElementById('finance-copilot-form');
+      var input = document.getElementById('finance-copilot-input');
+      var answerBox = document.getElementById('finance-copilot-answer');
+      var statusBox = document.getElementById('finance-copilot-status');
+      var suggestionsBox = document.getElementById('finance-copilot-suggestions');
+      var sendBtn = document.getElementById('finance-copilot-send-btn');
+      var isLoading = false;
+
+      function setPanel(open) {
+        if (!panel) return;
+        if (open) {
+          panel.classList.add('is-open');
+          panel.setAttribute('aria-hidden', 'false');
+          if (input) {
+            setTimeout(function() { input.focus(); }, 150);
+          }
+        } else {
+          panel.classList.remove('is-open');
+          panel.setAttribute('aria-hidden', 'true');
+        }
+      }
+
+      if (toggle) {
+        toggle.addEventListener('click', function() {
+          var open = !panel.classList.contains('is-open');
+          setPanel(open);
+        });
+      }
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+          setPanel(false);
+        });
+      }
+
+      function formatCurrency(value) {
+        var number = value || 0;
+        try {
+          return new Intl.NumberFormat('de-DE', {
+            style: 'currency',
+            currency: 'EUR'
+          }).format(number);
+        } catch (e) {
+          return (number.toFixed ? number.toFixed(2) : number) + ' €';
+        }
+      }
+
+      function formatNumber(value) {
+        var number = value || 0;
+        try {
+          return new Intl.NumberFormat('de-DE').format(number);
+        } catch (e) {
+          return String(number);
+        }
+      }
+
+      function setStatus(message) {
+        if (!statusBox) return;
+        statusBox.textContent = message || '';
+      }
+
+      function setLoading(loading) {
+        isLoading = loading;
+        if (sendBtn) {
+          var disabled = loading || !input || !input.value.trim();
+          sendBtn.disabled = disabled;
+        }
+        if (input) {
+          input.disabled = loading;
+        }
+      }
+
+      function handleSubmit(event) {
+        if (event && event.preventDefault) {
+          event.preventDefault();
+        }
+        if (!input || !input.value.trim() || isLoading) {
+          return;
+        }
+
+        var question = input.value.trim();
+
+        var days = 90;
+        var periodSelect = document.getElementById('finance-period');
+        if (periodSelect && periodSelect.value) {
+          var parsed = parseInt(periodSelect.value, 10);
+          if (!isNaN(parsed)) {
+            days = parsed;
+          }
+        }
+
+        setLoading(true);
+        setStatus('Copilot analysiert Ihre Belegdaten …');
+
+        fetch('/api/copilot/finance/query', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            question: question,
+            days: days
+          })
+        })
+          .then(function(response) {
+            if (!response.ok) {
+              throw new Error('HTTP ' + response.status);
+            }
+            return response.json();
+          })
+          .then(function(data) {
+            if (!data) {
+              return;
+            }
+
+            if (answerBox) {
+              answerBox.innerHTML = '';
+              var p = document.createElement('p');
+              p.textContent = data.answer || '';
+              answerBox.appendChild(p);
+
+              if (data.snapshot && data.snapshot.kpis) {
+                var k = data.snapshot.kpis;
+                var meta = document.createElement('p');
+                meta.className = 'finance-copilot-meta';
+                var summary = 'Zeitraum: letzte ' + (data.days || days) + ' Tage · Rechnungen: ' +
+                  formatNumber(k.total_invoices || 0) + ' · Brutto: ' +
+                  formatCurrency(k.total_gross || 0);
+                meta.textContent = summary;
+                answerBox.appendChild(meta);
+              }
+            }
+
+            if (Array.isArray(data.suggested_questions) && suggestionsBox) {
+              suggestionsBox.innerHTML = '';
+              data.suggested_questions.forEach(function(q) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'finance-copilot-suggestion';
+                btn.textContent = q;
+                btn.dataset.question = q;
+                suggestionsBox.appendChild(btn);
+              });
+            }
+
+            if (input) {
+              input.value = '';
+            }
+            setStatus('');
+          })
+          .catch(function(error) {
+            console.error('Finance Copilot error', error);
+            setStatus('Die Antwort konnte nicht geladen werden. Bitte versuchen Sie es erneut.');
+          })
+          .finally(function() {
+            setLoading(false);
+          });
+      }
+
+      if (form) {
+        form.addEventListener('submit', handleSubmit);
+      }
+
+      if (input) {
+        input.addEventListener('input', function() {
+          if (sendBtn && !isLoading) {
+            sendBtn.disabled = !input.value.trim();
+          }
+        });
+      }
+
+      if (suggestionsBox) {
+        suggestionsBox.addEventListener('click', function(event) {
+          var target = event.target;
+          if (!target || !target.dataset || !target.dataset.question) {
+            return;
+          }
+          var q = target.dataset.question;
+          if (!input) {
+            return;
+          }
+          input.value = q;
+          if (sendBtn) {
+            sendBtn.disabled = false;
+          }
+          handleSubmit();
+        });
+      }
+    })();
+    </script>
+    
 </body>
 <script>
 async function updateAccountStatus() {
