@@ -97,6 +97,7 @@ from fastapi.responses import JSONResponse
 from logging_utils import LogContext, log_job_event, log_error_with_context
 from models import Invoice, InvoiceStatus, Job, JobStatus
 from schemas import JobStatusResponse, JobResultsResponse, UserResponse, SuccessResponse, ErrorResponse
+from einvoice import generate_xrechnung, export_xrechnung_file, validate_xrechnung as validate_xrechnung_new
 from rate_limiter import check_rate_limit, get_client_ip
 
 @app.exception_handler(InvoiceAppError)
