@@ -96,7 +96,7 @@ from exceptions import (
 from fastapi.responses import JSONResponse
 from logging_utils import LogContext, log_job_event, log_error_with_context
 from models import Invoice, InvoiceStatus, Job, JobStatus
-from schemas import JobStatusResponse, UserResponse, SuccessResponse, ErrorResponse
+from schemas import JobStatusResponse, JobResultsResponse, UserResponse, SuccessResponse, ErrorResponse
 from rate_limiter import check_rate_limit, get_client_ip
 
 @app.exception_handler(InvoiceAppError)
@@ -452,7 +452,7 @@ async def process_invoices_background(job_id: str):
     
     # Schedule cleanup of uploaded PDFs (nach 60 Minuten)
     asyncio.create_task(cleanup_uploads(upload_path, delay_minutes=60))
-@app.get("/api/status/{job_id}")
+@app.get("/api/status/{job_id}", response_model=JobStatusResponse)
 async def get_status(job_id: str):
     """Get processing status"""
     if job_id not in processing_jobs:
