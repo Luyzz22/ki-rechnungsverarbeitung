@@ -2408,3 +2408,54 @@ async def api_finance_snapshot(days: int = 90):
 
     snapshot = get_finance_snapshot(days=days)
     return snapshot
+
+# ---------------------------------------------------------------------------
+# Finance Copilot API (V1)
+# Nutzt die deterministische Logik aus finance_copilot.generate_finance_answer
+# und liefert:
+# - eine natürlichsprachliche Antwort
+# - die zugrunde liegenden KPIs
+# - Vorschlagsfragen für das UI
+# ---------------------------------------------------------------------------
+
+from pydantic import BaseModel
+from finance_copilot import generate_finance_answer
+
+
+class FinanceCopilotRequest(BaseModel):
+    question: str | None = None
+    days: int | None = 90
+
+
+class FinanceCopilotResponse(BaseModel):
+    answer: str
+    question: str
+    days: int
+    snapshot: dict
+    suggested_questions: list
+
+
+@app.post("/api/copilot/finance/query", response_model=FinanceCopilotResponse)
+async def api_finance_copilot_query(payload: FinanceCopilotRequest):
+    """
+    Finance Copilot Endpoint (V1)
+
+    Nutzt die bestehende Analytics-Schicht, um:
+    - einen kompakten Finanz-Überblick zu liefern
+    - die gleichen Daten auch strukturiert fürs Frontend bereitzustellen
+    """
+    try:
+        result = generate_finance_answer(
+            question=payload.question or "",
+            days=payload.days or 90,
+        )
+        return result
+    except Exception as exc:  # noqa: F841
+        app_logger.exception("Finance copilot error")
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Finance Copilot konnte nicht antworten. "
+                "Bitte versuchen Sie es später erneut."
+            ),
+        )
