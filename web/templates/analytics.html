@@ -168,6 +168,61 @@
   margin-top: 4px;
 }
 
+
+    /* Finance Copilot – Suggestion Chips */
+    .finance-copilot-suggestions {
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--sbs-bg, #f5f5f5);
+      border: 1px solid var(--sbs-border-soft, #e0e0e0);
+    }
+    .finance-copilot-suggestions-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--sbs-muted, #666666);
+      margin-bottom: 6px;
+    }
+    .finance-copilot-suggestions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .finance-copilot-chip {
+      border: 1px solid var(--sbs-border-soft, #d1d5db);
+      background: #ffffff;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: var(--sbs-dark, #111827);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+    }
+    .finance-copilot-chip::before {
+      content: "⟶";
+      font-size: 0.75rem;
+      opacity: 0.65;
+    }
+    .finance-copilot-chip:hover {
+      background: rgba(0,56,86,0.04);
+      border-color: var(--sbs-dark, #003856);
+      transform: translateY(-1px);
+    }
+    .finance-copilot-chip:active {
+      transform: translateY(0);
+    }
+    @media (max-width: 768px) {
+      .finance-copilot-suggestions-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
 </style>
 <style>
 .skeleton {
@@ -1166,6 +1221,27 @@ document.addEventListener('DOMContentLoaded', function () {
       <form class="finance-copilot-form" id="finance-copilot-form">
         <input
           type="text"
+        <div class="finance-copilot-suggestions">
+          <div class="finance-copilot-suggestions-label">Schnellstart-Fragen</div>
+          <div class="finance-copilot-suggestions-row">
+            <button type="button"
+                    class="finance-copilot-chip"
+                    data-finance-question="Kurzer Überblick über unsere Ausgaben, bitte.">
+              Überblick 90 Tage
+            </button>
+            <button type="button"
+                    class="finance-copilot-chip"
+                    data-finance-question="Wer sind unsere teuersten Lieferanten?">
+              Teuerste Lieferanten
+            </button>
+            <button type="button"
+                    class="finance-copilot-chip"
+                    data-finance-question="Wie viel Mehrwertsteuer steckt im letzten Jahr?">
+              Mehrwertsteuer letztes Jahr
+            </button>
+          </div>
+        </div>
+
           id="finance-copilot-input"
           class="finance-copilot-input"
           placeholder="Frage an den Copilot – z.B. Überblick über die letzten 90 Tage"
@@ -1193,6 +1269,27 @@ document.addEventListener('DOMContentLoaded', function () {
       var toggle = document.getElementById('finance-copilot-toggle');
       var closeBtn = document.getElementById('finance-copilot-close');
       var form = document.getElementById('finance-copilot-form');
+          var suggestionButtons = document.querySelectorAll('.finance-copilot-chip[data-finance-question]');
+          if (suggestionButtons && suggestionButtons.length) {
+            suggestionButtons.forEach(function(btn) {
+              btn.addEventListener('click', function() {
+                var q = btn.getAttribute('data-finance-question') || '';
+                if (!q) return;
+
+                var input = document.getElementById('finance-copilot-input');
+                if (!input) return;
+
+                input.value = q;
+                input.focus();
+
+                if (form) {
+                  var submitEvent = new Event('submit', { cancelable: true, bubbles: true });
+                  form.dispatchEvent(submitEvent);
+                }
+              });
+            });
+          }
+
       var input = document.getElementById('finance-copilot-input');
       var answerBox = document.getElementById('finance-copilot-answer');
       var statusBox = document.getElementById('finance-copilot-status');
