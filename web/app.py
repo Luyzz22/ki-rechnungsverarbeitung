@@ -97,6 +97,7 @@ from fastapi.responses import JSONResponse
 from logging_utils import LogContext, log_job_event, log_error_with_context
 from models import Invoice, InvoiceStatus, Job, JobStatus
 from schemas import JobStatusResponse, UserResponse, SuccessResponse, ErrorResponse
+from rate_limiter import check_rate_limit, get_client_ip
 
 @app.exception_handler(InvoiceAppError)
 async def invoice_app_error_handler(request, exc: InvoiceAppError):
@@ -175,6 +176,8 @@ async def upload_files(request: Request, files: List[UploadFile] = File(default=
         )
 
     user_id = request.session["user_id"]
+    # Rate Limiting: 10 Uploads pro Minute
+    check_rate_limit(request, "upload")
 
     # 2) Job-ID & Upload-Ordner
     job_id = str(uuid.uuid4())
@@ -1023,6 +1026,8 @@ async def login_submit(request: Request):
     - leitet auf gewünschte Seite weiter
     """
     from fastapi.responses import RedirectResponse
+    # Rate Limiting: 5 Login-Versuche pro Minute
+    check_rate_limit(request, "auth")
     from database import verify_user
     import logging
 
