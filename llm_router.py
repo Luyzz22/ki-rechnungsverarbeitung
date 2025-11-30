@@ -749,7 +749,8 @@ def extract_invoice_data(text: str, provider: str, model: str) -> dict:
             resp = openai_client.chat.completions.create(
                 model=model,
                 messages=messages,
-                temperature=0
+                temperature=0,
+                response_format={"type": "json_object"}
             )
             
             content = resp.choices[0].message.content
