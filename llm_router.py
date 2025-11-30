@@ -262,7 +262,8 @@ Nach der Extraktion IMMER diese Checks durchführen:
       "gesamt": 1580.00
     }
   ],
-  "verwendungszweck": ""
+  "verwendungszweck": "",
+  "confidence": 0.95
 }
 
 ═══════════════════════════════════════════════════════════════════
@@ -647,7 +648,8 @@ Nach der Extraktion IMMER diese Checks durchführen:
       "gesamt": 1580.00
     }
   ],
-  "verwendungszweck": ""
+  "verwendungszweck": "",
+  "confidence": 0.95
 }
 
 ═══════════════════════════════════════════════════════════════════
@@ -708,7 +710,8 @@ KORREKTE EXTRAKTION:
   "kundennummer": "534652",  ✅ Aber NICHT als Aussteller!
   "steuernummer": "47013/22377",  ✅ Aus Footer gefunden!
   "ust_idnr": "DE300066949",  ✅ Aus Footer gefunden!
-  "verwendungszweck": "",  ✅ Nicht explizit genannt!
+  "verwendungszweck": "",
+  "confidence": 0.95,  ✅ Nicht explizit genannt!
   ...
 }
 ```
