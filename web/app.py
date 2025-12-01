@@ -172,7 +172,7 @@ async def home(request: Request):
     """Main upload page"""
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.post("/api/upload")
+@app.post("/api/upload", tags=["Jobs"])
 async def upload_files(request: Request, files: List[UploadFile] = File(default=[])):
     app_logger.info(f"Upload request: {len(files) if files else 0} files from user")
     """
@@ -262,7 +262,7 @@ async def upload_files(request: Request, files: List[UploadFile] = File(default=
         "files": uploaded_files,
         "subscription": dev_limit,
     }
-@app.post("/api/process/{job_id}")
+@app.post("/api/process/{job_id}", tags=["Jobs"])
 async def process_job(job_id: str, background_tasks: BackgroundTasks):
     """
     Process uploaded PDFs
@@ -466,7 +466,7 @@ async def process_invoices_background(job_id: str):
     
     # Schedule cleanup of uploaded PDFs (nach 60 Minuten)
     asyncio.create_task(cleanup_uploads(upload_path, delay_minutes=60))
-@app.get("/api/status/{job_id}", response_model=JobStatusResponse)
+@app.get("/api/status/{job_id}", response_model=JobStatusResponse, tags=["Jobs"])
 async def get_status(job_id: str):
     """Get processing status"""
     if job_id not in processing_jobs:
@@ -484,7 +484,7 @@ async def get_status(job_id: str):
     }
 
 
-@app.get("/api/results/{job_id}")
+@app.get("/api/results/{job_id}", tags=["Jobs"])
 async def get_results(job_id: str):
     """Get processing results"""
     if job_id not in processing_jobs:
@@ -509,7 +509,7 @@ async def get_results(job_id: str):
     }
 
 
-@app.get("/api/download/{job_id}/{format}")
+@app.get("/api/download/{job_id}/{format}", tags=["Export"])
 async def download_export(job_id: str, format: str):
     """Download exported file"""
     from database import get_job
@@ -575,7 +575,7 @@ def _get_backup_info():
     except Exception:
         return {"error": "Backup-Modul nicht verfügbar"}
 
-@app.get("/health")
+@app.get("/health", tags=["System"])
 async def health_check():
     """Health check endpoint mit DB-Status und Uptime"""
     import time
@@ -602,7 +602,7 @@ async def health_check():
         "uptime_hours": uptime_hours,
         "backup": _get_backup_info()
     }
-@app.post("/api/send-email/{job_id}")
+@app.post("/api/send-email/{job_id}", tags=["Notifications"])
 async def send_email_route(job_id: str, request: Request):
     """Send files via email"""
     try:
@@ -1193,7 +1193,7 @@ async def logout(request: Request):
         status_code=303,
     )
 
-@app.get("/api/user", response_model=UserResponse)
+@app.get("/api/user", response_model=UserResponse, tags=["Auth"])
 async def get_current_user(request: Request):
     """Get current logged in user"""
     if 'user_id' in request.session:
