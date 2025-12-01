@@ -883,6 +883,112 @@ async def admin_page(request: Request):
         "audit_logs": audit_logs
     })
 
+@app.get("/admin/users", response_class=HTMLResponse, tags=["Admin"])
+async def admin_users_page(request: Request):
+    """User Management - nur für Admins"""
+    if "user_id" not in request.session:
+        return RedirectResponse(url="/login?next=/admin/users", status_code=303)
+    
+    from database import get_connection
+    conn = get_connection()
+    conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT u.*, COUNT(i.id) as invoice_count
+        FROM users u
+        LEFT JOIN jobs j ON u.id = j.user_id
+        LEFT JOIN invoices i ON j.job_id = i.job_id
+        GROUP BY u.id
+        ORDER BY u.created_at DESC
+    """)
+    users = cursor.fetchall()
+    
+    cursor.execute("SELECT COUNT(*) FROM users WHERE created_at > datetime('now', '-7 days')")
+    new_this_week = cursor.fetchone()[0]
+    conn.close()
+    
+    return templates.TemplateResponse("admin_users.html", {
+        "request": request,
+        "users": users,
+        "new_this_week": new_this_week
+    })
+
+@app.post("/api/admin/users", tags=["Admin"])
+async def create_user(request: Request):
+    """Neuen User anlegen"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    from database import get_connection
+    import hashlib
+    
+    data = await request.json()
+    password_hash = hashlib.sha256(data["password"].encode()).hexdigest()
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+        (data.get("name"), data["email"], password_hash))
+    conn.commit()
+    conn.close()
+    
+    return {"success": True}
+
+@app.put("/api/admin/users/{user_id}", tags=["Admin"])
+async def update_user_admin(user_id: int, request: Request):
+    """User bearbeiten"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    from database import get_connection
+    data = await request.json()
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET name = ?, email = ? WHERE id = ?",
+        (data.get("name"), data["email"], user_id))
+    conn.commit()
+    conn.close()
+    
+    return {"success": True}
+
+@app.post("/api/admin/users/{user_id}/toggle", tags=["Admin"])
+async def toggle_user_status(user_id: int, request: Request):
+    """User aktivieren/deaktivieren"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    from database import get_connection
+    data = await request.json()
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET is_active = ? WHERE id = ?", (data["is_active"], user_id))
+    conn.commit()
+    conn.close()
+    
+    return {"success": True}
+
+
+@app.get("/exports", response_class=HTMLResponse, tags=["Export"])
+async def export_history_page(request: Request):
+    """Export-Historie anzeigen"""
+    if "user_id" not in request.session:
+        return RedirectResponse(url="/login?next=/exports", status_code=303)
+    
+    from database import get_export_history, get_export_stats
+    
+    user_id = request.session["user_id"]
+    exports = get_export_history(user_id)
+    stats = get_export_stats(user_id)
+    
+    return templates.TemplateResponse("export_history.html", {
+        "request": request,
+        "exports": exports,
+        "stats": stats
+    })
+
 @app.get("/api/invoice/{invoice_id}")
 async def get_invoice(invoice_id: int):
     """Get single invoice for editing"""
@@ -2113,7 +2219,7 @@ async def export_job_xrechnung(job_id: str, request: Request):
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
     
-    from database import get_invoices_by_job
+    from database import get_invoices_by_job, log_export
     import zipfile
     import io
     
@@ -2133,6 +2239,7 @@ async def export_job_xrechnung(job_id: str, request: Request):
         
         zip_buffer.seek(0)
         log_audit(AuditAction.EXPORT_XRECHNUNG, user_id=request.session["user_id"], resource_type="job", resource_id=job_id, ip_address=request.client.host)
+        log_export(request.session["user_id"], job_id, "xrechnung", f"xrechnung_{job_id[:8]}.zip", len(zip_buffer.getvalue()), len(invoices), sum(i.get("betrag_brutto", 0) or 0 for i in invoices))
         return Response(
             content=zip_buffer.getvalue(),
             media_type="application/zip",
