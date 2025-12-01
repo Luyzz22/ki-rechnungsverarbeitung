@@ -101,6 +101,7 @@ from einvoice import generate_xrechnung, export_xrechnung_file, validate_xrechnu
 from rate_limiter import check_rate_limit, get_client_ip
 from api_keys import validate_api_key, create_api_key, list_api_keys, revoke_api_key
 from audit import log_audit, AuditAction, get_audit_logs
+from webhooks import create_webhook, get_webhooks, delete_webhook, trigger_webhooks, WebhookEvent
 
 @app.exception_handler(InvoiceAppError)
 async def invoice_app_error_handler(request, exc: InvoiceAppError):
@@ -1286,6 +1287,48 @@ async def delete_api_key(key_id: int, request: Request):
     success = revoke_api_key(key_id, request.session["user_id"])
     return {"success": success}
 
+
+# === Webhooks Management ===
+@app.get("/api/webhooks", tags=["Webhooks"])
+async def get_user_webhooks(request: Request):
+    """Liste alle Webhooks des Users"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    webhooks = get_webhooks(request.session["user_id"])
+    return {"webhooks": webhooks}
+
+@app.post("/api/webhooks", tags=["Webhooks"])
+async def create_new_webhook(request: Request):
+    """Erstellt einen neuen Webhook"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    url = data.get("url")
+    events = data.get("events", ["job.completed"])
+    name = data.get("name", "Webhook")
+    
+    if not url:
+        return JSONResponse({"error": "URL required"}, status_code=400)
+    
+    result = create_webhook(
+        user_id=request.session["user_id"],
+        url=url,
+        events=events,
+        name=name
+    )
+    
+    return {"success": True, "webhook": result}
+
+@app.delete("/api/webhooks/{webhook_id}", tags=["Webhooks"])
+async def delete_user_webhook(webhook_id: int, request: Request):
+    """Löscht einen Webhook"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    success = delete_webhook(webhook_id, request.session["user_id"])
+    return {"success": success}
 # CORS für Cross-Domain API Requests
 from starlette.middleware.cors import CORSMiddleware
 
