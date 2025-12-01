@@ -445,3 +445,93 @@ def send_sendgrid_email(user_email: str, job_data: dict, stats: dict) -> bool:
     except Exception as e:
         logger.error(f"❌ SendGrid error: {e}")
         return False
+
+
+class LowConfidenceNotifier:
+    """Benachrichtigt bei Rechnungen mit niedriger KI-Konfidenz"""
+    
+    THRESHOLD = 0.5  # Unter 50% = Warnung
+    
+    @staticmethod
+    def check_and_notify(job_id: str, invoices: list, config: dict = None):
+        """
+        Prüft Invoices auf niedrige Konfidenz und sendet ggf. Warnung.
+        
+        Args:
+            job_id: Job-ID
+            invoices: Liste der Rechnungen
+            config: Notification-Konfiguration
+        """
+        low_conf = [
+            inv for inv in invoices 
+            if (inv.get('confidence') or 0) < LowConfidenceNotifier.THRESHOLD
+        ]
+        
+        if not low_conf:
+            logger.info(f"✅ Job {job_id}: Alle Rechnungen haben hohe Konfidenz")
+            return
+        
+        logger.warning(
+            f"⚠️ Job {job_id}: {len(low_conf)} Rechnungen mit niedriger Konfidenz (<{LowConfidenceNotifier.THRESHOLD*100}%)"
+        )
+        
+        # Details loggen
+        for inv in low_conf:
+            conf = inv.get('confidence', 0) * 100
+            nr = inv.get('rechnungsnummer') or inv.get('invoice_number') or 'unbekannt'
+            logger.warning(f"   - Rechnung {nr}: {conf:.0f}% Konfidenz")
+        
+        # Optional: Email senden
+        if config and config.get('email', {}).get('enabled'):
+            LowConfidenceNotifier._send_warning_email(job_id, low_conf, config)
+    
+    @staticmethod
+    def _send_warning_email(job_id: str, low_conf_invoices: list, config: dict):
+        """Sendet Warn-Email für niedrige Konfidenz."""
+        if not SENDGRID_AVAILABLE:
+            return
+        
+        api_key = os.getenv('SENDGRID_API_KEY')
+        if not api_key:
+            return
+        
+        to_addresses = config.get('email', {}).get('to_addresses', [])
+        if not to_addresses:
+            return
+        
+        # Email-Inhalt
+        invoice_list = "\n".join([
+            f"• {inv.get('rechnungsnummer', 'unbekannt')}: {(inv.get('confidence', 0) * 100):.0f}% Konfidenz"
+            for inv in low_conf_invoices[:10]  # Max 10
+        ])
+        
+        html_content = f"""
+        <h2>⚠️ Rechnungen mit niedriger KI-Konfidenz</h2>
+        <p><strong>Job-ID:</strong> {job_id}</p>
+        <p><strong>Anzahl:</strong> {len(low_conf_invoices)} Rechnungen unter 50% Konfidenz</p>
+        <h3>Betroffene Rechnungen:</h3>
+        <pre>{invoice_list}</pre>
+        <p style="color: #666;">
+            Bitte prüfen Sie diese Rechnungen manuell in der 
+            <a href="https://app.sbsdeutschland.com/job/{job_id}">Job-Übersicht</a>.
+        </p>
+        """
+        
+        try:
+            message = Mail(
+                from_email='info@sbsdeutschland.com',
+                to_emails=to_addresses,
+                subject=f'⚠️ {len(low_conf_invoices)} Rechnungen benötigen Prüfung - Job {job_id[:8]}',
+                html_content=html_content
+            )
+            
+            sg = SendGridAPIClient(api_key)
+            sg.send(message)
+            logger.info(f"📧 Low-Confidence Warnung gesendet für Job {job_id}")
+        except Exception as e:
+            logger.error(f"❌ Email-Versand fehlgeschlagen: {e}")
+
+
+def check_low_confidence(job_id: str, invoices: list, config: dict = None):
+    """Shortcut-Funktion für LowConfidenceNotifier."""
+    LowConfidenceNotifier.check_and_notify(job_id, invoices, config)

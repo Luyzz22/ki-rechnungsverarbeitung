@@ -78,7 +78,7 @@ from invoice_core import Config, InvoiceProcessor, calculate_statistics
 from export import ExportManager
 from dashboard import generate_dashboard
 from datev_exporter import export_to_datev
-from notifications import send_notifications
+from notifications import send_notifications, check_low_confidence
 
 # FastAPI App
 app = FastAPI(
@@ -363,7 +363,7 @@ async def process_invoices_background(job_id: str):
     
     # Email Notification
     try:
-        from notifications import send_notifications
+        from notifications import send_notifications, check_low_confidence
         notification_config = config.config.get('notifications', {})
         if notification_config.get('email', {}).get('enabled', False):
             send_notifications(config.config, stats, exported_files)
@@ -412,6 +412,8 @@ async def process_invoices_background(job_id: str):
     if results:
         logger.info(f"💾 Saving {len(results)} invoices to database")
         save_invoices(job_id, enriched_results)
+        # Low-Confidence Warnung prüfen
+        check_low_confidence(job_id, enriched_results, config.config if config else None)
         logger.info(f"✅ Invoices saved successfully")
         
         # Check for duplicates (Hash + AI)
@@ -618,7 +620,7 @@ async def send_email_route(job_id: str, request: Request):
         email_config['notifications']['email']['to_addresses'] = emails
         
         # Sende Email
-        from notifications import send_notifications
+        from notifications import send_notifications, check_low_confidence
         result = send_notifications(email_config, stats, exported_files)
         
         if result.get('email'):
