@@ -417,6 +417,18 @@
       </div>
     </div>
     
+    <!-- Charts Row 4 - KI Analytics -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>🤖 KI-Konfidenz Verteilung</h3>
+        <canvas id="confidenceChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>⚡ Verarbeitungs-Methode</h3>
+        <canvas id="methodChart"></canvas>
+      </div>
+    </div>
+    
   </div>
 </section>
 
@@ -726,6 +738,64 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 
+<script>
+// KI-Konfidenz Chart
+(function() {
+  const canvas = document.getElementById("confidenceChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  
+  // Daten aus Backend (Platzhalter - wird vom Backend gefüllt)
+  const confData = {{ confidence_distribution | default([30, 15, 5]) | tojson }};
+  
+  new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["Hoch (≥80%)", "Mittel (50-79%)", "Niedrig (<50%)"],
+      datasets: [{
+        data: confData,
+        backgroundColor: ["#10b981", "#f59e0b", "#ef4444"],
+        borderWidth: 2,
+        borderColor: "#fff"
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom" }
+      }
+    }
+  });
+})();
+
+// Verarbeitungs-Methode Chart
+(function() {
+  const canvas = document.getElementById("methodChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  
+  const methodData = {{ method_distribution | default([85, 15]) | tojson }};
+  
+  new Chart(ctx, {
+    type: "pie",
+    data: {
+      labels: ["Text-Extraktion", "Vision-Extraktion"],
+      datasets: [{
+        data: methodData,
+        backgroundColor: ["#4E79A7", "#F28E2B"],
+        borderWidth: 2,
+        borderColor: "#fff"
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom" }
+      }
+    }
+  });
+})();
+</script>
 
 
 
