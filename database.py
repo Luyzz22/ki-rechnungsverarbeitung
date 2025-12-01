@@ -2013,3 +2013,65 @@ def update_job_status(job_id: str, status: str, **extra_fields) -> bool:
     invalidate_cache("monthly_summary")
     conn.close()
     return success
+
+
+def get_confidence_distribution(user_id: int = None) -> dict:
+    """Holt KI-Konfidenz-Verteilung für Analytics."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    query = """
+        SELECT 
+            SUM(CASE WHEN confidence >= 0.8 THEN 1 ELSE 0 END) as high,
+            SUM(CASE WHEN confidence >= 0.5 AND confidence < 0.8 THEN 1 ELSE 0 END) as medium,
+            SUM(CASE WHEN confidence < 0.5 OR confidence IS NULL THEN 1 ELSE 0 END) as low
+        FROM invoices
+    """
+    
+    if user_id:
+        query += " JOIN jobs ON invoices.job_id = jobs.job_id WHERE jobs.user_id = ?"
+        cursor.execute(query, (user_id,))
+    else:
+        cursor.execute(query)
+    
+    row = cursor.fetchone()
+    conn.close()
+    
+    return {
+        'high': row[0] or 0,
+        'medium': row[1] or 0,
+        'low': row[2] or 0,
+        'distribution': [row[0] or 0, row[1] or 0, row[2] or 0]
+    }
+
+
+def get_method_distribution(user_id: int = None) -> dict:
+    """Holt Verarbeitungs-Methoden-Verteilung für Analytics."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Prüfe ob source_format vorhanden ist
+    query = """
+        SELECT 
+            SUM(CASE WHEN source_format = 'vision' THEN 1 ELSE 0 END) as vision,
+            SUM(CASE WHEN source_format != 'vision' OR source_format IS NULL THEN 1 ELSE 0 END) as text
+        FROM invoices
+    """
+    
+    if user_id:
+        query += " JOIN jobs ON invoices.job_id = jobs.job_id WHERE jobs.user_id = ?"
+        cursor.execute(query, (user_id,))
+    else:
+        cursor.execute(query)
+    
+    row = cursor.fetchone()
+    conn.close()
+    
+    text_count = row[1] or 0
+    vision_count = row[0] or 0
+    
+    return {
+        'text': text_count,
+        'vision': vision_count,
+        'distribution': [text_count, vision_count]
+    }

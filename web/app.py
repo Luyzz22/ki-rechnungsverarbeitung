@@ -790,7 +790,7 @@ async def job_details_page_old(request: Request, job_id: str):
 @app.get("/analytics", response_class=HTMLResponse)
 async def analytics_page(request: Request):
     """Expense analytics dashboard"""
-    from database import get_analytics_data, get_analytics_insights
+    from database import get_analytics_data, get_analytics_insights, get_confidence_distribution, get_method_distribution
     
     data = get_analytics_data()
     
@@ -801,7 +801,9 @@ async def analytics_page(request: Request):
         "monthly_values": data['monthly_values'],
         "top_suppliers": data['top_suppliers'],
         "weekday_data": data['weekday_data'],
-        "insights": get_analytics_insights()
+        "insights": get_analytics_insights(),
+        "confidence_distribution": get_confidence_distribution()["distribution"],
+        "method_distribution": get_method_distribution()["distribution"]
     })
 
 @app.get("/api/invoice/{invoice_id}")
