@@ -99,6 +99,7 @@ from models import Invoice, InvoiceStatus, Job, JobStatus
 from schemas import JobStatusResponse, JobResultsResponse, UserResponse, SuccessResponse, ErrorResponse
 from einvoice import generate_xrechnung, export_xrechnung_file, validate_xrechnung as validate_xrechnung_new
 from rate_limiter import check_rate_limit, get_client_ip
+from api_keys import validate_api_key, create_api_key, list_api_keys, revoke_api_key
 
 @app.exception_handler(InvoiceAppError)
 async def invoice_app_error_handler(request, exc: InvoiceAppError):
@@ -1244,6 +1245,43 @@ async def change_password(request: Request):
         return {"success": True}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+# === API Keys Management ===
+@app.get("/api/keys", tags=["API Keys"])
+async def get_api_keys(request: Request):
+    """Liste alle API-Keys des Users"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    keys = list_api_keys(request.session["user_id"])
+    return {"keys": keys}
+
+@app.post("/api/keys", tags=["API Keys"])
+async def create_new_api_key(request: Request):
+    """Erstellt einen neuen API-Key"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    name = data.get("name", "API Key")
+    permissions = data.get("permissions", "read")
+    
+    result = create_api_key(
+        user_id=request.session["user_id"],
+        name=name,
+        permissions=permissions
+    )
+    
+    return {"success": True, "key": result}
+
+@app.delete("/api/keys/{key_id}", tags=["API Keys"])
+async def delete_api_key(key_id: int, request: Request):
+    """Widerruft einen API-Key"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    success = revoke_api_key(key_id, request.session["user_id"])
+    return {"success": success}
 
 # CORS für Cross-Domain API Requests
 from starlette.middleware.cors import CORSMiddleware
