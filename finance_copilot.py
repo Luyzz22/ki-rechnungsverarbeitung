@@ -8,6 +8,7 @@ Wichtig:
 """
 
 from __future__ import annotations
+import re
 
 from typing import Any, Dict, List
 
@@ -186,359 +187,348 @@ def _default_suggested_questions(days: int) -> List[str]:
 # Hauptfunktion – wird vom API-Endpoint genutzt
 # ---------------------------------------------------------------------------
 
-def generate_finance_answer(question: str, days: int = 90) -> Dict[str, Any]:
+
+def _infer_days_from_question(question: str, default_days: int) -> int:
     """
-    Erzeugt eine kompakte, deutschsprachige Finance-Antwort rein auf Basis der
-    Rechnungsdaten.
-
-    - nutzt analytics_service.get_finance_snapshot(days)
-    - KEINE externen Modellaufrufe
-    - perfekt für Live-Copilot im Analytics-Dashboard
+    Versucht aus der Frage (z.B. "letzten 6 Monaten") den Zeitraum
+    in Tagen abzuleiten. Fällt sonst auf default_days zurück.
     """
-    snapshot = get_finance_snapshot(days=days)
+    if not question:
+        return default_days
 
-    kpis = snapshot.get("kpis", {}) or {}
-    total_invoices = int(kpis.get("total_invoices") or 0)
+    q = question.lower()
 
-    # Spezieller Fall: im gewählten Zeitraum gibt es keine Rechnungen
-    if total_invoices == 0:
-        answer = (
-            "Für den gewählten Zeitraum liegen noch keine verarbeiteten Rechnungen vor. "
-            "Bitte laden Sie Rechnungen hoch oder wählen Sie einen längeren Zeitraum "
-            "(z. B. 90 oder 365 Tage)."
-        )
-        result = FinanceCopilotResult(
-            answer=answer,
-            question=question,
-            days=days,
-            snapshot=snapshot,
-            suggested_questions=[
-                "Gib mir einen Überblick über unsere Ausgaben der letzten 90 Tage.",
-                "Wie haben sich unsere Ausgaben in den letzten Monaten entwickelt?",
-                "Welche Lieferanten verursachen aktuell die höchsten Kosten?"
-            ],
-            intent="no_data",
-        )
-        return result.to_dict()
+    # Generisches Muster: "letzten 6 Monaten", "letzte 30 Tage", ...
+    m = re.search(r"letzte?n?\s+(\d+)\s*(tage|tagen|wochen|monaten|monate|jahren|jahre)", q)
+    if m:
+        try:
+            value = int(m.group(1))
+        except ValueError:
+            value = None
+        unit = m.group(2)
+        if value is not None:
+            if "tag" in unit:
+                return max(1, min(value, 365))
+            if "woch" in unit:
+                return max(1, min(value * 7, 365))
+            if "monat" in unit:
+                return max(1, min(value * 30, 365))
+            if "jahr" in unit:
+                return max(1, min(value * 365, 3 * 365))
 
+    # Häufige feste Phrasen
+    if "letzten 6 monaten" in q or "letzte 6 monate" in q:
+        return 180
+    if "letzten 12 monaten" in q or "letzte 12 monate" in q or "letzten zwölf monaten" in q:
+        return 365
+    if "letzten jahr" in q or "letzte jahr" in q:
+        return 365
+    if "letzten 90 tagen" in q or "90 tage" in q:
+        return max(1, min(default_days, 365))
+    if "letzten 30 tagen" in q or "30 tage" in q:
+        return 30
 
-    kpis = snapshot.get("kpis", {}) or {}
-    total_invoices = int(kpis.get("total_invoices") or 0)
+    return default_days
 
-    # Spezieller Fall: im gewählten Zeitraum gibt es keine Rechnungen
-    if total_invoices == 0:
-        answer = (
-            "Für den gewählten Zeitraum liegen noch keine verarbeiteten Rechnungen vor. "
-            "Bitte laden Sie Rechnungen hoch oder wählen Sie einen längeren Zeitraum "
-            "(z. B. 90 oder 365 Tage)."
-        )
-        result = FinanceCopilotResult(
-            answer=answer,
-            question=question,
-            days=days,
-            snapshot=snapshot,
-            suggested_questions=[
-                "Gib mir einen Überblick über unsere Ausgaben der letzten 90 Tage.",
-                "Wie haben sich unsere Ausgaben in den letzten Monaten entwickelt?",
-                "Welche Lieferanten verursachen aktuell die höchsten Kosten?"
-            ],
-            intent="no_data",
-        )
-        return result.to_dict()
+# === FINAL CEO-level generate_finance_answer ===
+def generate_finance_answer(question, days=90):
+    """
+    CEO/CFO-ready answer based on finance snapshot.
+    Returns dict with: answer, question, days, snapshot, suggested_questions.
+    """
+    # local helpers
+    def _describe_period(d):
+        if d <= 1:
+            return "heute"
+        if d <= 7:
+            return f"den letzten {d} Tagen"
+        if 25 <= d <= 35:
+            return "den letzten 30 Tagen"
+        if 80 <= d <= 100:
+            return "den letzten 90 Tagen"
+        if 160 <= d <= 200:
+            return "den letzten 6 Monaten"
+        if 340 <= d <= 380:
+            return "den letzten 12 Monaten"
+        return f"den letzten {d} Tagen"
 
-    kpis = snapshot.get("kpis", {})
-    top_vendors = snapshot.get("top_vendors", [])
-    monthly_trend = snapshot.get("monthly_trend", [])
+    def _fmt_eur(value):
+        try:
+            x = float(value or 0.0)
+        except Exception:
+            x = 0.0
+        s = f"{x:,.2f}"
+        s = s.replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"{s} €"
 
-    intent = classify_intent(question)
+    def _safe_int(x):
+        try:
+            return int(x or 0)
+        except Exception:
+            return 0
 
-    answer_parts: List[str] = []
+    def _safe_float(x):
+        try:
+            return float(x or 0.0)
+        except Exception:
+            return 0.0
 
-    # 1) Überblick bildet das Rückgrat fast aller Antworten
-    overview_text = _build_overview_text(kpis, days)
-    answer_parts.append(overview_text)
-
-    # 2) Intent-spezifische Ergänzungen
-    if intent == "top_vendors":
-        answer_parts.append(_build_top_vendor_text(top_vendors))
-    elif intent == "vat_focus":
-        vat_text = _build_vat_text(kpis)
-        if vat_text:
-            answer_parts.append(vat_text)
-        else:
-            answer_parts.append(
-                "Aktuell liegen nicht genügend Daten vor, um eine sinnvolle Mehrwertsteuer-Auswertung zu berechnen."
-            )
-    elif intent == "trend":
-        trend_text = _build_trend_text(monthly_trend)
-        if trend_text:
-            answer_parts.append(trend_text)
-    elif intent == "overview":
-        # Überblick ist schon abgedeckt – optional Trend ergänzen
-        trend_text = _build_trend_text(monthly_trend)
-        if trend_text:
-            answer_parts.append(trend_text)
-    else:
-        # generic: kurzer Hinweis plus Trend, falls vorhanden
-        trend_text = _build_trend_text(monthly_trend)
-        if trend_text:
-            answer_parts.append(trend_text)
-
-    # 3) Abschluss mit Follow-up-Ideen
-    answer_parts.append(
-        "Stellen Sie mir gerne eine spezifische Frage, z.B.: "
-        "„Welche Lieferanten sind aktuell am teuersten?“, "
-        "„Wie haben sich unsere Ausgaben in den letzten Monaten entwickelt?“ "
-        "oder „Wie viel Mehrwertsteuer steckt in den letzten 12 Monaten?“."
-    )
-
-    answer = " ".join(part for part in answer_parts if part)
-
-    result: Dict[str, Any] = {
-        "answer": answer,
-        "question": question,
-        "days": days,
-        "snapshot": snapshot,
-        "suggested_questions": _default_suggested_questions(days),
-        "intent": intent,
-    }
-    return result
-
-
-if __name__ == "__main__":
-    # Mini-Selbsttest
-    demo_questions = [
-        "Kurzer Überblick über unsere Ausgaben, bitte.",
-        "Wer sind unsere teuersten Lieferanten?",
-        "Wie viel Mehrwertsteuer steckt im letzten Jahr?",
-        "Wie haben sich unsere Ausgaben in den letzten Monaten entwickelt?",
-    ]
-    for q in demo_questions:
-        res = generate_finance_answer(q, days=365)
-        print("==== Frage:", q)
-        print(res["answer"])
-        print("Intent:", res["intent"])
-        print()
-
-# ---------------------------------------------------------------------------
-# Robuste Finance-Copilot-Antwort (überschreibt frühere Implementationen)
-# ---------------------------------------------------------------------------
-from typing import Any, Dict, List
-
-
-def _fc_format_eur(value: Any) -> str:
-    """Einfache EUR-Formatierung im de-DE Stil, z.B. 14141.65 -> '14.141,65 €'."""
+    # optionally infer days from question, if helper exists
     try:
-        number = float(value or 0.0)
-    except (TypeError, ValueError):
-        number = 0.0
-    s = f"{number:,.2f}"            # 14141.65 -> '14,141.65'
-    s = s.replace(",", "X").replace(".", ",").replace("X", ".")
-    return s + " €"
+        infer = globals().get("_infer_days_from_question")
+        if callable(infer):
+            days = infer(question, days)
+    except Exception:
+        pass
 
-
-def _fc_describe_period(days: int) -> str:
-    """Lesbarer Zeitraum-Text für die Antwort."""
-    try:
-        d = int(days)
-    except (TypeError, ValueError):
-        d = 90
-    if d >= 365:
-        return "die letzten 12 Monate"
-    if d == 30:
-        return "die letzten 30 Tage"
-    if d == 90:
-        return "die letzten 90 Tage"
-    return f"die letzten {d} Tage"
-
-
-def _fc_detect_intent(question: str) -> str:
-    """Sehr einfache Intent-Erkennung aus der Frage."""
-    q = (question or "").lower()
-    if "mehrwertsteuer" in q or "mwst" in q or "mwst." in q:
-        return "vat"
-    if "lieferant" in q or "lieferanten" in q:
-        return "suppliers"
-    if "trend" in q or "verlauf" in q or "entwicklung" in q or "monaten" in q:
-        return "trend"
-    if "überblick" in q or "ueberblick" in q or "kurzer" in q:
-        return "overview"
-    return "overview"
-
-
-def generate_finance_answer(question: str, days: int = 90) -> Dict[str, Any]:
-    """
-    Robuste, regelbasierte Antwortgenerierung für den Finance Copilot.
-
-    - Nutzt analytics_service.get_finance_snapshot()
-    - Erkennt einfache Intents (Overview, Suppliers, VAT, Trend) aus der Frage
-    - Behandelt den No-Data-Fall explizit, ohne Exceptions zu werfen
-    """
-    # Lazy-Import, damit es keine Zyklen gibt
+    # import inside function to avoid circulars
     from analytics_service import get_finance_snapshot
 
-    # Tage-Fenster absichern
-    try:
-        d = int(days or 90)
-    except (TypeError, ValueError):
-        d = 90
-    if d < 1:
-        d = 1
-    if d > 365:
-        d = 365
+    snapshot = get_finance_snapshot(days=days) or {}
+    kpis = snapshot.get("kpis", {}) or {}
+    top_vendors = snapshot.get("top_vendors") or []
+    monthly_trend = snapshot.get("monthly_trend") or []
 
-    snapshot = get_finance_snapshot(days=d)
-    kpis = snapshot.get("kpis") or {}
+    total_invoices = _safe_int(kpis.get("total_invoices"))
+    total_gross = _safe_float(kpis.get("total_gross"))
+    total_net = _safe_float(kpis.get("total_net"))
+    total_vat = _safe_float(kpis.get("total_vat"))
+    duplicates = _safe_int(kpis.get("duplicates_count"))
 
-    def _num(key: str, default: float = 0.0) -> float:
-        try:
-            return float(kpis.get(key, default) or 0.0)
-        except (TypeError, ValueError):
-            return float(default)
-
-    def _int(key: str, default: int = 0) -> int:
-        try:
-            return int(kpis.get(key, default) or 0)
-        except (TypeError, ValueError):
-            return int(default)
-
-    total_invoices = _int("total_invoices", 0)
-    total_gross = _num("total_gross", 0.0)
-    total_net = _num("total_net", 0.0)
-    total_vat = _num("total_vat", 0.0)
-    duplicates = _int("duplicates_count", 0)
-
-    period_text = _fc_describe_period(d)
-
-    # ---------- No-Data-Case ----------
+    # no-data case
     if total_invoices == 0:
+        period_text = _describe_period(days)
         answer = (
             f"Für {period_text} liegen in SBS KI-Rechnungsverarbeitung aktuell keine verarbeiteten "
-            f"Eingangsrechnungen vor. "
-            "Sobald erste Rechnungen verarbeitet wurden, kann der Finance Copilot beispielsweise Fragen beantworten wie:\n"
+            "Eingangsrechnungen vor. Sobald erste Rechnungen in diesem Zeitraum vorhanden sind, "
+            "kann der Finance Copilot u.a. folgende Fragen beantworten:\n"
             "• \"Kurzer Überblick über unsere Ausgaben der letzten 90 Tage\"\n"
             "• \"Wer sind unsere teuersten Lieferanten?\"\n"
             "• \"Wie haben sich unsere Ausgaben in den letzten Monaten entwickelt?\"\n"
-            "• \"Wie viel Mehrwertsteuer steckt in den letzten 12 Monaten?\"\n"
+            "• \"Wie viel Mehrwertsteuer steckt in den letzten 12 Monaten?\""
         )
-        suggested = [
-            "Kurzer Überblick über unsere Ausgaben der letzten 90 Tage.",
-            "Wer sind unsere teuersten Lieferanten?",
-            "Wie haben sich unsere Ausgaben in den letzten 6 Monaten entwickelt?",
-            "Wie viel Mehrwertsteuer steckt in den letzten 12 Monaten?",
-        ]
         return {
             "answer": answer,
             "question": question,
-            "days": d,
+            "days": days,
             "snapshot": snapshot,
-            "suggested_questions": suggested,
+            "suggested_questions": [
+                "Kurzer Überblick über unsere Ausgaben der letzten 90 Tage.",
+                "Wer sind unsere teuersten Lieferanten?",
+                "Wie haben sich unsere Ausgaben in den letzten 6 Monaten entwickelt?",
+                "Wie viel Mehrwertsteuer steckt in den letzten 12 Monaten?",
+            ],
         }
 
-    # ---------- Mit Daten ----------
-    intent = _fc_detect_intent(question or "")
-    top_vendors: List[Dict[str, Any]] = snapshot.get("top_vendors") or []
-    monthly_trend: List[Dict[str, Any]] = snapshot.get("monthly_trend") or []
+    period_text = _describe_period(days)
 
-    base = (
-        f"In den letzten {d} Tagen wurden insgesamt {total_invoices} Rechnungen "
-        f"mit einem Bruttogesamtbetrag von rund {_fc_format_eur(total_gross)} verarbeitet. "
-        f"Der Nettobetrag liegt bei ca. {_fc_format_eur(total_net)}, "
-        f"darin enthalten sind etwa {_fc_format_eur(total_vat)} Mehrwertsteuer. "
-        f"Davon wurden {duplicates} Rechnungen als potenzielle Dubletten markiert. "
-        "Diese sollten vor der Zahlung noch einmal geprüft werden."
+    vat_rate = (total_vat / total_net * 100.0) if total_net > 0 else None
+
+    intro_parts = []
+    focus_points = []
+
+    intro_parts.append(
+        f"In SBS KI-Rechnungsverarbeitung wurden in {period_text} insgesamt {total_invoices} Rechnungen "
+        f"mit einem Bruttogesamtbetrag von {_fmt_eur(total_gross)} verarbeitet."
     )
 
-    vendor_sentence = ""
+    if total_net:
+        if vat_rate is not None:
+            intro_parts.append(
+                f" Der Nettobetrag liegt bei etwa {_fmt_eur(total_net)}, darin enthalten sind "
+                f"ungefähr {_fmt_eur(total_vat)} Mehrwertsteuer "
+                f"(effektive MwSt-Quote rund {vat_rate:.1f} %)."
+            )
+            if vat_rate > 19.5:
+                focus_points.append("MwSt-Quote liegt spürbar über dem Standard von 19 %, mögliche Sondersteuersätze prüfen.")
+        else:
+            intro_parts.append(
+                f" Der Nettobetrag liegt bei etwa {_fmt_eur(total_net)}."
+            )
+    elif total_vat:
+        intro_parts.append(
+            f" Enthalten sind rund {_fmt_eur(total_vat)} Mehrwertsteuer."
+        )
+
+    if duplicates > 0:
+        dup_share = duplicates / float(total_invoices) * 100.0
+        intro_parts.append(
+            f" {duplicates} Rechnung(en) wurden als potenzielle Dubletten markiert "
+            f"(ca. {dup_share:.1f} % der Rechnungen) und sollten vor der Zahlung geprüft werden."
+        )
+        if dup_share >= 5:
+            focus_points.append("Dublettenquote liegt im auffälligen Bereich – Prozessqualität im Rechnungseingang prüfen.")
+
+    # vendor analysis
+    vendor_parts = []
+    main_share = None
     if top_vendors:
-        top = top_vendors[0]
-        name = top.get("rechnungsaussteller") or "Ihr größter Lieferant"
-        try:
-            inv_count = int(top.get("invoice_count") or 0)
-        except (TypeError, ValueError):
-            inv_count = 0
-        gross_vendor = _fc_format_eur(top.get("total_gross") or 0.0)
-        vendor_sentence = (
-            f" Ihr größter Lieferant im Zeitraum ist {name} "
-            f"mit {inv_count} Rechnung(en) und einem Volumen von rund {gross_vendor}."
+        main_vendor = top_vendors[0]
+        main_name = main_vendor.get("rechnungsaussteller") or "Ihr Hauptlieferant"
+        main_brutto = _safe_float(main_vendor.get("total_gross"))
+        main_share = (main_brutto / total_gross * 100.0) if total_gross > 0 else None
+
+        v_sentence = (
+            f"Ihr größter Lieferant im betrachteten Zeitraum ist {main_name} "
+            f"mit einem Volumen von {_fmt_eur(main_brutto)}"
         )
-
-    trend_sentence = ""
-    if len(monthly_trend) >= 2:
-        last = monthly_trend[-1]
-        prev = monthly_trend[-2]
-        last_month = last.get("year_month") or "letzten Monat"
-        prev_month = prev.get("year_month") or "Vormonat"
-        try:
-            last_total = float(last.get("total_gross") or 0.0)
-            prev_total = float(prev.get("total_gross") or 0.0)
-        except (TypeError, ValueError):
-            last_total = prev_total = 0.0
-        delta = last_total - prev_total
-        if abs(delta) > 0.01:
-            richtung = "höher" if delta > 0 else "niedriger"
-            trend_sentence = (
-                f" Die Ausgaben im letzten Monat ({last_month}) lagen "
-                f"{_fc_format_eur(abs(delta))} {richtung} als im Vormonat ({prev_month})."
-            )
-
-    # Intent-spezifische Ergänzungen
-    intent_tail = ""
-    if intent == "suppliers":
-        if top_vendors:
-            names = [
-                (v.get("rechnungsaussteller") or "Unbekannter Lieferant")
-                for v in top_vendors[:3]
-            ]
-            intent_tail = (
-                " Im Fokus stehen dabei insbesondere folgende Lieferanten: "
-                + ", ".join(names)
-                + "."
-            )
+        if main_share is not None:
+            v_sentence += f", das entspricht rund {main_share:.1f} % Ihres gesamten Rechnungsvolumens."
         else:
-            intent_tail = (
-                " Aktuell liegen im gewählten Zeitraum keine größeren Lieferantenkonzentrationen vor."
-            )
-    elif intent == "vat":
-        quote = 0.0
-        if total_net > 0:
-            quote = (total_vat / total_net) * 100.0
-        intent_tail = (
-            f" Insgesamt steckt in diesem Zeitraum Mehrwertsteuer in Höhe von {_fc_format_eur(total_vat)} "
-            f"in Ihren Rechnungen, das entspricht einer MwSt-Quote von grob {quote:.1f} % bezogen auf den Nettobetrag."
+            v_sentence += "."
+        vendor_parts.append(v_sentence)
+
+        if main_share is not None and main_share >= 40:
+            focus_points.append("Kosten sind stark auf einen einzelnen Lieferanten konzentriert – Konditionen und Abhängigkeiten prüfen.")
+
+        if len(top_vendors) > 1:
+            top3 = top_vendors[:3]
+            top3_sum = sum(_safe_float(v.get("total_gross")) for v in top3)
+            top3_share = (top3_sum / total_gross * 100.0) if total_gross > 0 else None
+            if top3_share is not None:
+                vendor_parts.append(
+                    f" Die Top-{len(top3)} Lieferanten stehen gemeinsam für etwa "
+                    f"{top3_share:.1f} % der Ausgaben in diesem Zeitraum."
+                )
+                if top3_share >= 70:
+                    focus_points.append("Ein Großteil der Ausgaben bündelt sich auf wenige Lieferanten – strategische Lieferantensteuerung sinnvoll.")
+
+    # trend analysis
+    trend_parts = []
+    if monthly_trend:
+        months_sorted = sorted(
+            monthly_trend,
+            key=lambda m: (m.get("year_month") or "")
         )
-    elif intent == "trend":
-        if trend_sentence:
-            intent_tail = trend_sentence
-        else:
-            intent_tail = (
-                " Für eine aussagekräftige Trendanalyse benötigen wir mindestens zwei unterschiedliche Monate mit Daten."
+        months_with_value = [
+            m for m in months_sorted if _safe_float(m.get("total_gross")) > 0
+        ]
+
+        spend_trend = None  # "up", "down", "flat"
+
+        if months_with_value:
+            first = months_with_value[0]
+            last = months_with_value[-1]
+            first_val = _safe_float(first.get("total_gross"))
+            last_val = _safe_float(last.get("total_gross"))
+
+            avg_month = (
+                sum(_safe_float(m.get("total_gross")) for m in months_sorted)
+                / float(len(months_sorted))
             )
 
-    # Für Overview, Suppliers, VAT nehmen wir Basis + Vendor + Trend, plus Intent-Tail.
-    full_answer = base + vendor_sentence + trend_sentence
-    if intent in ("suppliers", "vat", "trend"):
-        full_answer += intent_tail
+            max_month = max(
+                months_sorted, key=lambda m: _safe_float(m.get("total_gross"))
+            )
+            min_month = min(
+                months_sorted, key=lambda m: _safe_float(m.get("total_gross"))
+            )
 
-    full_answer += (
-        " Stellen Sie mir gerne eine spezifische Frage, z.B.: "
-        "„Welche Lieferanten sind aktuell am teuersten?“, "
-        "„Wie haben sich unsere Ausgaben in den letzten Monaten entwickelt?“ "
-        "oder „Wie viel Mehrwertsteuer steckt in den letzten 12 Monaten?“. "
-    )
+            def _month_label(m):
+                return m.get("year_month") or ""
 
-    suggested = [
-        "Gib mir einen Überblick über unsere Ausgaben der letzten 90 Tage.",
+            delta = last_val - first_val
+            if abs(delta) < 1e-6:
+                trend_parts.append(
+                    f"Über den betrachteten Zeitraum blieb das monatliche Ausgabenvolumen relativ stabil "
+                    f"(Startmonat {_month_label(first)} und letzter Monat {_month_label(last)} liegen beide bei "
+                    f"{_fmt_eur(last_val)})."
+                )
+                spend_trend = "flat"
+            elif delta > 0:
+                trend_parts.append(
+                    f"Über den Zeitraum ist ein Anstieg der Ausgaben zu sehen: "
+                    f"vom Startmonat {_month_label(first)} mit {_fmt_eur(first_val)} "
+                    f"auf {_fmt_eur(last_val)} im letzten Monat {_month_label(last)}."
+                )
+                spend_trend = "up"
+            else:
+                trend_parts.append(
+                    f"Über den Zeitraum ist ein Rückgang der Ausgaben zu sehen: "
+                    f"vom Startmonat {_month_label(first)} mit {_fmt_eur(first_val)} "
+                    f"auf {_fmt_eur(last_val)} im letzten Monat {_month_label(last)}."
+                )
+                spend_trend = "down"
+
+            if avg_month > 0:
+                if last_val > avg_month * 1.1:
+                    trend_parts.append(
+                        f"Der letzte Monat lag mit {_fmt_eur(last_val)} deutlich über Ihrem Durchschnitt von "
+                        f"rund {_fmt_eur(avg_month)} pro Monat."
+                    )
+                elif last_val < avg_month * 0.9:
+                    trend_parts.append(
+                        f"Der letzte Monat lag mit {_fmt_eur(last_val)} klar unter Ihrem Durchschnitt von "
+                        f"rund {_fmt_eur(avg_month)} pro Monat."
+                    )
+                else:
+                    trend_parts.append(
+                        f"Der letzte Monat lag mit {_fmt_eur(last_val)} in etwa auf Höhe Ihres Durchschnitts "
+                        f"von {_fmt_eur(avg_month)} pro Monat."
+                    )
+
+            max_val = _safe_float(max_month.get("total_gross"))
+            min_val = _safe_float(min_month.get("total_gross"))
+            if max_val > 0:
+                trend_parts.append(
+                    f"Der umsatzstärkste Monat im Zeitraum war {_month_label(max_month)} "
+                    f"mit {_fmt_eur(max_val)}, der schwächste Monat {_month_label(min_month)} "
+                    f"mit {_fmt_eur(min_val)}."
+                )
+
+            if spend_trend == "up":
+                focus_points.append("Ausgaben zeigen einen Aufwärtstrend – Budgetsteuerung und Ursachenanalyse empfehlenswert.")
+            elif spend_trend == "down":
+                focus_points.append("Ausgaben sind rückläufig – Einsparungen und Effizienzgewinne verifizieren und sichern.")
+
+    # assemble narrative
+    answer_parts = []
+    answer_parts.append("".join(intro_parts))
+    if vendor_parts:
+        answer_parts.append(" ".join(vendor_parts))
+    if trend_parts:
+        answer_parts.append(" ".join(trend_parts))
+
+    if not trend_parts and monthly_trend:
+        months_sorted = sorted(
+            monthly_trend,
+            key=lambda m: (m.get("year_month") or "")
+        )
+        if len(months_sorted) >= 2:
+            prev = months_sorted[-2]
+            last = months_sorted[-1]
+            prev_val = _safe_float(prev.get("total_gross"))
+            last_val = _safe_float(last.get("total_gross"))
+            delta = last_val - prev_val
+            if abs(delta) > 1e-6:
+                direction = "höher" if delta > 0 else "niedriger"
+                answer_parts.append(
+                    f"Die Ausgaben im letzten Monat ({last.get('year_month')}) lagen "
+                    f"{_fmt_eur(abs(delta))} {direction} als im Vormonat ({prev.get('year_month')})."
+                )
+
+    if focus_points:
+        bullet_intro = (
+            "Aus Sicht von Geschäftsführung und CFO ergeben sich daraus insbesondere folgende Schwerpunkte: "
+        )
+        bullets = "; ".join(focus_points)
+        answer_parts.append(bullet_intro + bullets)
+
+    suggested_questions = [
         "Welche Lieferanten verursachen aktuell die höchsten Kosten?",
-        "Wie haben sich unsere Ausgaben in den letzten 6 Monaten entwickelt?",
+        "Wie hat sich unser monatliches Ausgabenprofil in den letzten 6 Monaten entwickelt?",
         "Wie viel Mehrwertsteuer steckt in den letzten 12 Monaten?",
+        "Wo sehen Sie potenzielle Dubletten oder Unstimmigkeiten in den Rechnungen?",
     ]
+
+    full_answer = " ".join(answer_parts).strip()
+    if full_answer and not full_answer.endswith("."):
+        full_answer += "."
 
     return {
         "answer": full_answer,
         "question": question,
-        "days": d,
+        "days": days,
         "snapshot": snapshot,
-        "suggested_questions": suggested,
+        "suggested_questions": suggested_questions,
     }
-
