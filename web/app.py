@@ -103,6 +103,7 @@ from api_keys import validate_api_key, create_api_key, list_api_keys, revoke_api
 from audit import log_audit, AuditAction, get_audit_logs
 from audit import get_audit_stats
 from webhooks import create_webhook, get_webhooks, delete_webhook, trigger_webhooks, WebhookEvent
+from system_alerts import get_system_status, run_system_check
 
 @app.exception_handler(InvoiceAppError)
 async def invoice_app_error_handler(request, exc: InvoiceAppError):
@@ -606,6 +607,20 @@ async def health_check():
         "uptime_hours": uptime_hours,
         "backup": _get_backup_info()
     }
+
+@app.get("/api/system/status", tags=["System"])
+async def system_status():
+    """Detaillierter System-Status mit Alerts"""
+    return get_system_status()
+
+@app.post("/api/system/check", tags=["System"])
+async def trigger_system_check(request: Request):
+    """Manueller System-Check (nur Admin)"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    alerts = run_system_check()
+    return {"alerts": alerts, "count": len(alerts)}
 @app.post("/api/send-email/{job_id}", tags=["Notifications"])
 async def send_email_route(job_id: str, request: Request):
     """Send files via email"""
