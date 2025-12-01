@@ -574,6 +574,7 @@
               <th class="amount">Netto</th>
               <th class="amount">MwSt.</th>
               <th class="amount">Brutto</th>
+              <th style="text-align: center;">KI-Score</th>
             </tr>
           </thead>
           <tbody>
@@ -605,6 +606,16 @@
               <td class="amount">{{ "%.2f"|format(invoice.betrag_netto or 0) }}€</td>
               <td class="amount">{{ "%.2f"|format(invoice.mwst_betrag or 0) }}€</td>
               <td class="amount">{{ "%.2f"|format(invoice.betrag_brutto or 0) }}€</td>
+              <td style="text-align: center;">
+                {% set conf = invoice.confidence or 0 %}
+                {% if conf >= 0.8 %}
+                <span style="color: #10b981;" title="Hohe Konfidenz">✅ {{ "%.0f"|format(conf * 100) }}%</span>
+                {% elif conf >= 0.5 %}
+                <span style="color: #f59e0b;" title="Mittlere Konfidenz">⚠️ {{ "%.0f"|format(conf * 100) }}%</span>
+                {% else %}
+                <span style="color: #ef4444;" title="Niedrige Konfidenz">❌ {{ "%.0f"|format(conf * 100) }}%</span>
+                {% endif %}
+              </td>
             </tr>
             {% endfor %}
           </tbody>
