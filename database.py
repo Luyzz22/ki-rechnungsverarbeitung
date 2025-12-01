@@ -2075,3 +2075,62 @@ def get_method_distribution(user_id: int = None) -> dict:
         'vision': vision_count,
         'distribution': [text_count, vision_count]
     }
+
+
+def log_export(user_id: int, job_id: str, export_type: str, filename: str = None, 
+               file_size: int = 0, invoice_count: int = 0, total_amount: float = 0):
+    """Protokolliert einen Export."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO export_history (user_id, job_id, export_type, filename, file_size, invoice_count, total_amount)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, job_id, export_type, filename, file_size, invoice_count, total_amount))
+    conn.commit()
+    conn.close()
+
+
+def get_export_history(user_id: int = None, limit: int = 100):
+    """Holt Export-Historie."""
+    conn = get_connection()
+    conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
+    cursor = conn.cursor()
+    
+    if user_id:
+        cursor.execute("SELECT * FROM export_history WHERE user_id = ? ORDER BY created_at DESC LIMIT ?", (user_id, limit))
+    else:
+        cursor.execute("SELECT * FROM export_history ORDER BY created_at DESC LIMIT ?", (limit,))
+    
+    exports = cursor.fetchall()
+    conn.close()
+    return exports
+
+
+def get_export_stats(user_id: int = None):
+    """Holt Export-Statistiken."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    base = "FROM export_history" + (" WHERE user_id = ?" if user_id else "")
+    params = (user_id,) if user_id else ()
+    
+    cursor.execute(f"SELECT COUNT(*) {base}", params)
+    total = cursor.fetchone()[0]
+    
+    cursor.execute(f"SELECT COUNT(*) {base} AND created_at > datetime('now', '-7 days')" if user_id 
+                   else f"SELECT COUNT(*) FROM export_history WHERE created_at > datetime('now', '-7 days')")
+    this_week = cursor.fetchone()[0]
+    
+    cursor.execute(f"SELECT COALESCE(SUM(invoice_count), 0) {base}", params)
+    total_invoices = cursor.fetchone()[0]
+    
+    cursor.execute(f"SELECT COALESCE(SUM(total_amount), 0) {base}", params)
+    total_amount = cursor.fetchone()[0]
+    
+    conn.close()
+    return {
+        'total': total,
+        'this_week': this_week,
+        'total_invoices': total_invoices,
+        'total_amount': total_amount
+    }
