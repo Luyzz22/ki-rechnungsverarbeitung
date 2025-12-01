@@ -808,3 +808,153 @@ def pick_provider_model(complexity_score: int) -> Tuple[str, str]:
     else:
         # Einfach → GPT-4o
         return ('openai', 'gpt-4o-2024-08-06')
+
+
+# === VISION EXTRACTION ===
+import base64
+from pathlib import Path
+
+def extract_with_vision(pdf_path: str) -> dict:
+    """
+    Extrahiert Rechnungsdaten via GPT-4o Vision.
+    Konvertiert PDF zu Bild und sendet an Vision-API.
+    
+    Args:
+        pdf_path: Pfad zur PDF-Datei
+        
+    Returns:
+        dict mit extrahierten Daten oder None bei Fehler
+    """
+    try:
+        from pdf2image import convert_from_path
+        
+        # PDF zu Bild konvertieren (erste Seite, 150 DPI für Balance)
+        images = convert_from_path(pdf_path, dpi=150, first_page=1, last_page=1)
+        
+        if not images:
+            logger.error("Vision: Keine Bilder aus PDF extrahiert")
+            return None
+        
+        # Bild zu Base64
+        import io
+        img_buffer = io.BytesIO()
+        images[0].save(img_buffer, format='PNG')
+        img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
+        
+        logger.info(f"Vision: Bild erstellt ({len(img_base64) // 1024} KB)")
+        
+        # Vision-Prompt (kompakt)
+        vision_prompt = """Analysiere dieses Rechnungsbild und extrahiere ALLE Daten als JSON:
+
+{
+  "rechnungsnummer": "",
+  "datum": "YYYY-MM-DD",
+  "rechnungsaussteller": "",
+  "rechnungsaussteller_adresse": "",
+  "rechnungsempfänger": "",
+  "rechnungsempfänger_adresse": "",
+  "kundennummer": "",
+  "betrag_brutto": 0.0,
+  "betrag_netto": 0.0,
+  "mwst_betrag": 0.0,
+  "mwst_satz": 19,
+  "waehrung": "EUR",
+  "iban": "",
+  "bic": "",
+  "steuernummer": "",
+  "ust_idnr": "",
+  "zahlungsbedingungen": "",
+  "artikel": [],
+  "verwendungszweck": "",
+  "confidence": 0.0
+}
+
+WICHTIG: 
+- Betrage als Zahlen (nicht Strings)
+- Datum im ISO-Format
+- confidence = deine Sicherheit (0.0-1.0)
+- NUR JSON zurückgeben, keine Erklärungen"""
+
+        # GPT-4o Vision API Call
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": vision_prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{img_base64}",
+                                "detail": "high"
+                            }
+                        }
+                    ]
+                }
+            ],
+            max_tokens=2000,
+            temperature=0
+        )
+        
+        content = response.choices[0].message.content.strip()
+        
+        # JSON extrahieren
+        if content.startswith('```'):
+            content = content.split('```')[1]
+            if content.startswith('json'):
+                content = content[4:]
+            content = content.strip('`').strip()
+        
+        data = json.loads(content)
+        data['extraction_method'] = 'vision'
+        
+        logger.info(f"✅ Vision-Extraktion erfolgreich: {data.get('rechnungsnummer', 'unbekannt')}")
+        return data
+        
+    except Exception as e:
+        logger.error(f"❌ Vision-Extraktion fehlgeschlagen: {e}")
+        return None
+
+
+def extract_invoice_data_with_fallback(text: str, pdf_path: str, provider: str, model: str) -> dict:
+    """
+    Extrahiert Rechnungsdaten mit Vision-Fallback.
+    
+    1. Versucht normale Text-Extraktion
+    2. Bei wenig Text oder Fehler → Vision-Extraktion
+    
+    Args:
+        text: OCR-extrahierter Text
+        pdf_path: Pfad zur PDF für Vision-Fallback
+        provider: 'openai' oder 'anthropic'
+        model: Modellname
+        
+    Returns:
+        dict mit extrahierten Daten
+    """
+    # Normale Extraktion versuchen wenn genug Text
+    if text and len(text) > 200:
+        result = extract_invoice_data(text, provider, model)
+        
+        if result:
+            # Confidence prüfen
+            conf = result.get('confidence', 0)
+            if conf >= 0.5:
+                return result
+            
+            logger.warning(f"Niedrige Konfidenz ({conf}), versuche Vision...")
+    else:
+        logger.warning(f"Wenig Text ({len(text) if text else 0} chars), versuche Vision...")
+    
+    # Vision-Fallback
+    vision_result = extract_with_vision(pdf_path)
+    
+    if vision_result:
+        return vision_result
+    
+    # Falls Vision auch fehlschlägt, Text-Ergebnis zurückgeben (falls vorhanden)
+    if text and len(text) > 50:
+        return extract_invoice_data(text, provider, model)
+    
+    return None

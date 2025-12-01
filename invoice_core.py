@@ -205,7 +205,7 @@ class InvoiceProcessor:
             
             # Extract data with Expert-Level Prompts from llm_router
             try:
-                data = self.llm_router.extract_invoice_data(text, provider, model)
+                data = self.llm_router.extract_invoice_data_with_fallback(text, str(pdf_path), provider, model)
                 
                 if not data:
                     print(f"   ❌ Keine Daten extrahiert")
