@@ -101,6 +101,7 @@ from einvoice import generate_xrechnung, export_xrechnung_file, validate_xrechnu
 from rate_limiter import check_rate_limit, get_client_ip
 from api_keys import validate_api_key, create_api_key, list_api_keys, revoke_api_key
 from audit import log_audit, AuditAction, get_audit_logs
+from audit import get_audit_stats
 from webhooks import create_webhook, get_webhooks, delete_webhook, trigger_webhooks, WebhookEvent
 
 @app.exception_handler(InvoiceAppError)
@@ -807,6 +808,64 @@ async def analytics_page(request: Request):
         "insights": get_analytics_insights(),
         "confidence_distribution": get_confidence_distribution()["distribution"],
         "method_distribution": get_method_distribution()["distribution"]
+    })
+
+@app.get("/admin", response_class=HTMLResponse, tags=["Admin"])
+async def admin_page(request: Request):
+    """Admin Dashboard - nur für Admins"""
+    if "user_id" not in request.session:
+        return RedirectResponse(url="/login?next=/admin", status_code=303)
+    
+    # Admin-Stats sammeln
+    from database import get_connection
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) FROM users")
+    total_users = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM invoices")
+    total_invoices = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM jobs")
+    total_jobs = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COALESCE(SUM(betrag_brutto), 0) FROM invoices")
+    total_amount = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM invoices WHERE DATE(created_at) = DATE(now)")
+    invoices_today = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM jobs WHERE DATE(created_at) = DATE(now)")
+    jobs_today = cursor.fetchone()[0]
+    
+    conn.close()
+    
+    stats = {
+        "total_users": total_users,
+        "total_invoices": total_invoices,
+        "total_jobs": total_jobs,
+        "total_amount": total_amount,
+        "invoices_today": invoices_today,
+        "jobs_today": jobs_today,
+        "new_users_week": 0
+    }
+    
+    # Health-Check
+    import requests as req
+    try:
+        health = req.get("http://localhost:8000/health", timeout=2).json()
+    except:
+        health = {"database": "unknown", "uptime_hours": 0, "backup": {"total_backups": 0}, "jobs_in_memory": 0}
+    
+    # Audit-Logs
+    audit_logs = get_audit_logs(limit=20)
+    
+    return templates.TemplateResponse("admin.html", {
+        "request": request,
+        "stats": stats,
+        "health": health,
+        "audit_logs": audit_logs
     })
 
 @app.get("/api/invoice/{invoice_id}")
