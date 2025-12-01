@@ -1935,6 +1935,39 @@ async def export_job_zip(job_id: str, request: Request):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
+@app.get("/api/job/{job_id}/export/xrechnung")
+async def export_job_xrechnung(job_id: str, request: Request):
+    """Download Rechnungen als XRechnung XML (EN16931)"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    from database import get_invoices_by_job
+    import zipfile
+    import io
+    
+    try:
+        invoices = get_invoices_by_job(job_id)
+        if not invoices:
+            return JSONResponse({"error": "Keine Rechnungen gefunden"}, status_code=404)
+        
+        # ZIP mit allen XRechnungen erstellen
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            for inv in invoices:
+                xml_content = generate_xrechnung(inv)
+                inv_nr = (inv.get("invoice_number") or inv.get("rechnungsnummer") or "unknown").replace("/", "-")
+                filename = f"xrechnung_{inv_nr}.xml"
+                zf.writestr(filename, xml_content)
+        
+        zip_buffer.seek(0)
+        return Response(
+            content=zip_buffer.getvalue(),
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename=xrechnung_{job_id[:8]}.zip"}
+        )
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 # === Überschriebene Job-Detail-Seite mit RAM + DB Fallback ===
 @app.get("/job/{job_id}", response_class=HTMLResponse)
 async def job_details_page(request: Request, job_id: str):
