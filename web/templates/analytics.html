@@ -1205,15 +1205,18 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="finance-copilot-status" id="finance-copilot-status"></div>
         <div class="finance-copilot-suggestions" id="finance-copilot-suggestions">
           <button type="button" class="finance-copilot-suggestion"
-            data-question="Gib mir einen Überblick über unsere Ausgaben der letzten 90 Tage.">
+            data-question="Gib mir einen Überblick über unsere Ausgaben der letzten 90 Tage." data-copilot-days="90"
+            data-copilot-days="90">
             Überblick letzte 90 Tage
           </button>
           <button type="button" class="finance-copilot-suggestion"
-            data-question="Welche Lieferanten verursachen aktuell die höchsten Kosten?">
+            data-question="Welche Lieferanten verursachen aktuell die höchsten Kosten?" data-copilot-days="365"
+            data-copilot-days="365">
             Teuerste Lieferanten
           </button>
           <button type="button" class="finance-copilot-suggestion"
-            data-question="Wie haben sich unsere Ausgaben in den letzten 6 Monaten entwickelt?">
+            data-question="Wie haben sich unsere Ausgaben in den letzten 6 Monaten entwickelt?" data-copilot-days="180"
+            data-copilot-days="180">
             Trend letzte 6 Monate
           </button>
         </div>
@@ -1253,6 +1256,13 @@ document.addEventListener('DOMContentLoaded', function () {
             suggestionButtons.forEach(function(btn) {
               btn.addEventListener('click', function() {
                 var q = btn.getAttribute('data-finance-question') || '';
+                var daysAttr = btn.getAttribute('data-copilot-days');
+                if (daysAttr) {
+                  var parsedDays = parseInt(daysAttr, 10);
+                  if (!isNaN(parsedDays)) {
+                    overrideDays = parsedDays;
+                  }
+                }
                 if (!q) return;
 
                 var input = document.getElementById('finance-copilot-input');
@@ -1275,6 +1285,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var suggestionsBox = document.getElementById('finance-copilot-suggestions');
       var sendBtn = document.getElementById('finance-copilot-send-btn');
       var isLoading = false;
+      var overrideDays = null;
 
       function setPanel(open) {
         if (!panel) return;
@@ -1350,11 +1361,16 @@ document.addEventListener('DOMContentLoaded', function () {
         var question = input.value.trim();
 
         var days = 90;
-        var periodSelect = document.getElementById('finance-period');
-        if (periodSelect && periodSelect.value) {
-          var parsed = parseInt(periodSelect.value, 10);
-          if (!isNaN(parsed)) {
-            days = parsed;
+        if (typeof overrideDays === 'number' && !isNaN(overrideDays)) {
+          days = overrideDays;
+          overrideDays = null;
+        } else {
+          var periodSelect = document.getElementById('finance-period');
+          if (periodSelect && periodSelect.value) {
+            var parsed = parseInt(periodSelect.value, 10);
+            if (!isNaN(parsed)) {
+              days = parsed;
+            }
           }
         }
 
@@ -1408,6 +1424,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 btn.className = 'finance-copilot-suggestion';
                 btn.textContent = q;
                 btn.dataset.question = q;
+
+                // Heuristik: Zeitraum aus der Frage ableiten, um days zu setzen
+                try {
+                  var lower = String(q || '').toLowerCase();
+                  var days = null;
+                  if (lower.indexOf('90 tage') !== -1) {
+                    days = 90;
+                  } else if (lower.indexOf('6 monat') !== -1) {
+                    days = 180;
+                  } else if (
+                    lower.indexOf('12 monat') !== -1 ||
+                    lower.indexOf('letzten 12 monaten') !== -1 ||
+                    lower.indexOf('letzten jahr') !== -1 ||
+                    lower.indexOf('letztes jahr') !== -1
+                  ) {
+                    days = 365;
+                  }
+                  if (days !== null) {
+                    btn.setAttribute('data-copilot-days', String(days));
+                  }
+                } catch (e) {
+                  // Fallback: einfach ohne days-Attribut lassen
+                }
+
                 suggestionsBox.appendChild(btn);
               });
             }
