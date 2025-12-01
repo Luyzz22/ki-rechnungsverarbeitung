@@ -100,6 +100,7 @@ from schemas import JobStatusResponse, JobResultsResponse, UserResponse, Success
 from einvoice import generate_xrechnung, export_xrechnung_file, validate_xrechnung as validate_xrechnung_new
 from rate_limiter import check_rate_limit, get_client_ip
 from api_keys import validate_api_key, create_api_key, list_api_keys, revoke_api_key
+from audit import log_audit, AuditAction, get_audit_logs
 
 @app.exception_handler(InvoiceAppError)
 async def invoice_app_error_handler(request, exc: InvoiceAppError):
@@ -1090,6 +1091,7 @@ async def login_submit(request: Request):
 
     if not user:
         logger.info("LOGIN_DEBUG: ungültige Credentials")
+        log_audit(AuditAction.LOGIN_FAILED, user_email=email, ip_address=request.client.host)
         return templates.TemplateResponse(
             "login.html",
             {
@@ -1114,6 +1116,7 @@ async def login_submit(request: Request):
         next_url = "/history"
 
     logger.info(f"LOGIN_DEBUG: redirect -> {next_url}")
+    log_audit(AuditAction.LOGIN, user_id=user["id"], user_email=email, ip_address=request.client.host)
     return RedirectResponse(url=next_url, status_code=303)
 
 @app.get("/register", response_class=HTMLResponse)
@@ -2012,6 +2015,7 @@ async def export_job_xrechnung(job_id: str, request: Request):
                 zf.writestr(filename, xml_content)
         
         zip_buffer.seek(0)
+        log_audit(AuditAction.EXPORT_XRECHNUNG, user_id=request.session["user_id"], resource_type="job", resource_id=job_id, ip_address=request.client.host)
         return Response(
             content=zip_buffer.getvalue(),
             media_type="application/zip",
