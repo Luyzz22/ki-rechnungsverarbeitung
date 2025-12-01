@@ -566,6 +566,15 @@ async def results_page(request: Request, job_id: str):
     )
 
 
+
+def _get_backup_info():
+    """Holt Backup-Status für Health-Check"""
+    try:
+        from backup import get_backup_status
+        return get_backup_status()
+    except Exception:
+        return {"error": "Backup-Modul nicht verfügbar"}
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint mit DB-Status und Uptime"""
@@ -590,7 +599,8 @@ async def health_check():
         "version": "1.0.0",
         "database": db_status,
         "jobs_in_memory": len(processing_jobs),
-        "uptime_hours": uptime_hours
+        "uptime_hours": uptime_hours,
+        "backup": _get_backup_info()
     }
 @app.post("/api/send-email/{job_id}")
 async def send_email_route(job_id: str, request: Request):
