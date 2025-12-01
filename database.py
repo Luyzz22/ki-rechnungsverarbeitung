@@ -178,10 +178,10 @@ def save_invoices(job_id: str, results: List[Dict]):
                 mwst_betrag, mwst_satz, waehrung, iban, bic, steuernummer, ust_idnr,
                 zahlungsbedingungen, artikel, verwendungszweck, content_hash,
                 source_format, einvoice_raw_xml, einvoice_profile,
-                einvoice_valid, einvoice_validation_message
+                einvoice_valid, einvoice_validation_message, confidence
             ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?
             )
             """,
             (
@@ -216,6 +216,7 @@ def save_invoices(job_id: str, results: List[Dict]):
                 einvoice_profile,
                 einvoice_valid,
                 einvoice_validation_message,
+                invoice.get("confidence", 0.0),
             ),
         )
 
