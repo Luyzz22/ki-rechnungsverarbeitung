@@ -2111,26 +2111,25 @@ def get_export_stats(user_id: int = None):
     conn = get_connection()
     cursor = conn.cursor()
     
-    base = "FROM export_history" + (" WHERE user_id = ?" if user_id else "")
-    params = (user_id,) if user_id else ()
-    
-    cursor.execute(f"SELECT COUNT(*) {base}", params)
-    total = cursor.fetchone()[0]
-    
-    cursor.execute(f"SELECT COUNT(*) {base} AND created_at > datetime('now', '-7 days')" if user_id 
-                   else f"SELECT COUNT(*) FROM export_history WHERE created_at > datetime('now', '-7 days')")
-    this_week = cursor.fetchone()[0]
-    
-    cursor.execute(f"SELECT COALESCE(SUM(invoice_count), 0) {base}", params)
-    total_invoices = cursor.fetchone()[0]
-    
-    cursor.execute(f"SELECT COALESCE(SUM(total_amount), 0) {base}", params)
-    total_amount = cursor.fetchone()[0]
+    if user_id:
+        cursor.execute("SELECT COUNT(*) FROM export_history WHERE user_id = ?", (user_id,))
+        total = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM export_history WHERE user_id = ? AND created_at > datetime('now', '-7 days')", (user_id,))
+        this_week = cursor.fetchone()[0]
+        cursor.execute("SELECT COALESCE(SUM(invoice_count), 0) FROM export_history WHERE user_id = ?", (user_id,))
+        total_invoices = cursor.fetchone()[0]
+        cursor.execute("SELECT COALESCE(SUM(total_amount), 0) FROM export_history WHERE user_id = ?", (user_id,))
+        total_amount = cursor.fetchone()[0]
+    else:
+        cursor.execute("SELECT COUNT(*) FROM export_history")
+        total = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM export_history WHERE created_at > datetime('now', '-7 days')")
+        this_week = cursor.fetchone()[0]
+        cursor.execute("SELECT COALESCE(SUM(invoice_count), 0) FROM export_history")
+        total_invoices = cursor.fetchone()[0]
+        cursor.execute("SELECT COALESCE(SUM(total_amount), 0) FROM export_history")
+        total_amount = cursor.fetchone()[0]
     
     conn.close()
-    return {
-        'total': total,
-        'this_week': this_week,
-        'total_invoices': total_invoices,
-        'total_amount': total_amount
-    }
+    return {"total": total, "this_week": this_week, "total_invoices": total_invoices, "total_amount": total_amount}
+
