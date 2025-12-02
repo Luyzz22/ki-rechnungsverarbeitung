@@ -848,10 +848,10 @@ async def admin_page(request: Request):
     cursor.execute("SELECT COALESCE(SUM(betrag_brutto), 0) FROM invoices")
     total_amount = cursor.fetchone()[0]
     
-    cursor.execute("SELECT COUNT(*) FROM invoices WHERE DATE(created_at) = DATE(now)")
+    cursor.execute("SELECT COUNT(*) FROM invoices WHERE DATE(created_at) = DATE('now')")
     invoices_today = cursor.fetchone()[0]
     
-    cursor.execute("SELECT COUNT(*) FROM jobs WHERE DATE(created_at) = DATE(now)")
+    cursor.execute("SELECT COUNT(*) FROM jobs WHERE DATE(created_at) = DATE('now')")
     jobs_today = cursor.fetchone()[0]
     
     conn.close()
@@ -904,6 +904,8 @@ async def admin_users_page(request: Request):
     """)
     users = cursor.fetchall()
     
+    conn.row_factory = None
+    cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM users WHERE created_at > datetime('now', '-7 days')")
     new_this_week = cursor.fetchone()[0]
     conn.close()

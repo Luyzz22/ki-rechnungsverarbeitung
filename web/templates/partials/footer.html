@@ -1,0 +1,40 @@
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>GmbH & Co. KG</span>
+        </div>
+      </div>
+      <p style="color: #9ca3af; font-size: 0.875rem;">In der Dell 19<br>69469 Weinheim</p>
+    </div>
+    <div>
+      <h4>Produkt</h4>
+      <a href="/">Upload</a>
+      <a href="/history">Verlauf</a>
+      <a href="/analytics">Analytics</a>
+    </div>
+    <div>
+      <h4>Rechtliches</h4>
+      <a href="https://sbsdeutschland.com/impressum" target="_blank">Impressum</a>
+      <a href="https://sbsdeutschland.com/datenschutz" target="_blank">Datenschutz</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
+  </div>
+</footer>
+
+<script>
+  // Burger Menu Toggle
+  const burger = document.getElementById('burger');
+  const nav = document.getElementById('nav');
+  if (burger && nav) {
+    burger.addEventListener('click', () => {
+      nav.classList.toggle('open');
+      burger.classList.toggle('active');
+    });
+  }
+</script>
