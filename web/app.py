@@ -634,6 +634,32 @@ async def health_check(request: Request):
     )
 
 
+@app.get("/api/health", tags=["System"])
+async def health_check_json():
+    """Health check - JSON only (für Monitoring/Tests)"""
+    import time
+    from database import get_connection
+    
+    db_status = "healthy"
+    try:
+        conn = get_connection()
+        conn.execute("SELECT 1")
+        conn.close()
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+    
+    uptime_seconds = time.time() - app_start_time if "app_start_time" in globals() else 0
+    uptime_hours = round(uptime_seconds / 3600, 1)
+    
+    return {
+        "status": "healthy" if db_status == "healthy" else "degraded",
+        "version": "1.0.0",
+        "database": db_status,
+        "jobs_in_memory": len(processing_jobs),
+        "uptime_hours": uptime_hours,
+        "backup": _get_backup_info()
+    }
+
 @app.get("/api/system/status", tags=["System"])
 async def system_status():
     """Detaillierter System-Status mit Alerts"""
@@ -1537,6 +1563,59 @@ async def delete_user_webhook(webhook_id: int, request: Request):
     
     success = delete_webhook(webhook_id, request.session["user_id"])
     return {"success": success}
+
+# === Two-Factor Authentication ===
+from two_factor import (
+    enable_2fa, verify_and_activate_2fa, disable_2fa,
+    check_2fa_required, verify_user_2fa, generate_backup_codes
+)
+
+@app.get("/api/2fa/setup", tags=["Auth"])
+async def setup_2fa(request: Request):
+    """Startet 2FA-Setup und gibt QR-Code zurück"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    result = enable_2fa(request.session["user_id"])
+    return result
+
+@app.post("/api/2fa/verify", tags=["Auth"])
+async def verify_2fa_setup(request: Request):
+    """Verifiziert Code und aktiviert 2FA"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    code = data.get("code", "")
+    
+    if verify_and_activate_2fa(request.session["user_id"], code):
+        backup_codes = generate_backup_codes(request.session["user_id"])
+        return {"success": True, "backup_codes": backup_codes}
+    
+    return JSONResponse({"error": "Invalid code"}, status_code=400)
+
+@app.post("/api/2fa/disable", tags=["Auth"])
+async def disable_2fa_endpoint(request: Request):
+    """Deaktiviert 2FA"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    code = data.get("code", "")
+    
+    if disable_2fa(request.session["user_id"], code):
+        return {"success": True}
+    
+    return JSONResponse({"error": "Invalid code"}, status_code=400)
+
+@app.get("/api/2fa/status", tags=["Auth"])
+async def get_2fa_status(request: Request):
+    """Prüft ob 2FA aktiviert ist"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    enabled = check_2fa_required(request.session["user_id"])
+    return {"enabled": enabled}
 # CORS für Cross-Domain API Requests
 from starlette.middleware.cors import CORSMiddleware
 

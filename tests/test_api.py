@@ -23,25 +23,25 @@ class TestHealthEndpoint:
     
     def test_health_returns_200(self, client):
         """Health-Check gibt 200 zurück"""
-        response = client.get("/health")
+        response = client.get("/api/health")
         assert response.status_code == 200
     
     def test_health_contains_status(self, client):
         """Health-Check enthält Status"""
-        response = client.get("/health")
+        response = client.get("/api/health")
         data = response.json()
         assert "status" in data
         assert data["status"] in ["healthy", "degraded"]
     
     def test_health_contains_database(self, client):
         """Health-Check enthält DB-Status"""
-        response = client.get("/health")
+        response = client.get("/api/health")
         data = response.json()
         assert "database" in data
     
     def test_health_contains_version(self, client):
         """Health-Check enthält Version"""
-        response = client.get("/health")
+        response = client.get("/api/health")
         data = response.json()
         assert "version" in data
         assert data["version"] == "1.0.0"
@@ -119,5 +119,5 @@ class TestRateLimiting:
     def test_health_not_rate_limited(self, client):
         """Health-Check ist nicht rate-limited"""
         for _ in range(10):
-            response = client.get("/health")
+            response = client.get("/api/health")
             assert response.status_code == 200
