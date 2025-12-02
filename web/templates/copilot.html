@@ -365,7 +365,53 @@
         align-items: flex-start;
       }
     }
-  </style>
+  
+/* --- Copilot: lange Fragen in Listen umbrechen, damit sie in der Box bleiben --- */
+li {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-wrap: break-word;
+}
+
+
+/* --- Fix: Empfohlene Fragen sollen in der Box bleiben --- */
+.copilot-suggestions {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.copilot-suggestions ul {
+  padding-left: 1.3rem;
+  margin: 12px 0 0 0;
+}
+
+.copilot-suggestions li {
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  white-space: normal;       /* globales nowrap übersteuern */
+  overflow-wrap: anywhere;   /* lange Wörter umbrechen */
+  word-break: normal;
+}
+
+</style>
+<style>
+/* --- Fix: Empfohlene Fragen sollen sauber in der Box umbrechen --- */
+h2 + ul,
+h3 + ul,
+h4 + ul {
+  max-width: 100%;
+}
+
+h2 + ul li,
+h3 + ul li,
+h4 + ul li {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+</style>
 </head>
 <body>
 
@@ -373,10 +419,7 @@
   <div class="header-inner">
     <a href="/" class="logo-wrap">
       <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
-      <div class="logo-text">
-        <strong>SBS Deutschland</strong>
-        <span>Smart Business Service · Weinheim</span>
-      </div>
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
     </a>
 
     <button class="burger" id="burger" aria-label="Menü">
@@ -389,6 +432,35 @@
       <a href="/analytics">Analytics</a>
       <a href="/email-config">Email-Inbox</a>
       <a href="/copilot">Copilot</a>
+
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
+        <div class="account-menu">
+          <div class="section-label">Workspace</div>
+          <a href="/">📥 Upload</a>
+          <a href="/history">📊 Verlauf</a>
+          <a href="/analytics">📈 Analytics</a>
+          <a href="/email-config">📧 Email-Inbox</a>
+
+          <div class="divider"></div>
+          <div class="section-label">Konto</div>
+          <a href="/account">💳 Konto &amp; Nutzung</a>
+          <a href="/team">👥 Team &amp; Rollen</a>
+          <a href="/audit-log">📜 Audit-Log</a>
+          <a href="/exports">📥 Export-Historie</a>
+          <a href="/admin">🔧 Admin</a>
+          <a href="/admin/users">👥 User-Verwaltung</a>
+          <a href="/profile">⚙️ Einstellungen</a>
+
+          <div class="divider"></div>
+          <div class="section-label">SBS Website</div>
+          <a href="https://sbsdeutschland.com/preise" target="_blank" rel="noreferrer">💶 Preise</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" target="_blank" rel="noreferrer">✉️ Kontakt</a>
+
+          <div class="divider"></div>
+          <a href="/logout">🚪 Logout</a>
+        </div>
+      </div>
     </nav>
   </div>
 </header>

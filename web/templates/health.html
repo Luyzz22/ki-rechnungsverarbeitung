@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Systemstatus · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/design-tokens.css" />
+  <link rel="stylesheet" href="/static/css/components.css" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    body {
+      background: var(--sbs-bg-soft, #f3f4f6);
+    }
+    .health-wrapper {
+      padding: 32px 24px 56px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .health-summary {
+      background: var(--sbs-white, #ffffff);
+      border-radius: 18px;
+      padding: 24px 28px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+      margin-bottom: 32px;
+    }
+    .health-summary h2 {
+      margin: 0 0 12px 0;
+      font-size: 1.25rem;
+      color: var(--sbs-dark, #111827);
+    }
+    .health-summary p {
+      margin: 4px 0;
+      font-size: 0.95rem;
+      color: var(--sbs-muted, #6b7280);
+    }
+    .health-summary strong {
+      color: var(--sbs-dark, #111827);
+    }
+    .tag-ok,
+    .tag-warn {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+    .tag-ok {
+      background: rgba(22,163,74,0.1);
+      color: #15803d;
+    }
+    .tag-warn {
+      background: rgba(234, 179, 8, 0.12);
+      color: #92400e;
+    }
+    h2.section-title {
+      font-size: 1.1rem;
+      margin: 24px 0 12px;
+      color: var(--sbs-dark, #111827);
+    }
+    .code-block {
+      background: #020617;
+      color: #e5e7eb;
+      border-radius: 18px;
+      padding: 18px 20px;
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      overflow: auto;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.55);
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text">
+        <strong>SBS Deutschland</strong>
+        <span>Smart Business Service · Weinheim</span>
+      </div>
+    </a>
+
+    <button class="burger" id="burger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav" id="nav">
+      <a href="/">Upload</a>
+      <a href="/history">Verlauf</a>
+      <a href="/analytics">Analytics</a>
+      <a href="/email-config">Email-Inbox</a>
+      <a href="/copilot">Copilot</a>
+
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
+        <div class="account-menu">
+          <div class="section-label">Workspace</div>
+          <a href="/">📥 Upload</a>
+          <a href="/history">📊 Verlauf</a>
+          <a href="/analytics">📈 Analytics</a>
+          <a href="/email-config">📧 Email-Inbox</a>
+
+          <div class="divider"></div>
+          <div class="section-label">Konto</div>
+          <a href="/account">💳 Konto &amp; Nutzung</a>
+          <a href="/team">👥 Team &amp; Rollen</a>
+          <a href="/audit-log">📜 Audit-Log</a>
+          <a href="/exports">📥 Export-Historie</a>
+          <a href="/admin">🔧 Admin</a>
+          <a href="/admin/users">👥 User-Verwaltung</a>
+          <a href="/profile">⚙️ Einstellungen</a>
+
+          <div class="divider"></div>
+          <div class="section-label">SBS Website</div>
+          <a href="https://sbsdeutschland.com/preise" target="_blank" rel="noreferrer">💶 Preise</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" target="_blank" rel="noreferrer">✉️ Kontakt</a>
+
+          <div class="divider"></div>
+          <a href="/logout">🚪 Logout</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="hero" style="padding: 40px 24px;">
+  <div class="hero-content">
+    <h1>🩺 Systemstatus</h1>
+    <p class="hero-subtitle">Gesundheitscheck von Datenbank, Jobs, Backups &amp; Uptime.</p>
+  </div>
+</section>
+
+<main class="health-wrapper">
+  <section class="health-summary">
+    <h2>Übersicht</h2>
+    <p>
+      Status:
+      {% if data.status == "healthy" %}
+        <span class="tag-ok">healthy</span>
+      {% else %}
+        <span class="tag-warn">{{ data.status }}</span>
+      {% endif %}
+    </p>
+    <p>Datenbank: <strong>{{ data.database }}</strong></p>
+    <p>Jobs im Speicher: <strong>{{ data.jobs_in_memory }}</strong></p>
+    <p>Uptime: <strong>{{ "%.1f"|format(data.uptime_hours) }} Stunden</strong></p>
+  </section>
+
+  <section>
+    <h2 class="section-title">Backup</h2>
+    <pre class="code-block">{{ backup_json }}</pre>
+  </section>
+
+  <section>
+    <h2 class="section-title">Rohdaten</h2>
+    <pre class="code-block">{{ raw_json }}</pre>
+  </section>
+</main>
+
+</body>
+</html>
