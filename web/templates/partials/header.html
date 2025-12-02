@@ -14,6 +14,7 @@
       <a href="/history">Verlauf</a>
       <a href="/analytics">Analytics</a>
       <a href="/email-config">Email-Inbox</a>
+      <a href="/copilot">Copilot</a>
 
       <div class="account-dropdown">
         <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
@@ -27,11 +28,17 @@
           <div class="divider"></div>
           <div class="section-label">Konto</div>
           <a href="/account">💳 Konto &amp; Nutzung</a>
+          <a href="/team">👥 Team &amp; Rollen</a>
           <a href="/audit-log">📜 Audit-Log</a>
           <a href="/exports">📥 Export-Historie</a>
           <a href="/admin">🔧 Admin</a>
           <a href="/admin/users">👥 User-Verwaltung</a>
           <a href="/profile">⚙️ Einstellungen</a>
+
+          <div class="divider"></div>
+          <div class="section-label">SBS Website</div>
+          <a href="https://sbsdeutschland.com/preise" target="_blank" rel="noreferrer">💶 Preise</a>
+          <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" target="_blank" rel="noreferrer">✉️ Kontakt</a>
 
           <div class="divider"></div>
           <a href="/logout">🚪 Logout</a>
@@ -40,3 +47,15 @@
     </nav>
   </div>
 </header>
+
+<script>
+  // Burger Menu Toggle
+  const burger = document.getElementById('burger');
+  const nav = document.getElementById('nav');
+  if (burger && nav) {
+    burger.addEventListener('click', () => {
+      nav.classList.toggle('open');
+      burger.classList.toggle('active');
+    });
+  }
+</script>
