@@ -105,3 +105,48 @@ document.addEventListener('DOMContentLoaded', function () {
     console && console.warn && console.warn('nav active marker failed', e);
   }
 });
+// --- Account Dropdown: Click-to-open, Click-outside/Escape-to-close ---
+document.addEventListener("DOMContentLoaded", function () {
+  const dropdown = document.querySelector(".account-dropdown");
+  if (!dropdown) return;
+
+  const toggle = dropdown.querySelector(".account-toggle");
+  const menu   = dropdown.querySelector(".account-menu");
+  if (!toggle || !menu) return;
+
+  function openDropdown() {
+    dropdown.classList.add("open");
+  }
+
+  function closeDropdown() {
+    dropdown.classList.remove("open");
+  }
+
+  toggle.addEventListener("click", function (event) {
+    event.stopPropagation();
+    if (dropdown.classList.contains("open")) {
+      closeDropdown();
+    } else {
+      openDropdown();
+    }
+  });
+
+  // Klicks im Menü sollen es nicht schließen
+  menu.addEventListener("click", function (event) {
+    event.stopPropagation();
+  });
+
+  // Klick irgendwo außerhalb -> schließen
+  document.addEventListener("click", function (event) {
+    if (!dropdown.contains(event.target)) {
+      closeDropdown();
+    }
+  });
+
+  // Esc schließt das Menü
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      closeDropdown();
+    }
+  });
+});
