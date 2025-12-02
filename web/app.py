@@ -2248,6 +2248,42 @@ async def export_job_xrechnung(job_id: str, request: Request):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
+@app.get("/api/job/{job_id}/export/zugferd", tags=["Export"])
+async def export_job_zugferd(job_id: str, request: Request):
+    """Download Rechnungen als ZUGFeRD-PDF (PDF/A-3 mit XML)"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    from database import get_invoices_by_job, log_export
+    from zugferd import create_zugferd_from_invoice
+    import zipfile
+    import io
+    
+    try:
+        invoices = get_invoices_by_job(job_id)
+        if not invoices:
+            return JSONResponse({"error": "Keine Rechnungen gefunden"}, status_code=404)
+        
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            for inv in invoices:
+                pdf_bytes = create_zugferd_from_invoice(inv)
+                if pdf_bytes:
+                    inv_nr = (inv.get("rechnungsnummer") or "unknown").replace("/", "-")
+                    zf.writestr(f"zugferd_{inv_nr}.pdf", pdf_bytes)
+        
+        zip_buffer.seek(0)
+        log_audit(AuditAction.EXPORT_XRECHNUNG, user_id=request.session["user_id"], resource_type="job", resource_id=job_id, ip_address=request.client.host)
+        log_export(request.session["user_id"], job_id, "zugferd", f"zugferd_{job_id[:8]}.zip", len(zip_buffer.getvalue()), len(invoices), sum(i.get("betrag_brutto", 0) or 0 for i in invoices))
+        
+        return Response(
+            content=zip_buffer.getvalue(),
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename=zugferd_{job_id[:8]}.zip"}
+        )
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 # === Überschriebene Job-Detail-Seite mit RAM + DB Fallback ===
 @app.get("/job/{job_id}", response_class=HTMLResponse)
 async def job_details_page(request: Request, job_id: str):
