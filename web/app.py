@@ -1701,6 +1701,61 @@ async def org_stats(org_id: int, request: Request):
     org = get_organization(org_id)
     return {"organization": org, "stats": stats}
 
+# === Scheduled Reports ===
+from scheduled_reports import (
+    create_scheduled_report, get_user_reports, delete_report,
+    toggle_report, ReportType, Schedule
+)
+
+@app.get("/api/reports/scheduled", tags=["Reports"])
+async def list_scheduled_reports(request: Request):
+    """Liste aller geplanten Berichte"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    reports = get_user_reports(request.session["user_id"])
+    return {"reports": reports}
+
+@app.post("/api/reports/scheduled", tags=["Reports"])
+async def create_report(request: Request):
+    """Erstellt neuen geplanten Bericht"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    
+    report = create_scheduled_report(
+        user_id=request.session["user_id"],
+        name=data.get("name", "Bericht"),
+        report_type=data.get("report_type", ReportType.SUMMARY),
+        schedule=data.get("schedule", Schedule.WEEKLY),
+        recipients=data.get("recipients", []),
+        filters=data.get("filters", {})
+    )
+    
+    return {"success": True, "report": report}
+
+@app.delete("/api/reports/scheduled/{report_id}", tags=["Reports"])
+async def remove_report(report_id: int, request: Request):
+    """Löscht geplanten Bericht"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    success = delete_report(report_id, request.session["user_id"])
+    return {"success": success}
+
+@app.post("/api/reports/scheduled/{report_id}/toggle", tags=["Reports"])
+async def toggle_scheduled_report(report_id: int, request: Request):
+    """Aktiviert/deaktiviert Bericht"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    active = data.get("active", True)
+    
+    success = toggle_report(report_id, request.session["user_id"], active)
+    return {"success": success}
+
 # CORS für Cross-Domain API Requests
 from starlette.middleware.cors import CORSMiddleware
 
