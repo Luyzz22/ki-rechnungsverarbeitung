@@ -1,871 +1,1103 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <title>Schwarzes-Loch-Demo · KI-Rechnungsverarbeitung · SBS Deutschland</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo · KI-Rechnungsverarbeitung – SBS Deutschland</title>
 
+  <!-- Globale Styles wie auf den anderen Seiten -->
+  <link rel="stylesheet" href="/static/css/design-tokens.css" />
+  <link rel="stylesheet" href="/static/css/components.css" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+
+  <!-- Seiten-spezifische Styles -->
   <style>
-    :root {
-      --bg: #02030b;
-      --bg-alt: #050717;
-      --accent: #ffb15a;
-      --accent-soft: rgba(255, 177, 90, 0.18);
-      --accent-strong: #ff9740;
-      --accent-blue: #4db4ff;
-      --accent-green: #3be38f;
-      --text-main: #f9fbff;
-      --text-muted: #a4b0c3;
-      --border-subtle: rgba(255, 255, 255, 0.06);
-      --card-radius: 22px;
-      --transition-fast: 180ms ease-out;
-      --transition-slow: 360ms ease-out;
+    /* Kompakter Hero wie auf den anderen Seiten */
+    .hero-compact {
+      background: linear-gradient(135deg, #003856 0%, #004d73 100%);
+      color: white;
+      padding: 60px 24px;
+      text-align: center;
     }
 
-    * {
-      box-sizing: border-box;
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255, 185, 0, 0.15);
+      color: #ffb900;
+      padding: 8px 20px;
+      border-radius: 24px;
+      font-weight: 600;
+      margin-bottom: 20px;
     }
 
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-        "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #05071a 0, #010208 55%, #000 100%);
-      color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+    .hero-compact h1 {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+      color: white;
     }
 
-    .demo-shell {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+    .hero-compact p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      max-width: 700px;
+      margin: 0 auto;
     }
 
-    .demo-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 40px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      background: radial-gradient(circle at top left, #1a2140 0, #050618 45%, #02030b 100%);
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-      position: sticky;
-      top: 0;
-      z-index: 20;
+    /* Footer-Gitter wie auf den anderen Seiten */
+    .footer {
+      background: #003856;
+      color: white;
+      padding: 40px 24px 20px;
     }
 
-    .demo-brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .demo-logo {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 30% 30%, #ffffff 0, #b0d9ff 35%, #275fbe 75%, #09142c 100%);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.4), 0 8px 20px rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      font-weight: 700;
-      color: #0c1830;
-    }
-
-    .demo-brand-text {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .demo-brand-main {
-      font-size: 14px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      opacity: 0.92;
-    }
-
-    .demo-brand-sub {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .demo-tag {
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: linear-gradient(90deg, rgba(0, 255, 157, 0.14), rgba(0, 163, 255, 0.05));
-    }
-
-    .demo-tag-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--accent-green);
-      box-shadow: 0 0 10px rgba(59, 227, 143, 0.7);
-    }
-
-    .demo-header-right {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .demo-chip {
-      padding: 7px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.12);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: radial-gradient(circle at top, rgba(255,255,255,0.08), rgba(0,0,0,0.3));
-    }
-
-    .demo-main {
-      flex: 1;
-      padding: 32px 40px 40px;
+    .footer-grid {
+      max-width: 1200px;
+      margin: 0 auto 30px;
       display: grid;
-      grid-template-columns: minmax(0, 3fr) minmax(340px, 380px);
-      gap: 32px;
-      align-items: center;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 30px;
     }
 
-    @media (max-width: 960px) {
-      .demo-main {
-        grid-template-columns: minmax(0, 1fr);
-      }
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+      font-size: 0.9rem;
+      opacity: 0.7;
     }
 
-    /* Schwarzes Loch Bereich */
+    /* === AI Upload Panel (CFO-Level) === */
 
-    .bh-card {
-      position: relative;
-      border-radius: 32px;
-      padding: 28px;
+    .ai-upload-shell {
+      max-width: 960px;
+      margin: 60px auto 40px auto;
+      padding: 1.75rem 2rem;
+      border-radius: 24px;
       background:
-        radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 55%),
-        radial-gradient(circle at bottom, rgba(255,180,90,0.35), transparent 65%),
-        radial-gradient(circle at 10% 90%, rgba(70,135,255,0.3), transparent 70%),
-        #02030b;
-      box-shadow:
-        0 24px 80px rgba(0, 0, 0, 0.9),
-        0 0 120px rgba(15, 30, 70, 0.9);
-      overflow: hidden;
-      min-height: 420px;
-      display: flex;
-      align-items: stretch;
-      justify-content: center;
-    }
-
-    .bh-space {
-      position: relative;
-      width: 100%;
-      max-width: 640px;
-      border-radius: 26px;
-      overflow: hidden;
-      background:
-        radial-gradient(circle at 50% 5%, rgba(255,255,255,0.14), transparent 55%),
-        radial-gradient(circle at 120% 80%, rgba(255,180,90,0.16), transparent 60%),
-        radial-gradient(circle at -20% 90%, rgba(72,140,255,0.18), transparent 65%),
-        #010106;
-      box-shadow:
-        inset 0 0 40px rgba(0,0,0,0.96),
-        0 0 40px rgba(0,0,0,0.9);
-    }
-
-    .bh-stars {
-      position: absolute;
-      inset: -40%;
-      background-image:
-        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.55) 0, transparent 40%),
-        radial-gradient(circle at 80% 30%, rgba(255,255,255,0.45) 0, transparent 45%),
-        radial-gradient(circle at 40% 80%, rgba(255,255,255,0.4) 0, transparent 40%),
-        radial-gradient(circle at 65% 75%, rgba(255,255,255,0.5) 0, transparent 40%);
-      opacity: 0.24;
-      filter: blur(1px);
-      animation: starParallax 38s linear infinite alternate;
-    }
-
-    @keyframes starParallax {
-      from { transform: translate3d(-4%, -2%, 0) scale(1.03); }
-      to   { transform: translate3d(4%, 3%, 0) scale(1.05); }
-    }
-
-    .bh-horizon {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 260px;
-      height: 260px;
-      margin: -130px;
-      border-radius: 50%;
-      background: #000000;
-      box-shadow:
-        0 0 0 4px #000000,
-        0 0 80px rgba(0,0,0,1);
-      z-index: 5;
-    }
-
-    /* Akkretionsscheibe – relativistische Farbverschiebung: blau eine Seite, rot/orange die andere */
-
-    .bh-disc {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 380px;
-      height: 380px;
-      margin: -190px;
-      border-radius: 50%;
-      background:
-        conic-gradient(
-          from 150deg,
-          rgba(255, 150, 60, 0.15) 0deg,
-          rgba(255, 210, 120, 0.95) 40deg,
-          rgba(255, 250, 230, 1.0) 70deg,
-          rgba(255, 200, 110, 0.95) 110deg,
-          rgba(220, 120, 60, 0.9) 150deg,
-          rgba(140, 60, 30, 0.8) 200deg,
-          rgba(80, 30, 15, 0.4) 260deg,
-          rgba(255, 150, 60, 0.15) 360deg
-        );
-      /* nur ein Ring – Mitte bleibt durchsichtig */
-      -webkit-mask: radial-gradient(circle at center,
-          transparent 0,
-          transparent 60%,
-          black 68%,
-          black 74%,
-          transparent 82%,
-          transparent 100%);
-      mask: radial-gradient(circle at center,
-          transparent 0,
-          transparent 60%,
-          black 68%,
-          black 74%,
-          transparent 82%,
-          transparent 100%);
-      filter: blur(1.1px);
-      box-shadow:
-        0 0 35px rgba(255, 190, 120, 0.7),
-        0 0 80px rgba(255, 150, 70, 0.65);
-      animation: discSpin 28s linear infinite;
-      z-index: 3;
-    }
-
-    @keyframes discSpin {
-      from { transform: perspective(900px) rotateX(63deg) rotateZ(0deg); }
-      to   { transform: perspective(900px) rotateX(63deg) rotateZ(360deg); }
-    }
-
-    .demo-processing .bh-disc {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 380px;
-      height: 380px;
-      margin: -190px;
-      border-radius: 50%;
-      background:
-        conic-gradient(
-          from 150deg,
-          rgba(255, 150, 60, 0.15) 0deg,
-          rgba(255, 210, 120, 0.95) 40deg,
-          rgba(255, 250, 230, 1.0) 70deg,
-          rgba(255, 200, 110, 0.95) 110deg,
-          rgba(220, 120, 60, 0.9) 150deg,
-          rgba(140, 60, 30, 0.8) 200deg,
-          rgba(80, 30, 15, 0.4) 260deg,
-          rgba(255, 150, 60, 0.15) 360deg
-        );
-      /* nur ein Ring – Mitte bleibt durchsichtig */
-      -webkit-mask: radial-gradient(circle at center,
-          transparent 0,
-          transparent 60%,
-          black 68%,
-          black 74%,
-          transparent 82%,
-          transparent 100%);
-      mask: radial-gradient(circle at center,
-          transparent 0,
-          transparent 60%,
-          black 68%,
-          black 74%,
-          transparent 82%,
-          transparent 100%);
-      filter: blur(1.1px);
-      box-shadow:
-        0 0 35px rgba(255, 190, 120, 0.7),
-        0 0 80px rgba(255, 150, 70, 0.65);
-      animation: discSpin 28s linear infinite;
-      z-index: 3;
-    }
-
-    .bh-lensing-ring {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 320px;
-      height: 320px;
-      margin: -160px;
-      border-radius: 50%;
-      background:
-        radial-gradient(circle at center,
-          rgba(255, 255, 255, 0.0) 60%,
-          rgba(255, 255, 255, 0.5) 67%,
-          rgba(255, 220, 200, 0.2) 75%,
-          transparent 100%);
-      mix-blend-mode: screen;
-      filter: blur(1.0px);
-      opacity: 0.8;
-      animation: ringPulse 7s ease-in-out infinite;
-      z-index: 6;
-    }
-
-    @keyframes ringPulse {
-      0%, 100% { transform: scale(1); opacity: 0.65; }
-      40%      { transform: scale(1.03); opacity: 0.85; }
-      70%      { transform: scale(1.01); opacity: 0.7; }
-    }
-
-    .bh-accretion-mist {
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(circle at 60% 30%, rgba(255, 255, 255, 0.10), transparent 55%),
-        radial-gradient(circle at 30% 80%, rgba(255, 120, 40, 0.15), transparent 70%),
-        radial-gradient(circle at 80% 80%, rgba(40, 130, 255, 0.12), transparent 70%);
-      mix-blend-mode: screen;
-      opacity: 0.45;
-      pointer-events: none;
-    }
-
-    /* Drop-Zone */
-
-    .bh-dropzone {
-      position: absolute;
-      inset: 0;
-      cursor: grab;
-      z-index: 6;
-    }
-
-    .bh-dropzone.drag-over {
-      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.25);
-    }
-
-    .bh-helper-label {
-      position: absolute;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 12px;
-      color: var(--text-muted);
-      background: rgba(0, 0, 0, 0.55);
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      backdrop-filter: blur(14px);
-    }
-
-    .bh-helper-label span.dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent-soft);
-      box-shadow: 0 0 10px rgba(255, 177, 90, 0.9);
-    }
-
-    /* Invoices/Sidebar */
-
-    .side-panel {
-      border-radius: var(--card-radius);
-      padding: 20px 20px 22px;
-      background: radial-gradient(circle at top left, rgba(72, 128, 255, 0.5), rgba(15, 18, 40, 0.96));
-      box-shadow:
-        0 18px 70px rgba(0, 0, 0, 0.85),
-        0 0 80px rgba(19, 45, 120, 0.9);
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .side-pill {
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      padding: 5px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: linear-gradient(90deg, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
-    }
-
-    .side-pill span {
-      opacity: 0.8;
-    }
-
-    .side-title {
-      font-size: 18px;
-      font-weight: 600;
-    }
-
-    .side-sub {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .invoice-list {
-      margin-top: 6px;
-      border-radius: 16px;
-      background: rgba(3, 4, 12, 0.78);
-      padding: 10px 10px 10px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 200px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .invoice-list::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at top, rgba(255,255,255,0.15), transparent 70%);
-      opacity: 0.4;
-      pointer-events: none;
-    }
-
-    .invoice-card {
-      position: relative;
-      z-index: 1;
-      padding: 8px 9px;
-      border-radius: 12px;
-      background: linear-gradient(90deg, rgba(20, 27, 60, 0.95), rgba(15, 10, 40, 0.95));
+        radial-gradient(circle at top left, rgba(80, 200, 255, 0.24), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(255, 140, 60, 0.18), transparent 55%),
+        rgba(5, 7, 12, 0.95);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 12px;
-      overflow: hidden;
-    }
-
-    .invoice-card-main {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .invoice-name {
-      font-weight: 500;
-    }
-
-    .invoice-meta {
-      color: var(--text-muted);
-      font-size: 11px;
-    }
-
-    .invoice-amount {
-      font-weight: 600;
-      font-size: 13px;
-    }
-
-    .invoice-chip {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      background: radial-gradient(circle at top, rgba(255,177,90,0.4), rgba(82,57,18,0.7));
-      color: #fff7eb;
-    }
-
-    .side-footer {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 6px;
-    }
-
-    .primary-btn {
-      border: none;
-      outline: none;
-      cursor: pointer;
-      padding: 10px 16px;
-      border-radius: 999px;
-      font-size: 14px;
-      font-weight: 550;
-      color: #140700;
-      background: radial-gradient(circle at 30% 0, #ffeccc, #ffb15a 40%, #ff7b33 100%);
       box-shadow:
-        0 18px 40px rgba(0, 0, 0, 0.9),
-        0 0 22px rgba(255, 145, 70, 0.9);
+        0 32px 80px rgba(0, 0, 0, 0.75),
+        0 0 0 1px rgba(255, 255, 255, 0.02);
+      backdrop-filter: blur(18px);
+      color: #f9fafb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+
+    .ai-upload-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .ai-badge {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: transform 120ms ease-out, box-shadow 150ms ease-out, filter 160ms ease-out;
-    }
-
-    .primary-btn:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.03);
-      box-shadow:
-        0 24px 60px rgba(0, 0, 0, 0.95),
-        0 0 32px rgba(255, 165, 90, 0.95);
-    }
-
-    .primary-btn:active {
-      transform: translateY(1px) scale(0.99);
-      box-shadow:
-        0 12px 30px rgba(0, 0, 0, 0.85),
-        0 0 18px rgba(255, 145, 70, 0.75);
-    }
-
-    .primary-btn-icon {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      border: 1px solid rgba(0,0,0,0.4);
-      background: radial-gradient(circle at 30% 30%, #ffffff, #e0e7ff);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      color: #142648;
-    }
-
-    .demo-meta-small {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .demo-meta-small strong {
-      color: var(--accent-green);
-      font-weight: 500;
-    }
-
-    /* Animation der fallenden Rechnungen */
-
-    .demo-processing .invoice-card {
-      animation: fallIntoHole 10s cubic-bezier(0.12, 0.4, 0.28, 1.0) forwards;
-      transform-origin: center;
-    }
-
-    .demo-processing .invoice-card:nth-child(2) {
-      animation-delay: 0.6s;
-    }
-
-    @keyframes fallIntoHole {
-      0% {
-        transform: translate(0, 0) scale(1) rotateZ(0deg);
-        opacity: 1;
-        filter: brightness(1);
-      }
-      35% {
-        transform: translate(-80px, -120px) scale(1.02) rotateZ(-4deg);
-      }
-      60% {
-        transform: translate(-40px, -200px) scale(0.7) rotateZ(-18deg);
-        filter: brightness(1.3);
-      }
-      80% {
-        transform: translate(40px, -260px) scale(0.3) rotateZ(-38deg);
-        filter: brightness(1.6);
-        opacity: 0.7;
-      }
-      100% {
-        transform: translate(0, -340px) scale(0.05) rotateZ(-60deg);
-        opacity: 0;
-        filter: brightness(2);
-      }
-    }
-
-    /* Fade/Glow Overlay während Verarbeitung */
-
-    .processing-overlay {
-      position: absolute;
-      inset: -10px;
-      border-radius: inherit;
-      pointer-events: none;
-      opacity: 0;
-      background:
-        radial-gradient(circle at 50% 45%, rgba(255, 188, 100, 0.35), transparent 65%),
-        radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.85), transparent 75%);
-      mix-blend-mode: screen;
-      transition: opacity var(--transition-slow);
-      z-index: 7;
-    }
-
-    .demo-processing .processing-overlay {
-      opacity: 1;
-    }
-
-    .status-pill {
-      position: absolute;
-      top: 16px;
-      left: 22px;
-      padding: 6px 12px;
+      gap: 0.5rem;
+      padding: 0.15rem 0.65rem;
       border-radius: 999px;
-      background: rgba(0, 0, 0, 0.65);
-      border: 1px solid rgba(255,255,255,0.18);
-      font-size: 11px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      z-index: 10;
-      backdrop-filter: blur(12px);
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: #e5e7eb;
     }
 
-    .status-pill-dot {
+    .ai-dot {
       width: 8px;
       height: 8px;
-      border-radius: 50%;
-      background: var(--accent-green);
-      box-shadow: 0 0 8px rgba(59, 227, 143, 0.85);
-    }
-
-    .demo-processing .status-pill-dot {
-      background: var(--accent-strong);
-      box-shadow: 0 0 10px rgba(255, 145, 70, 0.9);
-    }
-
-    /* Kleine Hinweis-Badge unten links */
-
-    .demo-badge {
-      position: fixed;
-      left: 18px;
-      bottom: 18px;
-      font-size: 11px;
-      color: var(--text-muted);
-      background: rgba(0, 0, 0, 0.72);
-      padding: 6px 10px;
       border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      display: inline-flex;
+      background: radial-gradient(circle, #22d3ee, #0ea5e9);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.85);
+    }
+
+    .ai-upload-title {
+      font-size: 1.5rem;
+      line-height: 1.25;
+      margin: 0.75rem 0 0.35rem;
+      font-weight: 600;
+    }
+
+    .ai-upload-subtitle {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #9ca3af;
+      max-width: 620px;
+    }
+
+    /* Dropzone */
+
+    .ai-upload-dropzone {
+      position: relative;
+      margin-top: 1.25rem;
+      padding: 1.75rem 1.5rem 1.5rem;
+      border-radius: 20px;
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.98));
+      border: 1px dashed rgba(148, 163, 184, 0.45);
+      overflow: hidden;
+      cursor: pointer;
+      transition:
+        border-color 140ms ease-out,
+        box-shadow 140ms ease-out,
+        transform 140ms ease-out,
+        background 160ms ease-out;
+    }
+
+    .ai-upload-dropzone:hover {
+      border-color: rgba(56, 189, 248, 0.7);
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.9);
+      transform: translateY(-1px);
+    }
+
+    .ai-upload-dropzone.is-dragover {
+      border-style: solid;
+      border-color: rgba(56, 189, 248, 0.95);
+      box-shadow:
+        0 0 0 1px rgba(56, 189, 248, 0.6),
+        0 24px 80px rgba(8, 47, 73, 0.9);
+      background: radial-gradient(circle at top, rgba(8, 47, 73, 0.95), rgba(15, 23, 42, 0.98));
+    }
+
+    .ai-upload-orbit-bg {
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle at 20% -10%, rgba(56, 189, 248, 0.2), transparent 60%),
+        radial-gradient(circle at 80% 120%, rgba(249, 115, 22, 0.16), transparent 60%);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .ai-upload-inner {
+      position: relative;
+      display: flex;
       align-items: center;
-      gap: 6px;
-      backdrop-filter: blur(16px);
-      z-index: 50;
+      gap: 1.5rem;
+      z-index: 1;
     }
 
-    .demo-badge span {
-      color: var(--accent-blue);
+    /* Icon / Orbit */
+
+    .ai-upload-icon-orbit {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
     }
 
+    .ai-upload-core {
+      position: relative;
+      width: 52px;
+      height: 52px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 0%, #f97316, #111827 75%);
+      box-shadow:
+        0 0 0 1px rgba(248, 250, 252, 0.12),
+        0 0 30px rgba(248, 113, 22, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ai-upload-core-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #fefce8;
+    }
+
+    .ai-upload-ring {
+      position: absolute;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .ai-upload-ring-outer {
+      width: 86px;
+      height: 38px;
+      transform: rotate(-15deg);
+      border-color: rgba(56, 189, 248, 0.7);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.8);
+    }
+
+    .ai-upload-ring-inner {
+      width: 70px;
+      height: 28px;
+      transform: rotate(18deg);
+      border-color: rgba(251, 146, 60, 0.85);
+      box-shadow: 0 0 14px rgba(251, 146, 60, 0.8);
+    }
+
+    /* Text im Drop-Bereich */
+
+    .ai-upload-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .ai-upload-mainline {
+      font-size: 1.05rem;
+      font-weight: 500;
+    }
+
+    .ai-upload-secondary {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: #6b7280;
+    }
+
+    .ai-upload-button {
+      margin-top: 0.4rem;
+      align-self: flex-start;
+      border: none;
+      border-radius: 999px;
+      padding: 0.55rem 1.1rem;
+      background: linear-gradient(135deg, #22c55e, #14b8a6);
+      color: #f9fafb;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow:
+        0 12px 30px rgba(5, 150, 105, 0.45),
+        0 0 0 1px rgba(15, 23, 42, 0.7);
+      transition:
+        transform 120ms ease-out,
+        box-shadow 120ms ease-out,
+        filter 120ms ease-out;
+    }
+
+    .ai-upload-button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+      box-shadow:
+        0 16px 40px rgba(5, 150, 105, 0.6),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+    }
+
+    .ai-upload-button:active {
+      transform: translateY(0);
+      box-shadow:
+        0 8px 18px rgba(5, 150, 105, 0.45),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+    }
+
+    .ai-upload-meta {
+      margin-top: 0.25rem;
+      font-size: 0.72rem;
+      color: #9ca3af;
+    }
+
+    .ai-upload-footer {
+      position: relative;
+      margin-top: 1.25rem;
+      z-index: 1;
+    }
+
+    .ai-upload-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .ai-pill {
+      padding: 0.16rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.85);
+      font-size: 0.7rem;
+      color: #e5e7eb;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 720px) {
+      .ai-upload-shell {
+        padding: 1.4rem 1.25rem;
+        margin: 32px 16px 24px 16px;
+      }
+
+      .ai-upload-inner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .ai-upload-icon-orbit {
+        margin-bottom: 0.5rem;
+      }
+
+      .ai-upload-title {
+        font-size: 1.25rem;
+      }
+    }
+
+    /* Karten für Datei-Liste & Fortschritt */
+
+    .demo-section {
+      max-width: 960px;
+      margin: 0 auto 60px auto;
+      padding: 0 16px;
+    }
+
+    .demo-card {
+      background: white;
+      border-radius: 18px;
+      padding: 24px 24px 20px 24px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      margin-bottom: 24px;
+    }
+
+    .demo-card-title {
+      margin: 0 0 16px 0;
+      font-size: 1.1rem;
+      color: #003856;
+    }
+
+    .demo-file-list {
+      max-height: 420px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .demo-file-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+    }
+
+    .demo-file-main {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .demo-file-icon {
+      font-size: 1.8rem;
+    }
+
+    .demo-file-name {
+      font-weight: 600;
+      color: #003856;
+    }
+
+    .demo-file-size {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .demo-file-remove {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .demo-progress-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .demo-progress-bar {
+      width: 100%;
+      height: 36px;
+      background: #e5e7eb;
+      border-radius: 18px;
+      overflow: hidden;
+      margin: 24px 0 12px 0;
+      position: relative;
+    }
+
+    .demo-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #003856 0%, #ffb900 100%);
+      transition: width 0.3s;
+    }
+
+    .demo-progress-text {
+      text-align: center;
+      color: #4b5563;
+      margin: 0;
+    }
+
+    /* Toasts */
+
+    #toastContainer {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+
+    .toast {
+      min-width: 300px;
+      max-width: 400px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: white;
+      border-left: 4px solid;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .toast.success {
+      border-color: #22c55e;
+    }
+
+    .toast.error {
+      border-color: #ef4444;
+    }
+
+    .toast.info {
+      border-color: #3b82f6;
+    }
+
+    .toast.warning {
+      border-color: #f59e0b;
+    }
+
+    .toast-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .toast-title {
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 4px;
+    }
+
+    .toast-message {
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+
+    .toast-close {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: #9ca3af;
+      cursor: pointer;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+
+    .toast-close:hover {
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+    }
   </style>
 </head>
 <body>
-<div class="demo-shell" id="demo-root">
-  <header class="demo-header">
-    <div class="demo-brand">
-      <div class="demo-logo">S</div>
-      <div class="demo-brand-text">
-        <div class="demo-brand-main">SBS Deutschland</div>
-        <div class="demo-brand-sub">KI-Rechnungsverarbeitung · Demo</div>
-      </div>
-      <div class="demo-tag">
-        <span class="demo-tag-dot"></span>
-        <span>Live Demo · Schwarzes Loch</span>
-      </div>
-    </div>
+  <!-- Header wie auf den anderen Seiten -->
+  <header class="header">
+    <div class="header-inner">
+      <a href="/" class="logo-wrap">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+        <div class="logo-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service · Weinheim</span>
+        </div>
+      </a>
 
-    <div class="demo-header-right">
-      <div class="demo-chip">
-        <span style="width:7px;height:7px;border-radius:50%;background:var(--accent-blue);"></span>
-        <span>Keine Registrierung · nur Demo-Belege</span>
-      </div>
+      <button class="burger" id="burger" aria-label="Menü">
+        <span></span><span></span><span></span>
+      </button>
+
+      <nav class="nav" id="nav">
+        <a href="/">Upload</a>
+        <a href="/history">Verlauf</a>
+        <a href="/analytics">Analytics</a>
+        <a href="/email-config">Email-Inbox</a>
+
+        <div class="account-dropdown">
+          <span class="account-toggle">
+            👤 <span id="accountName">Account</span> ▾
+          </span>
+          <div class="account-menu">
+            <div class="section-label">Workspace</div>
+            <a href="/">📥 Upload</a>
+            <a href="/history">📊 Verlauf</a>
+            <a href="/analytics">📈 Analytics</a>
+            <a href="/email-config">📧 Email-Inbox</a>
+
+            <div class="divider"></div>
+            <div class="section-label">Konto</div>
+            <a href="/account">💳 Konto &amp; Nutzung</a>
+            <a href="/team">👥 Team &amp; Rollen</a>
+            <a href="/audit-log">📜 Audit-Log</a>
+            <a href="/profile">⚙️ Einstellungen</a>
+
+            <div class="divider"></div>
+            <div class="section-label">SBS Website</div>
+            <a href="https://sbsdeutschland.com/preise" target="_blank" rel="noreferrer">💶 Preise</a>
+            <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" target="_blank" rel="noreferrer">✉️ Kontakt</a>
+
+            <div class="divider"></div>
+            <a href="/logout">🚪 Logout</a>
+          </div>
+        </div>
+      </nav>
     </div>
   </header>
 
-  <main class="demo-main">
-    <section class="bh-card">
-      <div class="bh-space" id="bh-space">
-        <div class="bh-stars"></div>
-        <div class="bh-accretion-mist"></div>
-        <div class="bh-disc"></div>
-        <div class="bh-lensing-ring"></div>
-        <div class="bh-horizon"></div>
+  <main class="main-content">
+    <!-- Hero -->
+    <div class="hero-compact">
+      <div class="hero-content">
+        <div class="hero-badge">LIVE-DEMO · KI-RECHNUNGSVERARBEITUNG</div>
+        <h1>Rechnungen hochladen, Insights in Sekunden.</h1>
+        <p>
+          Diese Demo zeigt, wie Ihre Finanzabteilung Belege in wenigen Klicks laden kann –
+          inklusive automatischer Extraktion, Status-Monitoring und Audit-Log.
+        </p>
+      </div>
+    </div>
 
-        <div class="status-pill" id="status-pill">
-          <div class="status-pill-dot"></div>
-          <span id="status-label">Bereit · Dateien ins Schwarze Loch ziehen oder Demo starten</span>
+    <!-- CFO-Level Upload Panel -->
+    <section class="ai-upload-shell">
+      <header class="ai-upload-header">
+        <div class="ai-badge">
+          <span class="ai-dot"></span>
+          <span class="ai-badge-text">Quantum AI Finance</span>
+        </div>
+        <h2 class="ai-upload-title">Belege fallen lassen. Erkenntnisse einsammeln.</h2>
+        <p class="ai-upload-subtitle">
+          Ziehen Sie PDF-, PNG- oder JPG-Rechnungen hierher – unsere KI extrahiert Beträge,
+          Lieferanten und Zahlungsziele in Sekunden und übergibt die Daten an Ihr ERP.
+        </p>
+      </header>
+
+      <div id="upload-dropzone" class="ai-upload-dropzone" aria-label="Rechnungen hochladen">
+        <div class="ai-upload-orbit-bg"></div>
+
+        <div class="ai-upload-inner">
+          <div class="ai-upload-icon-orbit">
+            <div class="ai-upload-core">
+              <span class="ai-upload-core-text">AI</span>
+            </div>
+            <div class="ai-upload-ring ai-upload-ring-outer"></div>
+            <div class="ai-upload-ring ai-upload-ring-inner"></div>
+          </div>
+
+          <div class="ai-upload-copy">
+            <div class="ai-upload-mainline">Dateien hier ablegen</div>
+            <div class="ai-upload-secondary">oder</div>
+            <button type="button" id="upload-browse-btn" class="ai-upload-button">
+              Dateien auswählen
+            </button>
+            <input
+              id="upload-file-input"
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg"
+              multiple
+              hidden
+            />
+            <div class="ai-upload-meta">
+              <span>Enterprise-grade Security ·</span>
+              <span> SOC2-ready ·</span>
+              <span> Inference in EU-Rechenzentren</span>
+            </div>
+          </div>
         </div>
 
-        <div class="bh-dropzone" id="bh-dropzone"></div>
-
-        <div class="bh-helper-label">
-          <span class="dot"></span>
-          <span>Rechnungen hierher ziehen – das Schwarze Loch verschlingt sie.</span>
-        </div>
-
-        <div class="processing-overlay"></div>
+        <footer class="ai-upload-footer">
+          <div class="ai-upload-pills">
+            <span class="ai-pill">Auto-Posting in ERP</span>
+            <span class="ai-pill">Anomalie-Erkennung</span>
+            <span class="ai-pill">Skalierbar wie NVIDIA</span>
+          </div>
+        </footer>
       </div>
     </section>
 
-    <aside class="side-panel">
-      <div class="side-pill">
-        <span>Ihre Demo-Rechnungen</span>
-      </div>
-      <div class="side-title">2 Belege werden verarbeitet</div>
-      <div class="side-sub">
-        Beobachten Sie, wie die Demo-Belege wie reale Dokumente in Materie
-        übergehen und vom Schwarzen Loch verschlungen werden.
-      </div>
-
-      <div class="invoice-list" id="invoice-list">
-        <div class="invoice-card">
-          <div class="invoice-card-main">
-            <div class="invoice-name">Demo-Rechnung · Energieversorger</div>
-            <div class="invoice-meta">PDF · 2 Seiten · Fällig in 14 Tagen</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
-            <div class="invoice-amount">2.975,00&nbsp;€</div>
-            <div class="invoice-chip">Netto & MwSt. auslesen</div>
-          </div>
-        </div>
-
-        <div class="invoice-card">
-          <div class="invoice-card-main">
-            <div class="invoice-name">Demo-Rechnung · Logistikdienstleister</div>
-            <div class="invoice-meta">PDF · 1 Seite · Sammelrechnung</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
-            <div class="invoice-amount">1.420,80&nbsp;€</div>
-            <div class="invoice-chip">Positionen analysieren</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="side-footer">
-        <button class="primary-btn" id="start-demo-btn">
-          <div class="primary-btn-icon">⟳</div>
-          <span>Jetzt Demo starten</span>
+    <!-- Datei-Liste & Fortschritt -->
+    <section class="demo-section">
+      <div id="fileListBox" class="demo-card" style="display: none;">
+        <h3 class="demo-card-title">
+          📋 Hochgeladene Dateien (<span id="fileCount">0</span>)
+        </h3>
+        <div id="fileList" class="demo-file-list"></div>
+        <button id="processBtn" class="btn btn-accent btn-lg btn-block">
+          ⚡ Jetzt verarbeiten
         </button>
-        <div class="demo-meta-small">
-          Die Animation läuft ca. <strong>10 Sekunden</strong> – im Hintergrund
-          werden Ihre Demo-Belege wie echte Rechnungen verarbeitet. Anschließend
-          wechseln Sie automatisch zur Ergebnisansicht.
-        </div>
       </div>
-    </aside>
+
+      <div id="progressBox" class="demo-card" style="display: none;">
+        <div class="demo-progress-icon">⚙️</div>
+        <h2 class="demo-card-title">Verarbeitung läuft …</h2>
+        <div class="demo-progress-bar">
+          <div id="progressFill" class="demo-progress-fill"></div>
+        </div>
+        <p id="progressText" class="demo-progress-text">Bitte warten …</p>
+        <div id="upload-status" style="margin-top: 16px;"></div>
+      </div>
+    </section>
   </main>
-</div>
 
-<div class="demo-badge">
-  🔬 <span>Demo</span> · keine echten Unternehmensdaten
-</div>
+  <!-- Footer wie auf den anderen Seiten -->
+  <footer class="footer">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">
+          <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+          <div class="footer-brand-text">
+            <strong>SBS Deutschland</strong>
+            <span>Smart Business Service</span>
+          </div>
+        </div>
+        <p class="footer-tagline">
+          Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+        </p>
+        <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+      </div>
 
-<script>
-  (function () {
-    const root = document.getElementById("demo-root");
-    const dropzone = document.getElementById("bh-dropzone");
-    const invoiceList = document.getElementById("invoice-list");
-    const startBtn = document.getElementById("start-demo-btn");
-    const statusLabel = document.getElementById("status-label");
+      <div>
+        <h4>Produkte</h4>
+        <ul>
+          <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+          <li><a href="/preise">Preise &amp; Pakete</a></li>
+          <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
+        </ul>
+      </div>
 
-    const PROCESS_DURATION_MS = 10000; // 10 Sekunden
-    const DEMO_RESULT_URL = "/history"; // hier anpassen, falls spezielle Demo-Job-URL existiert
-    let processing = false;
+      <div>
+        <h4>Unternehmen</h4>
+        <ul>
+          <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+          <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+          <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+          <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+        </ul>
+      </div>
 
-    function ensureNotProcessing() {
-      return !processing;
+      <div>
+        <h4>Rechtliches</h4>
+        <ul>
+          <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+          <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+          <li><a href="/sbshomepage/agb.html">AGB</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+      <p>Made with ❤️ in Weinheim</p>
+    </div>
+  </footer>
+
+  <!-- Globales JS -->
+  <script src="/static/js/main.js"></script>
+
+  <!-- Toast Container -->
+  <div id="toastContainer"></div>
+
+  <!-- Demo-spezifisches JS -->
+  <script>
+    // --- Toasts ---
+    function showToast(message, type = "info", duration = 4000) {
+      const container = document.getElementById("toastContainer");
+      if (!container) return;
+
+      const toast = document.createElement("div");
+      toast.className = "toast " + type;
+
+      const icons = {
+        success: "✅",
+        error: "❌",
+        info: "ℹ️",
+        warning: "⚠️",
+      };
+
+      const titles = {
+        success: "Erfolg",
+        error: "Fehler",
+        info: "Information",
+        warning: "Warnung",
+      };
+
+      toast.innerHTML =
+        '<div class="toast-icon">' +
+        (icons[type] || "ℹ️") +
+        '</div>' +
+        '<div class="toast-content">' +
+        '<div class="toast-title">' +
+        (titles[type] || "Info") +
+        "</div>" +
+        '<div class="toast-message">' +
+        message +
+        "</div>" +
+        "</div>" +
+        '<button class="toast-close" onclick="this.parentElement.remove()">×</button>';
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = "slideOut 0.3s ease-in";
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
     }
 
-    // Drag & Drop
-    dropzone.addEventListener("dragover", function (e) {
-      e.preventDefault();
-      if (!ensureNotProcessing()) return;
-      dropzone.classList.add("drag-over");
-      statusLabel.textContent = "Loslassen, um Belege ins Schwarze Loch zu übergeben …";
-    });
+    // --- Einfacher Error-Wrapper ---
+    function showError(errorTypeOrMessage, customMessage) {
+      const msg =
+        typeof errorTypeOrMessage === "string"
+          ? customMessage || errorTypeOrMessage
+          : "Ein Fehler ist aufgetreten.";
+      showToast(msg, "error", 5000);
+    }
 
-    dropzone.addEventListener("dragleave", function () {
-      if (!ensureNotProcessing()) return;
-      dropzone.classList.remove("drag-over");
-      statusLabel.textContent = "Bereit · Dateien ins Schwarze Loch ziehen oder Demo starten";
-    });
+    // --- Upload-Logik (Datei-Handling + Processing) ---
 
-    dropzone.addEventListener("drop", function (e) {
-      e.preventDefault();
-      if (!ensureNotProcessing()) return;
+    let files = [];
 
-      dropzone.classList.remove("drag-over");
+    function addFiles(newFiles) {
+      const fileListBox = document.getElementById("fileListBox");
+      const fileList = document.getElementById("fileList");
+      const fileCount = document.getElementById("fileCount");
 
-      const files = Array.from(e.dataTransfer.files || []);
-      if (files.length === 0) {
-        statusLabel.textContent = "Keine Dateien erkannt – versuchen Sie es erneut.";
+      const arr = Array.prototype.slice.call(newFiles || []);
+      if (!arr.length) return;
+
+      for (const f of arr) {
+        if (f.size > 20 * 1024 * 1024) {
+          showError("file_too_large", f.name + " ist zu groß (max. 20 MB).");
+          continue;
+        }
+        files.push(f);
+      }
+
+      if (!files.length) {
+        fileListBox.style.display = "none";
         return;
       }
 
-      // Zeige die ersten 2 Dateien exemplarisch im Panel
-      statusLabel.textContent = "Belege geladen – bereit für die Schwarzes-Loch-Demo.";
-      const slice = files.slice(0, 2);
-      invoiceList.innerHTML = "";
+      fileListBox.style.display = "block";
+      fileList.innerHTML = "";
+      fileCount.textContent = files.length.toString();
 
-      slice.forEach((file, idx) => {
-        const card = document.createElement("div");
-        card.className = "invoice-card";
-        card.innerHTML = `
-          <div class="invoice-card-main">
-            <div class="invoice-name">${file.name}</div>
-            <div class="invoice-meta">${Math.round(file.size / 1024)} kB · ${
-          file.type || "Datei"
-        }</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
-            <div class="invoice-amount">Demo-Beleg ${idx + 1}</div>
-            <div class="invoice-chip">Wird analysiert</div>
-          </div>
-        `;
-        invoiceList.appendChild(card);
+      files.forEach((f, index) => {
+        const icon = f.type === "application/pdf" ? "📕" : "🖼️";
+        const row = document.createElement("div");
+        row.className = "demo-file-row";
+
+        row.innerHTML =
+          '<div class="demo-file-main">' +
+          '<div class="demo-file-icon">' +
+          icon +
+          "</div>" +
+          '<div>' +
+          '<div class="demo-file-name">' +
+          f.name +
+          "</div>" +
+          '<div class="demo-file-size">' +
+          (f.size / 1024 / 1024).toFixed(2) +
+          " MB</div>" +
+          "</div>" +
+          "</div>" +
+          '<button class="demo-file-remove" data-index="' +
+          index +
+          '">✕</button>';
+
+        row
+          .querySelector(".demo-file-remove")
+          .addEventListener("click", function () {
+            removeFile(index);
+          });
+
+        fileList.appendChild(row);
       });
-    });
-
-    function startProcessingAnimation() {
-      if (processing) return;
-      processing = true;
-
-      root.classList.add("demo-processing");
-      statusLabel.textContent =
-        "Demo läuft · Das Schwarze Loch verschlingt Ihre Belege …";
-
-      // optional: Backend-Ping, aber Fehler ignorieren (Demo soll immer laufen)
-      fetch("/demo/start", { method: "POST" }).catch(function () {});
-
-      setTimeout(function () {
-        window.location.href = DEMO_RESULT_URL;
-      }, PROCESS_DURATION_MS);
     }
 
-    startBtn.addEventListener("click", function () {
-      startProcessingAnimation();
-    });
+    function removeFile(i) {
+      files.splice(i, 1);
+      addFiles([]); // Re-render
+    }
 
-    // Klick in die Mitte startet ebenfalls die Demo
-    dropzone.addEventListener("click", function () {
-      if (!processing) {
-        startProcessingAnimation();
+    async function startProcessing() {
+      const processBtn = document.getElementById("processBtn");
+      const fileListBox = document.getElementById("fileListBox");
+      const progressBox = document.getElementById("progressBox");
+      const progressFill = document.getElementById("progressFill");
+      const progressText = document.getElementById("progressText");
+
+      if (!files.length || !processBtn) return;
+
+      processBtn.disabled = true;
+      processBtn.classList.add("btn-loading");
+
+      fileListBox.style.display = "none";
+      progressBox.style.display = "block";
+      progressFill.style.width = "0%";
+      progressText.textContent = "Upload startet …";
+
+      try {
+        const fd = new FormData();
+        files.forEach((f) => fd.append("files", f));
+
+        console.log("Uploading", files.length, "files");
+        const r = await fetch("/api/upload", {
+          method: "POST",
+          body: fd,
+        });
+        const data = await r.json();
+
+        if (data.error) {
+          showError(data.error, data.error);
+          if (data.redirect) window.location.href = data.redirect;
+          return;
+        }
+
+        const jobId = data.batch_id || data.job_id;
+        if (!jobId) {
+          throw new Error("Kein Job-Identifier vom Server erhalten.");
+        }
+
+        console.log("Job:", jobId);
+        connectWebSocket(jobId);
+        showToast(
+          "Upload erfolgreich! Verarbeitung gestartet …",
+          "success",
+          3000
+        );
+
+        await fetch("/api/process/" + jobId, { method: "POST" });
+        pollProgress(jobId);
+      } catch (e) {
+        console.error(e);
+        showError("Fehler beim Upload: " + e.message);
+        progressBox.style.display = "none";
+        fileListBox.style.display = "block";
       }
+    }
+
+    function pollProgress(jobId) {
+      const progressFill = document.getElementById("progressFill");
+      const progressText = document.getElementById("progressText");
+
+      const timer = setInterval(async () => {
+        try {
+          const r = await fetch("/api/status/" + jobId);
+          const d = await r.json();
+
+          const processed = d.processed || 0;
+          const total = d.total || 1;
+          const pct = Math.round((processed / total) * 100);
+
+          if (progressFill) progressFill.style.width = pct + "%";
+          if (progressText)
+            progressText.textContent =
+              processed +
+              " von " +
+              (d.total || 0) +
+              " Dateien verarbeitet – " +
+              pct +
+              "%";
+
+          if (d.status === "completed") {
+            clearInterval(timer);
+            window.location.href = "/job/" + jobId;
+          } else if (d.status === "error") {
+            clearInterval(timer);
+            showError("Verarbeitung konnte nicht abgeschlossen werden.");
+          }
+        } catch (e) {
+          console.error(e);
+          // wir brechen das Polling nicht sofort ab, um kurzzeitige Fehler zu tolerieren
+        }
+      }, 2000);
+    }
+
+    // --- WebSocket für Live-Updates (optional, ergänzt Polling) ---
+    let ws = null;
+    let currentJobId = null;
+
+    function connectWebSocket(jobId) {
+      currentJobId = jobId;
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      try {
+        ws = new WebSocket(protocol + "//" + window.location.host + "/ws/" + jobId);
+      } catch (e) {
+        console.warn("WebSocket konnte nicht geöffnet werden:", e);
+        return;
+      }
+
+      ws.onopen = function () {
+        console.log("✅ WebSocket connected");
+      };
+
+      ws.onmessage = function (event) {
+        const message = JSON.parse(event.data);
+        handleWebSocketUpdate(message);
+      };
+
+      ws.onerror = function (error) {
+        console.error("❌ WebSocket error:", error);
+      };
+
+      ws.onclose = function () {
+        console.log("WebSocket closed");
+      };
+    }
+
+    function handleWebSocketUpdate(message) {
+      console.log("📡 WebSocket update:", message);
+      const progressFill = document.getElementById("progressFill");
+      const progressText = document.getElementById("progressText");
+
+      switch (message.type) {
+        case "progress":
+          if (progressFill) progressFill.style.width = message.percentage + "%";
+          if (progressText)
+            progressText.textContent =
+              message.current +
+              " von " +
+              message.total +
+              " Dateien verarbeitet – " +
+              message.percentage +
+              "%";
+          break;
+        case "job_complete":
+          if (ws) ws.close();
+          if (currentJobId) {
+            window.location.href = "/job/" + currentJobId;
+          }
+          break;
+        case "error":
+          showError(message.error || "Fehler bei der Verarbeitung.");
+          break;
+      }
+    }
+
+    // --- CFO Dropzone-Logik ---
+
+    (function () {
+      const dropzone = document.getElementById("upload-dropzone");
+      const browseBtn = document.getElementById("upload-browse-btn");
+      const fileInput = document.getElementById("upload-file-input");
+
+      if (!dropzone || !browseBtn || !fileInput) {
+        console.warn("AI-Upload-Elemente nicht gefunden.");
+        return;
+      }
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ["dragenter", "dragover", "dragleave", "drop"].forEach(function (eventName) {
+        dropzone.addEventListener(eventName, preventDefaults, false);
+      });
+
+      ["dragenter", "dragover"].forEach(function (eventName) {
+        dropzone.addEventListener(eventName, function () {
+          dropzone.classList.add("is-dragover");
+        });
+      });
+
+      dropzone.addEventListener("dragleave", function (e) {
+        if (!dropzone.contains(e.relatedTarget)) {
+          dropzone.classList.remove("is-dragover");
+        }
+      });
+
+      dropzone.addEventListener("drop", function (e) {
+        dropzone.classList.remove("is-dragover");
+        const droppedFiles = Array.prototype.slice.call(
+          (e.dataTransfer && e.dataTransfer.files) || []
+        );
+        if (!droppedFiles.length) return;
+        addFiles(droppedFiles);
+      });
+
+      browseBtn.addEventListener("click", function () {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener("change", function (e) {
+        const selectedFiles = Array.prototype.slice.call(e.target.files || []);
+        if (!selectedFiles.length) return;
+        addFiles(selectedFiles);
+      });
+    })();
+
+    // --- Initialisierung: Process-Button & Account-Name ---
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const processBtn = document.getElementById("processBtn");
+      if (processBtn) {
+        processBtn.addEventListener("click", startProcessing);
+      }
+
+      // Account-Namen im Header aktualisieren
+      fetch("/api/user")
+        .then((r) => r.json())
+        .then((u) => {
+          const toggle = document.querySelector(".account-toggle");
+          const menu = document.querySelector(".account-menu");
+          if (u.logged_in && u.name) {
+            document.getElementById("accountName").textContent = u.name;
+          } else {
+            if (toggle) {
+              toggle.innerHTML =
+                '<a href="/login?next=/demo" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+            }
+            if (menu) menu.style.display = "none";
+          }
+        })
+        .catch(() => {});
     });
-  })();
-</script>
+  </script>
 </body>
 </html>
