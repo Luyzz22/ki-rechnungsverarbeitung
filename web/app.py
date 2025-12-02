@@ -1616,6 +1616,91 @@ async def get_2fa_status(request: Request):
     
     enabled = check_2fa_required(request.session["user_id"])
     return {"enabled": enabled}
+
+# === Organizations / Multi-Tenancy ===
+from organizations import (
+    create_organization, get_organization, get_user_organizations,
+    add_member, remove_member, get_org_members, switch_organization,
+    get_current_org, check_permission, OrgRole, get_org_stats
+)
+
+@app.get("/api/organizations", tags=["Organizations"])
+async def list_organizations(request: Request):
+    """Liste aller Organisationen des Users"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    orgs = get_user_organizations(request.session["user_id"])
+    current = get_current_org(request.session["user_id"])
+    return {"organizations": orgs, "current": current}
+
+@app.post("/api/organizations", tags=["Organizations"])
+async def create_org(request: Request):
+    """Erstellt neue Organisation"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    name = data.get("name", "").strip()
+    
+    if not name:
+        return JSONResponse({"error": "Name required"}, status_code=400)
+    
+    org = create_organization(name, request.session["user_id"])
+    return {"success": True, "organization": org}
+
+@app.post("/api/organizations/{org_id}/switch", tags=["Organizations"])
+async def switch_org(org_id: int, request: Request):
+    """Wechselt aktive Organisation"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    if switch_organization(request.session["user_id"], org_id):
+        return {"success": True}
+    return JSONResponse({"error": "Not a member"}, status_code=403)
+
+@app.get("/api/organizations/{org_id}/members", tags=["Organizations"])
+async def list_org_members(org_id: int, request: Request):
+    """Liste Mitglieder einer Organisation"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    if not check_permission(request.session["user_id"], org_id, OrgRole.VIEWER):
+        return JSONResponse({"error": "No permission"}, status_code=403)
+    
+    members = get_org_members(org_id)
+    return {"members": members}
+
+@app.post("/api/organizations/{org_id}/members", tags=["Organizations"])
+async def add_org_member(org_id: int, request: Request):
+    """Fügt Mitglied hinzu"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    if not check_permission(request.session["user_id"], org_id, OrgRole.ADMIN):
+        return JSONResponse({"error": "Admin required"}, status_code=403)
+    
+    data = await request.json()
+    user_id = data.get("user_id")
+    role = data.get("role", OrgRole.MEMBER)
+    
+    if add_member(org_id, user_id, role):
+        return {"success": True}
+    return JSONResponse({"error": "Failed"}, status_code=400)
+
+@app.get("/api/organizations/{org_id}/stats", tags=["Organizations"])
+async def org_stats(org_id: int, request: Request):
+    """Statistiken der Organisation"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    if not check_permission(request.session["user_id"], org_id, OrgRole.VIEWER):
+        return JSONResponse({"error": "No permission"}, status_code=403)
+    
+    stats = get_org_stats(org_id)
+    org = get_organization(org_id)
+    return {"organization": org, "stats": stats}
+
 # CORS für Cross-Domain API Requests
 from starlette.middleware.cors import CORSMiddleware
 
