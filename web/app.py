@@ -2013,6 +2013,18 @@ async def test_upload_page(request: Request):
 
 
 # Zusätzliche Navigationsseiten (leichte Placeholder)
+
+@app.get("/copilot", response_class=HTMLResponse)
+async def copilot_page(request: Request):
+    """
+    Vollbild-Finance-Copilot-Seite.
+    """
+    redirect = require_login(request)
+    if redirect:
+        return redirect
+    return templates.TemplateResponse("copilot.html", {"request": request})
+
+
 @app.get("/account", response_class=HTMLResponse)
 async def account_page(request: Request):
 
@@ -2760,6 +2772,286 @@ async def api_finance_snapshot(days: int = 90):
     snapshot = get_finance_snapshot(days=days)
     return snapshot
 
+# ============================================================
+# Finance Copilot LLM Engine (CFO-Level)
+# ============================================================
+from typing import Any, Dict, List, Tuple
+from openai import OpenAI
+import os
+import math
+
+_finance_copilot_client: OpenAI | None = None
+
+
+def _get_finance_copilot_client() -> OpenAI:
+    """Lazy-initialisierter OpenAI-Client für den Finance Copilot."""
+    global _finance_copilot_client
+    if _finance_copilot_client is None:
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY not configured")
+        _finance_copilot_client = OpenAI(api_key=api_key)
+    return _finance_copilot_client
+
+
+FINANCE_COPILOT_SYSTEM = """
+Du bist der „Finance Copilot“ einer B2B SaaS Plattform für KI-Rechnungsverarbeitung
+(SBS Deutschland). Deine Zielgruppe sind CFOs, Head of Finance und Controller in
+mittelständischen Unternehmen und Tech-Scaleups.
+
+Rolle:
+- Du agierst auf dem Niveau eines erfahrenen CFOs eines Tech-Konzerns.
+- Du kennst typische Kennzahlen (Brutto/Netto, MwSt, Lieferanten-Konzentration,
+  Zahlungsziele, Working Capital, Runway, Budget-Abweichungen, etc.).
+- Du arbeitest strikt datengetrieben auf Basis des bereitgestellten Snapshots.
+
+Regeln:
+- Antworte IMMER auf Deutsch.
+- Sei klar, strukturiert und handlungsorientiert – keine Marketing-Texte.
+- Wenn eine Kennzahl im Snapshot fehlt, spekuliere nicht, sondern erkläre, was fehlt.
+- Mache bei Unsicherheit explizite Annahmen („Unter der Annahme, dass ...“).
+- Rechne nachvollziehbar (Prozente, Vergleichswerte).
+- Bleibe innerhalb der Zahlen des Snapshots – keine externen Daten verwenden.
+
+Output-Struktur (wenn passend):
+1. Executive Summary (2–4 Bulletpoints)
+2. Kennzahlen-Überblick (konkrete EUR/%, Zeitraum)
+3. Treiber & Muster (Lieferanten, Peaks, Ausreißer)
+4. Risiken & Chancen (Klumpenrisiken, Einsparpotenziale)
+5. Konkrete Empfehlungen (To-dos, Verantwortlichkeiten, nächste Analysen)
+
+Sprich den Nutzer mit „Sie“ an.
+"""
+
+
+def _short_eur(value: float | None) -> str:
+    if value is None:
+        return "n/a"
+    try:
+        v = float(value)
+    except Exception:
+        return str(value)
+    if abs(v) >= 1_000_000:
+        return f"{v/1_000_000:.2f} Mio. €"
+    if abs(v) >= 1_000:
+        return f"{v/1_000:.1f} Tsd. €"
+    return f"{v:.2f} €"
+
+
+def _build_snapshot_summary(snapshot: Dict[str, Any], days: int) -> str:
+    kpis = snapshot.get("kpis") or {}
+    top_vendors = snapshot.get("top_vendors") or []
+    monthly = (
+        snapshot.get("monthly_trend")
+        or snapshot.get("monthly_totals")
+        or snapshot.get("monthly")  # Fallback
+        or []
+    )
+
+    meta = snapshot.get("meta") or {}
+    start_date = meta.get("start_date")
+    end_date = meta.get("end_date")
+
+    total_gross = (
+        kpis.get("total_gross")
+        or kpis.get("total_brutto")
+        or 0
+    )
+    total_net = (
+        kpis.get("total_net")
+        or kpis.get("total_netto")
+        or 0
+    )
+    total_vat = (
+        kpis.get("total_vat")
+        or kpis.get("total_mwst")
+        or 0
+    )
+    total_invoices = kpis.get("total_invoices") or 0
+    duplicates = (
+        kpis.get("duplicates_count")
+        or kpis.get("duplicates")
+        or 0
+    )
+
+    lines: List[str] = []
+    lines.append(f"- Zeitraum: letzte {days} Tage")
+    if start_date and end_date:
+        lines.append(f"- Exakter Zeitraum: {start_date} bis {end_date}")
+    lines.append(f"- Gesamt Brutto: {_short_eur(total_gross)}")
+    lines.append(f"- Gesamt Netto: {_short_eur(total_net)}")
+    lines.append(f"- Gesamt MwSt.: {_short_eur(total_vat)}")
+    lines.append(f"- Anzahl Rechnungen: {int(total_invoices) if total_invoices else 0}")
+    lines.append(f"- (Heuristische) Dubletten: {int(duplicates) if duplicates else 0}")
+
+    if top_vendors:
+        lines.append("")
+        lines.append("Top-Lieferanten nach Bruttobetrag:")
+        top5 = top_vendors[:5]
+        for i, v in enumerate(top5, start=1):
+            name = (
+                v.get("rechnungsaussteller")
+                or v.get("name")
+                or v.get("supplier")
+                or "Unbekannter Lieferant"
+            )
+            gross = (
+                v.get("total_gross")
+                or v.get("total_brutto")
+                or v.get("total")
+                or 0
+            )
+            count = v.get("invoice_count") or v.get("count") or 0
+            share = ""
+            if total_gross:
+                pct = 100 * float(gross) / float(total_gross)
+                share = f" ({pct:.1f} % vom Gesamtbrutto)"
+            lines.append(
+                f"  {i}. {name}: {_short_eur(gross)} aus {int(count)} Rechnungen{share}"
+            )
+
+    if monthly:
+        lines.append("")
+        lines.append("Monatliche Brutto-Ausgaben (vereinfacht):")
+        for row in monthly[-6:]:  # letzte 6 Monate
+            label = (
+                row.get("year_month")
+                or row.get("monat")
+                or row.get("label")
+                or row.get("month")
+                or "n/a"
+            )
+            gross = (
+                row.get("total_gross")
+                or row.get("total_brutto")
+                or row.get("total")
+                or row.get("value")
+                or 0
+            )
+            lines.append(f"  - {label}: {_short_eur(gross)}")
+
+    return "\n".join(lines)
+
+
+def _suggest_followups(question: str, snapshot: Dict[str, Any], days: int) -> List[str]:
+    kpis = snapshot.get("kpis") or {}
+    top_vendors = snapshot.get("top_vendors") or []
+    total_gross = float(kpis.get("total_gross") or kpis.get("total_brutto") or 0) or 0.0
+
+    suggestions: List[str] = []
+
+    q_lower = (question or "").lower()
+    if "kosten" in q_lower or "ausgaben" in q_lower or "spend" in q_lower:
+        suggestions.append(
+            "Welche drei Kostenblöcke sollten wir kurzfristig um 10–15 % reduzieren?"
+        )
+        suggestions.append(
+            "Welche wiederkehrenden Kosten wachsen aktuell am stärksten?"
+        )
+    if "lieferant" in q_lower or "supplier" in q_lower:
+        suggestions.append("Wie hoch ist unser Klumpenrisiko bei den Top-Lieferanten?")
+        suggestions.append(
+            "Welche Alternativ-Lieferanten sollten wir für kritische Services prüfen?"
+        )
+    if "cash" in q_lower or "liquid" in q_lower or "runway" in q_lower:
+        suggestions.append(
+            "Wie wirkt sich unser aktuelles Ausgabenniveau auf den Cash-Runway aus?"
+        )
+        suggestions.append(
+            "Wo können wir Zahlungsziele oder Zahlungsrhythmen optimieren?"
+        )
+
+    # Konzentrationsrisiko bei Lieferanten
+    if top_vendors and total_gross > 0:
+        v0 = top_vendors[0]
+        name0 = (
+            v0.get("rechnungsaussteller")
+            or v0.get("name")
+            or v0.get("supplier")
+            or "Top-Lieferant"
+        )
+        gross0 = float(
+            v0.get("total_gross")
+            or v0.get("total_brutto")
+            or v0.get("total")
+            or 0
+        )
+        share0 = 100 * gross0 / total_gross if total_gross else 0
+        if share0 >= 30:
+            suggestions.append(
+                f"Wie können wir das Abhängigkeitsrisiko vom Lieferanten „{name0}“ "
+                f"({share0:.1f} % der Ausgaben im Zeitraum) reduzieren?"
+            )
+
+    # Generische Enterprise-SaaS-Fragen
+    suggestions.extend(
+        [
+            "Wie entwickeln sich unsere wiederkehrenden (OPEX) vs. einmaligen (CAPEX) Ausgaben?",
+            f"Welche drei Maßnahmen würden Sie im Zeitraum der letzten {days} Tage priorisieren, um unsere Profitabilität zu verbessern?",
+            "Welche Warnsignale sehen Sie in den Daten, die wir mit dem Management teilen sollten?",
+        ]
+    )
+
+    # Duplikate entfernen, Reihenfolge stabil halten
+    unique: List[str] = []
+    seen = set()
+    for s in suggestions:
+        if s not in seen:
+            seen.add(s)
+            unique.append(s)
+    return unique[:6]
+
+
+def run_finance_copilot_llm(
+    question: str,
+    days: int,
+    snapshot: Dict[str, Any],
+    focus: str | None = None,
+) -> Tuple[str, List[str]]:
+    """
+    Erzeugt eine CFO-taugliche Antwort auf Basis des Finance-Snapshots.
+    Gibt (answer, suggested_questions) zurück.
+    """
+    if not question or not question.strip():
+        raise ValueError("question_required")
+
+    focus = (focus or "auto").strip().lower()
+    snapshot_summary = _build_snapshot_summary(snapshot, days)
+
+    user_prompt = f"""
+Nutzerfrage:
+„{question.strip()}“
+
+Spezifischer Fokus: {focus or "auto"}
+
+Daten-Snapshot aus der KI-Rechnungsverarbeitung:
+{snapshot_summary}
+
+Aufgabe:
+- Beantworte die Frage ausschließlich auf Basis dieses Snapshots.
+- Nutze die Output-Struktur (Executive Summary, Kennzahlen, Treiber, Risiken, Empfehlungen),
+  sofern sinnvoll.
+- Quantifiziere Effekte immer, wenn möglich (z.B. „Reduktion um 8–12 % = ca. 25–40 Tsd. € pro Jahr“).
+- Referenziere konkrete Lieferanten, Monate oder Muster, falls im Snapshot erkennbar.
+"""
+
+    client = _get_finance_copilot_client()
+    resp = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[
+            {"role": "system", "content": FINANCE_COPILOT_SYSTEM},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.25,
+        max_tokens=1200,
+    )
+
+    answer = (resp.choices[0].message.content or "").strip()
+    suggested = _suggest_followups(question, snapshot, days)
+
+    return answer, suggested
+
+
 # ---------------------------------------------------------------------------
 # Finance Copilot API (V1)
 # Nutzt die deterministische Logik aus finance_copilot.generate_finance_answer
@@ -2776,6 +3068,7 @@ from finance_copilot import generate_finance_answer
 class FinanceCopilotRequest(BaseModel):
     question: str | None = None
     days: int | None = 90
+    focus: str | None = None
 
 
 class FinanceCopilotResponse(BaseModel):
@@ -2789,20 +3082,39 @@ class FinanceCopilotResponse(BaseModel):
 @app.post("/api/copilot/finance/query", response_model=FinanceCopilotResponse)
 async def api_finance_copilot_query(payload: FinanceCopilotRequest):
     """
-    Finance Copilot Endpoint (V1)
-
-    Nutzt die bestehende Analytics-Schicht, um:
-    - einen kompakten Finanz-Überblick zu liefern
-    - die gleichen Daten auch strukturiert fürs Frontend bereitzustellen
+    Finance Copilot Endpoint (V2 – LLM-basiert, CFO-Level)
     """
+    question = (payload.question or "").strip()
+    days = int(payload.days or 90)
+    focus = (payload.focus or "auto").strip() or "auto"
+
+    if not question:
+        raise HTTPException(status_code=400, detail="question_required")
+
+    # Sicherheitsnetz für days
+    if days < 1:
+        days = 1
+    if days > 365:
+        days = 365
+
+    # Snapshot aus Analytics-Layer laden
     try:
-        result = generate_finance_answer(
-            question=payload.question or "",
-            days=payload.days or 90,
-        )
-        return result
+        from analytics_service import get_finance_snapshot
+        snapshot = get_finance_snapshot(days=days)
     except Exception as exc:  # noqa: F841
-        app_logger.exception("Finance copilot error")
+        app_logger.exception("Finance copilot snapshot error")
+        raise HTTPException(status_code=500, detail="snapshot_error")
+
+    # LLM-Antwort erzeugen
+    try:
+        answer, suggested = run_finance_copilot_llm(
+            question=question,
+            days=days,
+            snapshot=snapshot,
+            focus=focus,
+        )
+    except Exception as exc:  # noqa: F841
+        app_logger.exception("Finance copilot LLM error")
         raise HTTPException(
             status_code=500,
             detail=(
@@ -2810,3 +3122,11 @@ async def api_finance_copilot_query(payload: FinanceCopilotRequest):
                 "Bitte versuchen Sie es später erneut."
             ),
         )
+
+    return FinanceCopilotResponse(
+        answer=answer,
+        question=question,
+        days=days,
+        snapshot=snapshot,
+        suggested_questions=suggested,
+    )
