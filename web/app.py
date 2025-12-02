@@ -581,11 +581,15 @@ def _get_backup_info():
         return {"error": "Backup-Modul nicht verfügbar"}
 
 @app.get("/health", tags=["System"])
-async def health_check():
-    """Health check endpoint mit DB-Status und Uptime"""
+async def health_check(request: Request):
+    """
+    Health check endpoint mit HTML-Dashboard für Browser
+    und JSON für Monitoring / Uptime-Checks.
+    """
     import time
+    import json
     from database import get_connection
-    
+
     # DB-Check
     db_status = "healthy"
     try:
@@ -594,19 +598,41 @@ async def health_check():
         conn.close()
     except Exception as e:
         db_status = f"error: {str(e)}"
-    
-    # Uptime (seit App-Start)
+
+    # Uptime seit App-Start
     uptime_seconds = time.time() - app_start_time if "app_start_time" in globals() else 0
     uptime_hours = round(uptime_seconds / 3600, 1)
-    
-    return {
+
+    backup_info = _get_backup_info()
+
+    data = {
         "status": "healthy" if db_status == "healthy" else "degraded",
         "version": "1.0.0",
         "database": db_status,
         "jobs_in_memory": len(processing_jobs),
         "uptime_hours": uptime_hours,
-        "backup": _get_backup_info()
+        "backup": backup_info,
     }
+
+    # JSON-Variante für Monitoring (UptimeRobot, k8s-Probes, etc.)
+    accept = (request.headers.get("accept") or "")
+    if "application/json" in accept and "text/html" not in accept:
+        return JSONResponse(data)
+
+    # Für Browser: hübsches HTML-Dashboard via Template
+    backup_json = json.dumps(backup_info, indent=2, ensure_ascii=False)
+    raw_json = json.dumps(data, indent=2, ensure_ascii=False)
+
+    return templates.TemplateResponse(
+        "health.html",
+        {
+            "request": request,
+            "data": data,
+            "backup_json": backup_json,
+            "raw_json": raw_json,
+        },
+    )
+
 
 @app.get("/api/system/status", tags=["System"])
 async def system_status():
