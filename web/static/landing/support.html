@@ -26,11 +26,18 @@
       <span></span><span></span><span></span>
     </button>
 
-    <nav class="nav" id="nav">
+        <nav class="nav" id="nav">
+      <!-- Lösungen Dropdown -->
       <div class="dropdown">
         <span class="dropdown-toggle">Lösungen</span>
         <div class="dropdown-menu">
+          <div class="dropdown-section">Nach Anwendung</div>
           <a href="/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="/static/landing/loesungen-steuerberater.html">📋 Für Steuerberater</a>
+          <a href="/static/landing/loesungen-finanzleitung.html">💼 Für Finanzleitung</a>
+          <a href="/static/landing/loesungen-handel-filialnetz.html">🏪 Für Handel & Filialnetz</a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-section">Consulting</div>
           <a href="/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
           <a href="/sbshomepage/it-consulting.html">💻 IT Consulting</a>
           <a href="/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
@@ -38,20 +45,43 @@
         </div>
       </div>
 
-      <a href="/preise">Preise</a>
-      <a href="/static/landing/ressourcen.html">Ressourcen</a>
-      <a href="/static/landing/kunden.html">Kunden</a>
-      <a href="/sbshomepage/unternehmen.html">Unternehmen</a>
-      <a href="/sbshomepage/kontakt.html">Kontakt</a>
+      <!-- Plattform Dropdown -->
+      <div class="dropdown">
+        <span class="dropdown-toggle">Plattform</span>
+        <div class="dropdown-menu">
+          <a href="https://app.sbsdeutschland.com/copilot">🤖 Finance Copilot</a>
+          <a href="https://app.sbsdeutschland.com/accounting">📊 Auto-Kontierung</a>
+          <a href="/static/landing/integrationen.html">🔗 Integrationen</a>
+          <a href="/static/landing/security.html">🔒 Sicherheit & Compliance</a>
+        </div>
+      </div>
 
+      <!-- Preise -->
+      <a href="/preise">Preise</a>
+
+      <!-- Ressourcen Dropdown -->
+      <div class="dropdown">
+        <span class="dropdown-toggle">Ressourcen</span>
+        <div class="dropdown-menu">
+          <a href="/static/landing/ressourcen.html">📚 Dokumentation</a>
+          <a href="/static/landing/kunden.html">⭐ Kunden & Referenzen</a>
+          <a href="/static/landing/support.html">💬 Support</a>
+          <a href="/sbshomepage/kontakt.html">✉️ Kontakt</a>
+        </div>
+      </div>
+
+      <!-- Account Dropdown -->
       <div class="account-dropdown">
-        <span class="account-toggle">👤 <span id="accountName">App Login</span> ▾</span>
+        <span class="account-toggle">👤 <span id="accountName">Anmelden</span> ▾</span>
         <div class="account-menu">
-          <a href="https://app.sbsdeutschland.com/">🚀 Zur App</a>
-          <a href="https://app.sbsdeutschland.com/history">📊 Verlauf</a>
-          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
-          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
+          <a href="https://app.sbsdeutschland.com/demo">🚀 Kostenlos testen</a>
+          <a href="https://app.sbsdeutschland.com/">📊 Zur App</a>
           <div class="divider"></div>
+          <a href="https://app.sbsdeutschland.com/copilot">🤖 Finance Copilot</a>
+          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
+          <a href="https://app.sbsdeutschland.com/accounting">📊 Kontierung</a>
+          <div class="divider"></div>
+          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
           <a href="https://app.sbsdeutschland.com/logout">🚪 Logout</a>
         </div>
       </div>
@@ -106,235 +136,29 @@
         </div>
       </div>
       <p class="footer-tagline">
-        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
-      </p>
-    </div>
-    <div>
-      <h4>Support</h4>
-      <ul>
-        <li><a href="/static/landing/support.html">Support &amp; Hilfe</a></li>
-        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Rechtliches</h4>
-      <ul>
-        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
-        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
-        <li><a href="/sbshomepage/agb.html">AGB</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Re
-
-cat << 'EOF' > templates/account.html
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="utf-8" />
-  <title>Konto &amp; Nutzung · SBS KI-Rechnungsverarbeitung</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="icon" href="/static/favicon.ico" />
-  <link rel="stylesheet" href="/static/css/design-tokens.css" />
-  <link rel="stylesheet" href="/static/css/components.css" />
-  <link rel="stylesheet" href="/static/css/main.css" />
-  <style>
-    .account-container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 32px 16px;
-    }
-    .account-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 24px;
-    }
-    .account-card {
-      background: var(--sbs-white);
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-    .account-card h2 {
-      margin-top: 0;
-      margin-bottom: 12px;
-      font-size: 1.2rem;
-    }
-    .account-label {
-      font-size: 0.85rem;
-      color: var(--sbs-muted);
-    }
-    .account-value {
-      font-size: 1.3rem;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    .usage-bar {
-      position: relative;
-      height: 12px;
-      background: #e5e7eb;
-      border-radius: 999px;
-      overflow: hidden;
-      margin-top: 8px;
-      margin-bottom: 4px;
-    }
-    .usage-bar-inner {
-      position: absolute;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      width: 40%;
-      background: linear-gradient(90deg, #003856, #FFB900);
-    }
-    .usage-meta {
-      font-size: 0.8rem;
-      color: var(--sbs-muted);
-    }
-    .account-section-title {
-      font-size: 0.95rem;
-      font-weight: 600;
-      margin-top: 16px;
-      margin-bottom: 8px;
-    }
-    .account-kv {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.85rem;
-      padding: 4px 0;
-      border-bottom: 1px dashed #e5e7eb;
-    }
-    .account-kv:last-child {
-      border-bottom: none;
-    }
-    @media (max-width: 900px) {
-      .account-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
-</head>
-<body>
-
-<header class="header">
-  <div class="header-inner">
-    <a href="https://sbsdeutschland.com/" class="logo-wrap">
-      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
-      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
-    </a>
-    <nav class="nav">
-      <div class="dropdown">
-        <span class="dropdown-toggle">Leistungen</span>
-        <div class="dropdown-menu">
-          <a href="https://sbsdeutschland.com/landing">🤖 KI-Rechnungsverarbeitung</a>
-          <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
-          <a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html">💻 IT Consulting</a>
-          <a href="https://sbsdeutschland.com/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
-          <a href="https://sbsdeutschland.com/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
-        </div>
-      </div>
-      <a href="https://sbsdeutschland.com/preise">Preise</a>
-      <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
-      <div class="account-dropdown">
-        <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
-        <div class="account-menu">
-          <a href="/history">📊 Verlauf</a>
-          <a href="/analytics">📈 Analytics</a>
-          <a href="/account">💳 Konto &amp; Nutzung</a>
-          <a href="/team">👥 Team &amp; Rollen</a>
-          <a href="/audit-log">📜 Audit-Log</a>
-          <a href="/email-config">📧 Email-Inbox</a>
-          <a href="/profile">⚙️ Einstellungen</a>
-          <div class="divider"></div>
-          <a href="/logout">🚪 Logout</a>
-        </div>
-      </div>
-    </nav>
-  </div>
-</header>
-
-<section class="section">
-  <div class="account-container">
-    <h1 style="margin-bottom: 8px;">💳 Konto &amp; Nutzung</h1>
-    <p class="hero-subtitle" style="margin-bottom: 24px;">
-      Überblick über Plan, Nutzung und Optionen für Ihr SBS-Konto.
-    </p>
-
-    <div class="account-grid">
-      <div class="account-card">
-        <h2>Plan &amp; Nutzung</h2>
-
-        <div class="account-label">Aktueller Plan</div>
-        <div class="account-value">Business (Beispiel)</div>
-        <div class="account-label">Abrechnung</div>
-        <div>Monatlich, kündbar mit 1 Monat Frist (Beispieltext)</div>
-
-        <div class="account-section-title">Rechnungsvolumen (Beispiel)</div>
-        <div class="usage-bar">
-          <div class="usage-bar-inner"></div>
-        </div>
-        <div class="usage-meta">Beispiel: 420 von 1.000 Rechnungen im aktuellen Monat.</div>
-
-        <div class="account-section-title">Monatliche Orientierung</div>
-        <div class="account-kv">
-          <span>Ø Rechnungen pro Monat</span>
-          <span>~ 450 (Demo-Werte)</span>
-        </div>
-        <div class="account-kv">
-          <span>Typischer Upload-Kanal</span>
-          <span>E-Mail + Direkt-Upload</span>
-        </div>
-      </div>
-
-      <div class="account-card">
-        <h2>Abrechnung &amp; Kontakt</h2>
-        <p class="account-label">Rechnungsstellung &amp; Anpassungen</p>
-        <p>
-          Anpassungen des Plans oder der Kontingente erfolgen aktuell direkt über unser Team.
-          Sprechen Sie uns gerne an.
-        </p>
-        <p><a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt aufnehmen →</a></p>
-        <p class="account-label" style="margin-top: 16px;">Hinweis</p>
-        <p>
-          Diese Seite zeigt heute bewusst eine kompakte Übersicht. Eine detaillierte, automatisierte
-          Abrechnungsübersicht kann später ergänzt werden.
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<footer class="footer">
-  <div class="footer-grid">
-    <div>
-      <div class="footer-brand">
-        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
-        <div class="footer-brand-text">
-          <strong>SBS Deutschland</strong>
-          <span>Smart Business Service</span>
-        </div>
-      </div>
-      <p class="footer-tagline">
-        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+        Enterprise KI-Lösungen für den deutschen Mittelstand. Entwickelt und betrieben in Deutschland.
       </p>
       <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
     </div>
 
     <div>
-      <h4>Produkte</h4>
+      <h4>Produkt</h4>
       <ul>
         <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
-        <li><a href="/preise">Preise &amp; Pakete</a></li>
-        <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
+        <li><a href="https://app.sbsdeutschland.com/copilot">Finance Copilot</a></li>
+        <li><a href="/preise">Preise & Pakete</a></li>
+        <li><a href="/static/landing/integrationen.html">Integrationen</a></li>
+        <li><a href="/static/landing/security.html">Sicherheit</a></li>
       </ul>
     </div>
 
     <div>
-      <h4>Account</h4>
+      <h4>Unternehmen</h4>
       <ul>
-        <li><a href="/account">Konto &amp; Nutzung</a></li>
-        <li><a href="/team">Team &amp; Rollen</a></li>
-        <li><a href="/audit-log">Audit-Log</a></li>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/static/landing/support.html">Support</a></li>
+        <li><a href="/static/landing/kunden.html">Kunden</a></li>
       </ul>
     </div>
 
@@ -349,14 +173,8 @@ cat << 'EOF' > templates/account.html
   </div>
 
   <div class="footer-bottom">
-    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+    <p>© 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
     <p>Made with ❤️ in Weinheim</p>
-  </div>
-
-  <div class="footer-theme">
-    <button id="theme-toggle" class="theme-toggle-small" type="button">
-      🌗 Darstellung: Hell / Dunkel
-    </button>
   </div>
 </footer>
 

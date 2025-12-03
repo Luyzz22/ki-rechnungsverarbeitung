@@ -961,3 +961,24 @@
   padding: var(--space-4) var(--space-5);
   border-top: var(--border-width) solid var(--color-border);
 }
+
+/* Enterprise Dropdown Sections */
+.dropdown-section {
+  padding: 8px 16px 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sbs-muted, #6b7280);
+  pointer-events: none;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--sbs-border-soft, #e5e7eb);
+  margin: 8px 0;
+}
+
+.dropdown-menu {
+  min-width: 220px;
+}
