@@ -1810,6 +1810,65 @@ async def list_accounts(request: Request):
         for k, v in SKR03_ACCOUNTS.items()
     ]
     return {"accounts": sorted(accounts, key=lambda x: x["account"])}
+
+# === SEPA-XML Export ===
+from sepa_export import generate_sepa_xml, export_invoices_to_sepa, validate_iban
+
+@app.post("/api/export/sepa", tags=["Export"])
+async def export_sepa_xml(request: Request):
+    """Generiert SEPA-XML für Zahlungen"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    invoices = data.get("invoices", [])
+    debtor = data.get("debtor", {})
+    
+    if not debtor.get("iban"):
+        return JSONResponse({"error": "Absender-IBAN erforderlich"}, status_code=400)
+    
+    result = export_invoices_to_sepa(invoices, debtor)
+    
+    if not result.get("success"):
+        return JSONResponse({"error": result.get("error"), "warnings": result.get("warnings", [])}, status_code=400)
+    
+    return {
+        "success": True,
+        "count": result["count"],
+        "total": result["total"],
+        "warnings": result["warnings"],
+        "xml": result["xml"]
+    }
+
+@app.post("/api/job/{job_id}/export/sepa", tags=["Export"])
+async def export_job_sepa(job_id: str, request: Request):
+    """Exportiert Job-Rechnungen als SEPA-XML"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    debtor = data.get("debtor", {})
+    
+    if not debtor.get("iban"):
+        return JSONResponse({"error": "Absender-IBAN erforderlich"}, status_code=400)
+    
+    invoices = get_invoices_by_job(job_id)
+    if not invoices:
+        return JSONResponse({"error": "Keine Rechnungen gefunden"}, status_code=404)
+    
+    result = export_invoices_to_sepa(invoices, debtor)
+    
+    if not result.get("success"):
+        return JSONResponse({"error": result.get("error"), "warnings": result.get("warnings", [])}, status_code=400)
+    
+    from database import log_export
+    log_export(request.session["user_id"], job_id, "sepa", f"sepa_{job_id[:8]}.xml", len(result["xml"]), result["count"], result["total"])
+    
+    return Response(
+        content=result["xml"],
+        media_type="application/xml",
+        headers={"Content-Disposition": f"attachment; filename=sepa_{job_id[:8]}.xml"}
+    )
 # === Dashboard Widgets ===
 from dashboard_widgets import (
     get_user_widgets, add_widget, update_widget, remove_widget,
