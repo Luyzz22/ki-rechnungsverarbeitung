@@ -1756,6 +1756,81 @@ async def toggle_scheduled_report(report_id: int, request: Request):
     success = toggle_report(report_id, request.session["user_id"], active)
     return {"success": success}
 
+# === Dashboard Widgets ===
+from dashboard_widgets import (
+    get_user_widgets, add_widget, update_widget, remove_widget,
+    reorder_widgets, get_widget_data, WidgetType
+)
+
+@app.get("/api/dashboard/widgets", tags=["Dashboard"])
+async def list_widgets(request: Request):
+    """Liste aller Widgets des Users"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    widgets = get_user_widgets(request.session["user_id"])
+    return {"widgets": widgets}
+
+@app.post("/api/dashboard/widgets", tags=["Dashboard"])
+async def create_widget(request: Request):
+    """Fügt neues Widget hinzu"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    widget = add_widget(
+        request.session["user_id"],
+        data.get("widget_type"),
+        data.get("size", "medium"),
+        data.get("config", {})
+    )
+    return {"success": True, "widget": widget}
+
+@app.put("/api/dashboard/widgets/{widget_id}", tags=["Dashboard"])
+async def edit_widget(widget_id: int, request: Request):
+    """Aktualisiert Widget"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    success = update_widget(widget_id, request.session["user_id"], data)
+    return {"success": success}
+
+@app.delete("/api/dashboard/widgets/{widget_id}", tags=["Dashboard"])
+async def delete_widget(widget_id: int, request: Request):
+    """Entfernt Widget"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    success = remove_widget(widget_id, request.session["user_id"])
+    return {"success": success}
+
+@app.post("/api/dashboard/widgets/reorder", tags=["Dashboard"])
+async def reorder_dashboard(request: Request):
+    """Sortiert Widgets neu"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    success = reorder_widgets(request.session["user_id"], data.get("widget_ids", []))
+    return {"success": success}
+
+@app.get("/api/dashboard/widgets/{widget_id}/data", tags=["Dashboard"])
+async def widget_data(widget_id: int, request: Request):
+    """Holt Daten für ein Widget"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    from dashboard_widgets import get_user_widgets
+    widgets = get_user_widgets(request.session["user_id"])
+    widget = next((w for w in widgets if w["id"] == widget_id), None)
+    
+    if not widget:
+        return JSONResponse({"error": "Widget not found"}, status_code=404)
+    
+    data = get_widget_data(widget["widget_type"], request.session["user_id"], widget.get("config"))
+    return data
+
 # CORS für Cross-Domain API Requests
 from starlette.middleware.cors import CORSMiddleware
 
