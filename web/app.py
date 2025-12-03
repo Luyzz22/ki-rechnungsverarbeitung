@@ -1756,6 +1756,60 @@ async def toggle_scheduled_report(report_id: int, request: Request):
     success = toggle_report(report_id, request.session["user_id"], active)
     return {"success": success}
 
+
+# === Auto-Kontierung ===
+from auto_accounting import (
+    suggest_account, suggest_account_with_llm, batch_suggest_accounts,
+    learn_from_correction, SKR03_ACCOUNTS
+)
+
+@app.post("/api/accounting/suggest", tags=["Accounting"])
+async def suggest_booking_account(request: Request):
+    """KI-Kontenvorschlag für eine Rechnung"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    skr = data.get("skr", "SKR03")
+    
+    result = suggest_account_with_llm(data, skr)
+    return result
+
+@app.post("/api/accounting/suggest/batch", tags=["Accounting"])
+async def suggest_accounts_batch(request: Request):
+    """KI-Kontenvorschläge für mehrere Rechnungen"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    invoices = data.get("invoices", [])
+    skr = data.get("skr", "SKR03")
+    
+    results = batch_suggest_accounts(invoices, request.session["user_id"], skr)
+    return {"suggestions": results}
+
+@app.post("/api/accounting/learn", tags=["Accounting"])
+async def learn_account_mapping(request: Request):
+    """Lernt aus User-Korrektur"""
+    if "user_id" not in request.session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    learn_from_correction(
+        request.session["user_id"],
+        data.get("invoice", {}),
+        data.get("account")
+    )
+    return {"success": True}
+
+@app.get("/api/accounting/accounts", tags=["Accounting"])
+async def list_accounts(request: Request):
+    """Liste aller verfügbaren Konten"""
+    accounts = [
+        {"account": k, "name": v["name"]}
+        for k, v in SKR03_ACCOUNTS.items()
+    ]
+    return {"accounts": sorted(accounts, key=lambda x: x["account"])}
 # === Dashboard Widgets ===
 from dashboard_widgets import (
     get_user_widgets, add_widget, update_widget, remove_widget,
