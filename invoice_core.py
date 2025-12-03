@@ -13,6 +13,7 @@ from typing import Dict, Any, List, Optional, Tuple
 import PyPDF2
 import pdfplumber
 import pytesseract
+from ocr_optimizer import ocr_with_fallback, extract_from_pdf_optimized, detect_scan_quality
 pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 from pdf2image import convert_from_path
 from PIL import Image
@@ -262,7 +263,10 @@ def extract_text_from_pdf(pdf_path: str) -> str:
         ocr_text = ""
         for i, image in enumerate(images):
             # OCR auf jede Seite anwenden
-            page_ocr = pytesseract.image_to_string(image, lang='deu')
+            # Optimierte OCR mit Fallback
+            result = ocr_with_fallback(image)
+            page_ocr = result.get("text", "")
+            logger.info(f"OCR Seite {i+1}: {result.get("confidence", 0)*100:.0f}% Konfidenz, Methode: {result.get("method", "unknown")}")
             ocr_text += page_ocr + "\n"
         
         logger.info(f"OCR extracted {len(ocr_text)} chars")
