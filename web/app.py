@@ -2475,6 +2475,26 @@ async def audit_log_page(request: Request):
     return templates.TemplateResponse("audit_log.html", {"request": request})
 
 
+@app.get("/accounting", response_class=HTMLResponse)
+async def accounting_page(request: Request):
+    """Auto-Kontierung Seite"""
+    redirect = require_login(request)
+    if redirect:
+        return redirect
+    
+    from database import get_connection
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT job_id, filename, invoice_count, created_at 
+        FROM jobs WHERE user_id = ? AND status = 'completed' 
+        ORDER BY created_at DESC LIMIT 20
+    """, (request.session["user_id"],))
+    jobs = [{"job_id": r[0], "filename": r[1], "invoice_count": r[2], "created_at": r[3]} for r in cursor.fetchall()]
+    conn.close()
+    
+    return templates.TemplateResponse("accounting.html", {"request": request, "jobs": jobs})
+
 @app.post("/api/duplicate/{detection_id}/review")
 async def review_duplicate(detection_id: int, request: Request):
     """Mark duplicate as reviewed"""
