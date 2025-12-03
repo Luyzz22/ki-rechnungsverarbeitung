@@ -10,32 +10,53 @@
     </button>
 
     <nav class="nav" id="nav">
+      <!-- Hauptnavigation für alle User -->
       <a href="/">Upload</a>
       <a href="/history">Verlauf</a>
       <a href="/analytics">Analytics</a>
-      <a href="/email-config">Email-Inbox</a>
-      <a href="/copilot">Copilot</a>
+      
+      <!-- Tools Dropdown -->
+      <div class="dropdown">
+        <span class="dropdown-toggle">Tools</span>
+        <div class="dropdown-menu">
+          <a href="/copilot">🤖 Finance Copilot</a>
+          <a href="/accounting">📊 Auto-Kontierung</a>
+          <a href="/email-config">📧 Email-Inbox</a>
+        </div>
+      </div>
 
+      <!-- Account Dropdown -->
       <div class="account-dropdown">
         <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
         <div class="account-menu">
-          <div class="section-label">Workspace</div>
+          <!-- User Info Header -->
+          <div class="account-menu-header" id="accountHeader">
+            <strong id="accountFullName">Account</strong>
+            <span id="accountEmail"></span>
+          </div>
+          
+          <div class="divider"></div>
+          <div class="dropdown-section">Workspace</div>
           <a href="/">📥 Upload</a>
           <a href="/history">📊 Verlauf</a>
           <a href="/analytics">📈 Analytics</a>
-          <a href="/email-config">📧 Email-Inbox</a>
+          <a href="/exports">📁 Export-Historie</a>
 
           <div class="divider"></div>
-          <div class="section-label">Konto</div>
-          <a href="/account">💳 Konto &amp; Nutzung</a>
-          <a href="/team">👥 Team &amp; Rollen</a>
-          <a href="/audit-log">📜 Audit-Log</a>
-          <a href="/exports">📥 Export-Historie</a>
-          <a href="/accounting">📊 Auto-Kontierung</a>
-          <a href="/admin">🔧 Admin</a>
-          <a href="/admin/users">👥 User-Verwaltung</a>
+          <div class="dropdown-section">Konto</div>
           <a href="/profile">⚙️ Einstellungen</a>
-          <a href="/logout">🚪 Logout</a>
+          <a href="/account">💳 Abrechnung</a>
+          <a href="/team">👥 Team</a>
+          <a href="/audit-log">📜 Audit-Log</a>
+          
+          <!-- Admin Section - nur für Admins sichtbar -->
+          <div class="divider admin-only" style="display:none;"></div>
+          <div class="dropdown-section admin-only" style="display:none;">Administration</div>
+          <a href="/admin" class="admin-only" style="display:none;">🔧 System-Dashboard</a>
+          <a href="/admin/users" class="admin-only" style="display:none;">👥 User-Verwaltung</a>
+          
+          <div class="divider"></div>
+          <a href="/logout" class="logout-link">🚪 Abmelden</a>
         </div>
       </div>
     </nav>
@@ -52,4 +73,33 @@
       burger.classList.toggle('active');
     });
   }
+
+  // User Info & Admin Check laden
+  async function loadUserInfo() {
+    try {
+      const res = await fetch('/api/user', {credentials: 'include'});
+      const user = await res.json();
+      
+      if (user && user.logged_in) {
+        // Name setzen
+        const nameEl = document.getElementById('accountName');
+        const fullNameEl = document.getElementById('accountFullName');
+        const emailEl = document.getElementById('accountEmail');
+        
+        if (nameEl) nameEl.textContent = user.name || 'Account';
+        if (fullNameEl) fullNameEl.textContent = user.name || 'Account';
+        if (emailEl) emailEl.textContent = user.email || '';
+        
+        // Admin-Links anzeigen wenn Admin
+        if (user.is_admin) {
+          document.querySelectorAll('.admin-only').forEach(el => {
+            el.style.display = '';
+          });
+        }
+      }
+    } catch(e) {
+      console.error('User info error:', e);
+    }
+  }
+  document.addEventListener('DOMContentLoaded', loadUserInfo);
 </script>

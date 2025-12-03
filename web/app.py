@@ -771,6 +771,40 @@ def require_login(request: Request):
     return RedirectResponse(url=login_url, status_code=303)
 
 
+def require_admin(request: Request):
+    """Prüft ob User Admin ist. Gibt None wenn OK, sonst Redirect/Error."""
+    from fastapi.responses import RedirectResponse
+    from database import get_connection
+    
+    # Erst Login prüfen
+    login_check = require_login(request)
+    if login_check:
+        return login_check
+    
+    # Admin-Status prüfen
+    user_id = request.session.get("user_id")
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT is_admin FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row or not row[0]:
+        # Nicht Admin - zurück zur History mit Fehlermeldung
+        return RedirectResponse(url="/history?error=admin_required", status_code=303)
+    
+    return None
+
+def is_admin_user(user_id: int) -> bool:
+    """Hilfsfunktion: Prüft ob User Admin ist."""
+    from database import get_connection
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT is_admin FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return bool(row and row[0])
+
     if not user_id:
         from fastapi.responses import RedirectResponse
         next_url = request.url.path
@@ -880,8 +914,9 @@ async def analytics_page(request: Request):
 @app.get("/admin", response_class=HTMLResponse, tags=["Admin"])
 async def admin_page(request: Request):
     """Admin Dashboard - nur für Admins"""
-    if "user_id" not in request.session:
-        return RedirectResponse(url="/login?next=/admin", status_code=303)
+    admin_check = require_admin(request)
+    if admin_check:
+        return admin_check
     
     # Admin-Stats sammeln
     from database import get_connection
@@ -938,8 +973,9 @@ async def admin_page(request: Request):
 @app.get("/admin/users", response_class=HTMLResponse, tags=["Admin"])
 async def admin_users_page(request: Request):
     """User Management - nur für Admins"""
-    if "user_id" not in request.session:
-        return RedirectResponse(url="/login?next=/admin/users", status_code=303)
+    admin_check = require_admin(request)
+    if admin_check:
+        return admin_check
     
     from database import get_connection
     conn = get_connection()
@@ -1432,16 +1468,19 @@ async def logout(request: Request):
         status_code=303,
     )
 
-@app.get("/api/user", response_model=UserResponse, tags=["Auth"])
+@app.get("/api/user", tags=["Auth"])
 async def get_current_user(request: Request):
     """Get current logged in user"""
     if 'user_id' in request.session:
+        # Admin-Status prüfen
+        is_admin = is_admin_user(request.session.get('user_id', 0))
         return {
             "logged_in": True,
             "name": request.session.get('user_name', ''),
-            "email": request.session.get('user_email', '')
+            "email": request.session.get('user_email', ''),
+            "is_admin": is_admin
         }
-    return {"logged_in": False}
+    return {"logged_in": False, "is_admin": False}
 
 @app.get("/profile", response_class=HTMLResponse)
 async def profile_page(request: Request):

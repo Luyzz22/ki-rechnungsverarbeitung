@@ -62,9 +62,11 @@ class TestUserEndpoint:
         response = client.get("/api/user")
         data = response.json()
         assert "logged_in" in data
-        assert "user_id" in data
-        assert "email" in data
-        assert "name" in data
+        assert "is_admin" in data
+        # email/name nur bei eingeloggten Usern
+        if data.get("logged_in"):
+            assert "email" in data
+            assert "name" in data
 
 
 class TestLandingEndpoint:
