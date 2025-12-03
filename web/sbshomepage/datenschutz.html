@@ -70,19 +70,33 @@
         </div>
       </div>
 
-      <!-- Account Dropdown -->
-      <div class="account-dropdown">
-        <span class="account-toggle">👤 <span id="accountName">Anmelden</span> ▾</span>
-        <div class="account-menu">
-          <a href="https://app.sbsdeutschland.com/demo">🚀 Kostenlos testen</a>
-          <a href="https://app.sbsdeutschland.com/">📊 Zur App</a>
-          <div class="divider"></div>
-          <a href="https://app.sbsdeutschland.com/copilot">🤖 Finance Copilot</a>
-          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
-          <a href="https://app.sbsdeutschland.com/accounting">📊 Kontierung</a>
-          <div class="divider"></div>
-          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
-          <a href="https://app.sbsdeutschland.com/logout">🚪 Logout</a>
+            <!-- Account Bereich -->
+      <div class="auth-section">
+        <!-- Nicht angemeldet -->
+        <div class="auth-guest" id="authGuest">
+          <a href="https://app.sbsdeutschland.com/login" class="nav-link-login">Login</a>
+          <a href="https://app.sbsdeutschland.com/demo" class="btn-cta-header">Kostenlos testen</a>
+        </div>
+        
+        <!-- Angemeldet -->
+        <div class="account-dropdown auth-user" id="authUser" style="display:none;">
+          <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
+          <div class="account-menu">
+            <div class="account-menu-header">
+              <span id="accountEmail">user@example.com</span>
+            </div>
+            <div class="divider"></div>
+            <a href="https://app.sbsdeutschland.com/">📊 Dashboard</a>
+            <a href="https://app.sbsdeutschland.com/copilot">🤖 Finance Copilot</a>
+            <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
+            <a href="https://app.sbsdeutschland.com/accounting">📊 Auto-Kontierung</a>
+            <a href="https://app.sbsdeutschland.com/history">📁 Verlauf</a>
+            <div class="divider"></div>
+            <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
+            <a href="https://app.sbsdeutschland.com/account">💳 Konto & Abrechnung</a>
+            <div class="divider"></div>
+            <a href="https://app.sbsdeutschland.com/logout" class="logout-link">🚪 Abmelden</a>
+          </div>
         </div>
       </div>
     </nav>
@@ -261,69 +275,39 @@
 </footer>
 
 <script src="/static/js/main.js"></script>
+
 <script>
-async function checkLoginStatus() {
+// Auth Status Check
+async function checkAuthStatus() {
+  const guestEl = document.getElementById('authGuest');
+  const userEl = document.getElementById('authUser');
+  const nameEl = document.getElementById('accountName');
+  const emailEl = document.getElementById('accountEmail');
+  
   try {
-    const r = await fetch("https://app.sbsdeutschland.com/api/user", {credentials: "include"});
-    const u = await r.json();
-    const loginLink = document.querySelector("a[href*=\"app.sbsdeutschland.com/login\"]");
-    if (loginLink && u.logged_in) {
-      loginLink.textContent = "👤 " + u.name;
-      loginLink.href = "https://app.sbsdeutschland.com/history";
+    const res = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
+    const user = await res.json();
+    
+    if (user && user.logged_in) {
+      // Angemeldet
+      if (guestEl) guestEl.style.display = 'none';
+      if (userEl) userEl.style.display = 'block';
+      if (nameEl) nameEl.textContent = user.name || 'Account';
+      if (emailEl) emailEl.textContent = user.email || '';
+    } else {
+      // Nicht angemeldet
+      if (guestEl) guestEl.style.display = 'flex';
+      if (userEl) userEl.style.display = 'none';
     }
-  } catch(e) {}
+  } catch(e) {
+    // Fehler = nicht angemeldet
+    if (guestEl) guestEl.style.display = 'flex';
+    if (userEl) userEl.style.display = 'none';
+  }
 }
-document.addEventListener("DOMContentLoaded", checkLoginStatus);
+document.addEventListener('DOMContentLoaded', checkAuthStatus);
 </script>
 </body>
-<script>
-async function checkLoginStatus() {
-  try {
-    const r = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
-    const u = await r.json();
-    const toggle = document.querySelector('.account-toggle');
-    const menu = document.querySelector('.account-menu');
-    
-    if (u.logged_in) {
-      document.getElementById('accountName').textContent = u.name;
-      // Update logout link with current page
-      const logoutLink = menu.querySelector('a[href*="logout"]');
-      if (logoutLink) {
-        logoutLink.href = 'https://app.sbsdeutschland.com/logout?next=' + encodeURIComponent(window.location.href);
-      }
-    } else {
-      // Show login link with return URL
-      const currentUrl = encodeURIComponent(window.location.href);
-      toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
-      if (menu) menu.style.display = 'none';
-    }
-  } catch(e) {
-    const toggle = document.querySelector('.account-toggle');
-    const currentUrl = encodeURIComponent(window.location.href);
-    if (toggle) toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
-  }
-}
-document.addEventListener('DOMContentLoaded', checkLoginStatus);
-</script>
-<script>
-async function checkLoginStatus() {
-  try {
-    const r = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
-    const u = await r.json();
-    const toggle = document.querySelector('.account-toggle');
-    const menu = document.querySelector('.account-menu');
-    
-    if (u.logged_in) {
-      document.getElementById('accountName').textContent = u.name;
-    } else {
-      toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
-      if (menu) menu.style.display = 'none';
-    }
-  } catch(e) {
-    const toggle = document.querySelector('.account-toggle');
-    if (toggle) toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
-  }
-}
-document.addEventListener('DOMContentLoaded', checkLoginStatus);
-</script>
+
+
 </html>
