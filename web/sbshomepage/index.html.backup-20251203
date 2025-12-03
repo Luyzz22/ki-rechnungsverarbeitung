@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>SBS Deutschland · IT & KI aus Weinheim</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="SBS Deutschland – Smart Business Service aus Weinheim. IT Consulting, SAP, Quality & Risk Management und KI-Rechnungsverarbeitung." />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/design-tokens.css" />
+  <link rel="stylesheet" href="/static/css/components.css" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="https://sbsdeutschland.com/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text">
+        <strong>SBS Deutschland</strong>
+        <span>Smart Business Service · Weinheim</span>
+      </div>
+    </a>
+
+    <button class="burger" id="burger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav" id="nav">
+      <div class="dropdown">
+        <span class="dropdown-toggle">Lösungen</span>
+        <div class="dropdown-menu">
+          <a href="/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
+          <a href="/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+          <a href="/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
+          <a href="/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
+        </div>
+      </div>
+
+      <a href="/preise">Preise</a>
+      <a href="/static/landing/ressourcen.html">Ressourcen</a>
+      <a href="/static/landing/kunden.html">Kunden</a>
+      <a href="/sbshomepage/unternehmen.html">Unternehmen</a>
+      <a href="/sbshomepage/kontakt.html">Kontakt</a>
+
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">App Login</span> ▾</span>
+        <div class="account-menu">
+          <a href="https://app.sbsdeutschland.com/">🚀 Zur App</a>
+          <a href="https://app.sbsdeutschland.com/history">📊 Verlauf</a>
+          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
+          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
+          <div class="divider"></div>
+          <a href="https://app.sbsdeutschland.com/logout">🚪 Logout</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">IT · KI · CONSULTING · WEINHEIM</div>
+    <h1>Smart Business Services<br>für den Mittelstand</h1>
+    <p class="hero-subtitle">
+      SBS Deutschland verbindet IT-Consulting, SAP-Expertise, Quality &amp; Risk Management und moderne KI
+      zu praxistauglichen Lösungen – direkt aus der Rhein-Neckar-Region.
+    </p>
+    <a href="/landing" class="hero-cta">
+      KI-Rechnungsverarbeitung ansehen →
+    </a>
+  </div>
+</section>
+
+<div class="trust-bar">
+  <div class="trust-inner">
+    <div class="trust-item">
+      <strong>20+</strong>
+      <span>Jahre Projekterfahrung</span>
+    </div>
+    <div class="trust-item">
+      <strong>🇩🇪</strong>
+      <span>Standort Weinheim</span>
+    </div>
+    <div class="trust-item">
+      <strong>4</strong>
+      <span>Kompetenzbereiche</span>
+    </div>
+    <div class="trust-item">
+      <strong>🤝</strong>
+      <span>Partner des Mittelstands</span>
+    </div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-badge">LEISTUNGEN</div>
+      <h2 class="section-title">Was wir für Sie tun</h2>
+      <p class="section-subtitle">
+        Wir kombinieren technische Exzellenz mit Prozessverständnis – von der Konzeption bis zum Betrieb.
+      </p>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feature-icon">🤖</span>
+        <h3>KI-Rechnungsverarbeitung</h3>
+        <p>
+          Automatisierte Erkennung, Prüfung und Übergabe von Rechnungsdaten – speziell für deutsche Unternehmen
+          und Kanzleien.
+        </p>
+        <ul>
+          <li>PDF-Upload &amp; Batch-Verarbeitung</li>
+          <li>DATEV-Export</li>
+          <li>DSGVO-orientierte Verarbeitung</li>
+        </ul>
+        <p><a href="/landing">Mehr erfahren →</a></p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">💻</span>
+        <h3>IT Consulting &amp; Programming</h3>
+        <p>
+          Architektur, Schnittstellen und Automatisierungslösungen, die sich in Ihre bestehende IT-Landschaft
+          einfügen.
+        </p>
+        <ul>
+          <li>Schnittstellen &amp; Integrationen</li>
+          <li>Custom-Software &amp; Automatisierung</li>
+          <li>Begleitung von IT-Projekten</li>
+        </ul>
+        <p><a href="/sbshomepage/it-consulting.html">Mehr erfahren →</a></p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">📊</span>
+        <h3>SAP Consulting &amp; Reporting</h3>
+        <p>
+          Unterstützung bei Reporting, Auswertungen und Prozessen im SAP-Umfeld – inklusive Anbindung neuer Lösungen.
+        </p>
+        <ul>
+          <li>Finanz- &amp; Controlling-Reports</li>
+          <li>Integration externer Systeme</li>
+          <li>Beratung zu Prozessdesign</li>
+        </ul>
+        <p><a href="/sbshomepage/sap-consulting.html">Mehr erfahren →</a></p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🎯</span>
+        <h3>Quality &amp; Risk Management</h3>
+        <p>
+          Aufbau und Optimierung von QS- und Risikostrukturen – speziell im regulierten Umfeld.
+        </p>
+        <ul>
+          <li>Prozess- &amp; Risikoanalysen</li>
+          <li>Audit-Vorbereitung</li>
+          <li>Dokumentation &amp; Kennzahlen</li>
+        </ul>
+        <p><a href="/sbshomepage/quality-risk-management.html">Mehr erfahren →</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-badge">REGION RHEIN-NECKAR</div>
+      <h2 class="section-title">Aus Weinheim – für die Region und darüber hinaus</h2>
+      <p class="section-subtitle">
+        Kurze Wege, persönliche Ansprechpartner und ein tiefes Verständnis regionaler Branchen.
+      </p>
+    </div>
+
+    <div class="usp-grid">
+      <div class="usp-item">
+        <span class="usp-icon">🤝</span>
+        <div>
+          <h4>Persönlicher Kontakt</h4>
+          <p>Direkter Draht statt anonymer Ticket-Systeme.</p>
+        </div>
+      </div>
+      <div class="usp-item">
+        <span class="usp-icon">🇩🇪</span>
+        <div>
+          <h4>Deutschsprachiger Support</h4>
+          <p>Klare Kommunikation und schnelle Abstimmungen.</p>
+        </div>
+      </div>
+      <div class="usp-item">
+        <span class="usp-icon">🔒</span>
+        <div>
+          <h4>Datenschutz</h4>
+          <p>DSGVO-orientierte Lösungen mit Hosting in Deutschland.</p>
+        </div>
+      </div>
+      <div class="usp-item">
+        <span class="usp-icon">🚀</span>
+        <div>
+          <h4>Praxisorientierte Innovation</h4>
+          <p>Technologie dort, wo sie wirklich Mehrwert bringt.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="cta-section">
+    <h2>Lernen Sie uns kennen</h2>
+    <p>
+      Ob KI-Lösung oder klassisches Consulting – wir starten gerne mit einem unverbindlichen Gespräch.
+    </p>
+    <a href="/sbshomepage/kontakt.html" class="btn">Kontakt aufnehmen →</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">
+        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+      </p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+    </div>
+
+    <div>
+      <h4>Produkte</h4>
+      <ul>
+        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="/preise">Preise &amp; Pakete</a></li>
+        <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
+  </div>
+
+  <div class="footer-theme">
+    <button id="theme-toggle" class="theme-toggle-small" type="button">
+      🌗 Darstellung: Hell / Dunkel
+    </button>
+  </div>
+</footer>
+
+<script src="/static/js/main.js"></script>
+<script>
+async function checkLoginStatus() {
+  try {
+    const r = await fetch("https://app.sbsdeutschland.com/api/user", {credentials: "include"});
+    const u = await r.json();
+    const loginLink = document.querySelector("a[href*=\"app.sbsdeutschland.com/login\"]");
+    if (loginLink && u.logged_in) {
+      loginLink.textContent = "👤 " + u.name;
+      loginLink.href = "https://app.sbsdeutschland.com/history";
+    }
+  } catch(e) {}
+}
+document.addEventListener("DOMContentLoaded", checkLoginStatus);
+</script>
+</body>
+<script>
+async function checkLoginStatus() {
+  try {
+    const r = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
+    const u = await r.json();
+    const toggle = document.querySelector('.account-toggle');
+    const menu = document.querySelector('.account-menu');
+    
+    if (u.logged_in) {
+      document.getElementById('accountName').textContent = u.name;
+      // Update logout link with current page
+      const logoutLink = menu.querySelector('a[href*="logout"]');
+      if (logoutLink) {
+        logoutLink.href = 'https://app.sbsdeutschland.com/logout?next=' + encodeURIComponent(window.location.href);
+      }
+    } else {
+      // Show login link with return URL
+      const currentUrl = encodeURIComponent(window.location.href);
+      toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+      if (menu) menu.style.display = 'none';
+    }
+  } catch(e) {
+    const toggle = document.querySelector('.account-toggle');
+    const currentUrl = encodeURIComponent(window.location.href);
+    if (toggle) toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+  }
+}
+document.addEventListener('DOMContentLoaded', checkLoginStatus);
+</script>
+<script>
+async function checkLoginStatus() {
+  try {
+    const r = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
+    const u = await r.json();
+    const toggle = document.querySelector('.account-toggle');
+    const menu = document.querySelector('.account-menu');
+    
+    if (u.logged_in) {
+      document.getElementById('accountName').textContent = u.name;
+    } else {
+      toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+      if (menu) menu.style.display = 'none';
+    }
+  } catch(e) {
+    const toggle = document.querySelector('.account-toggle');
+    if (toggle) toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+  }
+}
+document.addEventListener('DOMContentLoaded', checkLoginStatus);
+</script>
+</html>

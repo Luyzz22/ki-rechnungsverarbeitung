@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>KI-Rechnungsverarbeitung | SBS Deutschland</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Automatische Rechnungsverarbeitung mit KI. DATEV-Export, DSGVO-orientierte Verarbeitung. Made in Germany." />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/design-tokens.css" />
+  <link rel="stylesheet" href="/static/css/components.css" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="https://sbsdeutschland.com/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text">
+        <strong>SBS Deutschland</strong>
+        <span>Smart Business Service · Weinheim</span>
+      </div>
+    </a>
+
+    <button class="burger" id="burger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav" id="nav">
+      <div class="dropdown">
+        <span class="dropdown-toggle">Lösungen</span>
+        <div class="dropdown-menu">
+          <a href="/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
+          <a href="/sbshomepage/it-consulting.html">💻 IT Consulting</a>
+          <a href="/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
+          <a href="/sbshomepage/quality-risk-management.html">🎯 Quality & Risk</a>
+        </div>
+      </div>
+
+      <a href="/preise">Preise</a>
+      <a href="/static/landing/ressourcen.html">Ressourcen</a>
+      <a href="/static/landing/kunden.html">Kunden</a>
+      <a href="/sbshomepage/unternehmen.html">Unternehmen</a>
+      <a href="/sbshomepage/kontakt.html">Kontakt</a>
+
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">App Login</span> ▾</span>
+        <div class="account-menu">
+          <a href="https://app.sbsdeutschland.com/demo">🚀 Zur App</a>
+          <a href="https://app.sbsdeutschland.com/history">📊 Verlauf</a>
+          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
+          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
+          <div class="divider"></div>
+          <a href="https://app.sbsdeutschland.com/logout">🚪 Logout</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">🤖 KI-RECHNUNGSVERARBEITUNG</div>
+    <h1>Rechnungen verarbeiten<br>in Minuten statt Stunden</h1>
+    <p class="hero-subtitle">
+      Mit KI, entwickelt &amp; betrieben von SBS Deutschland aus Weinheim. Automatisierte Erkennung,
+      Validierung und Export Ihrer Eingangsrechnungen – sicher, DSGVO-orientiert und produktionsreif getestet.
+    </p>
+    <a href="https://app.sbsdeutschland.com/demo" class="hero-cta">
+      Kostenlos testen →
+    </a>
+  </div>
+</section>
+
+<div class="trust-bar">
+  <div class="trust-inner">
+    <div class="trust-item">
+      <strong>8</strong>
+      <span>parallele Threads</span>
+    </div>
+    <div class="trust-item">
+      <strong>Hohe</strong>
+      <span>Erkennungsrate</span>
+    </div>
+    <div class="trust-item">
+      <strong>1,2 Mio €</strong>
+      <span>getestetes Volumen</span>
+    </div>
+    <div class="trust-item">
+      <strong>🇩🇪</strong>
+      <span>Made in Germany</span>
+    </div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-badge">WARUM SBS?</div>
+      <h2 class="section-title">Entwickelt für den deutschen Mittelstand</h2>
+      <p class="section-subtitle">
+        Keine Cloud-Blackbox, sondern transparente KI-Technologie mit deutschem Support und DSGVO-orientierte Verarbeitung.
+      </p>
+    </div>
+
+    <div class="usp-grid">
+      <div class="usp-item">
+        <span class="usp-icon">⚡</span>
+        <div>
+          <h4>8-Thread Performance</h4>
+          <p>Parallele Verarbeitung für maximale Geschwindigkeit.</p>
+        </div>
+      </div>
+      <div class="usp-item">
+        <span class="usp-icon">🇩🇪</span>
+        <div>
+          <h4>Made in Germany</h4>
+          <p>Entwicklung &amp; Hosting in Deutschland.</p>
+        </div>
+      </div>
+      <div class="usp-item">
+        <span class="usp-icon">📊</span>
+        <div>
+          <h4>DATEV-Export</h4>
+          <p>Direkt nutzbar für Ihre Buchhaltung.</p>
+        </div>
+      </div>
+      <div class="usp-item">
+        <span class="usp-icon">✅</span>
+        <div>
+          <h4>Produktionsreif</h4>
+          <p>Mit realem Volumen erfolgreich getestet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-badge">FUNKTIONEN</div>
+      <h2 class="section-title">Intelligente Rechnungsverarbeitung</h2>
+      <p class="section-subtitle">
+        Multi-Model KI-Engine für hohe Genauigkeit und Zuverlässigkeit.
+      </p>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feature-icon">🧠</span>
+        <h3>Multi-Model KI</h3>
+        <p>Kombination mehrerer Modelle für hohe Erkennungsraten.</p>
+        <ul>
+          <li>Rechnungsnummer &amp; Datum</li>
+          <li>Beträge &amp; Steuersätze</li>
+          <li>Lieferantendaten</li>
+        </ul>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">✓</span>
+        <h3>Automatische Validierung</h3>
+        <p>Prüfung auf Vollständigkeit und Plausibilität.</p>
+        <ul>
+          <li>Pflichtangaben-Check</li>
+          <li>Dublettenprüfung</li>
+          <li>Warnungen bei Unstimmigkeiten</li>
+        </ul>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">📤</span>
+        <h3>Flexibler Export</h3>
+        <p>Nahtlose Integration in Ihre Systeme.</p>
+        <ul>
+          <li>DATEV</li>
+          <li>Excel &amp; CSV</li>
+          <li>API-Anbindung</li>
+        </ul>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🔒</span>
+        <h3>DSGVO-orientiert</h3>
+        <p>Sichere Verarbeitung in Rechenzentren in Deutschland.</p>
+        <ul>
+          <li>Verschlüsselte Übertragung</li>
+          <li>Keine Drittländer</li>
+          <li>Revisionssichere Protokolle (optional)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-badge">SO FUNKTIONIERT'S</div>
+      <h2 class="section-title">In 3 Schritten zur fertigen Buchung</h2>
+      <p class="section-subtitle">Einfach, schnell und vollständig automatisiert.</p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <span class="step-icon">📄</span>
+        <h3>Hochladen</h3>
+        <p>Rechnungen als PDF hochladen – einzeln oder gesammelt.</p>
+      </div>
+      <div class="step-card">
+        <span class="step-icon">🤖</span>
+        <h3>Verarbeiten</h3>
+        <p>Die KI extrahiert automatisch alle relevanten Daten in Sekunden.</p>
+      </div>
+      <div class="step-card">
+        <span class="step-icon">✅</span>
+        <h3>Exportieren</h3>
+        <p>Export nach DATEV, Excel oder in Ihr FiBu-/ERP-System.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="cta-section">
+    <h2>Bereit, Zeit zu sparen?</h2>
+    <p>Starten Sie jetzt kostenlos und überzeugen Sie sich selbst. Keine Kreditkarte erforderlich.</p>
+    <a href="https://app.sbsdeutschland.com/demo" class="btn">Kostenlos testen →</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">
+        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+      </p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+    </div>
+
+    <div>
+      <h4>Produkte</h4>
+      <ul>
+        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="/preise">Preise &amp; Pakete</a></li>
+        <li><a href="https://app.sbsdeutschland.com/demo">Demo &amp; Upload</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
+        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
+  </div>
+
+  <div class="footer-theme">
+    <button id="theme-toggle" class="theme-toggle-small" type="button">
+      🌗 Darstellung: Hell / Dunkel
+    </button>
+  </div>
+</footer>
+
+<script src="/static/js/main.js"></script>
+<script>
+async function checkLoginStatus() {
+  try {
+    const r = await fetch("https://app.sbsdeutschland.com/api/user", {credentials: "include"});
+    const u = await r.json();
+    const loginLink = document.querySelector("a[href*=\"app.sbsdeutschland.com/login\"]");
+    if (loginLink && u.logged_in) {
+      loginLink.textContent = "👤 " + u.name;
+      loginLink.href = "https://app.sbsdeutschland.com/history";
+    }
+  } catch(e) {}
+}
+document.addEventListener("DOMContentLoaded", checkLoginStatus);
+</script>
+</body>
+<script>
+async function checkLoginStatus() {
+  try {
+    const r = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
+    const u = await r.json();
+    const toggle = document.querySelector('.account-toggle');
+    const menu = document.querySelector('.account-menu');
+    
+    if (u.logged_in) {
+      document.getElementById('accountName').textContent = u.name;
+      // Update logout link with current page
+      const logoutLink = menu.querySelector('a[href*="logout"]');
+      if (logoutLink) {
+        logoutLink.href = 'https://app.sbsdeutschland.com/logout?next=' + encodeURIComponent(window.location.href);
+      }
+    } else {
+      // Show login link with return URL
+      const currentUrl = encodeURIComponent(window.location.href);
+      toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+      if (menu) menu.style.display = 'none';
+    }
+  } catch(e) {
+    const toggle = document.querySelector('.account-toggle');
+    const currentUrl = encodeURIComponent(window.location.href);
+    if (toggle) toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+  }
+}
+document.addEventListener('DOMContentLoaded', checkLoginStatus);
+</script>
+<script>
+async function checkLoginStatus() {
+  try {
+    const r = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
+    const u = await r.json();
+    const toggle = document.querySelector('.account-toggle');
+    const menu = document.querySelector('.account-menu');
+    
+    if (u.logged_in) {
+      document.getElementById('accountName').textContent = u.name;
+    } else {
+      toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+      if (menu) menu.style.display = 'none';
+    }
+  } catch(e) {
+    const toggle = document.querySelector('.account-toggle');
+    if (toggle) toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+  }
+}
+document.addEventListener('DOMContentLoaded', checkLoginStatus);
+</script>
+</html>

@@ -9,6 +9,194 @@
   <link rel="stylesheet" href="/static/css/design-tokens.css" />
   <link rel="stylesheet" href="/static/css/components.css" />
   <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    /* Hero Slider – nach Muster Landing */
+    .hero.hero-slider {
+      position: relative;
+      overflow: hidden;
+      padding-bottom: 120px;
+    }
+
+    .hero-slider .hero-content {
+      max-width: 960px;
+    }
+
+    .hero-slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: translateX(30px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+      pointer-events: none;
+    }
+
+    .hero-slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+      position: relative;
+    }
+
+    .hero-slide .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 18px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+
+    .hero-slide .pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22d3ee;
+      box-shadow: 0 0 12px #22d3ee;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .7; transform: scale(1.2); }
+    }
+
+    .hero-slide h1 {
+      font-size: clamp(2.4rem, 4vw, 3.4rem);
+      line-height: 1.1;
+      margin-bottom: 18px;
+    }
+
+    .hero-slide .hero-subtitle {
+      font-size: 1.05rem;
+      max-width: 680px;
+    }
+
+    .hero-slide .hero-cta-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .hero-slide .hero-cta.primary {
+      background: #ffffff;
+      color: #003856;
+      padding: 14px 26px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .25s ease;
+    }
+
+    .hero-slide .hero-cta.primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+
+    .hero-slide .hero-cta.secondary {
+      padding: 12px 22px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.4);
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(10px);
+      background: rgba(3,16,27,0.25);
+      transition: all .25s ease;
+    }
+
+    .hero-slide .hero-cta.secondary:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.7);
+    }
+
+    .slider-nav {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 5;
+    }
+
+    .slider-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(255,255,255,0.35);
+      cursor: pointer;
+      padding: 0;
+      transition: all .25s ease;
+    }
+
+    .slider-dot.active {
+      background: #ffffff;
+      transform: scale(1.2);
+    }
+
+    .slider-arrows {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .slider-arrow {
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(0,0,0,0.18);
+      backdrop-filter: blur(12px);
+      color: #ffffff;
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      pointer-events: auto;
+      transition: all .25s ease;
+    }
+
+    .slider-arrow:hover {
+      background: rgba(0,0,0,0.32);
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 768px) {
+      .hero.hero-slider {
+        padding-bottom: 90px;
+      }
+      .slider-arrows {
+        padding: 0 12px;
+      }
+      .slider-arrow {
+        width: 36px;
+        height: 36px;
+        font-size: 1.2rem;
+      }
+    }
+  </style>
 </head>
 <body>
 <header class="header">
@@ -58,20 +246,163 @@
   </div>
 </header>
 
-<section class="hero">
-  <div class="hero-content">
-    <div class="hero-badge">IT · KI · CONSULTING · WEINHEIM</div>
-    <h1>Smart Business Services<br>für den Mittelstand</h1>
-    <p class="hero-subtitle">
-      SBS Deutschland verbindet IT-Consulting, SAP-Expertise, Quality &amp; Risk Management und moderne KI
-      zu praxistauglichen Lösungen – direkt aus der Rhein-Neckar-Region.
-    </p>
-    <a href="/landing" class="hero-cta">
-      KI-Rechnungsverarbeitung ansehen →
-    </a>
+<!-- HERO SLIDER -->
+<section class="hero hero-slider" id="heroSlider">
+  <!-- Slide 0 – bisheriger Hero -->
+  <div class="hero-slide active" data-slide="0">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="pulse"></span>
+        IT · KI · CONSULTING · WEINHEIM
+      </div>
+      <h1>Smart Business Services<br>für den Mittelstand</h1>
+      <p class="hero-subtitle">
+        SBS Deutschland verbindet IT-Consulting, SAP-Expertise, Quality &amp; Risk Management und moderne KI
+        zu praxistauglichen Lösungen – direkt aus der Rhein-Neckar-Region.
+      </p>
+      <div class="hero-cta-group">
+        <a href="/landing" class="hero-cta primary">
+          KI-Rechnungsverarbeitung ansehen →
+        </a>
+        <a href="/sbshomepage/kontakt.html" class="hero-cta secondary">
+          Gespräch vereinbaren
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 1 – KI-Rechnungsverarbeitung -->
+  <div class="hero-slide" data-slide="1">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="pulse"></span>
+        KI-Rechnungsverarbeitung
+      </div>
+      <h1>Belege fallen lassen.<br>Erkenntnisse einsammeln.</h1>
+      <p class="hero-subtitle">
+        Automatisierte Erfassung, Kontierung und Übergabe Ihrer Eingangsrechnungen – DSGVO-konform,
+        DATEV-ready und in Rechenzentren in Deutschland betrieben.
+      </p>
+      <div class="hero-cta-group">
+        <a href="/landing" class="hero-cta primary">
+          Lösung im Detail ansehen →
+        </a>
+        <a href="https://app.sbsdeutschland.com/demo" class="hero-cta secondary">
+          Live-Demo starten
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 2 – SAP Consulting -->
+  <div class="hero-slide" data-slide="2">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="pulse"></span>
+        SAP Consulting
+      </div>
+      <h1>SAP-Reports,<br>die CFOs lieben.</h1>
+      <p class="hero-subtitle">
+        Vom Controlling-Report bis zur Schnittstelle – wir verbinden SAP mit modernen Cloud-Lösungen
+        und sorgen für Zahlen, die wirklich entscheidungsrelevant sind.
+      </p>
+      <div class="hero-cta-group">
+        <a href="/sbshomepage/sap-consulting.html" class="hero-cta primary">
+          SAP-Leistungen entdecken →
+        </a>
+        <a href="/sbshomepage/kontakt.html" class="hero-cta secondary">
+          Projekt anfragen
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 3 – IT Consulting -->
+  <div class="hero-slide" data-slide="3">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="pulse"></span>
+        IT Consulting
+      </div>
+      <h1>Architektur, Schnittstellen<br>&amp; Automatisierung.</h1>
+      <p class="hero-subtitle">
+        Wir begleiten Sie von der technischen Konzeption bis zum Go-Live – mit Fokus auf
+        robuste Integrationen, Sicherheit und langfristige Wartbarkeit.
+      </p>
+      <div class="hero-cta-group">
+        <a href="/sbshomepage/it-consulting.html" class="hero-cta primary">
+          IT-Consulting ansehen →
+        </a>
+        <a href="/sbshomepage/kontakt.html" class="hero-cta secondary">
+          Erstgespräch vereinbaren
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4 – Metrologie & PMO -->
+  <div class="hero-slide" data-slide="4">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="pulse"></span>
+        Metrologie &amp; PMO
+      </div>
+      <h1>Präzision in der<br>Messtechnik &amp; im Projekt.</h1>
+      <p class="hero-subtitle">
+        Metrologie-Know-how kombiniert mit strukturiertem Projektmanagement –
+        für regulierte Branchen, in denen jedes Detail zählt.
+      </p>
+      <div class="hero-cta-group">
+        <a href="/sbshomepage/met-pmo.html" class="hero-cta primary">
+          Metrologie &amp; PMO entdecken →
+        </a>
+        <a href="/sbshomepage/kontakt.html" class="hero-cta secondary">
+          Fachgespräch anfragen
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5 – Quality & Risk -->
+  <div class="hero-slide" data-slide="5">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="pulse"></span>
+        Quality &amp; Risk Management
+      </div>
+      <h1>Qualität sichern.<br>Risiken beherrschbar machen.</h1>
+      <p class="hero-subtitle">
+        Aufbau und Optimierung von QS- und Risikostrukturen – insbesondere für
+        regulierte Umfelder mit hohen Compliance-Anforderungen.
+      </p>
+      <div class="hero-cta-group">
+        <a href="/sbshomepage/quality-risk-management.html" class="hero-cta primary">
+          Quality &amp; Risk Leistungen →
+        </a>
+        <a href="/sbshomepage/kontakt.html" class="hero-cta secondary">
+          Audit-Vorbereitung starten
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slider Navigation -->
+  <div class="slider-nav">
+    <button class="slider-dot active" data-slide="0"></button>
+    <button class="slider-dot" data-slide="1"></button>
+    <button class="slider-dot" data-slide="2"></button>
+    <button class="slider-dot" data-slide="3"></button>
+    <button class="slider-dot" data-slide="4"></button>
+    <button class="slider-dot" data-slide="5"></button>
+  </div>
+
+  <div class="slider-arrows">
+    <button class="slider-arrow" id="prevSlide">‹</button>
+    <button class="slider-arrow" id="nextSlide">›</button>
   </div>
 </section>
 
+<!-- ab hier: Body fast unverändert -->
 <div class="trust-bar">
   <div class="trust-inner">
     <div class="trust-item">
@@ -276,69 +607,109 @@
 </footer>
 
 <script src="/static/js/main.js"></script>
+
 <script>
-async function checkLoginStatus() {
-  try {
-    const r = await fetch("https://app.sbsdeutschland.com/api/user", {credentials: "include"});
-    const u = await r.json();
-    const loginLink = document.querySelector("a[href*=\"app.sbsdeutschland.com/login\"]");
-    if (loginLink && u.logged_in) {
-      loginLink.textContent = "👤 " + u.name;
-      loginLink.href = "https://app.sbsdeutschland.com/history";
+// Hero Slider (gleiches Verhalten wie Landing)
+(function() {
+  const slider = document.getElementById('heroSlider');
+  const slides = slider.querySelectorAll('.hero-slide');
+  const dots = slider.querySelectorAll('.slider-dot');
+  const prevBtn = document.getElementById('prevSlide');
+  const nextBtn = document.getElementById('nextSlide');
+  let current = 0;
+  let timer;
+
+  function showSlide(i) {
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+    dots.forEach((d, idx) => d.classList.toggle('active', idx === i));
+    current = i;
+  }
+
+  function next() {
+    showSlide((current + 1) % slides.length);
+  }
+
+  function prev() {
+    showSlide((current - 1 + slides.length) % slides.length);
+  }
+
+  function start() {
+    stop();
+    timer = setInterval(next, 7000);
+  }
+
+  function stop() {
+    if (timer) clearInterval(timer);
+  }
+
+  dots.forEach((dot, idx) => {
+    dot.addEventListener('click', () => {
+      stop();
+      showSlide(idx);
+      start();
+    });
+  });
+
+  if (nextBtn && prevBtn) {
+    nextBtn.addEventListener('click', () => { stop(); next(); start(); });
+    prevBtn.addEventListener('click', () => { stop(); prev(); start(); });
+  }
+
+  // Touch / Swipe
+  let touchStartX = 0;
+  slider.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    stop();
+  });
+  slider.addEventListener('touchend', e => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) next(); else prev();
     }
-  } catch(e) {}
-}
-document.addEventListener("DOMContentLoaded", checkLoginStatus);
+    start();
+  });
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') { stop(); prev(); start(); }
+    if (e.key === 'ArrowRight') { stop(); next(); start(); }
+  });
+
+  start();
+})();
 </script>
-</body>
+
 <script>
+// Login-Status für Account-Dropdown
 async function checkLoginStatus() {
   try {
     const r = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
     const u = await r.json();
     const toggle = document.querySelector('.account-toggle');
     const menu = document.querySelector('.account-menu');
-    
+
     if (u.logged_in) {
       document.getElementById('accountName').textContent = u.name;
-      // Update logout link with current page
-      const logoutLink = menu.querySelector('a[href*="logout"]');
+      const logoutLink = menu ? menu.querySelector('a[href*="logout"]') : null;
       if (logoutLink) {
         logoutLink.href = 'https://app.sbsdeutschland.com/logout?next=' + encodeURIComponent(window.location.href);
       }
     } else {
-      // Show login link with return URL
       const currentUrl = encodeURIComponent(window.location.href);
-      toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+      if (toggle) {
+        toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
+      }
       if (menu) menu.style.display = 'none';
     }
   } catch(e) {
     const toggle = document.querySelector('.account-toggle');
     const currentUrl = encodeURIComponent(window.location.href);
-    if (toggle) toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
-  }
-}
-document.addEventListener('DOMContentLoaded', checkLoginStatus);
-</script>
-<script>
-async function checkLoginStatus() {
-  try {
-    const r = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
-    const u = await r.json();
-    const toggle = document.querySelector('.account-toggle');
-    const menu = document.querySelector('.account-menu');
-    
-    if (u.logged_in) {
-      document.getElementById('accountName').textContent = u.name;
-    } else {
-      toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
-      if (menu) menu.style.display = 'none';
+    if (toggle) {
+      toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
     }
-  } catch(e) {
-    const toggle = document.querySelector('.account-toggle');
-    if (toggle) toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
   }
 }
 document.addEventListener('DOMContentLoaded', checkLoginStatus);
 </script>
+</body>
 </html>

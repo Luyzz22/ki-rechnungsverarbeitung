@@ -2486,11 +2486,11 @@ async def accounting_page(request: Request):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT job_id, filename, invoice_count, created_at 
+        SELECT job_id, upload_path, total_files, created_at 
         FROM jobs WHERE user_id = ? AND status = 'completed' 
         ORDER BY created_at DESC LIMIT 20
     """, (request.session["user_id"],))
-    jobs = [{"job_id": r[0], "filename": r[1], "invoice_count": r[2], "created_at": r[3]} for r in cursor.fetchall()]
+    jobs = [{"job_id": r[0], "filename": r[1] or "Upload", "invoice_count": r[2], "created_at": r[3]} for r in cursor.fetchall()]
     conn.close()
     
     return templates.TemplateResponse("accounting.html", {"request": request, "jobs": jobs})
