@@ -7,6 +7,7 @@ Exports invoice data to DATEV format
 from pathlib import Path
 from typing import List, Dict
 from datetime import datetime
+from auto_accounting import suggest_account
 
 
 def export_to_datev(results: List[Dict], config: Dict) -> str:
@@ -182,6 +183,10 @@ def _format_datev_row(result: Dict, config: Dict) -> str:
     lieferant = safe_get('lieferant', 'Unbekannt')
     verwendungszweck = safe_get('verwendungszweck', '')
     
+    # Auto-Kontierung: KI schlägt Konto vor
+    suggestion = suggest_account(result)
+    sachkonto = suggestion['suggested']['account']
+    
     row_data = [
         f"{betrag_brutto:.2f}".replace('.', ','),
         "S",
@@ -189,7 +194,7 @@ def _format_datev_row(result: Dict, config: Dict) -> str:
         "",
         "",
         "",
-        config.get('sachkonto', '4900'),
+        sachkonto,  # Auto-Kontierung
         config.get('gegenkonto', '1200'),
         "",
         datum,
