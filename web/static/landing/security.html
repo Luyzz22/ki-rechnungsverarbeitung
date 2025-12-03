@@ -26,11 +26,18 @@
       <span></span><span></span><span></span>
     </button>
 
-    <nav class="nav" id="nav">
+        <nav class="nav" id="nav">
+      <!-- Lösungen Dropdown -->
       <div class="dropdown">
         <span class="dropdown-toggle">Lösungen</span>
         <div class="dropdown-menu">
+          <div class="dropdown-section">Nach Anwendung</div>
           <a href="/landing">🤖 KI-Rechnungsverarbeitung</a>
+          <a href="/static/landing/loesungen-steuerberater.html">📋 Für Steuerberater</a>
+          <a href="/static/landing/loesungen-finanzleitung.html">💼 Für Finanzleitung</a>
+          <a href="/static/landing/loesungen-handel-filialnetz.html">🏪 Für Handel & Filialnetz</a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-section">Consulting</div>
           <a href="/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
           <a href="/sbshomepage/it-consulting.html">💻 IT Consulting</a>
           <a href="/sbshomepage/met-pmo.html">📐 Metrologie & PMO</a>
@@ -38,20 +45,43 @@
         </div>
       </div>
 
-      <a href="/preise">Preise</a>
-      <a href="/static/landing/ressourcen.html">Ressourcen</a>
-      <a href="/static/landing/kunden.html">Kunden</a>
-      <a href="/sbshomepage/unternehmen.html">Unternehmen</a>
-      <a href="/sbshomepage/kontakt.html">Kontakt</a>
+      <!-- Plattform Dropdown -->
+      <div class="dropdown">
+        <span class="dropdown-toggle">Plattform</span>
+        <div class="dropdown-menu">
+          <a href="https://app.sbsdeutschland.com/copilot">🤖 Finance Copilot</a>
+          <a href="https://app.sbsdeutschland.com/accounting">📊 Auto-Kontierung</a>
+          <a href="/static/landing/integrationen.html">🔗 Integrationen</a>
+          <a href="/static/landing/security.html">🔒 Sicherheit & Compliance</a>
+        </div>
+      </div>
 
+      <!-- Preise -->
+      <a href="/preise">Preise</a>
+
+      <!-- Ressourcen Dropdown -->
+      <div class="dropdown">
+        <span class="dropdown-toggle">Ressourcen</span>
+        <div class="dropdown-menu">
+          <a href="/static/landing/ressourcen.html">📚 Dokumentation</a>
+          <a href="/static/landing/kunden.html">⭐ Kunden & Referenzen</a>
+          <a href="/static/landing/support.html">💬 Support</a>
+          <a href="/sbshomepage/kontakt.html">✉️ Kontakt</a>
+        </div>
+      </div>
+
+      <!-- Account Dropdown -->
       <div class="account-dropdown">
-        <span class="account-toggle">👤 <span id="accountName">App Login</span> ▾</span>
+        <span class="account-toggle">👤 <span id="accountName">Anmelden</span> ▾</span>
         <div class="account-menu">
-          <a href="https://app.sbsdeutschland.com/">🚀 Zur App</a>
-          <a href="https://app.sbsdeutschland.com/history">📊 Verlauf</a>
-          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
-          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
+          <a href="https://app.sbsdeutschland.com/demo">🚀 Kostenlos testen</a>
+          <a href="https://app.sbsdeutschland.com/">📊 Zur App</a>
           <div class="divider"></div>
+          <a href="https://app.sbsdeutschland.com/copilot">🤖 Finance Copilot</a>
+          <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
+          <a href="https://app.sbsdeutschland.com/accounting">📊 Kontierung</a>
+          <div class="divider"></div>
+          <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
           <a href="https://app.sbsdeutschland.com/logout">🚪 Logout</a>
         </div>
       </div>
@@ -180,17 +210,19 @@
         </div>
       </div>
       <p class="footer-tagline">
-        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
+        Enterprise KI-Lösungen für den deutschen Mittelstand. Entwickelt und betrieben in Deutschland.
       </p>
       <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
     </div>
 
     <div>
-      <h4>Produkte</h4>
+      <h4>Produkt</h4>
       <ul>
         <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
-        <li><a href="/preise">Preise &amp; Pakete</a></li>
-        <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
+        <li><a href="https://app.sbsdeutschland.com/copilot">Finance Copilot</a></li>
+        <li><a href="/preise">Preise & Pakete</a></li>
+        <li><a href="/static/landing/integrationen.html">Integrationen</a></li>
+        <li><a href="/static/landing/security.html">Sicherheit</a></li>
       </ul>
     </div>
 
@@ -199,8 +231,8 @@
       <ul>
         <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
         <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
-        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
-        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
+        <li><a href="/static/landing/support.html">Support</a></li>
+        <li><a href="/static/landing/kunden.html">Kunden</a></li>
       </ul>
     </div>
 
@@ -215,14 +247,8 @@
   </div>
 
   <div class="footer-bottom">
-    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+    <p>© 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
     <p>Made with ❤️ in Weinheim</p>
-  </div>
-
-  <div class="footer-theme">
-    <button id="theme-toggle" class="theme-toggle-small" type="button">
-      🌗 Darstellung: Hell / Dunkel
-    </button>
   </div>
 </footer>
 
