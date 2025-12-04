@@ -120,6 +120,7 @@
 
   <section class="audit-hero">
     <h1>📜 Audit-Log</h1>
+    <p id="accessInfo" style="margin: 8px 0 0; opacity: 0.9; font-size: 0.85rem;"></p>
     <p>Protokoll aller Systemaktivitäten - GoBD-konform</p>
   </section>
 
@@ -218,6 +219,14 @@
           document.getElementById('auditTableBody').innerHTML = 
             `<tr><td colspan="5" class="empty-state">${data.error}</td></tr>`;
           return;
+        }
+
+        // Access-Info aktualisieren
+        const accessInfo = document.getElementById('accessInfo');
+        if (data.is_admin) {
+          accessInfo.textContent = '👑 Admin-Ansicht: Alle Systemaktivitäten';
+        } else {
+          accessInfo.textContent = '🔒 Sie sehen nur Ihre eigenen Aktivitäten';
         }
 
         // KPIs aktualisieren

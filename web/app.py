@@ -3870,9 +3870,12 @@ async def get_audit_log(
     action: str = "",
     days: str = "7"
 ):
-    """Audit-Log Einträge laden"""
+    """Audit-Log Einträge laden - Admins sehen alles, andere nur eigene"""
     if "user_id" not in request.session:
         return {"error": "Not logged in"}
+    
+    user_id = request.session["user_id"]
+    is_admin = is_admin_user(user_id)
     
     from database import get_connection
     conn = get_connection()
@@ -3882,6 +3885,11 @@ async def get_audit_log(
     # Base Query
     where_clauses = []
     params = []
+    
+    # Nicht-Admins sehen nur eigene Einträge
+    if not is_admin:
+        where_clauses.append("user_id = ?")
+        params.append(user_id)
     
     # Action Filter
     if action:
@@ -3895,19 +3903,25 @@ async def get_audit_log(
     
     where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
     
-    # Total Count
+    # Total Count (gefiltert)
     cursor.execute(f"SELECT COUNT(*) as count FROM audit_log {where_sql}", params)
     total = cursor.fetchone()['count']
     
-    # Stats
-    cursor.execute("SELECT COUNT(*) as count FROM audit_log WHERE DATE(timestamp) = DATE('now')")
-    today = cursor.fetchone()['count']
-    
-    cursor.execute("SELECT COUNT(*) as count FROM audit_log WHERE action = 'auth.login' AND timestamp >= datetime('now', '-7 days')")
-    logins_7d = cursor.fetchone()['count']
-    
-    cursor.execute("SELECT COUNT(*) as count FROM audit_log WHERE action = 'auth.login_failed'")
-    failed_logins = cursor.fetchone()['count']
+    # Stats - für Admins global, für andere nur eigene
+    if is_admin:
+        cursor.execute("SELECT COUNT(*) as count FROM audit_log WHERE DATE(timestamp) = DATE('now')")
+        today = cursor.fetchone()['count']
+        cursor.execute("SELECT COUNT(*) as count FROM audit_log WHERE action = 'auth.login' AND timestamp >= datetime('now', '-7 days')")
+        logins_7d = cursor.fetchone()['count']
+        cursor.execute("SELECT COUNT(*) as count FROM audit_log WHERE action = 'auth.login_failed'")
+        failed_logins = cursor.fetchone()['count']
+    else:
+        cursor.execute("SELECT COUNT(*) as count FROM audit_log WHERE user_id = ? AND DATE(timestamp) = DATE('now')", (user_id,))
+        today = cursor.fetchone()['count']
+        cursor.execute("SELECT COUNT(*) as count FROM audit_log WHERE user_id = ? AND action = 'auth.login' AND timestamp >= datetime('now', '-7 days')", (user_id,))
+        logins_7d = cursor.fetchone()['count']
+        cursor.execute("SELECT COUNT(*) as count FROM audit_log WHERE user_id = ? AND action = 'auth.login_failed'", (user_id,))
+        failed_logins = cursor.fetchone()['count']
     
     # Paginated Results
     offset = (page - 1) * limit
@@ -3930,7 +3944,8 @@ async def get_audit_log(
             "failed_logins": failed_logins
         },
         "page": page,
-        "limit": limit
+        "limit": limit,
+        "is_admin": is_admin
     }
 
 
