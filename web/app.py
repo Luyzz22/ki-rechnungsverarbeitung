@@ -2657,9 +2657,10 @@ async def review_plausibility(check_id: int, request: Request):
 # === Analytics Dashboard ===
 @app.get("/analytics/costs")
 async def analytics_costs(request: Request):
-    """Analytics Dashboard für Kosten"""
-    if "user_id" not in request.session:
-        return RedirectResponse("/login")
+    """Analytics Dashboard für API-Kosten - Nur für Admins"""
+    admin_check = require_admin(request)
+    if admin_check:
+        return admin_check
     
     from cost_tracker import get_monthly_costs
     import sqlite3
