@@ -2541,6 +2541,10 @@ async def team_page(request: Request):
 
 @app.get("/audit-log", response_class=HTMLResponse)
 async def audit_log_page(request: Request):
+    """Audit-Log Seite - Protokoll aller Systemaktivitäten"""
+    redirect = require_login(request)
+    if redirect:
+        return redirect
     return templates.TemplateResponse("audit_log.html", {"request": request})
 
 
@@ -3852,3 +3856,94 @@ async def update_member_status(user_id: int, request: Request):
     conn.close()
     
     return {"success": True, "message": f"User {'aktiviert' if is_active else 'deaktiviert'}"}
+
+
+# ============================================================
+# AUDIT-LOG API
+# ============================================================
+
+@app.get("/api/audit-log", tags=["Audit"])
+async def get_audit_log(
+    request: Request,
+    page: int = 1,
+    limit: int = 50,
+    action: str = "",
+    days: str = "7"
+):
+    """Audit-Log Einträge laden"""
+    if "user_id" not in request.session:
+        return {"error": "Not logged in"}
+    
+    from database import get_connection
+    conn = get_connection()
+    conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
+    cursor = conn.cursor()
+    
+    # Base Query
+    where_clauses = []
+    params = []
+    
+    # Action Filter
+    if action:
+        where_clauses.append("action LIKE ?")
+        params.append(f"%{action}%")
+    
+    # Days Filter
+    if days and days.isdigit():
+        where_clauses.append("timestamp >= datetime('now', ?)")
+        params.append(f"-{days} days")
+    
+    where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+    
+    # Total Count
+    cursor.execute(f"SELECT COUNT(*) as count FROM audit_log {where_sql}", params)
+    total = cursor.fetchone()['count']
+    
+    # Stats
+    cursor.execute("SELECT COUNT(*) as count FROM audit_log WHERE DATE(timestamp) = DATE('now')")
+    today = cursor.fetchone()['count']
+    
+    cursor.execute("SELECT COUNT(*) as count FROM audit_log WHERE action = 'auth.login' AND timestamp >= datetime('now', '-7 days')")
+    logins_7d = cursor.fetchone()['count']
+    
+    cursor.execute("SELECT COUNT(*) as count FROM audit_log WHERE action = 'auth.login_failed'")
+    failed_logins = cursor.fetchone()['count']
+    
+    # Paginated Results
+    offset = (page - 1) * limit
+    cursor.execute(f"""
+        SELECT * FROM audit_log 
+        {where_sql}
+        ORDER BY timestamp DESC 
+        LIMIT ? OFFSET ?
+    """, params + [limit, offset])
+    entries = cursor.fetchall()
+    
+    conn.close()
+    
+    return {
+        "entries": entries,
+        "stats": {
+            "total": total,
+            "today": today,
+            "logins_7d": logins_7d,
+            "failed_logins": failed_logins
+        },
+        "page": page,
+        "limit": limit
+    }
+
+
+def log_audit_event(user_id: int = None, user_email: str = None, action: str = "", 
+                    resource_type: str = None, resource_id: str = None, 
+                    details: str = None, ip_address: str = None, user_agent: str = None):
+    """Hilfsfunktion zum Loggen von Audit-Events"""
+    from database import get_connection
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO audit_log (user_id, user_email, action, resource_type, resource_id, details, ip_address, user_agent)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, user_email, action, resource_type, resource_id, details, ip_address, user_agent))
+    conn.commit()
+    conn.close()
