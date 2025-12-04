@@ -1,0 +1,66 @@
+<header class="header">
+  <div class="header-inner">
+    <a href="https://sbsdeutschland.com/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
+    </a>
+
+    <button class="burger" id="burger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav" id="nav">
+      <a href="/landing">Produkt</a>
+      <a href="/preise">Preise</a>
+      <a href="/sbshomepage/kontakt.html">Kontakt</a>
+
+      <!-- Auth Bereich -->
+      <div class="auth-section">
+        <div class="auth-guest" id="authGuest">
+          <a href="/login" class="nav-link-login">Login</a>
+          <a href="/demo" class="btn-cta-header">Demo starten</a>
+        </div>
+        
+        <div class="account-dropdown auth-user" id="authUser" style="display:none;">
+          <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
+          <div class="account-menu">
+            <a href="/">📊 Zur App</a>
+            <a href="/history">📁 Verlauf</a>
+            <div class="divider"></div>
+            <a href="/profile">⚙️ Einstellungen</a>
+            <a href="/logout" class="logout-link">🚪 Abmelden</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<script>
+  // Burger Menu Toggle
+  const burger = document.getElementById('burger');
+  const nav = document.getElementById('nav');
+  if (burger && nav) {
+    burger.addEventListener('click', () => {
+      nav.classList.toggle('open');
+      burger.classList.toggle('active');
+    });
+  }
+
+  // Auth Check
+  async function checkAuth() {
+    try {
+      const res = await fetch('/api/user', {credentials: 'include'});
+      const user = await res.json();
+      const guestEl = document.getElementById('authGuest');
+      const userEl = document.getElementById('authUser');
+      
+      if (user && user.logged_in) {
+        if (guestEl) guestEl.style.display = 'none';
+        if (userEl) userEl.style.display = 'block';
+        document.getElementById('accountName').textContent = user.name || 'Account';
+      }
+    } catch(e) {}
+  }
+  document.addEventListener('DOMContentLoaded', checkAuth);
+</script>
