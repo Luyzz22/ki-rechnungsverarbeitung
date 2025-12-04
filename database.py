@@ -1161,6 +1161,21 @@ def check_invoice_limit(user_id: int) -> dict:
     conn = get_connection()
     cursor = conn.cursor()
     
+    # Check if user is admin (unlimited access)
+    cursor.execute('SELECT is_admin FROM users WHERE id = ?', (user_id,))
+    user_row = cursor.fetchone()
+    if user_row and user_row[0]:
+        conn.close()
+        return {
+            'allowed': True,
+            'is_admin': True,
+            'plan': 'admin',
+            'limit': 999999,
+            'used': 0,
+            'remaining': 999999,
+            'message': 'Admin-Account - Unbegrenzter Zugang'
+        }
+    
     # Get active subscription
     cursor.execute('''
         SELECT plan, invoices_limit, invoices_used 
@@ -1175,6 +1190,9 @@ def check_invoice_limit(user_id: int) -> dict:
         return {
             'allowed': False,
             'reason': 'no_subscription',
+            'plan': None,
+            'limit': 0,
+            'used': 0,
             'message': 'Kein aktives Abonnement. Bitte wählen Sie einen Plan.'
         }
     

@@ -181,9 +181,10 @@ async def home(request: Request):
 async def upload_files(request: Request, files: List[UploadFile] = File(default=[])):
     app_logger.info(f"Upload request: {len(files) if files else 0} files from user")
     """
-    DEV-VERSION:
-    - Keine Abo-/Limit-Prüfung
-    - Speichert PDFs und legt einen Job in processing_jobs an
+    Rechnungs-Upload mit Subscription-Prüfung:
+    - Admins: Unbegrenzter Zugang
+    - User mit aktivem Plan: Bis zum Limit
+    - User ohne Plan: Redirect zu Preisseite
     """
 
     # 1) Nur eingeloggte User dürfen hochladen
@@ -194,6 +195,31 @@ async def upload_files(request: Request, files: List[UploadFile] = File(default=
         )
 
     user_id = request.session["user_id"]
+    
+    # 2) Subscription-Check (Admins haben unbegrenzten Zugang)
+    from database import check_invoice_limit
+    limit_status = check_invoice_limit(user_id)
+    
+    if not limit_status.get('allowed') and not limit_status.get('is_admin'):
+        reason = limit_status.get('reason', 'unknown')
+        if reason == 'no_subscription':
+            return JSONResponse(
+                status_code=402,
+                content={
+                    "error": "Kein aktiver Plan",
+                    "message": "Bitte wählen Sie einen Plan um Rechnungen zu verarbeiten.",
+                    "redirect": "/landing/preise.html"
+                }
+            )
+        elif reason == 'limit_reached':
+            return JSONResponse(
+                status_code=402,
+                content={
+                    "error": "Limit erreicht",
+                    "message": limit_status.get('message', 'Monatliches Limit erreicht.'),
+                    "redirect": "/landing/preise.html"
+                }
+            )
     # Rate Limiting: 10 Uploads pro Minute
     check_rate_limit(request, "upload")
 
