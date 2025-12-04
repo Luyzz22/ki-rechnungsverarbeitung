@@ -3,67 +3,168 @@
 <head>
   <meta charset="utf-8" />
   <title>Audit-Log · SBS KI-Rechnungsverarbeitung</title>
-          <a href="/exports">📥 Export-Historie</a>
-          <a href="/admin">🔧 Admin</a>
-          <a href="/admin/users">👥 User-Verwaltung</a>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/css/design-tokens.css" />
   <link rel="stylesheet" href="/static/css/components.css" />
   <link rel="stylesheet" href="/static/css/main.css" />
   <style>
-    .audit-container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 32px 16px;
+    .audit-hero {
+      background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+      color: white;
+      padding: 40px 24px;
+      text-align: center;
     }
+    .audit-hero h1 { margin: 0; font-size: 2rem; }
+    .audit-hero p { margin: 8px 0 0; opacity: 0.9; }
+    
+    .audit-container { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+    
     .audit-card {
-      background: var(--sbs-white);
+      background: var(--sbs-card-bg, #fff);
+      border: 1px solid var(--sbs-border, #e5e7eb);
       border-radius: 12px;
       padding: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 24px;
     }
+    
+    .audit-filters {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .audit-filters select, .audit-filters input {
+      padding: 8px 12px;
+      border: 1px solid var(--sbs-border, #e5e7eb);
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    
     .audit-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 16px;
     }
-    .audit-table th,
-    .audit-table td {
-      padding: 8px 10px;
-      border-bottom: 1px solid var(--sbs-border-soft);
-      font-size: 0.85rem;
+    .audit-table th, .audit-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--sbs-border, #e5e7eb);
     }
     .audit-table th {
+      background: var(--sbs-bg-soft, #f9fafb);
+      font-weight: 600;
+      font-size: 0.75rem;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      font-size: 0.75rem;
-      color: var(--sbs-muted);
+      letter-spacing: 0.05em;
+      color: var(--sbs-muted, #6b7280);
     }
-    .audit-type {
-      font-size: 0.75rem;
-      padding: 3px 8px;
+    .audit-table tr:hover { background: var(--sbs-bg-soft, #f9fafb); }
+    
+    .action-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
       border-radius: 999px;
-      background: #eef2ff;
-      color: #3730a3;
+      font-size: 0.75rem;
+      font-weight: 600;
     }
+    .action-login { background: #dcfce7; color: #15803d; }
+    .action-login_failed { background: #fee2e2; color: #991b1b; }
+    .action-upload { background: #dbeafe; color: #1d4ed8; }
+    .action-export { background: #f3e8ff; color: #7c3aed; }
+    .action-delete { background: #fee2e2; color: #991b1b; }
+    .action-update { background: #fef3c7; color: #92400e; }
+    .action-create { background: #dcfce7; color: #15803d; }
+    .action-default { background: #f3f4f6; color: #6b7280; }
+    
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: var(--sbs-bg-soft, #f9fafb);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+    .kpi-value { font-size: 1.5rem; font-weight: 700; color: var(--sbs-primary, #003856); }
+    .kpi-label { font-size: 0.8rem; color: var(--sbs-muted, #6b7280); margin-top: 4px; }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--sbs-muted, #6b7280);
+    }
+    
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    .pagination button {
+      padding: 8px 16px;
+      border: 1px solid var(--sbs-border, #e5e7eb);
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .pagination button:hover { background: var(--sbs-bg-soft, #f9fafb); }
+    .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
 </head>
 <body>
+  {% include 'partials/header.html' %}
 
-{% include 'partials/header.html' %}<section class="section">
+  <section class="audit-hero">
+    <h1>📜 Audit-Log</h1>
+    <p>Protokoll aller Systemaktivitäten - GoBD-konform</p>
+  </section>
+
   <div class="audit-container">
-    <h1 style="margin-bottom: 8px;">📜 Audit-Log (Vorschau)</h1>
-          <a href="/exports">📥 Export-Historie</a>
-          <a href="/admin">🔧 Admin</a>
-          <a href="/admin/users">👥 User-Verwaltung</a>
-    <p class="hero-subtitle" style="margin-bottom: 24px;">
-      Übersicht über relevante Aktivitäten im System. Diese Seite dient als Konzept – die Anbindung
-      an die reale Protokollierung kann nach Bedarf umgesetzt werden.
-    </p>
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-value" id="totalEntries">-</div>
+        <div class="kpi-label">Einträge gesamt</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="todayEntries">-</div>
+        <div class="kpi-label">Heute</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="loginCount">-</div>
+        <div class="kpi-label">Logins (7 Tage)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="failedLogins">-</div>
+        <div class="kpi-label">Fehlgeschlagen</div>
+      </div>
+    </div>
 
+    <!-- Filter & Tabelle -->
     <div class="audit-card">
-      <h2 style="margin-top: 0;">Beispielhafte Einträge</h2>
+      <div class="audit-filters">
+        <select id="filterAction" onchange="loadAuditLog()">
+          <option value="">Alle Aktionen</option>
+          <option value="auth.login">Login</option>
+          <option value="auth.login_failed">Login fehlgeschlagen</option>
+          <option value="auth.logout">Logout</option>
+          <option value="invoice.upload">Upload</option>
+          <option value="invoice.process">Verarbeitung</option>
+          <option value="export">Export</option>
+        </select>
+        <select id="filterDays" onchange="loadAuditLog()">
+          <option value="7">Letzte 7 Tage</option>
+          <option value="30">Letzte 30 Tage</option>
+          <option value="90">Letzte 90 Tage</option>
+          <option value="">Alle</option>
+        </select>
+        <input type="text" id="filterUser" placeholder="User filtern..." onkeyup="loadAuditLog()" />
+      </div>
+
       <table class="audit-table">
         <thead>
           <tr>
@@ -71,43 +172,148 @@
             <th>Benutzer</th>
             <th>Aktion</th>
             <th>Details</th>
+            <th>IP-Adresse</th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
-            <td>2025-11-24 09:14</td>
-            <td>demo@example.com</td>
-            <td><span class="audit-type">Korrektur</span></td>
-            <td>Rechnung #123 – MwSt. von 19,00 € auf 18,90 € angepasst (Beispiel).</td>
-          </tr>
-          <tr>
-            <td>2025-11-24 09:10</td>
-            <td>finance@example.com</td>
-            <td><span class="audit-type">Export</span></td>
-            <td>DATEV-Export für Job 4854c537-… erstellt.</td>
-          </tr>
-          <tr>
-            <td>2025-11-23 17:02</td>
-            <td>demo@example.com</td>
-            <td><span class="audit-type">Login</span></td>
-            <td>Erfolgreicher Login (Beispiel-Eintrag).</td>
-          </tr>
+        <tbody id="auditTableBody">
+          <tr><td colspan="5" class="empty-state">Lade Audit-Log...</td></tr>
         </tbody>
       </table>
-      <p style="font-size: 0.8rem; color: var(--sbs-muted); margin-top: 8px;">
-        Hinweis: Die konkrete Ausgestaltung des Audit-Logs hängt von Ihren rechtlichen Anforderungen
-          <a href="/exports">📥 Export-Historie</a>
-          <a href="/admin">🔧 Admin</a>
-          <a href="/admin/users">👥 User-Verwaltung</a>
-        (z. B. GoBD) und internen Vorgaben ab.
+
+      <div class="pagination">
+        <button id="prevBtn" onclick="changePage(-1)" disabled>← Zurück</button>
+        <span id="pageInfo">Seite 1</span>
+        <button id="nextBtn" onclick="changePage(1)">Weiter →</button>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="audit-card" style="background: #eff6ff; border-color: #bfdbfe;">
+      <h3 style="margin: 0 0 8px; font-size: 1rem;">ℹ️ Über das Audit-Log</h3>
+      <p style="margin: 0; font-size: 0.9rem; color: #1e40af;">
+        Das Audit-Log protokolliert alle relevanten Systemaktivitäten gemäß den Anforderungen der GoBD 
+        (Grundsätze zur ordnungsmäßigen Führung und Aufbewahrung von Büchern). 
+        Einträge können nicht gelöscht oder verändert werden.
       </p>
     </div>
   </div>
-</section>
 
-{% include 'partials/footer.html' %}
+  {% include 'partials/footer.html' %}
 
-<script src="/static/js/main.js"></script>
+  <script>
+    let currentPage = 1;
+    const pageSize = 50;
+    let totalPages = 1;
 
+    async function loadAuditLog() {
+      const action = document.getElementById('filterAction').value;
+      const days = document.getElementById('filterDays').value;
+      const userFilter = document.getElementById('filterUser').value.toLowerCase();
+
+      try {
+        const res = await fetch(`/api/audit-log?page=${currentPage}&limit=${pageSize}&action=${action}&days=${days}`);
+        const data = await res.json();
+
+        if (data.error) {
+          document.getElementById('auditTableBody').innerHTML = 
+            `<tr><td colspan="5" class="empty-state">${data.error}</td></tr>`;
+          return;
+        }
+
+        // KPIs aktualisieren
+        document.getElementById('totalEntries').textContent = data.stats?.total || 0;
+        document.getElementById('todayEntries').textContent = data.stats?.today || 0;
+        document.getElementById('loginCount').textContent = data.stats?.logins_7d || 0;
+        document.getElementById('failedLogins').textContent = data.stats?.failed_logins || 0;
+
+        // Tabelle rendern
+        let entries = data.entries || [];
+        
+        // Client-side User-Filter
+        if (userFilter) {
+          entries = entries.filter(e => 
+            (e.user_email || '').toLowerCase().includes(userFilter)
+          );
+        }
+
+        renderTable(entries);
+
+        // Pagination
+        totalPages = Math.ceil((data.stats?.total || 0) / pageSize);
+        document.getElementById('pageInfo').textContent = `Seite ${currentPage} von ${totalPages || 1}`;
+        document.getElementById('prevBtn').disabled = currentPage <= 1;
+        document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+
+      } catch (e) {
+        console.error(e);
+        document.getElementById('auditTableBody').innerHTML = 
+          `<tr><td colspan="5" class="empty-state">Fehler beim Laden</td></tr>`;
+      }
+    }
+
+    function renderTable(entries) {
+      const tbody = document.getElementById('auditTableBody');
+
+      if (!entries.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Keine Einträge gefunden</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = entries.map(e => {
+        const actionClass = getActionClass(e.action);
+        const actionLabel = formatAction(e.action);
+        const timestamp = e.timestamp ? new Date(e.timestamp).toLocaleString('de-DE') : '-';
+
+        return `
+          <tr>
+            <td style="white-space: nowrap;">${timestamp}</td>
+            <td>${e.user_email || '<span style="color: #9ca3af;">Anonym</span>'}</td>
+            <td><span class="action-badge ${actionClass}">${actionLabel}</span></td>
+            <td>${e.details || '-'}</td>
+            <td style="font-family: monospace; font-size: 0.8rem;">${e.ip_address || '-'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function getActionClass(action) {
+      if (!action) return 'action-default';
+      if (action.includes('login_failed')) return 'action-login_failed';
+      if (action.includes('login')) return 'action-login';
+      if (action.includes('upload')) return 'action-upload';
+      if (action.includes('export')) return 'action-export';
+      if (action.includes('delete')) return 'action-delete';
+      if (action.includes('update')) return 'action-update';
+      if (action.includes('create')) return 'action-create';
+      return 'action-default';
+    }
+
+    function formatAction(action) {
+      const labels = {
+        'auth.login': '✅ Login',
+        'auth.login_failed': '❌ Login fehlgeschlagen',
+        'auth.logout': '🚪 Logout',
+        'auth.register': '👤 Registrierung',
+        'invoice.upload': '📤 Upload',
+        'invoice.process': '⚙️ Verarbeitung',
+        'invoice.delete': '🗑️ Gelöscht',
+        'export.datev': '📊 DATEV-Export',
+        'export.csv': '📄 CSV-Export',
+        'export.sepa': '💳 SEPA-Export',
+        'user.update': '✏️ User bearbeitet',
+        'user.role_change': '🎭 Rolle geändert'
+      };
+      return labels[action] || action;
+    }
+
+    function changePage(delta) {
+      currentPage += delta;
+      if (currentPage < 1) currentPage = 1;
+      loadAuditLog();
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', loadAuditLog);
+  </script>
 </body>
 </html>
