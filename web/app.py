@@ -1449,10 +1449,30 @@ async def register_submit(request: Request):
             "error": "Passwörter stimmen nicht überein"
         })
     
-    if len(password) < 6:
+    # Enterprise Passwort-Anforderungen
+    if len(password) < 8:
         return templates.TemplateResponse("register.html", {
             "request": request,
-            "error": "Passwort muss mindestens 6 Zeichen haben"
+            "error": "Passwort muss mindestens 8 Zeichen haben"
+        })
+    
+    import re
+    if not re.search(r'[A-Z]', password):
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": "Passwort muss mindestens einen Großbuchstaben enthalten"
+        })
+    
+    if not re.search(r'[a-z]', password):
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": "Passwort muss mindestens einen Kleinbuchstaben enthalten"
+        })
+    
+    if not re.search(r'[0-9]', password):
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": "Passwort muss mindestens eine Zahl enthalten"
         })
     
     if email_exists(email):

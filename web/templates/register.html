@@ -96,7 +96,52 @@
     .logo-center img {
       height: 50px;
     }
-  </style>
+  
+    .password-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .password-input-wrap input {
+      padding-right: 45px;
+    }
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: #6b7280;
+    }
+    .password-toggle:hover {
+      color: #003856;
+    }
+    .eye-icon {
+      width: 20px;
+      height: 20px;
+    }
+    .password-requirements {
+      margin-top: 10px;
+      font-size: 0.85rem;
+    }
+    .requirement {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 0;
+      color: #6b7280;
+    }
+    .requirement.valid {
+      color: #16a34a;
+    }
+    .requirement.valid .icon {
+      color: #16a34a;
+    }
+    .requirement .icon {
+      font-size: 0.9rem;
+    }
+</style>
 </head>
 <body>
 
@@ -131,13 +176,35 @@
       
       <div class="form-group">
         <label>Passwort *</label>
-        <input type="password" name="password" class="form-input" required placeholder="••••••••">
-        <div class="hint">Mindestens 6 Zeichen</div>
+        <div class="password-input-wrap">
+          <input type="password" name="password" id="password" class="form-input" required placeholder="••••••••">
+          <button type="button" class="password-toggle" onclick="togglePassword('password', this)" aria-label="Passwort anzeigen">
+            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+        <div class="password-requirements">
+          <div class="requirement" id="req-length"><span class="icon">○</span> Mindestens 8 Zeichen</div>
+          <div class="requirement" id="req-upper"><span class="icon">○</span> Ein Großbuchstabe (A-Z)</div>
+          <div class="requirement" id="req-lower"><span class="icon">○</span> Ein Kleinbuchstabe (a-z)</div>
+          <div class="requirement" id="req-number"><span class="icon">○</span> Eine Zahl (0-9)</div>
+        </div>
       </div>
       
       <div class="form-group">
         <label>Passwort wiederholen *</label>
-        <input type="password" name="password2" required placeholder="••••••••">
+        <div class="password-input-wrap">
+          <input type="password" name="password2" id="password2" class="form-input" required placeholder="••••••••">
+          <button type="button" class="password-toggle" onclick="togglePassword('password2', this)" aria-label="Passwort anzeigen">
+            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+        <div class="requirement" id="req-match"><span class="icon">○</span> Passwörter stimmen überein</div>
       </div>
       
       <button type="submit" class="btn-register">Konto erstellen</button>
@@ -149,5 +216,82 @@
   </div>
 </div>
 
+
+<script>
+function togglePassword(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.innerHTML = '<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+  } else {
+    input.type = 'password';
+    btn.innerHTML = '<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const pw = document.getElementById('password');
+  const pw2 = document.getElementById('password2');
+  
+  if (!pw) return;
+  
+  function validate() {
+    const val = pw.value;
+    
+    // Length check
+    const reqLength = document.getElementById('req-length');
+    if (val.length >= 8) {
+      reqLength.classList.add('valid');
+      reqLength.querySelector('.icon').textContent = '✓';
+    } else {
+      reqLength.classList.remove('valid');
+      reqLength.querySelector('.icon').textContent = '○';
+    }
+    
+    // Uppercase check
+    const reqUpper = document.getElementById('req-upper');
+    if (/[A-Z]/.test(val)) {
+      reqUpper.classList.add('valid');
+      reqUpper.querySelector('.icon').textContent = '✓';
+    } else {
+      reqUpper.classList.remove('valid');
+      reqUpper.querySelector('.icon').textContent = '○';
+    }
+    
+    // Lowercase check
+    const reqLower = document.getElementById('req-lower');
+    if (/[a-z]/.test(val)) {
+      reqLower.classList.add('valid');
+      reqLower.querySelector('.icon').textContent = '✓';
+    } else {
+      reqLower.classList.remove('valid');
+      reqLower.querySelector('.icon').textContent = '○';
+    }
+    
+    // Number check
+    const reqNumber = document.getElementById('req-number');
+    if (/[0-9]/.test(val)) {
+      reqNumber.classList.add('valid');
+      reqNumber.querySelector('.icon').textContent = '✓';
+    } else {
+      reqNumber.classList.remove('valid');
+      reqNumber.querySelector('.icon').textContent = '○';
+    }
+    
+    // Match check
+    const reqMatch = document.getElementById('req-match');
+    if (pw2.value && val === pw2.value) {
+      reqMatch.classList.add('valid');
+      reqMatch.querySelector('.icon').textContent = '✓';
+    } else {
+      reqMatch.classList.remove('valid');
+      reqMatch.querySelector('.icon').textContent = '○';
+    }
+  }
+  
+  pw.addEventListener('input', validate);
+  pw2.addEventListener('input', validate);
+});
+</script>
 </body>
 </html>
