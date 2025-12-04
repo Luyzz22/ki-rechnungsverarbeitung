@@ -415,50 +415,7 @@ h4 + ul li {
 </head>
 <body>
 
-<header class="header">
-  <div class="header-inner">
-    <a href="/" class="logo-wrap">
-      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
-      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
-    </a>
-
-    <button class="burger" id="burger" aria-label="Menü">
-      <span></span><span></span><span></span>
-    </button>
-
-    <nav class="nav" id="nav">
-      <a href="/">Upload</a>
-      <a href="/history">Verlauf</a>
-      <a href="/analytics">Analytics</a>
-      <a href="/email-config">Email-Inbox</a>
-      <a href="/copilot">Copilot</a>
-
-      <div class="account-dropdown">
-        <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
-        <div class="account-menu">
-          <div class="section-label">Workspace</div>
-          <a href="/">📥 Upload</a>
-          <a href="/history">📊 Verlauf</a>
-          <a href="/analytics">📈 Analytics</a>
-          <a href="/email-config">📧 Email-Inbox</a>
-
-          <div class="divider"></div>
-          <div class="section-label">Konto</div>
-          <a href="/account">💳 Konto &amp; Nutzung</a>
-          <a href="/team">👥 Team &amp; Rollen</a>
-          <a href="/audit-log">📜 Audit-Log</a>
-          <a href="/exports">📥 Export-Historie</a>
-          <a href="/admin">🔧 Admin</a>
-          <a href="/admin/users">👥 User-Verwaltung</a>
-          <a href="/profile">⚙️ Einstellungen</a>
-          <a href="/logout">🚪 Logout</a>
-        </div>
-      </div>
-    </nav>
-  </div>
-</header>
-
-<section class="hero-compact">
+{% include 'partials/header.html' %}<section class="hero-compact">
   <div class="hero-compact-inner">
     <div>
       <div class="hero-kicker">
@@ -639,56 +596,7 @@ h4 + ul li {
   </div>
 </main>
 
-<footer class="footer">
-  <div class="footer-grid">
-    <div>
-      <div class="footer-brand">
-        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
-        <div class="footer-brand-text">
-          <strong>SBS Deutschland</strong>
-          <span>Smart Business Service</span>
-        </div>
-      </div>
-      <p class="footer-tagline">
-        Ihr Partner für intelligente Geschäftsprozesse und KI-Lösungen aus der Rhein-Neckar-Region.
-      </p>
-      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
-    </div>
-
-    <div>
-      <h4>Produkte</h4>
-      <ul>
-        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
-        <li><a href="/preise">Preise &amp; Pakete</a></li>
-        <li><a href="https://app.sbsdeutschland.com/">Demo &amp; Upload</a></li>
-      </ul>
-    </div>
-
-    <div>
-      <h4>Unternehmen</h4>
-      <ul>
-        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
-        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
-        <li><a href="/sbshomepage/it-consulting.html">IT Consulting</a></li>
-        <li><a href="/sbshomepage/sap-consulting.html">SAP Consulting</a></li>
-      </ul>
-    </div>
-
-    <div>
-      <h4>Rechtliches</h4>
-      <ul>
-        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
-        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
-        <li><a href="/sbshomepage/agb.html">AGB</a></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="footer-bottom">
-    <p>&copy; 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
-    <p>Made with ❤️ in Weinheim</p>
-  </div>
-</footer>
+{% include 'partials/footer.html' %}
 
 <script src="/static/js/main.js"></script>
 
