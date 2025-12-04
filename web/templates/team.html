@@ -112,19 +112,6 @@
 {% include 'partials/footer.html' %}
 
 <script src="/static/js/main.js"></script>
-<script>
-async function updateAccountStatus() {
-  try {
-    const r = await fetch('/api/user');
-    const u = await r.json();
-    if (u.logged_in) {
-      document.getElementById('accountName').textContent = u.name;
-    } else {
-      document.getElementById('accountName').textContent = 'App Login';
-    }
-  } catch(e) {}
-}
-document.addEventListener('DOMContentLoaded', updateAccountStatus);
-</script>
+
 </body>
 </html>

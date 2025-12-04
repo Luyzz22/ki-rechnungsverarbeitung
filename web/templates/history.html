@@ -479,12 +479,7 @@ if (themeToggle) {
 }
 
 // Burger Menu (nur wenn Elemente existieren)
-const burger = document.getElementById('burger');
-const nav = document.getElementById('nav');
-if (burger && nav) {
-  burger.addEventListener('click', () => {
-    nav.classList.toggle('active');
-  });
+);
 }
 
 // 📈 Verarbeitungen pro Tag
@@ -832,18 +827,5 @@ document.addEventListener('DOMContentLoaded', historyMonthFilterInit);
 </script>
 
 </body>
-<script>
-async function updateAccountStatus() {
-  try {
-    const r = await fetch('/api/user');
-    const u = await r.json();
-    if (u.logged_in) {
-      document.getElementById('accountName').textContent = u.name;
-    } else {
-      document.getElementById('accountName').textContent = 'App Login';
-    }
-  } catch(e) {}
-}
-document.addEventListener('DOMContentLoaded', updateAccountStatus);
-</script>
+
 </html>
