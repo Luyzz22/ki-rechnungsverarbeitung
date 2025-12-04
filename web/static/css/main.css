@@ -2081,3 +2081,9 @@ body {
 .header .account-dropdown:not(:hover) .account-menu {
   transition-delay: 0.16s; /* hält das Menü beim Verlassen minimal länger offen */
 }
+
+/* Fix: Account-Dropdown mit mehr Platz für Admin-Links */
+.account-menu {
+  max-height: 80vh;
+  overflow-y: auto;
+}

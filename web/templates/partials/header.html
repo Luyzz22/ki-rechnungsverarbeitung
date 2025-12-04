@@ -50,11 +50,11 @@
           <a href="/audit-log">📜 Audit-Log</a>
           
           <!-- Admin Section - nur für Admins sichtbar -->
-          <div class="divider admin-only" style="display:none;"></div>
-          <div class="dropdown-section admin-only" style="display:none;">Administration</div>
-          <a href="/admin" class="admin-only" style="display:none;">🔧 System-Dashboard</a>
-          <a href="/admin/users" class="admin-only" style="display:none;">👥 User-Verwaltung</a>
-          <a href="/analytics/costs" class="admin-only" style="display:none;">💰 API-Kosten</a>
+          <div class="divider admin-only hidden"></div>
+          <div class="dropdown-section admin-only hidden">Administration</div>
+          <a href="/admin" class="admin-only hidden">🔧 System-Dashboard</a>
+          <a href="/admin/users" class="admin-only hidden">👥 User-Verwaltung</a>
+          <a href="/analytics/costs" class="admin-only hidden">💰 API-Kosten</a>
           
           <div class="divider"></div>
           <a href="/logout" class="logout-link">🚪 Abmelden</a>
@@ -94,7 +94,7 @@
         // Admin-Links anzeigen wenn Admin
         if (user.is_admin) {
           document.querySelectorAll('.admin-only').forEach(el => {
-            el.style.display = '';
+            el.classList.remove('hidden');
           });
         }
       }
