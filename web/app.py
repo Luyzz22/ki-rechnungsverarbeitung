@@ -2533,6 +2533,10 @@ async def account_page(request: Request):
 
 @app.get("/team", response_class=HTMLResponse)
 async def team_page(request: Request):
+    """Team & Rollen Verwaltung"""
+    redirect = require_login(request)
+    if redirect:
+        return redirect
     return templates.TemplateResponse("team.html", {"request": request})
 
 @app.get("/audit-log", response_class=HTMLResponse)
@@ -3649,3 +3653,202 @@ async def api_finance_copilot_query(payload: FinanceCopilotRequest):
         snapshot=snapshot,
         suggested_questions=suggested,
     )
+
+# ============================================================
+# TEAM & ROLLEN API
+# ============================================================
+
+@app.get("/api/team/members", tags=["Team"])
+async def get_team_members(request: Request):
+    """Alle Team-Mitglieder mit Rollen laden"""
+    if "user_id" not in request.session:
+        return {"error": "Not logged in"}
+    
+    from database import get_connection
+    conn = get_connection()
+    conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
+    cursor = conn.cursor()
+    
+    # Alle User mit ihren Rollen
+    cursor.execute("""
+        SELECT 
+            u.id, u.name, u.email, u.is_admin, u.is_active,
+            u.created_at, u.last_login,
+            GROUP_CONCAT(r.display_name) as roles,
+            GROUP_CONCAT(r.color) as role_colors,
+            GROUP_CONCAT(r.id) as role_ids
+        FROM users u
+        LEFT JOIN user_roles ur ON u.id = ur.user_id
+        LEFT JOIN roles r ON ur.role_id = r.id
+        GROUP BY u.id
+        ORDER BY u.is_admin DESC, u.name ASC
+    """)
+    members = cursor.fetchall()
+    
+    # Rollen-Liste für Dropdown
+    cursor.execute("SELECT id, name, display_name, description, color FROM roles ORDER BY id")
+    roles = cursor.fetchall()
+    
+    conn.close()
+    
+    return {"members": members, "roles": roles}
+
+
+@app.post("/api/team/role", tags=["Team"])
+async def assign_role(request: Request):
+    """Rolle einem User zuweisen oder entfernen"""
+    # Nur Admins dürfen Rollen ändern
+    admin_check = require_admin(request)
+    if admin_check:
+        return {"error": "Nur Admins können Rollen ändern"}
+    
+    data = await request.json()
+    user_id = data.get("user_id")
+    role_id = data.get("role_id")
+    action = data.get("action", "add")  # add oder remove
+    
+    if not user_id or not role_id:
+        return {"error": "user_id und role_id erforderlich"}
+    
+    from database import get_connection
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    try:
+        if action == "add":
+            cursor.execute("""
+                INSERT OR IGNORE INTO user_roles (user_id, role_id, assigned_by)
+                VALUES (?, ?, ?)
+            """, (user_id, role_id, request.session["user_id"]))
+        else:
+            cursor.execute("""
+                DELETE FROM user_roles WHERE user_id = ? AND role_id = ?
+            """, (user_id, role_id))
+        
+        conn.commit()
+        conn.close()
+        return {"success": True, "message": "Rolle aktualisiert"}
+    except Exception as e:
+        conn.close()
+        return {"error": str(e)}
+
+
+@app.post("/api/team/invite", tags=["Team"])
+async def invite_team_member(request: Request):
+    """Neues Team-Mitglied per Email einladen"""
+    admin_check = require_admin(request)
+    if admin_check:
+        return {"error": "Nur Admins können einladen"}
+    
+    import secrets
+    from datetime import datetime, timedelta
+    
+    data = await request.json()
+    email = data.get("email", "").strip().lower()
+    role_id = data.get("role_id", 3)  # Default: Viewer
+    
+    if not email or "@" not in email:
+        return {"error": "Gültige E-Mail-Adresse erforderlich"}
+    
+    from database import get_connection
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Prüfen ob User schon existiert
+    cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+    if cursor.fetchone():
+        conn.close()
+        return {"error": "User mit dieser E-Mail existiert bereits"}
+    
+    # Prüfen ob Einladung schon existiert
+    cursor.execute("SELECT id FROM team_invitations WHERE email = ? AND status = 'pending'", (email,))
+    if cursor.fetchone():
+        conn.close()
+        return {"error": "Einladung für diese E-Mail bereits gesendet"}
+    
+    # Einladung erstellen
+    token = secrets.token_urlsafe(32)
+    expires_at = (datetime.now() + timedelta(days=7)).isoformat()
+    
+    cursor.execute("""
+        INSERT INTO team_invitations (email, role_id, invited_by, token, expires_at)
+        VALUES (?, ?, ?, ?, ?)
+    """, (email, role_id, request.session["user_id"], token, expires_at))
+    
+    conn.commit()
+    conn.close()
+    
+    # TODO: Email mit Einladungslink senden
+    invite_link = f"https://app.sbsdeutschland.com/register?invite={token}"
+    
+    return {
+        "success": True, 
+        "message": f"Einladung erstellt",
+        "invite_link": invite_link
+    }
+
+
+@app.get("/api/team/invitations", tags=["Team"])
+async def get_invitations(request: Request):
+    """Alle offenen Einladungen laden"""
+    if "user_id" not in request.session:
+        return {"error": "Not logged in"}
+    
+    from database import get_connection
+    conn = get_connection()
+    conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT ti.*, r.display_name as role_name, u.name as invited_by_name
+        FROM team_invitations ti
+        JOIN roles r ON ti.role_id = r.id
+        JOIN users u ON ti.invited_by = u.id
+        WHERE ti.status = 'pending'
+        ORDER BY ti.created_at DESC
+    """)
+    invitations = cursor.fetchall()
+    conn.close()
+    
+    return {"invitations": invitations}
+
+
+@app.delete("/api/team/invitation/{invitation_id}", tags=["Team"])
+async def cancel_invitation(invitation_id: int, request: Request):
+    """Einladung zurückziehen"""
+    admin_check = require_admin(request)
+    if admin_check:
+        return {"error": "Nur Admins können Einladungen verwalten"}
+    
+    from database import get_connection
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM team_invitations WHERE id = ?", (invitation_id,))
+    conn.commit()
+    conn.close()
+    
+    return {"success": True, "message": "Einladung gelöscht"}
+
+
+@app.put("/api/team/member/{user_id}/status", tags=["Team"])
+async def update_member_status(user_id: int, request: Request):
+    """User aktivieren/deaktivieren"""
+    admin_check = require_admin(request)
+    if admin_check:
+        return {"error": "Nur Admins können User-Status ändern"}
+    
+    # Sich selbst nicht deaktivieren
+    if user_id == request.session["user_id"]:
+        return {"error": "Sie können sich nicht selbst deaktivieren"}
+    
+    data = await request.json()
+    is_active = data.get("is_active", True)
+    
+    from database import get_connection
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET is_active = ? WHERE id = ?", (1 if is_active else 0, user_id))
+    conn.commit()
+    conn.close()
+    
+    return {"success": True, "message": f"User {'aktiviert' if is_active else 'deaktiviert'}"}
