@@ -1876,14 +1876,16 @@ body {
   background: var(--sbs-white);
 }
 .account-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 0; padding-top: 8px;
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  padding-top: 8px;
   background: var(--sbs-white);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  min-width: 200px;
+  min-width: 240px;
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
   display: none;
   z-index: 1000;
 }
@@ -2082,8 +2084,17 @@ body {
   transition-delay: 0.16s; /* hält das Menü beim Verlassen minimal länger offen */
 }
 
-/* Fix: Account-Dropdown mit mehr Platz für Admin-Links */
+
+/* Fix: Account-Dropdown scrollbar und größer */
 .account-menu {
-  max-height: 80vh;
+  max-height: calc(100vh - 100px);
   overflow-y: auto;
+  scrollbar-width: thin;
+}
+.account-menu::-webkit-scrollbar {
+  width: 6px;
+}
+.account-menu::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
 }

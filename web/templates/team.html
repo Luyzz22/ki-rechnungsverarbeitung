@@ -172,7 +172,7 @@
       color: var(--sbs-muted, #6b7280);
     }
     
-    .admin-only { display: none; }
+    /* admin-only wird global via .hidden Klasse gesteuert */
   </style>
 </head>
 <body>
@@ -188,7 +188,7 @@
     <div class="team-card">
       <div class="team-header">
         <h2>👥 Team-Mitglieder</h2>
-        <button class="btn-primary admin-only" onclick="openInviteModal()">+ Mitglied einladen</button>
+        <button class="btn-primary admin-only hidden" onclick="openInviteModal()">+ Mitglied einladen</button>
       </div>
       
       <table class="team-table">
@@ -198,7 +198,7 @@
             <th>E-Mail</th>
             <th>Rollen</th>
             <th>Status</th>
-            <th class="admin-only">Aktionen</th>
+            <th class="admin-only hidden">Aktionen</th>
           </tr>
         </thead>
         <tbody id="teamTableBody">
@@ -208,7 +208,7 @@
     </div>
 
     <!-- Offene Einladungen -->
-    <div class="team-card admin-only" id="invitationsCard" style="display:none;">
+    <div class="team-card admin-only hidden" id="invitationsCard">
       <h2>📧 Offene Einladungen</h2>
       <table class="team-table">
         <thead>
@@ -282,7 +282,7 @@
         isAdmin = userData.is_admin;
         
         if (isAdmin) {
-          document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+          document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
           document.getElementById('invitationsCard').style.display = 'block';
           loadInvitations();
         }
