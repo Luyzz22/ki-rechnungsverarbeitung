@@ -1054,3 +1054,9 @@
 [data-theme="dark"] .btn-cta-header {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
 }
+
+/* Hidden utility class */
+
+
+/* Hidden utility class */
+.hidden { display: none !important; }
