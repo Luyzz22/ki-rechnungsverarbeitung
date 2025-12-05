@@ -921,9 +921,14 @@ async def job_details_page_old(request: Request, job_id: str):
 @app.get("/analytics", response_class=HTMLResponse)
 async def analytics_page(request: Request):
     """Expense analytics dashboard"""
+    redirect = require_login(request)
+    if redirect:
+        return redirect
+    
     from database import get_analytics_data, get_analytics_insights, get_confidence_distribution, get_method_distribution
     
-    data = get_analytics_data()
+    user_id = request.session.get("user_id")
+    data = get_analytics_data(user_id=user_id)
     
     return templates.TemplateResponse("analytics.html", {
         "request": request,
