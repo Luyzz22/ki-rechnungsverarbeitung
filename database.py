@@ -1270,24 +1270,34 @@ def add_user_id_to_jobs():
 add_user_id_to_jobs()
 
 def get_analytics_insights(user_id: int = None) -> list:
-    """Generate actionable insights from analytics data"""
+    """Generate actionable insights from analytics data - filtered by user_id"""
     conn = get_connection()
     cursor = conn.cursor()
     insights = []
     
+    # Build user filter
+    if user_id:
+        user_join = "INNER JOIN jobs j ON i.job_id = j.job_id"
+        user_where = "AND j.user_id = ?"
+        user_params = (user_id,)
+    else:
+        user_join = ""
+        user_where = ""
+        user_params = ()
+    
     # Insight 1: Top Suppliers
-    cursor.execute('''
-        SELECT rechnungsaussteller, COUNT(*) as count, SUM(betrag_brutto) as total
-        FROM invoices
-        WHERE rechnungsaussteller != ''
-        GROUP BY rechnungsaussteller
+    cursor.execute(f'''
+        SELECT i.rechnungsaussteller, COUNT(*) as count, SUM(i.betrag_brutto) as total
+        FROM invoices i {user_join}
+        WHERE i.rechnungsaussteller != '' {user_where}
+        GROUP BY i.rechnungsaussteller
         ORDER BY total DESC
         LIMIT 3
-    ''')
+    ''', user_params)
     top_suppliers = cursor.fetchall()
     if top_suppliers:
-        total_all = sum(r[2] for r in top_suppliers)
-        cursor.execute('SELECT SUM(betrag_brutto) FROM invoices')
+        total_all = sum(r[2] or 0 for r in top_suppliers)
+        cursor.execute(f'SELECT SUM(i.betrag_brutto) FROM invoices i {user_join} WHERE 1=1 {user_where}', user_params)
         grand_total = cursor.fetchone()[0] or 1
         percentage = (total_all / grand_total * 100) if grand_total > 0 else 0
         insights.append({
@@ -1298,14 +1308,14 @@ def get_analytics_insights(user_id: int = None) -> list:
         })
     
     # Insight 2: Monthly Trend
-    cursor.execute('''
-        SELECT strftime('%Y-%m', datum) as month, SUM(betrag_brutto) as total
-        FROM invoices
-        WHERE datum != '' AND datum IS NOT NULL
+    cursor.execute(f'''
+        SELECT strftime('%Y-%m', i.datum) as month, SUM(i.betrag_brutto) as total
+        FROM invoices i {user_join}
+        WHERE i.datum != '' AND i.datum IS NOT NULL {user_where}
         GROUP BY month
         ORDER BY month DESC
         LIMIT 2
-    ''')
+    ''', user_params)
     months = cursor.fetchall()
     if len(months) == 2:
         current, previous = months[0][1], months[1][1]
@@ -1321,7 +1331,7 @@ def get_analytics_insights(user_id: int = None) -> list:
             })
     
     # Insight 3: Processing Stats
-    cursor.execute('SELECT COUNT(*), AVG(betrag_brutto) FROM invoices')
+    cursor.execute(f'SELECT COUNT(*), AVG(i.betrag_brutto) FROM invoices i {user_join} WHERE 1=1 {user_where}', user_params)
     stats = cursor.fetchone()
     if stats[0]:
         insights.append({
