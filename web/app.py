@@ -937,9 +937,9 @@ async def analytics_page(request: Request):
         "monthly_values": data['monthly_values'],
         "top_suppliers": data['top_suppliers'],
         "weekday_data": data['weekday_data'],
-        "insights": get_analytics_insights(),
-        "confidence_distribution": get_confidence_distribution()["distribution"],
-        "method_distribution": get_method_distribution()["distribution"]
+        "insights": get_analytics_insights(user_id=user_id),
+        "confidence_distribution": get_confidence_distribution(user_id=user_id)["distribution"],
+        "method_distribution": get_method_distribution(user_id=user_id)["distribution"]
     })
 
 @app.get("/admin", response_class=HTMLResponse, tags=["Admin"])
