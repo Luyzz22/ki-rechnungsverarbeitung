@@ -310,27 +310,35 @@ def get_all_jobs(limit: int = 50, offset: int = 0, user_id: int = None) -> List[
 
 @cached("statistics", ttl=300)
 def get_statistics(user_id: int = None) -> Dict:
-    """Get overall statistics"""
+    """Get overall statistics - filtered by user_id"""
     conn = get_connection()
     cursor = conn.cursor()
     
+    # Build user filter
+    user_where = "AND user_id = ?" if user_id else ""
+    user_params = (user_id,) if user_id else ()
+    
     # Total jobs
-    if user_id:
-        cursor.execute('SELECT COUNT(*) FROM jobs WHERE status = "completed" AND user_id = ?', (user_id,))
-    else:
-        cursor.execute('SELECT COUNT(*) FROM jobs WHERE status = "completed"')
+    cursor.execute(f'SELECT COUNT(*) FROM jobs WHERE status = "completed" {user_where}', user_params)
     total_jobs = cursor.fetchone()[0]
     
-    # Total invoices
-    cursor.execute('SELECT COUNT(*) FROM invoices')
+    # Total invoices (via jobs JOIN)
+    if user_id:
+        cursor.execute('''
+            SELECT COUNT(*) FROM invoices i 
+            INNER JOIN jobs j ON i.job_id = j.job_id 
+            WHERE j.user_id = ?
+        ''', (user_id,))
+    else:
+        cursor.execute('SELECT COUNT(*) FROM invoices')
     total_invoices = cursor.fetchone()[0]
     
     # Total amount
-    cursor.execute('SELECT SUM(total_amount) FROM jobs WHERE status = "completed"')
+    cursor.execute(f'SELECT SUM(total_amount) FROM jobs WHERE status = "completed" {user_where}', user_params)
     total_amount = cursor.fetchone()[0] or 0
     
     # Success rate
-    cursor.execute('SELECT SUM(successful), SUM(total_files) FROM jobs WHERE status = "completed"')
+    cursor.execute(f'SELECT SUM(successful), SUM(total_files) FROM jobs WHERE status = "completed" {user_where}', user_params)
     row = cursor.fetchone()
     successful = row[0] or 0
     total_files = row[1] or 0
@@ -340,25 +348,46 @@ def get_statistics(user_id: int = None) -> Dict:
     avg_per_invoice = (total_amount / total_invoices) if total_invoices > 0 else 0
     
     # Jobs per day (last 30 days)
-    cursor.execute('''
-        SELECT DATE(created_at) as date, COUNT(*) as count, SUM(total_amount) as amount
-        FROM jobs 
-        WHERE status = "completed" 
-        AND created_at >= DATE('now', '-30 days')
-        GROUP BY DATE(created_at)
-        ORDER BY date
-    ''')
+    if user_id:
+        cursor.execute('''
+            SELECT DATE(created_at) as date, COUNT(*) as count, SUM(total_amount) as amount
+            FROM jobs 
+            WHERE status = "completed" AND user_id = ?
+            AND created_at >= DATE('now', '-30 days')
+            GROUP BY DATE(created_at)
+            ORDER BY date
+        ''', (user_id,))
+    else:
+        cursor.execute('''
+            SELECT DATE(created_at) as date, COUNT(*) as count, SUM(total_amount) as amount
+            FROM jobs 
+            WHERE status = "completed" 
+            AND created_at >= DATE('now', '-30 days')
+            GROUP BY DATE(created_at)
+            ORDER BY date
+        ''')
     daily_data = [dict(r) for r in cursor.fetchall()]
     
-    # Top Rechnungsaussteller
-    cursor.execute('''
-        SELECT rechnungsaussteller, COUNT(*) as count, SUM(betrag_brutto) as total
-        FROM invoices
-        WHERE rechnungsaussteller != ''
-        GROUP BY rechnungsaussteller
-        ORDER BY count DESC
-        LIMIT 5
-    ''')
+    # Top Rechnungsaussteller (via jobs JOIN)
+    if user_id:
+        cursor.execute('''
+            SELECT i.rechnungsaussteller, COUNT(*) as count, SUM(i.betrag_brutto) as total
+            FROM invoices i
+            INNER JOIN jobs j ON i.job_id = j.job_id
+            WHERE i.rechnungsaussteller != '' AND j.user_id = ?
+            GROUP BY i.rechnungsaussteller
+            ORDER BY count DESC
+            LIMIT 5
+        ''', (user_id,))
+    else:
+        cursor.execute('''
+            SELECT rechnungsaussteller, COUNT(*) as count, SUM(betrag_brutto) as total
+            FROM invoices
+            WHERE rechnungsaussteller != ''
+            GROUP BY rechnungsaussteller
+            ORDER BY count DESC
+            LIMIT 5
+        ''')
     top_aussteller = [dict(r) for r in cursor.fetchall()]
     
     conn.close()
