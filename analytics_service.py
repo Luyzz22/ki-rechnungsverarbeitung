@@ -131,28 +131,39 @@ def _build_date_filter_clause(
 def get_global_kpis(
     days: Optional[int] = None,
     db_path: Optional[str] = None,
+    user_id: Optional[int] = None,
 ) -> GlobalKpi:
     """
     Returns global KPIs for invoices over an optional rolling time window.
+    Filtered by user_id if provided (multi-tenancy support).
 
     Args:
         days: If set, limit to invoices with datum >= today - days.
         db_path: Optional explicit DB path.
+        user_id: If set, only count invoices belonging to this user's jobs.
 
     Returns:
         GlobalKpi dataclass instance.
     """
     where_clause = " WHERE 1=1 "
-    date_clause, params = _build_date_filter_clause(days, date_column="datum")
+    date_clause, params = _build_date_filter_clause(days, date_column="i.datum")
     where_clause += date_clause
+    
+    # User filter via jobs JOIN
+    user_join = ""
+    if user_id:
+        user_join = " INNER JOIN jobs j ON i.job_id = j.job_id "
+        where_clause += " AND j.user_id = ? "
+        params = params + (user_id,)
 
     sql_total = f"""
         SELECT
             COUNT(*) AS cnt,
-            COALESCE(SUM(betrag_brutto), 0) AS total_gross,
-            COALESCE(SUM(betrag_netto), NULL) AS total_net,
-            COALESCE(SUM(mwst_betrag), NULL) AS total_vat
-        FROM invoices
+            COALESCE(SUM(i.betrag_brutto), 0) AS total_gross,
+            COALESCE(SUM(i.betrag_netto), NULL) AS total_net,
+            COALESCE(SUM(i.mwst_betrag), NULL) AS total_vat
+        FROM invoices i
+        {user_join}
         {where_clause}
     """
 
@@ -214,27 +225,38 @@ def get_top_vendors_by_gross(
     days: Optional[int] = None,
     limit: int = 10,
     db_path: Optional[str] = None,
+    user_id: Optional[int] = None,
 ) -> List[VendorCost]:
     """
     Returns top invoice issuers (rechnungsaussteller) by gross amount.
+    Filtered by user_id if provided.
 
     Args:
         days: Optional rolling window based on 'datum'.
         limit: Max number of vendors.
         db_path: Optional explicit DB path.
+        user_id: If set, only count invoices belonging to this user's jobs.
     """
     where_clause = " WHERE 1=1 "
-    date_clause, params = _build_date_filter_clause(days, date_column="datum")
+    date_clause, params = _build_date_filter_clause(days, date_column="i.datum")
     where_clause += date_clause
+    
+    # User filter via jobs JOIN
+    user_join = ""
+    if user_id:
+        user_join = " INNER JOIN jobs j ON i.job_id = j.job_id "
+        where_clause += " AND j.user_id = ? "
+        params = params + (user_id,)
 
     sql = f"""
         SELECT
-            COALESCE(rechnungsaussteller, 'Unbekannt') AS rechnungsaussteller,
+            COALESCE(i.rechnungsaussteller, 'Unbekannt') AS rechnungsaussteller,
             COUNT(*) AS invoice_count,
-            COALESCE(SUM(betrag_brutto), 0) AS total_gross
-        FROM invoices
+            COALESCE(SUM(i.betrag_brutto), 0) AS total_gross
+        FROM invoices i
+        {user_join}
         {where_clause}
-        GROUP BY rechnungsaussteller
+        GROUP BY i.rechnungsaussteller
         HAVING total_gross > 0
         ORDER BY total_gross DESC
         LIMIT ?
@@ -265,9 +287,11 @@ def get_top_vendors_by_gross(
 def get_monthly_cost_trend(
     months_back: int = 12,
     db_path: Optional[str] = None,
+    user_id: Optional[int] = None,
 ) -> List[MonthlyCost]:
     """
     Returns a monthly cost trend for the last N months (including current).
+    Filtered by user_id if provided.
 
     Uses 'datum' if available, otherwise 'created_at' as fallback.
     Assumes ISO-like strings in those columns.
@@ -275,8 +299,8 @@ def get_monthly_cost_trend(
     # Prefer 'datum', fallback to 'created_at'
     date_expr = """
         COALESCE(
-            NULLIF(datum, ''),
-            NULLIF(created_at, '')
+            NULLIF(i.datum, ''),
+            NULLIF(i.created_at, '')
         )
     """
 
@@ -288,14 +312,24 @@ def get_monthly_cost_trend(
         month += 12
         year -= 1
     start_date = date(year, month, 1).isoformat()
+    
+    # User filter via jobs JOIN
+    user_join = ""
+    user_where = ""
+    params = [start_date]
+    if user_id:
+        user_join = " INNER JOIN jobs j ON i.job_id = j.job_id "
+        user_where = " AND j.user_id = ? "
+        params.append(user_id)
 
     sql = f"""
         SELECT
             strftime('%Y-%m', {date_expr}) AS ym,
             COUNT(*) AS invoice_count,
-            COALESCE(SUM(betrag_brutto), 0) AS total_gross
-        FROM invoices
-        WHERE {date_expr} >= ?
+            COALESCE(SUM(i.betrag_brutto), 0) AS total_gross
+        FROM invoices i
+        {user_join}
+        WHERE {date_expr} >= ? {user_where}
         GROUP BY ym
         ORDER BY ym ASC
     """
@@ -303,7 +337,7 @@ def get_monthly_cost_trend(
     results: List[MonthlyCost] = []
     with _get_connection(db_path) as conn:
         cur = conn.cursor()
-        cur.execute(sql, (start_date,))
+        cur.execute(sql, tuple(params))
         for row in cur.fetchall():
             ym = row["ym"]
             if ym is None:
@@ -327,15 +361,17 @@ def get_monthly_cost_trend(
 def get_finance_snapshot(
     days: Optional[int] = 90,
     db_path: Optional[str] = None,
+    user_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     High-level snapshot for the Finance Copilot.
+    Filtered by user_id if provided (multi-tenancy support).
 
     Returns a dict that can directly be fed into an LLM prompt.
     """
-    kpis = get_global_kpis(days=days, db_path=db_path)
-    top_vendors = get_top_vendors_by_gross(days=days, db_path=db_path)
-    trend = get_monthly_cost_trend(months_back=6, db_path=db_path)
+    kpis = get_global_kpis(days=days, db_path=db_path, user_id=user_id)
+    top_vendors = get_top_vendors_by_gross(days=days, db_path=db_path, user_id=user_id)
+    trend = get_monthly_cost_trend(months_back=6, db_path=db_path, user_id=user_id)
 
     return {
         "meta": {

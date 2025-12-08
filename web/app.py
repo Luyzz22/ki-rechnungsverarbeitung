@@ -3273,55 +3273,22 @@ async def demo_job_page(request: Request, job_id: str):
 from fastapi import Query
 
 @app.get("/api/analytics/finance-snapshot")
-async def api_finance_snapshot(
-    days: int = Query(365, ge=1, le=3650, description="Zeitraum in Tagen für die Auswertung")
-):
+async def api_finance_snapshot(request: Request, days: int = 90):
     """
-    Liefert einen kompakten Finanz-Überblick über die Rechnungen der letzten `days` Tage.
-
-    Rückgabe-Struktur (vereinfacht):
-    {
-        "meta": {...},
-        "kpis": {
-            "total_invoices": int,
-            "total_gross": float,
-            "avg_invoice_gross": float,
-            "duplicates_count": int,
-            "start_date": "YYYY-MM-DD",
-            "end_date": "YYYY-MM-DD"
-        },
-        "top_vendors": [...],
-        "top_categories": [...],
-        "monthly_totals": [...]
-    }
+    Liefert einen kompakten Finance-Überblick für Dashboard - gefiltert nach User.
     """
-    # Lokaler Import, um Änderungen an der Import-Sektion oben zu vermeiden
     from analytics_service import get_finance_snapshot
-
-    snapshot = get_finance_snapshot(days=days)
-    return snapshot
-
-
-# --- Finance Analytics API Endpoint (read-only) ---
-@app.get("/api/analytics/finance-snapshot")
-async def api_finance_snapshot(days: int = 90):
-    """
-    Liefert einen kompakten Finance-Überblick für Dashboard
-    und zukünftigen Finance Copilot.
-
-    Query-Parameter:
-        days: Betrachtungszeitraum in Tagen (Standard: 90, min 1, max 365)
-    """
-    # Lazy-Import, um bestehende Imports oben nicht anzufassen
-    from analytics_service import get_finance_snapshot
-
-    # Sicherheitsnetz für days (bewusst simpel gehalten)
+    
+    # User-ID aus Session
+    user_id = request.session.get("user_id")
+    
+    # Sicherheitsnetz für days
     if days < 1:
         days = 1
     if days > 365:
         days = 365
 
-    snapshot = get_finance_snapshot(days=days)
+    snapshot = get_finance_snapshot(days=days, user_id=user_id)
     return snapshot
 
 # ============================================================
