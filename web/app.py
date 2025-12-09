@@ -3599,10 +3599,14 @@ class FinanceCopilotResponse(BaseModel):
 
 
 @app.post("/api/copilot/finance/query", response_model=FinanceCopilotResponse)
-async def api_finance_copilot_query(payload: FinanceCopilotRequest):
+async def api_finance_copilot_query(request: Request, payload: FinanceCopilotRequest):
     """
     Finance Copilot Endpoint (V2 – LLM-basiert, CFO-Level)
+    Gefiltert nach user_id für Multi-Tenancy.
     """
+    # User-ID aus Session für Multi-Tenancy
+    user_id = request.session.get("user_id")
+    
     question = (payload.question or "").strip()
     days = int(payload.days or 90)
     focus = (payload.focus or "auto").strip() or "auto"
@@ -3616,10 +3620,10 @@ async def api_finance_copilot_query(payload: FinanceCopilotRequest):
     if days > 365:
         days = 365
 
-    # Snapshot aus Analytics-Layer laden
+    # Snapshot aus Analytics-Layer laden (mit user_id für Multi-Tenancy)
     try:
         from analytics_service import get_finance_snapshot
-        snapshot = get_finance_snapshot(days=days)
+        snapshot = get_finance_snapshot(days=days, user_id=user_id)
     except Exception as exc:  # noqa: F841
         app_logger.exception("Finance copilot snapshot error")
         raise HTTPException(status_code=500, detail="snapshot_error")
