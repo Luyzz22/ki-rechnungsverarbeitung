@@ -3656,29 +3656,47 @@ async def api_finance_copilot_query(payload: FinanceCopilotRequest):
 
 @app.get("/api/team/members", tags=["Team"])
 async def get_team_members(request: Request):
-    """Alle Team-Mitglieder mit Rollen laden"""
+    """Team-Mitglieder laden - Admins sehen alle, normale User nur sich selbst"""
     if "user_id" not in request.session:
         return {"error": "Not logged in"}
+    
+    user_id = request.session["user_id"]
+    user_is_admin = is_admin_user(user_id)
     
     from database import get_connection
     conn = get_connection()
     conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
     cursor = conn.cursor()
     
-    # Alle User mit ihren Rollen
-    cursor.execute("""
-        SELECT 
-            u.id, u.name, u.email, u.is_admin, u.is_active,
-            u.created_at, u.last_login,
-            GROUP_CONCAT(r.display_name) as roles,
-            GROUP_CONCAT(r.color) as role_colors,
-            GROUP_CONCAT(r.id) as role_ids
-        FROM users u
-        LEFT JOIN user_roles ur ON u.id = ur.user_id
-        LEFT JOIN roles r ON ur.role_id = r.id
-        GROUP BY u.id
-        ORDER BY u.is_admin DESC, u.name ASC
-    """)
+    # Admins sehen alle User, normale User nur sich selbst
+    if user_is_admin:
+        cursor.execute("""
+            SELECT 
+                u.id, u.name, u.email, u.is_admin, u.is_active,
+                u.created_at, u.last_login,
+                GROUP_CONCAT(r.display_name) as roles,
+                GROUP_CONCAT(r.color) as role_colors,
+                GROUP_CONCAT(r.id) as role_ids
+            FROM users u
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            LEFT JOIN roles r ON ur.role_id = r.id
+            GROUP BY u.id
+            ORDER BY u.is_admin DESC, u.name ASC
+        """)
+    else:
+        cursor.execute("""
+            SELECT 
+                u.id, u.name, u.email, u.is_admin, u.is_active,
+                u.created_at, u.last_login,
+                GROUP_CONCAT(r.display_name) as roles,
+                GROUP_CONCAT(r.color) as role_colors,
+                GROUP_CONCAT(r.id) as role_ids
+            FROM users u
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            LEFT JOIN roles r ON ur.role_id = r.id
+            WHERE u.id = ?
+            GROUP BY u.id
+        """, (user_id,))
     members = cursor.fetchall()
     
     # Rollen-Liste für Dropdown
