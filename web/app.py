@@ -98,6 +98,7 @@ from logging_utils import LogContext, log_job_event, log_error_with_context
 from models import Invoice, InvoiceStatus, Job, JobStatus
 from schemas import JobStatusResponse, JobResultsResponse, UserResponse, SuccessResponse, ErrorResponse
 from einvoice import generate_xrechnung, export_xrechnung_file, validate_xrechnung as validate_xrechnung_new
+from einvoice_import import parse_einvoice, is_einvoice
 from rate_limiter import check_rate_limit, get_client_ip
 from api_keys import validate_api_key, create_api_key, list_api_keys, revoke_api_key
 from audit import log_audit, AuditAction, get_audit_logs
@@ -340,7 +341,20 @@ async def process_invoices_background(job_id: str):
     # Process PDFs in parallel (8 threads)
     def process_single_pdf(pdf_path):
         try:
-            data = processor.process_invoice(pdf_path)
+            # 1. Prüfe zuerst ob es eine E-Rechnung ist (ZUGFeRD/XRechnung)
+            is_einv, einv_data = parse_einvoice(str(pdf_path))
+            
+            if is_einv and einv_data.get('rechnungsnummer') and einv_data.get('betrag_brutto'):
+                # E-Rechnung erkannt - nutze strukturierte Daten (spart KI-Kosten!)
+                app_logger.info(f"📋 E-Rechnung erkannt: {einv_data.get('profile', 'Unknown')} - {pdf_path.name}")
+                data = einv_data
+                data['extraction_method'] = 'einvoice'
+                data['ki_score'] = 99  # Strukturierte Daten = höchste Confidence
+            else:
+                # Keine E-Rechnung - nutze KI-Extraktion
+                data = processor.process_invoice(pdf_path)
+                data['extraction_method'] = 'ki'
+            
             # Invoice-Model für Validierung und Standardwerte
             invoice = Invoice.from_dict(data)
             invoice.filename = pdf_path.name
