@@ -196,6 +196,96 @@
         font-size: 1.2rem;
       }
     }
+  
+    /* Flyout Menu Styles */
+    .dropdown-item-with-flyout {
+      position: relative;
+    }
+    
+    .dropdown-item-parent {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .flyout-arrow {
+      margin-left: 8px;
+      opacity: 0.5;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    
+    .dropdown-item-with-flyout:hover .flyout-arrow {
+      opacity: 1;
+      transform: translateX(2px);
+    }
+    
+    .flyout-menu {
+      position: absolute;
+      left: 100%;
+      top: -8px;
+      min-width: 220px;
+      background: #1a1f2e;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 8px 0;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(-10px);
+      transition: all 0.25s ease;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      z-index: 1001;
+    }
+    
+    .dropdown-item-with-flyout:hover .flyout-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(8px);
+    }
+    
+    .flyout-menu a {
+      display: block;
+      padding: 10px 16px;
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    
+    .flyout-menu a:hover {
+      background: rgba(99, 102, 241, 0.15);
+      color: #fff;
+      padding-left: 20px;
+    }
+    
+    /* Dim other items when flyout is open */
+    .dropdown-solutions .dropdown-menu {
+      transition: all 0.2s;
+    }
+    
+    .dropdown-item-with-flyout:hover ~ *,
+    .dropdown-item-with-flyout:hover ~ .dropdown-divider ~ * {
+      opacity: 0.4;
+    }
+    
+    .dropdown-item-with-flyout:hover ~ .dropdown-section,
+    .dropdown-item-with-flyout:hover ~ .dropdown-divider {
+      opacity: 0.4;
+    }
+    
+    /* Keep hovered item bright */
+    .dropdown-item-with-flyout:hover {
+      opacity: 1 !important;
+    }
+    
+    .dropdown-item-with-flyout:hover .dropdown-item-parent {
+      background: rgba(99, 102, 241, 0.1);
+      color: #fff;
+    }
+    
+    .dropdown-spacer {
+      height: 8px;
+    }
+
   </style>
 </head>
 <body>
@@ -214,16 +304,30 @@
     </button>
 
         <nav class="nav" id="nav">
-      <!-- Lösungen Dropdown -->
-      <div class="dropdown">
+      <!-- Lösungen Dropdown (Mega Menu mit Flyouts) -->
+      <div class="dropdown dropdown-solutions">
         <span class="dropdown-toggle">Lösungen</span>
         <div class="dropdown-menu">
-          <div class="dropdown-section">Nach Anwendung</div>
-          <a href="/landing">🤖 KI-Rechnungsverarbeitung</a>
-          <a href="/static/landing/loesungen-steuerberater.html">📋 Für Steuerberater</a>
-          <a href="/static/landing/loesungen-finanzleitung.html">💼 Für Finanzleitung</a>
-          <a href="/static/landing/loesungen-handel-filialnetz.html">🏪 Für Handel & Filialnetz</a>
+          <!-- KI-Lösungen mit Flyout -->
+          <div class="dropdown-section">KI-Lösungen</div>
+          <div class="dropdown-item-with-flyout">
+            <a href="/static/landing/" class="dropdown-item-parent">🧾 KI-Rechnungsverarbeitung <span class="flyout-arrow">›</span></a>
+            <div class="flyout-menu">
+              <a href="/static/landing/loesungen-steuerberater.html">📋 Für Steuerberater</a>
+              <a href="/static/landing/loesungen-finanzleitung.html">💼 Für Finanzleitung</a>
+              <a href="/static/landing/loesungen-handel-filialnetz.html">🏪 Für Handel & Filialnetz</a>
+            </div>
+          </div>
+          <div class="dropdown-item-with-flyout">
+            <a href="/loesungen/vertragsanalyse/" class="dropdown-item-parent">📋 KI-Vertragsanalyse <span class="flyout-arrow">›</span></a>
+            <div class="flyout-menu">
+              <a href="/loesungen/vertragsanalyse/kanzleien.html">⚖️ Für Kanzleien & Notare</a>
+              <a href="/loesungen/vertragsanalyse/hr.html">👔 Für HR-Abteilungen</a>
+              <a href="/loesungen/vertragsanalyse/einkauf.html">🛒 Für Einkauf & Beschaffung</a>
+            </div>
+          </div>
           <div class="dropdown-divider"></div>
+          <!-- Consulting -->
           <div class="dropdown-section">Consulting</div>
           <a href="/sbshomepage/sap-consulting.html">📊 SAP Consulting</a>
           <a href="/sbshomepage/it-consulting.html">💻 IT Consulting</a>
