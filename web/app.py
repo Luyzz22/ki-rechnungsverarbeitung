@@ -99,6 +99,7 @@ from models import Invoice, InvoiceStatus, Job, JobStatus
 from schemas import JobStatusResponse, JobResultsResponse, UserResponse, SuccessResponse, ErrorResponse
 from einvoice import generate_xrechnung, export_xrechnung_file, validate_xrechnung as validate_xrechnung_new
 from einvoice_import import parse_einvoice, is_einvoice
+from shared_auth import create_sso_token, verify_sso_token, get_sso_cookie_settings, COOKIE_NAME
 from rate_limiter import check_rate_limit, get_client_ip
 from api_keys import validate_api_key, create_api_key, list_api_keys, revoke_api_key
 from audit import log_audit, AuditAction, get_audit_logs
@@ -1433,7 +1434,18 @@ async def login_submit(request: Request):
 
     logger.info(f"LOGIN_DEBUG: redirect -> {next_url}")
     log_audit(AuditAction.LOGIN, user_id=user["id"], user_email=email, ip_address=request.client.host)
-    return RedirectResponse(url=next_url, status_code=303)
+    
+    # SSO Cookie für Cross-Subdomain Auth setzen
+    response = RedirectResponse(url=next_url, status_code=303)
+    sso_token = create_sso_token(
+        user_id=user["id"],
+        email=email,
+        name=user.get("name")
+    )
+    cookie_settings = get_sso_cookie_settings()
+    response.set_cookie(value=sso_token, **cookie_settings)
+    logger.info(f"LOGIN_DEBUG: SSO Cookie gesetzt für {email}")
+    return response
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
@@ -1516,6 +1528,7 @@ async def register_submit(request: Request):
 async def logout(request: Request):
     """
     Logout und Redirect auf die SBS Homepage.
+    SSO Cookie wird gelöscht für Cross-Domain Logout.
     """
     # Session leeren, falls vorhanden
     try:
@@ -1528,10 +1541,13 @@ async def logout(request: Request):
         # Keine SessionMiddleware aktiv – nichts zu tun
         pass
 
-    return RedirectResponse(
+    response = RedirectResponse(
         url="https://sbsdeutschland.com/sbshomepage/",
         status_code=303,
     )
+    # SSO Cookie löschen für alle Subdomains
+    response.delete_cookie(COOKIE_NAME, domain=".sbsdeutschland.com", path="/")
+    return response
 
 @app.get("/api/user", tags=["Auth"])
 async def get_current_user(request: Request):
@@ -3253,6 +3269,7 @@ async def password_reset_confirm_submit(
 async def logout(request: Request):
     """
     Logout und Redirect auf die SBS Homepage.
+    SSO Cookie wird gelöscht für Cross-Domain Logout.
     """
     # Session leeren, falls vorhanden
     try:
@@ -3265,10 +3282,13 @@ async def logout(request: Request):
         # Keine SessionMiddleware aktiv – nichts zu tun
         pass
 
-    return RedirectResponse(
+    response = RedirectResponse(
         url="https://sbsdeutschland.com/sbshomepage/",
         status_code=303,
     )
+    # SSO Cookie löschen für alle Subdomains
+    response.delete_cookie(COOKIE_NAME, domain=".sbsdeutschland.com", path="/")
+    return response
 
 @app.get("/jobs/{job_id}", response_class=HTMLResponse)
 async def demo_job_page(request: Request, job_id: str):
