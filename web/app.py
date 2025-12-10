@@ -2102,20 +2102,44 @@ STRIPE_PRICES = {
 
 @app.post("/api/checkout/create-session")
 async def create_checkout_session(request: Request):
-    """Create Stripe checkout session"""
+    """Create Stripe checkout session - Multi-Product Support"""
     if 'user_id' not in request.session:
         return {"error": "Not logged in"}
     
     try:
         data = await request.json()
+        product = data.get('product', 'invoice')  # invoice, contract, bundle
         plan = data.get('plan', 'starter')
+        billing = data.get('billing', 'monthly')  # monthly, yearly
         
-        # Price IDs (in cents)
-        prices = {
-            'starter': 6900,
-            'professional': 17900,
-            'enterprise': 44900
+        # Multi-Product Preise (in cents)
+        PRICES = {
+            "invoice": {
+                "starter": {"monthly": 4900, "yearly": 4100},
+                "professional": {"monthly": 14900, "yearly": 12400},
+                "enterprise": {"monthly": 44900, "yearly": 37400},
+            },
+            "contract": {
+                "starter": {"monthly": 3900, "yearly": 3300},
+                "professional": {"monthly": 11900, "yearly": 9900},
+                "enterprise": {"monthly": 34900, "yearly": 29100},
+            },
+            "bundle": {
+                "starter": {"monthly": 7000, "yearly": 5800},
+                "professional": {"monthly": 21400, "yearly": 17800},
+                "enterprise": {"monthly": 63800, "yearly": 53100},
+            },
         }
+        
+        PRODUCT_NAMES = {
+            "invoice": "KI-Rechnungsverarbeitung",
+            "contract": "KI-Vertragsanalyse",
+            "bundle": "KI-Rechnungen + Verträge Bundle",
+        }
+        
+        price = PRICES.get(product, {}).get(plan, {}).get(billing, 4900)
+        product_name = PRODUCT_NAMES.get(product, "SBS Produkt")
+        interval = "year" if billing == "yearly" else "month"
         
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -2123,20 +2147,22 @@ async def create_checkout_session(request: Request):
                 'price_data': {
                     'currency': 'eur',
                     'product_data': {
-                        'name': f'SBS KI-Rechnungsverarbeitung - {plan.title()}',
-                        'description': f'Monatliches Abonnement'
+                        'name': f'SBS {product_name} - {plan.title()}',
+                        'description': f'{"Jährliches" if billing == "yearly" else "Monatliches"} Abonnement'
                     },
-                    'unit_amount': prices.get(plan, 6900),
-                    'recurring': {'interval': 'month'}
+                    'unit_amount': price,
+                    'recurring': {'interval': interval}
                 },
                 'quantity': 1,
             }],
             mode='subscription',
             success_url='https://app.sbsdeutschland.com/checkout/success?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url='https://sbsdeutschland.com/preise',
+            cancel_url=f'https://sbsdeutschland.com/{"loesungen/vertragsanalyse/preise.html" if product == "contract" else "static/preise/"}',
             metadata={
                 'user_id': str(request.session['user_id']),
-                'plan': plan
+                'product': product,
+                'plan': plan,
+                'billing': billing
             }
         )
         
@@ -2146,8 +2172,9 @@ async def create_checkout_session(request: Request):
 
 @app.get("/checkout/success", response_class=HTMLResponse)
 async def checkout_success(request: Request, session_id: str = None):
-    """Handle successful checkout"""
+    """Handle successful checkout - Multi-Product Support"""
     from database import create_subscription
+    from multi_product_subscriptions import create_product_subscription
     
     if session_id:
         try:
@@ -2155,20 +2182,99 @@ async def checkout_success(request: Request, session_id: str = None):
             
             if session.payment_status == 'paid':
                 user_id = int(session.metadata.get('user_id'))
+                product = session.metadata.get('product', 'invoice')
                 plan = session.metadata.get('plan')
+                billing = session.metadata.get('billing', 'monthly')
                 
-                create_subscription(
+                # Neue Multi-Product Subscription erstellen
+                create_product_subscription(
                     user_id=user_id,
+                    product=product,
                     plan=plan,
+                    billing_cycle=billing,
                     stripe_customer_id=session.customer,
                     stripe_subscription_id=session.subscription
                 )
+                
+                # Legacy-Tabelle auch aktualisieren (Backwards Compatibility)
+                if product in ['invoice', 'bundle']:
+                    create_subscription(
+                        user_id=user_id,
+                        plan=plan,
+                        stripe_customer_id=session.customer,
+                        stripe_subscription_id=session.subscription
+                    )
+                    
+                app_logger.info(f"✅ Checkout erfolgreich: User {user_id}, Product {product}, Plan {plan}")
         except Exception as e:
-            print(f"Error processing checkout: {e}")
+            app_logger.error(f"Error processing checkout: {e}")
     
     return templates.TemplateResponse("checkout_success.html", {
         "request": request
     })
+
+@app.get("/checkout", response_class=HTMLResponse)
+async def checkout_page(request: Request, product: str = "invoice", plan: str = "starter"):
+    """
+    Checkout-Seite die automatisch Stripe Session erstellt.
+    URL: /checkout?product=contract&plan=professional
+    """
+    if 'user_id' not in request.session:
+        # Redirect zu Login mit Rücksprung
+        return RedirectResponse(
+            url=f"/login?next=/checkout?product={product}&plan={plan}",
+            status_code=303
+        )
+    
+    try:
+        # Multi-Product Preise (in cents)
+        PRICES = {
+            "invoice": {"starter": 4900, "professional": 14900, "enterprise": 44900},
+            "contract": {"starter": 3900, "professional": 11900, "enterprise": 34900},
+            "bundle": {"starter": 7000, "professional": 21400, "enterprise": 63800},
+        }
+        
+        PRODUCT_NAMES = {
+            "invoice": "KI-Rechnungsverarbeitung",
+            "contract": "KI-Vertragsanalyse", 
+            "bundle": "KI-Rechnungen + Verträge Bundle",
+        }
+        
+        price = PRICES.get(product, {}).get(plan, 4900)
+        product_name = PRODUCT_NAMES.get(product, "SBS Produkt")
+        
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'eur',
+                    'product_data': {
+                        'name': f'SBS {product_name} - {plan.title()}',
+                        'description': 'Monatliches Abonnement'
+                    },
+                    'unit_amount': price,
+                    'recurring': {'interval': 'month'}
+                },
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url='https://app.sbsdeutschland.com/checkout/success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=f'https://sbsdeutschland.com/{"loesungen/vertragsanalyse/preise.html" if product == "contract" else "static/preise/"}',
+            metadata={
+                'user_id': str(request.session['user_id']),
+                'product': product,
+                'plan': plan,
+                'billing': 'monthly'
+            }
+        )
+        
+        # Direkt zu Stripe weiterleiten
+        return RedirectResponse(url=session.url, status_code=303)
+        
+    except Exception as e:
+        app_logger.error(f"Checkout error: {e}")
+        return RedirectResponse(url="/static/preise/", status_code=303)
+
 
 @app.get("/api/subscription/status")
 async def get_subscription_status(request: Request):
