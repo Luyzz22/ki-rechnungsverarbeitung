@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Preise – KI-Vertragsanalyse | SBS Deutschland</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Transparente Preise für KI-gestützte Vertragsanalyse. Starter ab 39€/Monat. Jetzt kostenlos testen." />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg-dark: #0a0a0f;
+      --bg-card: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255,0.08);
+      --text: #ffffff;
+      --text-muted: rgba(255,255,255,0.6);
+      --accent: #8b5cf6;
+      --accent-glow: rgba(139, 92, 246, 0.3);
+      --success: #10b981;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: linear-gradient(180deg, #0a0a0f 0%, #0f0f1a 50%, #1a1a2e 100%);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    
+    /* Navigation */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 16px 32px;
+      background: rgba(10, 10, 15, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+    
+    .nav-logo img {
+      height: 36px;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      align-items: center;
+    }
+    
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    
+    .nav-links a:hover {
+      color: var(--text);
+    }
+    
+    .nav-cta {
+      background: var(--accent);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    
+    .nav-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px var(--accent-glow);
+    }
+    
+    /* Hero */
+    .hero {
+      padding: 140px 24px 80px;
+      text-align: center;
+    }
+    
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+    
+    .hero h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      font-weight: 700;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    /* Billing Toggle */
+    .billing-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      align-items: center;
+      margin: 48px 0 32px;
+    }
+    
+    .billing-toggle span {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    
+    .billing-toggle span.active {
+      color: var(--text);
+      font-weight: 600;
+    }
+    
+    .toggle-switch {
+      width: 56px;
+      height: 28px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s;
+    }
+    
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: var(--accent);
+      border-radius: 50%;
+      transition: all 0.3s;
+    }
+    
+    .toggle-switch.yearly::after {
+      left: calc(100% - 23px);
+    }
+    
+    .save-badge {
+      background: var(--success);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    /* Pricing Cards */
+    .pricing-section {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+    
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    
+    .pricing-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      position: relative;
+      transition: all 0.3s;
+    }
+    
+    .pricing-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255,255,255,0.15);
+    }
+    
+    .pricing-card.popular {
+      border-color: var(--accent);
+      box-shadow: 0 0 40px var(--accent-glow);
+    }
+    
+    .popular-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: white;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .plan-name {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .plan-description {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+    
+    .plan-price {
+      margin-bottom: 24px;
+    }
+    
+    .price-amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 3rem;
+      font-weight: 700;
+    }
+    
+    .price-period {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    
+    .price-yearly {
+      display: none;
+    }
+    
+    .yearly .price-monthly { display: none; }
+    .yearly .price-yearly { display: block; }
+    
+    .plan-cta {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      text-align: center;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s;
+      margin-bottom: 24px;
+    }
+    
+    .plan-cta-primary {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .plan-cta-primary:hover {
+      box-shadow: 0 8px 24px var(--accent-glow);
+      transform: translateY(-1px);
+    }
+    
+    .plan-cta-secondary {
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    
+    .plan-cta-secondary:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .plan-features {
+      list-style: none;
+    }
+    
+    .plan-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    
+    .plan-features li:last-child {
+      border-bottom: none;
+    }
+    
+    .plan-features li::before {
+      content: '✓';
+      color: var(--success);
+      font-weight: 600;
+    }
+    
+    .feature-highlight {
+      color: var(--text);
+      font-weight: 500;
+    }
+    
+    /* Bundle Section */
+    .bundle-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 80px 24px;
+    }
+    
+    .bundle-card {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+      border: 2px solid var(--accent);
+      border-radius: 24px;
+      padding: 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .bundle-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      opacity: 0.3;
+    }
+    
+    .bundle-card > * {
+      position: relative;
+    }
+    
+    .bundle-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    
+    .bundle-card h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2rem;
+      margin-bottom: 16px;
+    }
+    
+    .bundle-card p {
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .bundle-price {
+      margin-bottom: 32px;
+    }
+    
+    .bundle-price .original {
+      text-decoration: line-through;
+      color: var(--text-muted);
+      font-size: 1.25rem;
+    }
+    
+    .bundle-price .discounted {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    
+    .bundle-price .period {
+      color: var(--text-muted);
+    }
+    
+    .bundle-features {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    
+    .bundle-feature {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+    }
+    
+    .bundle-feature::before {
+      content: '✓';
+      color: var(--success);
+      font-weight: 600;
+    }
+    
+    /* FAQ */
+    .faq-section {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 80px 24px;
+    }
+    
+    .faq-section h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    
+    .faq-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    
+    .faq-question {
+      padding: 20px 24px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 500;
+    }
+    
+    .faq-question::after {
+      content: '+';
+      font-size: 1.5rem;
+      color: var(--text-muted);
+      transition: transform 0.2s;
+    }
+    
+    .faq-item.open .faq-question::after {
+      transform: rotate(45deg);
+    }
+    
+    .faq-answer {
+      padding: 0 24px 20px;
+      color: var(--text-muted);
+      display: none;
+    }
+    
+    .faq-item.open .faq-answer {
+      display: block;
+    }
+    
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    
+    .footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    
+    .footer a:hover {
+      color: var(--text);
+    }
+    
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .bundle-features { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/sbshomepage/" class="nav-logo">
+    <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+  </a>
+  <div class="nav-links">
+    <a href="/loesungen/vertragsanalyse/">Übersicht</a>
+    <a href="/loesungen/vertragsanalyse/preise.html" style="color: var(--text);">Preise</a>
+    <a href="https://contract.sbsdeutschland.com/docs">API Docs</a>
+    <a href="/static/preise/">Rechnungsverarbeitung</a>
+  </div>
+  <a href="https://contract.sbsdeutschland.com/upload" class="nav-cta">Kostenlos testen</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-badge">📋 KI-Vertragsanalyse</div>
+  <h1>Einfache, transparente Preise</h1>
+  <p>Starten Sie kostenlos. Upgraden Sie, wenn Sie wachsen. Keine versteckten Kosten.</p>
+</section>
+
+<div class="billing-toggle">
+  <span class="active" id="monthlyLabel">Monatlich</span>
+  <div class="toggle-switch" id="billingToggle" onclick="toggleBilling()"></div>
+  <span id="yearlyLabel">Jährlich</span>
+  <span class="save-badge">2 Monate gratis</span>
+</div>
+
+<section class="pricing-section">
+  <div class="pricing-grid" id="pricingGrid">
+    
+    <!-- Free -->
+    <div class="pricing-card">
+      <div class="plan-name">Free</div>
+      <div class="plan-description">Zum Ausprobieren</div>
+      <div class="plan-price">
+        <div class="price-monthly">
+          <span class="price-amount">0€</span>
+          <span class="price-period">/ Monat</span>
+        </div>
+        <div class="price-yearly">
+          <span class="price-amount">0€</span>
+          <span class="price-period">/ Jahr</span>
+        </div>
+      </div>
+      <a href="https://contract.sbsdeutschland.com/upload" class="plan-cta plan-cta-secondary">Kostenlos starten</a>
+      <ul class="plan-features">
+        <li><span class="feature-highlight">3 Analysen</span> pro Monat</li>
+        <li>Arbeitsverträge & SaaS</li>
+        <li>JSON Export</li>
+        <li>Community Support</li>
+      </ul>
+    </div>
+    
+    <!-- Starter -->
+    <div class="pricing-card">
+      <div class="plan-name">Starter</div>
+      <div class="plan-description">Für kleine Teams</div>
+      <div class="plan-price">
+        <div class="price-monthly">
+          <span class="price-amount">39€</span>
+          <span class="price-period">/ Monat</span>
+        </div>
+        <div class="price-yearly">
+          <span class="price-amount">33€</span>
+          <span class="price-period">/ Monat (jährlich)</span>
+        </div>
+      </div>
+      <a href="https://app.sbsdeutschland.com/checkout?product=contract&plan=starter" class="plan-cta plan-cta-secondary">Jetzt starten</a>
+      <ul class="plan-features">
+        <li><span class="feature-highlight">25 Analysen</span> pro Monat</li>
+        <li>Alle Vertragstypen</li>
+        <li>JSON & CSV Export</li>
+        <li>Risiko-Analyse</li>
+        <li>Email Support</li>
+      </ul>
+    </div>
+    
+    <!-- Professional -->
+    <div class="pricing-card popular">
+      <div class="popular-badge">Beliebt</div>
+      <div class="plan-name">Professional</div>
+      <div class="plan-description">Für wachsende Unternehmen</div>
+      <div class="plan-price">
+        <div class="price-monthly">
+          <span class="price-amount">119€</span>
+          <span class="price-period">/ Monat</span>
+        </div>
+        <div class="price-yearly">
+          <span class="price-amount">99€</span>
+          <span class="price-period">/ Monat (jährlich)</span>
+        </div>
+      </div>
+      <a href="https://app.sbsdeutschland.com/checkout?product=contract&plan=professional" class="plan-cta plan-cta-primary">Jetzt starten</a>
+      <ul class="plan-features">
+        <li><span class="feature-highlight">100 Analysen</span> pro Monat</li>
+        <li>Alle Vertragstypen</li>
+        <li>API-Zugang</li>
+        <li>Bulk Upload</li>
+        <li>Erweiterte Risiko-Scores</li>
+        <li>Priority Support</li>
+      </ul>
+    </div>
+    
+    <!-- Enterprise -->
+    <div class="pricing-card">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-description">Für große Organisationen</div>
+      <div class="plan-price">
+        <div class="price-monthly">
+          <span class="price-amount">349€</span>
+          <span class="price-period">/ Monat</span>
+        </div>
+        <div class="price-yearly">
+          <span class="price-amount">291€</span>
+          <span class="price-period">/ Monat (jährlich)</span>
+        </div>
+      </div>
+      <a href="/sbshomepage/kontakt.html" class="plan-cta plan-cta-secondary">Kontakt aufnehmen</a>
+      <ul class="plan-features">
+        <li><span class="feature-highlight">Unbegrenzte</span> Analysen</li>
+        <li>Alle Features</li>
+        <li>Dedizierte API</li>
+        <li>Custom Integrations</li>
+        <li>SLA 99.9% Uptime</li>
+        <li>Dedicated Success Manager</li>
+        <li>On-Premise Option</li>
+      </ul>
+    </div>
+    
+  </div>
+</section>
+
+<!-- Bundle Angebot -->
+<section class="bundle-section">
+  <div class="bundle-card">
+    <div class="bundle-badge">🎁 Bundle-Angebot – 20% sparen</div>
+    <h2>Rechnungen + Verträge</h2>
+    <p>Kombinieren Sie KI-Rechnungsverarbeitung und KI-Vertragsanalyse und sparen Sie 20% gegenüber Einzelkauf.</p>
+    <div class="bundle-price">
+      <div class="original">268€/Monat</div>
+      <div class="discounted">214€</div>
+      <div class="period">/ Monat für beide Produkte (Professional)</div>
+    </div>
+    <div class="bundle-features">
+      <span class="bundle-feature">500 Rechnungen/Monat</span>
+      <span class="bundle-feature">100 Verträge/Monat</span>
+      <span class="bundle-feature">Finance Copilot</span>
+      <span class="bundle-feature">Voller API-Zugang</span>
+    </div>
+    <a href="https://app.sbsdeutschland.com/checkout?product=bundle&plan=professional" class="plan-cta plan-cta-primary" style="display: inline-block; width: auto; padding: 16px 48px;">Bundle buchen</a>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section">
+  <h2>Häufige Fragen</h2>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">Welche Vertragstypen werden unterstützt?</div>
+    <div class="faq-answer">Wir analysieren Arbeitsverträge, SaaS-Verträge, Mietverträge, Dienstleistungsverträge, NDAs, Lieferverträge und viele weitere. Bei speziellen Vertragstypen kontaktieren Sie uns gerne.</div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">Kann ich jederzeit kündigen?</div>
+    <div class="faq-answer">Ja, Sie können monatliche Abos jederzeit zum Ende des Abrechnungszeitraums kündigen. Bei jährlicher Zahlung ist eine Kündigung zum Jahresende möglich.</div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">Sind meine Daten sicher?</div>
+    <div class="faq-answer">Absolut. Alle Daten werden in deutschen Rechenzentren verarbeitet und gespeichert. Wir sind DSGVO-konform und arbeiten nach ISO 27001 Standards.</div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">Was passiert wenn ich mein Limit erreiche?</div>
+    <div class="faq-answer">Sie erhalten eine Benachrichtigung bei 80% Auslastung. Bei Erreichen des Limits können Sie einfach upgraden oder auf den nächsten Monat warten.</div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">Gibt es einen API-Zugang?</div>
+    <div class="faq-answer">Ja, ab dem Professional-Plan erhalten Sie vollen API-Zugang zur Integration in Ihre Systeme. Dokumentation finden Sie unter contract.sbsdeutschland.com/docs.</div>
+  </div>
+</section>
+
+<footer class="footer">
+  <p>
+    <a href="/sbshomepage/">Startseite</a> · 
+    <a href="/static/landing/">Rechnungsverarbeitung</a> · 
+    <a href="/sbshomepage/impressum.html">Impressum</a> · 
+    <a href="/sbshomepage/datenschutz.html">Datenschutz</a> · 
+    <a href="/sbshomepage/agb.html">AGB</a>
+  </p>
+  <p style="margin-top: 16px;">© 2025 SBS Deutschland. Made with ❤️ in Germany.</p>
+</footer>
+
+<script>
+let isYearly = false;
+
+function toggleBilling() {
+  isYearly = !isYearly;
+  const toggle = document.getElementById('billingToggle');
+  const grid = document.getElementById('pricingGrid');
+  const monthlyLabel = document.getElementById('monthlyLabel');
+  const yearlyLabel = document.getElementById('yearlyLabel');
+  
+  toggle.classList.toggle('yearly', isYearly);
+  grid.classList.toggle('yearly', isYearly);
+  monthlyLabel.classList.toggle('active', !isYearly);
+  yearlyLabel.classList.toggle('active', isYearly);
+}
+
+function toggleFaq(el) {
+  const item = el.parentElement;
+  item.classList.toggle('open');
+}
+</script>
+
+</body>
+</html>
