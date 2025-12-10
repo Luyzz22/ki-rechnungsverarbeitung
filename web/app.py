@@ -100,6 +100,7 @@ from schemas import JobStatusResponse, JobResultsResponse, UserResponse, Success
 from einvoice import generate_xrechnung, export_xrechnung_file, validate_xrechnung as validate_xrechnung_new
 from einvoice_import import parse_einvoice, is_einvoice
 from shared_auth import create_sso_token, verify_sso_token, get_sso_cookie_settings, COOKIE_NAME
+from multi_product_subscriptions import get_user_products, has_product_access, get_user_dashboard_redirect
 from rate_limiter import check_rate_limit, get_client_ip
 from api_keys import validate_api_key, create_api_key, list_api_keys, revoke_api_key
 from audit import log_audit, AuditAction, get_audit_logs
@@ -1428,8 +1429,18 @@ async def login_submit(request: Request):
     except Exception as exc:
         logger.error(f"LOGIN_DEBUG: Fehler beim Setzen der Session: {exc}")
 
-    # Sicherheit: nur interne relative Pfade
-    if not next_url.startswith("/") or "://" in next_url:
+    # Smart Redirect basierend auf User-Produkten (wenn kein expliziter next_url)
+    if next_url == "/history" or not next_url.startswith("/"):
+        # Bestimme bestes Ziel basierend auf Subscriptions
+        smart_redirect = get_user_dashboard_redirect(user["id"])
+        if smart_redirect.startswith("http"):
+            # External redirect (z.B. Contract App)
+            next_url = smart_redirect
+        else:
+            next_url = smart_redirect
+    
+    # Sicherheit: nur interne relative Pfade oder bekannte externe
+    if not (next_url.startswith("/") or next_url.startswith("https://contract.sbsdeutschland.com")):
         next_url = "/history"
 
     logger.info(f"LOGIN_DEBUG: redirect -> {next_url}")
