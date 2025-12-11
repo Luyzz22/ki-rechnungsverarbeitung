@@ -4,26 +4,62 @@
   <meta charset="utf-8" />
   <title>KI-Vertragsanalyse für HR-Abteilungen | SBS Deutschland</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="Arbeitsverträge automatisch analysieren. Kündigungsfristen, Probezeiten, Gehälter extrahieren." />
+  <meta name="description" content="KI-gestützte Analyse von Arbeitsverträgen für HR. Kündigungsfristen, Gehälter, Probezeiten automatisch erkennen." />
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/css/design-tokens.css" />
   <link rel="stylesheet" href="/static/css/components.css" />
   <link rel="stylesheet" href="/static/css/main.css" />
   <link rel="stylesheet" href="/static/css/flyout-menu.css" />
+  <style>
+    .subpage-hero { background: linear-gradient(135deg, #003856 0%, #00507a 100%); padding: 140px 24px 80px; text-align: center; position: relative; }
+    .subpage-hero::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px); background-size: 30px 30px; pointer-events: none; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: rgba(34, 211, 238, 0.15); border: 1px solid rgba(34, 211, 238, 0.3); border-radius: 999px; font-size: 0.8rem; font-weight: 600; color: #22d3ee; margin-bottom: 24px; }
+    .subpage-hero h1 { font-size: clamp(2.2rem, 5vw, 3.2rem); font-weight: 700; line-height: 1.15; margin-bottom: 20px; color: #fff; max-width: 800px; margin-left: auto; margin-right: auto; }
+    .subpage-hero .subtitle { font-size: 1.15rem; color: rgba(255,255,255,0.8); max-width: 650px; margin: 0 auto 32px; line-height: 1.6; }
+    .hero-cta-group { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .hero-cta { padding: 14px 28px; border-radius: 8px; font-weight: 600; text-decoration: none; transition: all 0.25s; }
+    .hero-cta.primary { background: #fff; color: #003856; }
+    .hero-cta.primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .hero-cta.secondary { background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.4); color: #22d3ee; }
+    .trust-bar { background: #fff; padding: 24px; border-bottom: 1px solid #e2e8f0; }
+    .trust-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 48px; flex-wrap: wrap; }
+    .trust-item { display: flex; align-items: center; gap: 12px; color: #475569; font-size: 0.9rem; }
+    .trust-item strong { color: #003856; font-weight: 700; }
+    .usecases-section { padding: 80px 24px; max-width: 1100px; margin: 0 auto; background: #fff; }
+    .section-badge { display: inline-block; padding: 6px 14px; background: rgba(0, 56, 86, 0.1); border-radius: 999px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #003856; margin-bottom: 16px; }
+    .section-title { font-size: 2rem; margin-bottom: 16px; color: #003856; }
+    .section-subtitle { color: #64748b; font-size: 1.05rem; max-width: 600px; margin-bottom: 48px; }
+    .usecase-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+    .usecase-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px; transition: all 0.3s; }
+    .usecase-card:hover { transform: translateY(-4px); border-color: #22d3ee; box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
+    .usecase-icon { width: 56px; height: 56px; background: rgba(0, 56, 86, 0.08); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 20px; }
+    .usecase-card h3 { font-size: 1.2rem; margin-bottom: 12px; color: #003856; }
+    .usecase-card p { color: #64748b; font-size: 0.95rem; line-height: 1.6; margin-bottom: 16px; }
+    .usecase-card ul { list-style: none; padding: 0; margin: 0; }
+    .usecase-card li { padding: 6px 0; color: #475569; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+    .usecase-card li::before { content: '✓'; color: #0891b2; font-weight: 600; }
+    .features-section { padding: 80px 24px; background: #f8fafc; }
+    .features-inner { max-width: 1100px; margin: 0 auto; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 48px; }
+    .feature-item { display: flex; gap: 16px; padding: 24px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; }
+    .feature-item .icon { width: 44px; height: 44px; background: rgba(0, 56, 86, 0.08); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+    .feature-item h4 { font-size: 1rem; margin-bottom: 6px; color: #003856; }
+    .feature-item p { color: #64748b; font-size: 0.9rem; line-height: 1.5; }
+    .cta-section { padding: 80px 24px; text-align: center; background: linear-gradient(135deg, #003856 0%, #00507a 100%); }
+    .cta-box { max-width: 700px; margin: 0 auto; }
+    .cta-box h2 { font-size: 1.8rem; margin-bottom: 16px; color: #fff; }
+    .cta-box p { color: rgba(255,255,255,0.8); margin-bottom: 32px; font-size: 1.05rem; }
+    .cta-box .hero-cta.primary { background: #22d3ee; color: #003856; }
+  </style>
 </head>
 <body>
 <header class="header">
   <div class="header-inner">
     <a href="https://sbsdeutschland.com/sbshomepage/" class="logo-wrap">
       <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
-      <div class="logo-text">
-        <strong>SBS Deutschland</strong>
-        <span>Smart Business Service · Weinheim</span>
-      </div>
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
     </a>
-    <button class="burger" id="burger" aria-label="Menü">
-      <span></span><span></span><span></span>
-    </button>
+    <button class="burger" id="burger" aria-label="Menü"><span></span><span></span><span></span></button>
     <nav class="nav" id="nav">
       <div class="dropdown dropdown-solutions">
         <span class="dropdown-toggle">Lösungen</span>
@@ -56,8 +92,8 @@
       <div class="dropdown">
         <span class="dropdown-toggle">Plattform</span>
         <div class="dropdown-menu">
+          <a href="https://app.sbsdeutschland.com/dashboard">📊 Dashboard</a>
           <a href="https://app.sbsdeutschland.com/copilot">🤖 Finance Copilot</a>
-          <a href="https://app.sbsdeutschland.com/accounting">📊 Auto-Kontierung</a>
           <a href="/static/landing/integrationen.html">🔗 Integrationen</a>
           <a href="/static/landing/security.html">🔒 Sicherheit & Compliance</a>
         </div>
@@ -68,7 +104,7 @@
           <a href="/static/preise/">🧾 KI-Rechnungsverarbeitung</a>
           <a href="/loesungen/vertragsanalyse/preise.html">📋 KI-Vertragsanalyse</a>
           <div class="dropdown-divider"></div>
-          <a href="/static/preise/#bundle" style="color: #8b5cf6; font-weight: 600;">🎁 Bundle-Angebot (20% sparen)</a>
+          <a href="/static/preise/#bundle" style="color: #22d3ee; font-weight: 600;">🎁 Bundle-Angebot (20% sparen)</a>
         </div>
       </div>
       <div class="dropdown">
@@ -83,21 +119,15 @@
       <div class="auth-section">
         <div class="auth-guest" id="authGuest">
           <a href="https://app.sbsdeutschland.com/login" class="nav-link-login">Login</a>
-          <a href="https://app.sbsdeutschland.com/demo" class="btn-cta-header">Kostenlos testen</a>
+          <a href="https://contract.sbsdeutschland.com/upload" class="btn-cta-header">Kostenlos testen</a>
         </div>
         <div class="account-dropdown auth-user" id="authUser" style="display:none;">
           <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
           <div class="account-menu">
             <div class="account-menu-header"><span id="accountEmail">user@example.com</span></div>
             <div class="divider"></div>
-            <a href="https://app.sbsdeutschland.com/">📊 Dashboard</a>
-            <a href="https://app.sbsdeutschland.com/copilot">🤖 Finance Copilot</a>
-            <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
-            <a href="https://app.sbsdeutschland.com/accounting">📊 Auto-Kontierung</a>
-            <a href="https://app.sbsdeutschland.com/history">📁 Verlauf</a>
-            <div class="divider"></div>
-            <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
-            <a href="https://app.sbsdeutschland.com/account">💳 Konto & Abrechnung</a>
+            <a href="https://app.sbsdeutschland.com/dashboard">📊 Dashboard</a>
+            <a href="https://contract.sbsdeutschland.com/upload">📋 Vertrag analysieren</a>
             <div class="divider"></div>
             <a href="https://app.sbsdeutschland.com/logout" class="logout-link">🚪 Abmelden</a>
           </div>
@@ -107,100 +137,140 @@
   </div>
 </header>
 
+<section class="subpage-hero">
+  <div class="hero-badge">👔 Für HR-Abteilungen</div>
+  <h1>Arbeitsverträge analysieren in Sekunden</h1>
+  <p class="subtitle">Automatische Erkennung von Gehältern, Kündigungsfristen, Probezeiten und Sonderklauseln. Mehr Zeit für strategisches Personalmanagement.</p>
+  <div class="hero-cta-group">
+    <a href="https://contract.sbsdeutschland.com/upload" class="hero-cta primary">Kostenlos testen →</a>
+    <a href="/loesungen/vertragsanalyse/preise.html" class="hero-cta secondary">Preise ansehen</a>
+  </div>
+</section>
 
-<section class="hero">
-    <h1>👔 KI-Vertragsanalyse für HR-Abteilungen</h1>
-    <p>Arbeitsverträge strukturiert erfassen. Probezeiten, Gehälter, Kündigungsfristen auf einen Blick.</p>
-    <a href="https://contract.sbsdeutschland.com/upload" class="btn">Jetzt Vertrag analysieren →</a>
-  </section>
-  <div class="features">
-    <div class="feature">
-      <h3>📊 Vertragsübersicht</h3>
-      <p>Alle Arbeitsverträge zentral erfassen und vergleichen.</p>
+<div class="trust-bar">
+  <div class="trust-inner">
+    <div class="trust-item">🇩🇪 <span>Made in Germany</span></div>
+    <div class="trust-item"><strong>DSGVO</strong> <span>Vollständig konform</span></div>
+    <div class="trust-item"><strong>ArbR</strong> <span>Deutsches Arbeitsrecht</span></div>
+    <div class="trust-item"><strong>99.9%</strong> <span>Uptime SLA</span></div>
+  </div>
+</div>
+
+<section class="usecases-section">
+  <div class="section-badge">Anwendungsfälle</div>
+  <h2 class="section-title">Wie HR-Teams unsere KI nutzen</h2>
+  <p class="section-subtitle">Von der Vertragserstellung bis zum Offboarding – automatisierte Analyse für alle HR-Prozesse.</p>
+  
+  <div class="usecase-grid">
+    <div class="usecase-card">
+      <div class="usecase-icon">📝</div>
+      <h3>Onboarding & Neueinstellungen</h3>
+      <p>Prüfen Sie neue Arbeitsverträge schnell auf Vollständigkeit und Konformität mit Unternehmensrichtlinien.</p>
+      <ul>
+        <li>Gehalt & Bonus-Strukturen</li>
+        <li>Probezeit-Regelungen</li>
+        <li>Wettbewerbsverbote</li>
+        <li>Benefits & Nebenleistungen</li>
+      </ul>
     </div>
-    <div class="feature">
-      <h3>📅 Probezeiten & Fristen</h3>
-      <p>Automatische Erinnerungen vor Ablauf kritischer Termine.</p>
+    
+    <div class="usecase-card">
+      <div class="usecase-icon">📊</div>
+      <h3>Vertragsvergleich & Benchmarking</h3>
+      <p>Vergleichen Sie Konditionen über Teams und Abteilungen hinweg für faire und konsistente Vergütung.</p>
+      <ul>
+        <li>Gehaltsstrukturen analysieren</li>
+        <li>Urlaubstage vergleichen</li>
+        <li>Kündigungsfristen prüfen</li>
+        <li>Ungleichheiten erkennen</li>
+      </ul>
     </div>
-    <div class="feature">
-      <h3>💰 Gehaltsanalyse</h3>
-      <p>Vergütungsstrukturen extrahieren und benchmarken.</p>
+    
+    <div class="usecase-card">
+      <div class="usecase-icon">⚠️</div>
+      <h3>Compliance & Risikomanagement</h3>
+      <p>Identifizieren Sie problematische Klauseln und stellen Sie Rechtskonformität sicher.</p>
+      <ul>
+        <li>AGG-konforme Formulierungen</li>
+        <li>Befristungsregeln</li>
+        <li>Überstundenregelungen</li>
+        <li>Datenschutzklauseln</li>
+      </ul>
     </div>
   </div>
+</section>
+
+<section class="features-section">
+  <div class="features-inner">
+    <div class="section-badge">Features</div>
+    <h2 class="section-title">Speziell für HR entwickelt</h2>
+    <p class="section-subtitle">Optimiert für deutsche Arbeitsverträge und HR-Prozesse.</p>
+    
+    <div class="features-grid">
+      <div class="feature-item">
+        <div class="icon">📅</div>
+        <div><h4>Fristenverwaltung</h4><p>Automatische Erkennung aller Fristen: Probezeit, Kündigungsfristen, Befristungen.</p></div>
+      </div>
+      <div class="feature-item">
+        <div class="icon">💰</div>
+        <div><h4>Vergütungsanalyse</h4><p>Gehalt, Bonus, Benefits, Aktienoptionen – alle Komponenten strukturiert erfasst.</p></div>
+      </div>
+      <div class="feature-item">
+        <div class="icon">🔒</div>
+        <div><h4>Vertraulich & sicher</h4><p>Personaldaten werden DSGVO-konform verarbeitet und nicht für Training verwendet.</p></div>
+      </div>
+      <div class="feature-item">
+        <div class="icon">📋</div>
+        <div><h4>Batch-Verarbeitung</h4><p>Analysieren Sie hunderte Verträge bei M&A oder Restrukturierungen.</p></div>
+      </div>
+      <div class="feature-item">
+        <div class="icon">🔗</div>
+        <div><h4>HR-System Integration</h4><p>API für nahtlose Anbindung an Personio, SAP SuccessFactors und andere.</p></div>
+      </div>
+      <div class="feature-item">
+        <div class="icon">🇩🇪</div>
+        <div><h4>Deutsches Arbeitsrecht</h4><p>Optimiert für BGB, TzBfG, BetrVG und tarifvertragliche Regelungen.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="cta-box">
+    <h2>Bereit für effizienteres Vertragsmanagement?</h2>
+    <p>Testen Sie unsere KI-Vertragsanalyse kostenlos – 3 Verträge pro Monat inklusive.</p>
+    <a href="https://contract.sbsdeutschland.com/upload" class="hero-cta primary">Jetzt Vertrag analysieren →</a>
+  </div>
+</section>
 
 <footer class="footer">
   <div class="footer-grid">
     <div>
-      <div class="footer-brand">
-        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
-        <div class="footer-brand-text">
-          <strong>SBS Deutschland</strong>
-          <span>Smart Business Service</span>
-        </div>
-      </div>
-      <p class="footer-tagline">
-        Enterprise KI-Lösungen für den deutschen Mittelstand. Entwickelt und betrieben in Deutschland.
-      </p>
+      <div class="footer-brand"><img src="/static/sbs-logo-new.png" alt="SBS Deutschland" /><div class="footer-brand-text"><strong>SBS Deutschland</strong><span>Smart Business Service</span></div></div>
+      <p class="footer-tagline">Enterprise KI-Lösungen für den deutschen Mittelstand.</p>
       <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
     </div>
-    <div>
-      <h4>Produkt</h4>
-      <ul>
-        <li><a href="/static/landing/">KI-Rechnungsverarbeitung</a></li>
-        <li><a href="/loesungen/vertragsanalyse/">KI-Vertragsanalyse</a></li>
-        <li><a href="https://app.sbsdeutschland.com/copilot">Finance Copilot</a></li>
-        <li><a href="/static/preise/">Preise & Pakete</a></li>
-        <li><a href="/static/landing/integrationen.html">Integrationen</a></li>
-        <li><a href="/static/landing/security.html">Sicherheit</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Unternehmen</h4>
-      <ul>
-        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
-        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
-        <li><a href="/static/landing/support.html">Support</a></li>
-        <li><a href="/static/landing/kunden.html">Kunden</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Rechtliches</h4>
-      <ul>
-        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
-        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
-        <li><a href="/sbshomepage/agb.html">AGB</a></li>
-      </ul>
-    </div>
+    <div><h4>Produkt</h4><ul><li><a href="/static/landing/">KI-Rechnungsverarbeitung</a></li><li><a href="/loesungen/vertragsanalyse/">KI-Vertragsanalyse</a></li><li><a href="/loesungen/vertragsanalyse/preise.html">Preise</a></li></ul></div>
+    <div><h4>Unternehmen</h4><ul><li><a href="/sbshomepage/kontakt.html">Kontakt</a></li><li><a href="/static/landing/support.html">Support</a></li></ul></div>
+    <div><h4>Rechtliches</h4><ul><li><a href="/sbshomepage/impressum.html">Impressum</a></li><li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li><li><a href="/sbshomepage/agb.html">AGB</a></li></ul></div>
   </div>
-  <div class="footer-bottom">
-    <p>© 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
-    <p>Made with ❤️ in Weinheim</p>
-  </div>
+  <div class="footer-bottom"><p>© 2025 SBS Deutschland. Made with ❤️ in Weinheim</p></div>
 </footer>
-
 
 <script>
 async function checkAuthStatus() {
   const guestEl = document.getElementById('authGuest');
   const userEl = document.getElementById('authUser');
-  const nameEl = document.getElementById('accountName');
-  const emailEl = document.getElementById('accountEmail');
   try {
     const res = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
     const user = await res.json();
     if (user && user.logged_in) {
       if (guestEl) guestEl.style.display = 'none';
       if (userEl) userEl.style.display = 'block';
-      if (nameEl) nameEl.textContent = user.name || 'Account';
-      if (emailEl) emailEl.textContent = user.email || '';
-    } else {
-      if (guestEl) guestEl.style.display = 'flex';
-      if (userEl) userEl.style.display = 'none';
+      document.getElementById('accountName').textContent = user.name || 'Account';
+      document.getElementById('accountEmail').textContent = user.email || '';
     }
-  } catch(e) {
-    if (guestEl) guestEl.style.display = 'flex';
-    if (userEl) userEl.style.display = 'none';
-  }
+  } catch(e) {}
 }
 document.addEventListener('DOMContentLoaded', checkAuthStatus);
 </script>
