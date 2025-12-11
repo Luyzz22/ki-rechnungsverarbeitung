@@ -4,12 +4,366 @@
   <meta charset="utf-8" />
   <title>KI-Vertragsanalyse | SBS Deutschland</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="KI-gestützte Vertragsanalyse: Kündigungsfristen, Risiken & Zahlungsbedingungen automatisch erkennen. Arbeitsverträge, SaaS-Verträge & mehr." />
+  <meta name="description" content="KI-gestützte Vertragsanalyse: Kündigungsfristen, Risiken & Zahlungsbedingungen automatisch erkennen." />
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/css/design-tokens.css" />
   <link rel="stylesheet" href="/static/css/components.css" />
   <link rel="stylesheet" href="/static/css/main.css" />
   <link rel="stylesheet" href="/static/css/flyout-menu.css" />
+  <style>
+    /* Hero */
+    .contract-hero {
+      background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+      padding: 140px 24px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .contract-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
+      background-size: 30px 30px;
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: rgba(34, 211, 238, 0.15);
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #22d3ee;
+      margin-bottom: 24px;
+    }
+    .contract-hero h1 {
+      font-size: clamp(2.4rem, 5vw, 3.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+    .contract-hero h1 .highlight {
+      color: #22d3ee;
+    }
+    .contract-hero .subtitle {
+      font-size: 1.15rem;
+      color: rgba(255,255,255,0.8);
+      max-width: 700px;
+      margin: 0 auto 32px;
+      line-height: 1.6;
+    }
+    .hero-ctas {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 48px;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: #fff;
+      color: #003856;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.25s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: rgba(34, 211, 238, 0.1);
+      border: 1px solid rgba(34, 211, 238, 0.4);
+      color: #22d3ee;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.25s;
+    }
+    .btn-secondary:hover {
+      background: rgba(34, 211, 238, 0.2);
+    }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+      flex-wrap: wrap;
+    }
+    .hero-stat {
+      text-align: center;
+    }
+    .hero-stat .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .hero-stat .label {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.6);
+    }
+    
+    /* Trust Bar */
+    .trust-bar {
+      background: #fff;
+      padding: 24px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .trust-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 48px;
+      flex-wrap: wrap;
+    }
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #475569;
+      font-size: 0.9rem;
+    }
+    .trust-item strong {
+      color: #003856;
+      font-weight: 700;
+    }
+    
+    /* Features Section */
+    .features-section {
+      padding: 80px 24px;
+      background: #f8fafc;
+    }
+    .features-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      background: rgba(0, 56, 86, 0.1);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #003856;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: 2rem;
+      margin-bottom: 16px;
+      color: #003856;
+    }
+    .section-subtitle {
+      color: #64748b;
+      font-size: 1.05rem;
+      max-width: 600px;
+      margin-bottom: 48px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.3s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+      border-color: #22d3ee;
+    }
+    .feature-icon {
+      width: 56px;
+      height: 56px;
+      background: rgba(0, 56, 86, 0.08);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+    }
+    .feature-card h3 {
+      font-size: 1.15rem;
+      color: #003856;
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      color: #64748b;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    
+    /* Contract Types */
+    .types-section {
+      padding: 80px 24px;
+      background: #fff;
+    }
+    .types-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .types-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+    }
+    .type-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+    .type-card:hover {
+      border-color: #22d3ee;
+      background: #fff;
+    }
+    .type-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+    .type-name {
+      font-weight: 600;
+      color: #003856;
+      margin-bottom: 4px;
+    }
+    .type-desc {
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+    
+    /* How It Works */
+    .steps-section {
+      padding: 80px 24px;
+      background: #f8fafc;
+    }
+    .steps-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+    @media (max-width: 768px) {
+      .steps-grid { grid-template-columns: 1fr; }
+    }
+    .step-card {
+      text-align: center;
+    }
+    .step-number {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #003856, #00507a);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0 auto 16px;
+    }
+    .step-card h3 {
+      font-size: 1.1rem;
+      color: #003856;
+      margin-bottom: 8px;
+    }
+    .step-card p {
+      color: #64748b;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    
+    /* Pricing Teaser */
+    .pricing-section {
+      padding: 80px 24px;
+      background: #fff;
+    }
+    .pricing-card {
+      max-width: 700px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border: 2px solid #fbbf24;
+      border-radius: 24px;
+      padding: 48px;
+      text-align: center;
+    }
+    .pricing-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      background: #fbbf24;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #78350f;
+      margin-bottom: 16px;
+    }
+    .pricing-card h2 {
+      font-size: 1.8rem;
+      color: #003856;
+      margin-bottom: 12px;
+    }
+    .pricing-card > p {
+      color: #64748b;
+      margin-bottom: 32px;
+    }
+    .pricing-features {
+      text-align: left;
+      max-width: 400px;
+      margin: 0 auto 32px;
+    }
+    .pricing-feature {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      color: #475569;
+    }
+    .pricing-feature .check {
+      color: #16a34a;
+      font-weight: 700;
+    }
+    
+    /* CTA Section */
+    .cta-section {
+      padding: 80px 24px;
+      background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+      text-align: center;
+    }
+    .cta-section h2 {
+      font-size: 2rem;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .cta-section p {
+      color: rgba(255,255,255,0.8);
+      max-width: 600px;
+      margin: 0 auto 32px;
+    }
+  </style>
 </head>
 <body>
 <header class="header">
@@ -56,8 +410,8 @@
       <div class="dropdown">
         <span class="dropdown-toggle">Plattform</span>
         <div class="dropdown-menu">
+          <a href="https://app.sbsdeutschland.com/dashboard">📊 Dashboard</a>
           <a href="https://app.sbsdeutschland.com/copilot">🤖 Finance Copilot</a>
-          <a href="https://app.sbsdeutschland.com/accounting">📊 Auto-Kontierung</a>
           <a href="/static/landing/integrationen.html">🔗 Integrationen</a>
           <a href="/static/landing/security.html">🔒 Sicherheit & Compliance</a>
         </div>
@@ -68,7 +422,7 @@
           <a href="/static/preise/">🧾 KI-Rechnungsverarbeitung</a>
           <a href="/loesungen/vertragsanalyse/preise.html">📋 KI-Vertragsanalyse</a>
           <div class="dropdown-divider"></div>
-          <a href="/static/preise/#bundle" style="color: #8b5cf6; font-weight: 600;">🎁 Bundle-Angebot (20% sparen)</a>
+          <a href="/static/preise/#bundle" style="color: #22d3ee; font-weight: 600;">🎁 Bundle-Angebot (20% sparen)</a>
         </div>
       </div>
       <div class="dropdown">
@@ -83,21 +437,15 @@
       <div class="auth-section">
         <div class="auth-guest" id="authGuest">
           <a href="https://app.sbsdeutschland.com/login" class="nav-link-login">Login</a>
-          <a href="https://app.sbsdeutschland.com/demo" class="btn-cta-header">Kostenlos testen</a>
+          <a href="https://contract.sbsdeutschland.com/upload" class="btn-cta-header">Kostenlos testen</a>
         </div>
         <div class="account-dropdown auth-user" id="authUser" style="display:none;">
           <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
           <div class="account-menu">
             <div class="account-menu-header"><span id="accountEmail">user@example.com</span></div>
             <div class="divider"></div>
-            <a href="https://app.sbsdeutschland.com/">📊 Dashboard</a>
-            <a href="https://app.sbsdeutschland.com/copilot">🤖 Finance Copilot</a>
-            <a href="https://app.sbsdeutschland.com/analytics">📈 Analytics</a>
-            <a href="https://app.sbsdeutschland.com/accounting">📊 Auto-Kontierung</a>
-            <a href="https://app.sbsdeutschland.com/history">📁 Verlauf</a>
-            <div class="divider"></div>
-            <a href="https://app.sbsdeutschland.com/profile">⚙️ Einstellungen</a>
-            <a href="https://app.sbsdeutschland.com/account">💳 Konto & Abrechnung</a>
+            <a href="https://app.sbsdeutschland.com/dashboard">📊 Dashboard</a>
+            <a href="https://contract.sbsdeutschland.com/upload">📋 Vertrag analysieren</a>
             <div class="divider"></div>
             <a href="https://app.sbsdeutschland.com/logout" class="logout-link">🚪 Abmelden</a>
           </div>
@@ -107,277 +455,174 @@
   </div>
 </header>
 
+<section class="contract-hero">
+  <div class="hero-badge">📋 KI-Vertragsanalyse</div>
+  <h1>Verträge verstehen.<br><span class="highlight">In Sekunden.</span></h1>
+  <p class="subtitle">Unsere KI analysiert Ihre Verträge automatisch: Kündigungsfristen, Risiken, Zahlungsbedingungen und kritische Klauseln – sofort erkannt und übersichtlich aufbereitet.</p>
+  <div class="hero-ctas">
+    <a href="https://contract.sbsdeutschland.com/upload" class="btn-primary">Vertrag analysieren →</a>
+    <a href="https://contract.sbsdeutschland.com/docs" class="btn-secondary">API Dokumentation</a>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="value">98%</div>
+      <div class="label">Erkennungsgenauigkeit</div>
+    </div>
+    <div class="hero-stat">
+      <div class="value">&lt;30s</div>
+      <div class="label">Analysezeit</div>
+    </div>
+    <div class="hero-stat">
+      <div class="value">GPT-4o</div>
+      <div class="label">Powered by</div>
+    </div>
+  </div>
+</section>
 
-<!-- Hero Section -->
-  <section class="hero">
-    <div class="hero-content">
-      <div class="hero-badge">
-        <span class="pulse"></span>
-        Neu: KI-Vertragsanalyse
-      </div>
-      <h1>
-        Verträge verstehen.<br>
-        <span class="highlight">In Sekunden.</span>
-      </h1>
-      <p class="hero-subtitle">
-        Unsere KI analysiert Ihre Verträge automatisch: Kündigungsfristen, Risiken, 
-        Zahlungsbedingungen und kritische Klauseln – sofort erkannt und übersichtlich aufbereitet.
-      </p>
-      <div class="hero-ctas">
-        <a href="https://contract.sbsdeutschland.com/upload" class="btn-primary">
-          Vertrag analysieren
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
-        </a>
-        <a href="https://contract.sbsdeutschland.com/docs" class="btn-secondary" target="_blank">
-          API Dokumentation
-        </a>
-      </div>
+<div class="trust-bar">
+  <div class="trust-inner">
+    <div class="trust-item">🇩🇪 <span>Made in Germany</span></div>
+    <div class="trust-item"><strong>ISO 27001</strong> <span>Sicherheitsstandard</span></div>
+    <div class="trust-item"><strong>DSGVO</strong> <span>Vollständig konform</span></div>
+    <div class="trust-item"><strong>99.9%</strong> <span>Uptime SLA</span></div>
+  </div>
+</div>
 
-      <div class="stats-bar">
-        <div class="stat-item">
-          <div class="stat-value">98%</div>
-          <div class="stat-label">Erkennungsgenauigkeit</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">&lt;30s</div>
-          <div class="stat-label">Analysezeit</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">GPT-4o</div>
-          <div class="stat-label">Powered by</div>
-        </div>
+<section class="features-section">
+  <div class="features-inner">
+    <div class="section-badge">Features</div>
+    <h2 class="section-title">Was unsere KI erkennt</h2>
+    <p class="section-subtitle">Automatische Extraktion aller relevanten Vertragsinformationen mit höchster Präzision.</p>
+    
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📅</div>
+        <h3>Kündigungsfristen</h3>
+        <p>Erkennt automatisch Kündigungsfristen, Mindestlaufzeiten und Verlängerungsklauseln. Nie wieder eine Frist verpassen.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚠️</div>
+        <h3>Risiko-Analyse</h3>
+        <p>Identifiziert problematische Klauseln, Haftungsrisiken und ungewöhnliche Vertragsbedingungen automatisch.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💰</div>
+        <h3>Zahlungsbedingungen</h3>
+        <p>Extrahiert Preise, Zahlungsfristen, Skonto-Regelungen und Preisanpassungsklauseln.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h3>Vertragsparteien</h3>
+        <p>Erkennt alle beteiligten Parteien, Ansprechpartner und Unterschriftsberechtigte.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>Geheimhaltung & IP</h3>
+        <p>Analysiert NDAs, IP-Rechte, Wettbewerbsverbote und Vertraulichkeitsklauseln.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Export & Integration</h3>
+        <p>JSON- und CSV-Export für nahtlose Integration in Ihre bestehenden Systeme.</p>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Features Section -->
-  <section class="features">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-badge">Features</span>
-        <h2 class="section-title">Was unsere KI erkennt</h2>
-        <p class="section-subtitle">
-          Automatische Extraktion aller relevanten Vertragsinformationen mit höchster Präzision.
-        </p>
+<section class="types-section">
+  <div class="types-inner">
+    <div class="section-badge">Vertragsarten</div>
+    <h2 class="section-title">Für alle Vertragstypen</h2>
+    <p class="section-subtitle">Unsere KI ist auf verschiedene Vertragsarten trainiert und optimiert.</p>
+    
+    <div class="types-grid">
+      <div class="type-card">
+        <div class="type-icon">👔</div>
+        <div class="type-name">Arbeitsverträge</div>
+        <div class="type-desc">Gehalt, Urlaub, Kündigungsfristen, Probezeit</div>
       </div>
-
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">📅</div>
-          <h3 class="feature-title">Kündigungsfristen</h3>
-          <p class="feature-desc">
-            Erkennt automatisch Kündigungsfristen, Mindestlaufzeiten und Verlängerungsklauseln. 
-            Nie wieder eine Frist verpassen.
-          </p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">⚠️</div>
-          <h3 class="feature-title">Risiko-Analyse</h3>
-          <p class="feature-desc">
-            Identifiziert problematische Klauseln, Haftungsrisiken und ungewöhnliche 
-            Vertragsbedingungen automatisch.
-          </p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">💰</div>
-          <h3 class="feature-title">Zahlungsbedingungen</h3>
-          <p class="feature-desc">
-            Extrahiert Preise, Zahlungsfristen, Skonto-Regelungen und 
-            Preisanpassungsklauseln.
-          </p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">📋</div>
-          <h3 class="feature-title">Vertragsparteien</h3>
-          <p class="feature-desc">
-            Erkennt alle beteiligten Parteien, Ansprechpartner und 
-            Unterschriftsberechtigte.
-          </p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">🔒</div>
-          <h3 class="feature-title">Geheimhaltung & IP</h3>
-          <p class="feature-desc">
-            Analysiert NDAs, IP-Rechte, Wettbewerbsverbote und 
-            Vertraulichkeitsklauseln.
-          </p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">📊</div>
-          <h3 class="feature-title">Export & Integration</h3>
-          <p class="feature-desc">
-            JSON- und CSV-Export für nahtlose Integration in Ihre 
-            bestehenden Systeme.
-          </p>
-        </div>
+      <div class="type-card">
+        <div class="type-icon">☁️</div>
+        <div class="type-name">SaaS-Verträge</div>
+        <div class="type-desc">Laufzeit, Preise, SLAs, Datenschutz</div>
+      </div>
+      <div class="type-card">
+        <div class="type-icon">🏢</div>
+        <div class="type-name">Mietverträge</div>
+        <div class="type-desc">Miete, Nebenkosten, Kündigungsfristen</div>
+      </div>
+      <div class="type-card">
+        <div class="type-icon">🤝</div>
+        <div class="type-name">Dienstleistungsverträge</div>
+        <div class="type-desc">Leistungen, Vergütung, Haftung</div>
+      </div>
+      <div class="type-card">
+        <div class="type-icon">🔐</div>
+        <div class="type-name">NDAs</div>
+        <div class="type-desc">Vertraulichkeit, Laufzeit, Strafen</div>
+      </div>
+      <div class="type-card">
+        <div class="type-icon">📦</div>
+        <div class="type-name">Lieferverträge</div>
+        <div class="type-desc">Lieferbedingungen, Mengen, Preise</div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Contract Types Section -->
-  <section class="contract-types">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-badge">Vertragsarten</span>
-        <h2 class="section-title">Für alle Vertragstypen</h2>
-        <p class="section-subtitle">
-          Unsere KI ist auf verschiedene Vertragsarten trainiert und optimiert.
-        </p>
+<section class="steps-section">
+  <div class="steps-inner">
+    <div style="text-align: center;">
+      <div class="section-badge">So funktioniert's</div>
+      <h2 class="section-title">In 3 Schritten zur Analyse</h2>
+    </div>
+    
+    <div class="steps-grid" style="margin-top: 48px;">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <h3>Vertrag hochladen</h3>
+        <p>PDF-Datei per Drag & Drop oder API hochladen. Unterstützt werden alle gängigen Formate.</p>
       </div>
-
-      <div class="types-grid">
-        <div class="type-card">
-          <div class="type-icon">👔</div>
-          <div class="type-name">Arbeitsverträge</div>
-          <div class="type-desc">Gehalt, Urlaub, Kündigungsfristen, Probezeit</div>
-        </div>
-
-        <div class="type-card">
-          <div class="type-icon">☁️</div>
-          <div class="type-name">SaaS-Verträge</div>
-          <div class="type-desc">Laufzeit, Preise, SLAs, Datenschutz</div>
-        </div>
-
-        <div class="type-card">
-          <div class="type-icon">🏢</div>
-          <div class="type-name">Mietverträge</div>
-          <div class="type-desc">Miete, Nebenkosten, Kündigungsfristen</div>
-        </div>
-
-        <div class="type-card">
-          <div class="type-icon">🤝</div>
-          <div class="type-name">Dienstleistungsverträge</div>
-          <div class="type-desc">Leistungen, Vergütung, Haftung</div>
-        </div>
-
-        <div class="type-card">
-          <div class="type-icon">🔐</div>
-          <div class="type-name">NDAs</div>
-          <div class="type-desc">Vertraulichkeit, Laufzeit, Strafen</div>
-        </div>
-
-        <div class="type-card">
-          <div class="type-icon">📦</div>
-          <div class="type-name">Lieferverträge</div>
-          <div class="type-desc">Lieferbedingungen, Mengen, Preise</div>
-        </div>
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <h3>KI analysiert</h3>
+        <p>GPT-4o liest und versteht den Vertrag. Alle relevanten Informationen werden extrahiert.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <h3>Ergebnis nutzen</h3>
+        <p>Übersichtliche Zusammenfassung, Risiko-Bewertung und Export in JSON/CSV.</p>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- How It Works -->
-  <section class="how-it-works">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-badge">So funktioniert's</span>
-        <h2 class="section-title">In 3 Schritten zur Analyse</h2>
-      </div>
-
-      <div class="steps">
-        <div class="step">
-          <div class="step-number">1</div>
-          <h3 class="step-title">Vertrag hochladen</h3>
-          <p class="step-desc">
-            PDF-Datei per Drag & Drop oder API hochladen. 
-            Unterstützt werden alle gängigen Formate.
-          </p>
-        </div>
-
-        <div class="step">
-          <div class="step-number">2</div>
-          <h3 class="step-title">KI analysiert</h3>
-          <p class="step-desc">
-            GPT-4o liest und versteht den Vertrag. 
-            Alle relevanten Informationen werden extrahiert.
-          </p>
-        </div>
-
-        <div class="step">
-          <div class="step-number">3</div>
-          <h3 class="step-title">Ergebnis nutzen</h3>
-          <p class="step-desc">
-            Übersichtliche Zusammenfassung, Risiko-Bewertung 
-            und Export in JSON/CSV.
-          </p>
-        </div>
-      </div>
+<section class="pricing-section">
+  <div class="pricing-card">
+    <span class="pricing-badge">✓ Kostenlos testen</span>
+    <h2>Jetzt starten</h2>
+    <p>Testen Sie die KI-Vertragsanalyse mit Ihren eigenen Verträgen. Keine Kreditkarte erforderlich.</p>
+    
+    <div class="pricing-features">
+      <div class="pricing-feature"><span class="check">✓</span> 5 kostenlose Analysen zum Testen</div>
+      <div class="pricing-feature"><span class="check">✓</span> Alle Vertragsarten unterstützt</div>
+      <div class="pricing-feature"><span class="check">✓</span> JSON & CSV Export inklusive</div>
+      <div class="pricing-feature"><span class="check">✓</span> API-Zugang für Entwickler</div>
+      <div class="pricing-feature"><span class="check">✓</span> DSGVO-konform, Hosting in Deutschland</div>
     </div>
-  </section>
+    
+    <a href="https://contract.sbsdeutschland.com/upload" class="btn-primary">Kostenlos testen →</a>
+  </div>
+</section>
 
-  <!-- Pricing Teaser -->
-  <section class="pricing-teaser">
-    <div class="container">
-      <div class="pricing-card">
-        <span class="pricing-badge">✓ Kostenlos testen</span>
-        <h2 class="pricing-title">Jetzt starten</h2>
-        <p class="pricing-desc">
-          Testen Sie die KI-Vertragsanalyse mit Ihren eigenen Verträgen. 
-          Keine Kreditkarte erforderlich.
-        </p>
-
-        <div class="pricing-features">
-          <div class="pricing-feature">
-            <span class="check">✓</span>
-            <span>5 kostenlose Analysen zum Testen</span>
-          </div>
-          <div class="pricing-feature">
-            <span class="check">✓</span>
-            <span>Alle Vertragsarten unterstützt</span>
-          </div>
-          <div class="pricing-feature">
-            <span class="check">✓</span>
-            <span>JSON & CSV Export inklusive</span>
-          </div>
-          <div class="pricing-feature">
-            <span class="check">✓</span>
-            <span>API-Zugang für Entwickler</span>
-          </div>
-          <div class="pricing-feature">
-            <span class="check">✓</span>
-            <span>DSGVO-konform, Hosting in Deutschland</span>
-          </div>
-        </div>
-
-        <a href="https://contract.sbsdeutschland.com/upload" class="btn-primary">
-          Kostenlos testen
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA Section -->
-  <section class="cta-section">
-    <div class="cta-content">
-      <h2 class="cta-title">Bereit, Ihre Verträge zu verstehen?</h2>
-      <p class="cta-subtitle">
-        Starten Sie jetzt und lassen Sie unsere KI die Arbeit erledigen. 
-        Mehr Zeit für das Wesentliche.
-      </p>
-      <div class="hero-ctas">
-        <a href="https://contract.sbsdeutschland.com/upload" class="btn-primary">
-          Jetzt Vertrag analysieren
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
-        </a>
-        <a href="/static/landing/" class="btn-secondary">
-          Zur Rechnungsverarbeitung
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
+<section class="cta-section">
+  <h2>Bereit, Ihre Verträge zu verstehen?</h2>
+  <p>Starten Sie jetzt und lassen Sie unsere KI die Arbeit erledigen. Mehr Zeit für das Wesentliche.</p>
+  <div class="hero-ctas">
+    <a href="https://contract.sbsdeutschland.com/upload" class="btn-primary">Jetzt Vertrag analysieren →</a>
+    <a href="/static/landing/" class="btn-secondary">Zur Rechnungsverarbeitung</a>
+  </div>
+</section>
 
 <footer class="footer">
   <div class="footer-grid">
@@ -389,9 +634,7 @@
           <span>Smart Business Service</span>
         </div>
       </div>
-      <p class="footer-tagline">
-        Enterprise KI-Lösungen für den deutschen Mittelstand. Entwickelt und betrieben in Deutschland.
-      </p>
+      <p class="footer-tagline">Enterprise KI-Lösungen für den deutschen Mittelstand.</p>
       <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
     </div>
     <div>
@@ -399,19 +642,15 @@
       <ul>
         <li><a href="/static/landing/">KI-Rechnungsverarbeitung</a></li>
         <li><a href="/loesungen/vertragsanalyse/">KI-Vertragsanalyse</a></li>
-        <li><a href="https://app.sbsdeutschland.com/copilot">Finance Copilot</a></li>
-        <li><a href="/static/preise/">Preise & Pakete</a></li>
-        <li><a href="/static/landing/integrationen.html">Integrationen</a></li>
-        <li><a href="/static/landing/security.html">Sicherheit</a></li>
+        <li><a href="/loesungen/vertragsanalyse/preise.html">Preise</a></li>
       </ul>
     </div>
     <div>
-      <h4>Unternehmen</h4>
+      <h4>Zielgruppen</h4>
       <ul>
-        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
-        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
-        <li><a href="/static/landing/support.html">Support</a></li>
-        <li><a href="/static/landing/kunden.html">Kunden</a></li>
+        <li><a href="/loesungen/vertragsanalyse/kanzleien.html">Für Kanzleien</a></li>
+        <li><a href="/loesungen/vertragsanalyse/hr.html">Für HR</a></li>
+        <li><a href="/loesungen/vertragsanalyse/einkauf.html">Für Einkauf</a></li>
       </ul>
     </div>
     <div>
@@ -424,11 +663,9 @@
     </div>
   </div>
   <div class="footer-bottom">
-    <p>© 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
-    <p>Made with ❤️ in Weinheim</p>
+    <p>© 2025 SBS Deutschland. Made with ❤️ in Weinheim</p>
   </div>
 </footer>
-
 
 <script>
 async function checkAuthStatus() {
@@ -444,14 +681,8 @@ async function checkAuthStatus() {
       if (userEl) userEl.style.display = 'block';
       if (nameEl) nameEl.textContent = user.name || 'Account';
       if (emailEl) emailEl.textContent = user.email || '';
-    } else {
-      if (guestEl) guestEl.style.display = 'flex';
-      if (userEl) userEl.style.display = 'none';
     }
-  } catch(e) {
-    if (guestEl) guestEl.style.display = 'flex';
-    if (userEl) userEl.style.display = 'none';
-  }
+  } catch(e) {}
 }
 document.addEventListener('DOMContentLoaded', checkAuthStatus);
 </script>
