@@ -854,6 +854,108 @@ def is_admin_user(user_id: int) -> bool:
     return None
 
 
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def unified_dashboard(request: Request):
+    """Unified Dashboard für Multi-Product User"""
+    redirect = require_login(request)
+    if redirect:
+        return redirect
+    
+    user_id = request.session["user_id"]
+    
+    # User Info
+    from database import get_connection
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, email, name, is_admin FROM users WHERE id = ?", (user_id,))
+    user_row = cursor.fetchone()
+    user = {
+        "id": user_row[0],
+        "email": user_row[1],
+        "name": user_row[2],
+        "is_admin": user_row[3]
+    }
+    
+    # Product Subscriptions
+    from multi_product_subscriptions import get_user_products, has_product_access
+    
+    invoice_access = has_product_access(user_id, "invoice")
+    contract_access = has_product_access(user_id, "contract")
+    
+    # Invoice Stats
+    cursor.execute("""
+        SELECT COUNT(*) FROM invoices i
+        JOIN jobs j ON i.job_id = j.job_id
+        WHERE j.user_id = ?
+    """, (user_id,))
+    total_invoices = cursor.fetchone()[0] or 0
+    
+    # Contract Stats (wenn Tabelle existiert)
+    try:
+        cursor.execute("SELECT COUNT(*) FROM contracts WHERE user_id = ?", (user_id,))
+        total_contracts = cursor.fetchone()[0] or 0
+    except:
+        total_contracts = 0
+    
+    conn.close()
+    
+    # Usage Percentages
+    invoice_limit = invoice_access.get('usage_limit', 5)
+    invoice_used = invoice_access.get('usage_current', 0)
+    invoice_percent = min(100, int((invoice_used / max(invoice_limit, 1)) * 100)) if invoice_limit > 0 else 0
+    
+    contract_limit = contract_access.get('usage_limit', 3)
+    contract_used = contract_access.get('usage_current', 0)
+    contract_percent = min(100, int((contract_used / max(contract_limit, 1)) * 100)) if contract_limit > 0 else 0
+    
+    # Recent Activity (letzte 5 Rechnungen)
+    recent_activity = []
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT i.rechnungsnummer, i.rechnungsaussteller, i.created_at 
+        FROM invoices i
+        JOIN jobs j ON i.job_id = j.job_id
+        WHERE j.user_id = ? 
+        ORDER BY i.created_at DESC 
+        LIMIT 5
+    """, (user_id,))
+    for row in cursor.fetchall():
+        recent_activity.append({
+            "type": "invoice",
+            "title": f"Rechnung {row[0] or 'N/A'} von {row[1] or 'Unbekannt'}",
+            "time": str(row[2])[:16] if row[2] else "Unbekannt"
+        })
+    conn.close()
+    
+    # Time/Money saved estimates
+    time_saved = total_invoices * 3  # 3 Minuten pro Rechnung
+    money_saved = int(total_invoices * 2.5)  # €2.50 pro Rechnung
+    
+    # Show upgrade banner for Free/Starter users
+    show_upgrade = invoice_access.get('plan') in ['free', 'starter'] or contract_access.get('plan') in ['free', 'starter']
+    
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "user": user,
+        "invoice_plan": invoice_access.get('plan', 'free').title(),
+        "invoice_used": invoice_used,
+        "invoice_limit": invoice_limit if invoice_limit > 0 else "∞",
+        "invoice_percent": invoice_percent,
+        "contract_plan": contract_access.get('plan', 'free').title(),
+        "contract_used": contract_used,
+        "contract_limit": contract_limit if contract_limit > 0 else "∞",
+        "contract_percent": contract_percent,
+        "total_invoices": total_invoices,
+        "total_contracts": total_contracts,
+        "time_saved": time_saved,
+        "money_saved": money_saved,
+        "recent_activity": recent_activity,
+        "show_upgrade": show_upgrade,
+    })
+
+
 @app.get("/history", response_class=HTMLResponse)
 async def history_page(request: Request):
 
