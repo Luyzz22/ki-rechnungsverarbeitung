@@ -10,26 +10,37 @@
   <link rel="stylesheet" href="/static/css/main.css" />
   <link rel="stylesheet" href="/static/css/flyout-menu.css" />
   <style>
-    /* Dashboard Specific Styles */
+    /* Dashboard - Light Theme */
+    .dashboard-main {
+      background: #f8fafc;
+      min-height: calc(100vh - 80px);
+      padding-top: 100px;
+    }
+    
     .dashboard-hero {
-      padding: 120px 24px 60px;
+      background: linear-gradient(135deg, #0a1628 0%, #1e3a5f 100%);
+      padding: 60px 24px 80px;
       text-align: center;
+      color: #fff;
     }
     
     .dashboard-hero h1 {
-      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
       margin-bottom: 8px;
+      color: #fff;
     }
     
     .dashboard-hero p {
-      color: rgba(255,255,255,0.7);
-      font-size: 1.1rem;
+      color: rgba(255,255,255,0.8);
+      font-size: 1.05rem;
     }
     
     .dashboard-content {
       max-width: 1200px;
-      margin: 0 auto;
+      margin: -40px auto 0;
       padding: 0 24px 80px;
+      position: relative;
+      z-index: 10;
     }
     
     /* Product Cards */
@@ -37,60 +48,63 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
       gap: 24px;
-      margin-bottom: 48px;
+      margin-bottom: 32px;
     }
     
     .product-card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: #fff;
+      border: 1px solid #e2e8f0;
       border-radius: 16px;
       padding: 28px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
       transition: all 0.3s;
     }
     
     .product-card:hover {
       transform: translateY(-2px);
-      border-color: rgba(255,255,255,0.15);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
     }
     
     .product-card.invoice {
-      border-top: 3px solid #22d3ee;
+      border-top: 4px solid #22d3ee;
     }
     
     .product-card.contract {
-      border-top: 3px solid #8b5cf6;
+      border-top: 4px solid #8b5cf6;
     }
     
     .product-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     
     .product-header h3 {
-      font-size: 1.2rem;
+      font-size: 1.15rem;
+      color: #1e293b;
       display: flex;
       align-items: center;
       gap: 10px;
+      margin: 0;
     }
     
     .plan-badge {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       padding: 4px 10px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.1);
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
     
-    .plan-badge.pro { background: rgba(34, 211, 238, 0.2); color: #22d3ee; }
-    .plan-badge.enterprise { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+    .plan-badge.free { background: #f1f5f9; color: #64748b; }
+    .plan-badge.starter { background: #dbeafe; color: #2563eb; }
+    .plan-badge.pro { background: #d1fae5; color: #059669; }
+    .plan-badge.enterprise { background: #ede9fe; color: #7c3aed; }
     
     .product-description {
-      color: rgba(255,255,255,0.6);
+      color: #64748b;
       font-size: 0.9rem;
       margin-bottom: 20px;
     }
@@ -105,12 +119,12 @@
       justify-content: space-between;
       margin-bottom: 8px;
       font-size: 0.85rem;
-      color: rgba(255,255,255,0.7);
+      color: #64748b;
     }
     
     .usage-bar {
       height: 8px;
-      background: rgba(255,255,255,0.1);
+      background: #e2e8f0;
       border-radius: 999px;
       overflow: hidden;
     }
@@ -147,7 +161,7 @@
     
     .action-btn.primary {
       background: #22d3ee;
-      color: #000;
+      color: #fff;
     }
     
     .action-btn.primary.contract {
@@ -156,24 +170,25 @@
     }
     
     .action-btn.secondary {
-      background: rgba(255,255,255,0.05);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.15);
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
     }
     
     .action-btn:hover {
       transform: translateY(-1px);
-      filter: brightness(1.1);
+      filter: brightness(1.05);
     }
     
     /* Stats Grid */
     .stats-section {
-      margin-bottom: 48px;
+      margin-bottom: 32px;
     }
     
     .stats-section h2 {
-      font-size: 1.3rem;
-      margin-bottom: 20px;
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+      color: #1e293b;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -181,45 +196,49 @@
     
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap: 16px;
     }
     
     .stat-card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: #fff;
+      border: 1px solid #e2e8f0;
       border-radius: 12px;
       padding: 24px;
       text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
     }
     
     .stat-value {
-      font-size: 2.2rem;
+      font-size: 2rem;
       font-weight: 700;
       margin-bottom: 4px;
     }
     
-    .stat-value.invoice { color: #22d3ee; }
-    .stat-value.contract { color: #8b5cf6; }
-    .stat-value.success { color: #10b981; }
+    .stat-value.invoice { color: #0891b2; }
+    .stat-value.contract { color: #7c3aed; }
+    .stat-value.success { color: #059669; }
+    .stat-value.neutral { color: #1e293b; }
     
     .stat-label {
-      color: rgba(255,255,255,0.6);
+      color: #64748b;
       font-size: 0.85rem;
     }
     
     /* Activity Section */
     .activity-section {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: #fff;
+      border: 1px solid #e2e8f0;
       border-radius: 16px;
       padding: 28px;
-      margin-bottom: 48px;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
     }
     
     .activity-section h2 {
-      font-size: 1.2rem;
-      margin-bottom: 20px;
+      font-size: 1.15rem;
+      margin-bottom: 16px;
+      color: #1e293b;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -236,7 +255,7 @@
       align-items: center;
       gap: 16px;
       padding: 14px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid #f1f5f9;
     }
     
     .activity-item:last-child {
@@ -253,8 +272,8 @@
       font-size: 1.1rem;
     }
     
-    .activity-icon.invoice { background: rgba(34, 211, 238, 0.15); }
-    .activity-icon.contract { background: rgba(139, 92, 246, 0.15); }
+    .activity-icon.invoice { background: #ecfeff; }
+    .activity-icon.contract { background: #f3e8ff; }
     
     .activity-details {
       flex: 1;
@@ -264,17 +283,18 @@
       display: block;
       font-size: 0.95rem;
       font-weight: 500;
+      color: #1e293b;
     }
     
     .activity-details span {
-      color: rgba(255,255,255,0.5);
+      color: #94a3b8;
       font-size: 0.8rem;
     }
     
     .empty-state {
       text-align: center;
       padding: 40px;
-      color: rgba(255,255,255,0.5);
+      color: #94a3b8;
     }
     
     .empty-state .icon {
@@ -284,8 +304,8 @@
     
     /* Upgrade Banner */
     .upgrade-banner {
-      background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(34, 211, 238, 0.15) 100%);
-      border: 1px solid rgba(139, 92, 246, 0.3);
+      background: linear-gradient(135deg, #f3e8ff 0%, #ecfeff 100%);
+      border: 1px solid #c4b5fd;
       border-radius: 16px;
       padding: 32px;
       display: flex;
@@ -295,18 +315,19 @@
     }
     
     .upgrade-banner h3 {
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       margin-bottom: 6px;
+      color: #1e293b;
     }
     
     .upgrade-banner p {
-      color: rgba(255,255,255,0.7);
+      color: #64748b;
       font-size: 0.95rem;
       margin: 0;
     }
     
     .upgrade-btn {
-      background: linear-gradient(135deg, #8b5cf6, #22d3ee);
+      background: linear-gradient(135deg, #8b5cf6, #06b6d4);
       color: #fff;
       padding: 14px 28px;
       border-radius: 8px;
@@ -423,128 +444,130 @@
   </div>
 </header>
 
-<section class="dashboard-hero hero">
-  <h1>Willkommen zurück{% if user.name %}, {{ user.name.split()[0] }}{% endif %}!</h1>
-  <p>Ihre SBS Produkte und Aktivitäten auf einen Blick.</p>
-</section>
-
-<main class="dashboard-content">
-  
-  <!-- Produkt-Karten -->
-  <div class="products-grid">
-    
-    <!-- KI-Rechnungsverarbeitung -->
-    <div class="product-card invoice">
-      <div class="product-header">
-        <h3>🧾 KI-Rechnungsverarbeitung</h3>
-        <span class="plan-badge {% if invoice_plan == 'Professional' %}pro{% elif invoice_plan == 'Enterprise' %}enterprise{% endif %}">{{ invoice_plan }}</span>
-      </div>
-      <p class="product-description">Automatische Extraktion, DATEV-Export & Finance Copilot</p>
-      
-      <div class="usage-section">
-        <div class="usage-header">
-          <span>Verbrauch diesen Monat</span>
-          <span>{{ invoice_used }} / {{ invoice_limit }}</span>
-        </div>
-        <div class="usage-bar">
-          <div class="usage-fill invoice {% if invoice_percent > 90 %}critical{% elif invoice_percent > 70 %}warning{% endif %}" 
-               style="width: {{ invoice_percent }}%"></div>
-        </div>
-      </div>
-      
-      <div class="quick-actions">
-        <a href="/history" class="action-btn primary">📤 Rechnungen hochladen</a>
-        <a href="/copilot" class="action-btn secondary">🤖 Copilot</a>
-        <a href="/analytics" class="action-btn secondary">📊 Analytics</a>
-      </div>
-    </div>
-    
-    <!-- KI-Vertragsanalyse -->
-    <div class="product-card contract">
-      <div class="product-header">
-        <h3>📋 KI-Vertragsanalyse</h3>
-        <span class="plan-badge {% if contract_plan == 'Professional' %}pro{% elif contract_plan == 'Enterprise' %}enterprise{% endif %}">{{ contract_plan }}</span>
-      </div>
-      <p class="product-description">Risiko-Erkennung, Fristen-Management & Vertragsregister</p>
-      
-      <div class="usage-section">
-        <div class="usage-header">
-          <span>Verbrauch diesen Monat</span>
-          <span>{{ contract_used }} / {{ contract_limit }}</span>
-        </div>
-        <div class="usage-bar">
-          <div class="usage-fill contract {% if contract_percent > 90 %}critical{% elif contract_percent > 70 %}warning{% endif %}" 
-               style="width: {{ contract_percent }}%"></div>
-        </div>
-      </div>
-      
-      <div class="quick-actions">
-        <a href="https://contract.sbsdeutschland.com/upload" class="action-btn primary contract">📤 Vertrag analysieren</a>
-        <a href="https://contract.sbsdeutschland.com/history" class="action-btn secondary">📁 Verlauf</a>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Statistiken -->
-  <section class="stats-section">
-    <h2>📈 Ihre Kennzahlen</h2>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-value invoice">{{ total_invoices }}</div>
-        <div class="stat-label">Rechnungen verarbeitet</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value contract">{{ total_contracts }}</div>
-        <div class="stat-label">Verträge analysiert</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value success">{{ time_saved }}h</div>
-        <div class="stat-label">Zeit gespart</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">€{{ money_saved }}</div>
-        <div class="stat-label">Kosten gespart</div>
-      </div>
-    </div>
+<div class="dashboard-main">
+  <section class="dashboard-hero">
+    <h1>Willkommen zurück{% if user.name %}, {{ user.name.split()[0] }}{% endif %}!</h1>
+    <p>Ihre SBS Produkte und Aktivitäten auf einen Blick.</p>
   </section>
-  
-  <!-- Letzte Aktivitäten -->
-  <section class="activity-section">
-    <h2>🕐 Letzte Aktivitäten</h2>
-    {% if recent_activity %}
-    <ul class="activity-list">
-      {% for activity in recent_activity %}
-      <li class="activity-item">
-        <div class="activity-icon {{ activity.type }}">
-          {% if activity.type == 'invoice' %}🧾{% else %}📋{% endif %}
+
+  <main class="dashboard-content">
+    
+    <!-- Produkt-Karten -->
+    <div class="products-grid">
+      
+      <!-- KI-Rechnungsverarbeitung -->
+      <div class="product-card invoice">
+        <div class="product-header">
+          <h3>🧾 KI-Rechnungsverarbeitung</h3>
+          <span class="plan-badge {% if invoice_plan == 'Professional' %}pro{% elif invoice_plan == 'Enterprise' %}enterprise{% elif invoice_plan == 'Starter' %}starter{% else %}free{% endif %}">{{ invoice_plan }}</span>
         </div>
-        <div class="activity-details">
-          <strong>{{ activity.title }}</strong>
-          <span>{{ activity.time }}</span>
+        <p class="product-description">Automatische Extraktion, DATEV-Export & Finance Copilot</p>
+        
+        <div class="usage-section">
+          <div class="usage-header">
+            <span>Verbrauch diesen Monat</span>
+            <span>{{ invoice_used }} / {{ invoice_limit }}</span>
+          </div>
+          <div class="usage-bar">
+            <div class="usage-fill invoice {% if invoice_percent > 90 %}critical{% elif invoice_percent > 70 %}warning{% endif %}" 
+                 style="width: {{ invoice_percent }}%"></div>
+          </div>
         </div>
-      </li>
-      {% endfor %}
-    </ul>
-    {% else %}
-    <div class="empty-state">
-      <div class="icon">📭</div>
-      <p>Noch keine Aktivitäten. Laden Sie Ihre erste Rechnung oder Ihren ersten Vertrag hoch!</p>
+        
+        <div class="quick-actions">
+          <a href="/history" class="action-btn primary">📤 Rechnungen hochladen</a>
+          <a href="/copilot" class="action-btn secondary">🤖 Copilot</a>
+          <a href="/analytics" class="action-btn secondary">📊 Analytics</a>
+        </div>
+      </div>
+      
+      <!-- KI-Vertragsanalyse -->
+      <div class="product-card contract">
+        <div class="product-header">
+          <h3>📋 KI-Vertragsanalyse</h3>
+          <span class="plan-badge {% if contract_plan == 'Professional' %}pro{% elif contract_plan == 'Enterprise' %}enterprise{% elif contract_plan == 'Starter' %}starter{% else %}free{% endif %}">{{ contract_plan }}</span>
+        </div>
+        <p class="product-description">Risiko-Erkennung, Fristen-Management & Vertragsregister</p>
+        
+        <div class="usage-section">
+          <div class="usage-header">
+            <span>Verbrauch diesen Monat</span>
+            <span>{{ contract_used }} / {{ contract_limit }}</span>
+          </div>
+          <div class="usage-bar">
+            <div class="usage-fill contract {% if contract_percent > 90 %}critical{% elif contract_percent > 70 %}warning{% endif %}" 
+                 style="width: {{ contract_percent }}%"></div>
+          </div>
+        </div>
+        
+        <div class="quick-actions">
+          <a href="https://contract.sbsdeutschland.com/upload" class="action-btn primary contract">📤 Vertrag analysieren</a>
+          <a href="https://contract.sbsdeutschland.com/history" class="action-btn secondary">📁 Verlauf</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Statistiken -->
+    <section class="stats-section">
+      <h2>📈 Ihre Kennzahlen</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value invoice">{{ total_invoices }}</div>
+          <div class="stat-label">Rechnungen verarbeitet</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value contract">{{ total_contracts }}</div>
+          <div class="stat-label">Verträge analysiert</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value success">{{ time_saved }}h</div>
+          <div class="stat-label">Zeit gespart</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value neutral">€{{ money_saved }}</div>
+          <div class="stat-label">Kosten gespart</div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Letzte Aktivitäten -->
+    <section class="activity-section">
+      <h2>🕐 Letzte Aktivitäten</h2>
+      {% if recent_activity %}
+      <ul class="activity-list">
+        {% for activity in recent_activity %}
+        <li class="activity-item">
+          <div class="activity-icon {{ activity.type }}">
+            {% if activity.type == 'invoice' %}🧾{% else %}📋{% endif %}
+          </div>
+          <div class="activity-details">
+            <strong>{{ activity.title }}</strong>
+            <span>{{ activity.time }}</span>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-state">
+        <div class="icon">📭</div>
+        <p>Noch keine Aktivitäten. Laden Sie Ihre erste Rechnung oder Ihren ersten Vertrag hoch!</p>
+      </div>
+      {% endif %}
+    </section>
+    
+    <!-- Upgrade Banner -->
+    {% if show_upgrade %}
+    <div class="upgrade-banner">
+      <div>
+        <h3>🚀 Mehr erreichen mit dem Bundle</h3>
+        <p>Kombinieren Sie Rechnungs- und Vertragsanalyse und sparen Sie 20% gegenüber Einzelkauf.</p>
+      </div>
+      <a href="/checkout?product=bundle&plan=professional" class="upgrade-btn">Jetzt upgraden →</a>
     </div>
     {% endif %}
-  </section>
-  
-  <!-- Upgrade Banner -->
-  {% if show_upgrade %}
-  <div class="upgrade-banner">
-    <div>
-      <h3>🚀 Mehr erreichen mit dem Bundle</h3>
-      <p>Kombinieren Sie Rechnungs- und Vertragsanalyse und sparen Sie 20% gegenüber Einzelkauf.</p>
-    </div>
-    <a href="/checkout?product=bundle&plan=professional" class="upgrade-btn">Jetzt upgraden →</a>
-  </div>
-  {% endif %}
-  
-</main>
+    
+  </main>
+</div>
 
 <footer class="footer">
   <div class="footer-grid">
@@ -569,8 +592,6 @@
         <li><a href="/loesungen/vertragsanalyse/">KI-Vertragsanalyse</a></li>
         <li><a href="/copilot">Finance Copilot</a></li>
         <li><a href="/static/preise/">Preise & Pakete</a></li>
-        <li><a href="/static/landing/integrationen.html">Integrationen</a></li>
-        <li><a href="/static/landing/security.html">Sicherheit</a></li>
       </ul>
     </div>
 
@@ -580,7 +601,6 @@
         <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
         <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
         <li><a href="/static/landing/support.html">Support</a></li>
-        <li><a href="/static/landing/kunden.html">Kunden</a></li>
       </ul>
     </div>
 
