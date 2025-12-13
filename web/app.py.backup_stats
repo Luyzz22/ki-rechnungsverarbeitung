@@ -427,8 +427,6 @@ async def process_invoices_background(job_id: str):
         "exported_files": exported_files,
         "completed_at": datetime.now().isoformat(),
         "total_amount": stats.get('total_brutto', 0) if stats else 0,
-        "total_netto": stats.get("total_netto", 0) if stats else 0,
-        "total_mwst": stats.get("total_mwst", 0) if stats else 0,
         "total": total_files,
         "successful": len(results)
     })
