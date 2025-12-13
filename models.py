@@ -82,6 +82,17 @@ class Invoice:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Invoice':
         """Erstellt Invoice aus Dictionary"""
+
+        # 🔧 MAPPING: Deutsch → Englisch
+        
+        # Deutsche Felder umwandeln
+        mapped_data = {}
+        for key, value in data.items():
+            new_key = field_mapping.get(key, key)
+            mapped_data[new_key] = value
+        
+        data = mapped_data
+
         # Status-Enums konvertieren
         if 'status' in data and isinstance(data['status'], str):
             try:
