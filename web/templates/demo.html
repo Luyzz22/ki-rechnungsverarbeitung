@@ -410,6 +410,7 @@
     }
 
     .demo-progress-icon {
+      animation: spin 2s linear infinite;
       font-size: 3rem;
       margin-bottom: 16px;
       text-align: center;
@@ -535,6 +536,10 @@
         opacity: 0;
       }
     }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -622,7 +627,8 @@
       </div>
 
       <div id="progressBox" class="demo-card" style="display: none;">
-        <div class="demo-progress-icon">⚙️</div>
+        <div class="demo-progress-icon" style="display:inline-block;">⚙️</div>
+        <div style="text-align:center;margin-top:10px;"><span style="background:linear-gradient(90deg,#003856,#ffb900);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:600;">KI analysiert Ihre Rechnungen...</span></div>
         <h2 class="demo-card-title">Verarbeitung läuft …</h2>
         <div class="demo-progress-bar">
           <div id="progressFill" class="demo-progress-fill"></div>

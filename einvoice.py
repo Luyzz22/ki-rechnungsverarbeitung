@@ -102,7 +102,15 @@ class XRechnungGenerator:
         self._add_monetary_summation(settlement, invoice_data)
         
         # Line Items (BG-25)
-        for item in invoice_data.get('artikel', []):
+        # Parse artikel if JSON string
+        artikel = invoice_data.get('artikel', [])
+        if isinstance(artikel, str):
+            import json
+            try:
+                artikel = json.loads(artikel)
+            except:
+                artikel = []
+        for item in artikel:
             self._add_line_item(transaction, item, invoice_data.get('waehrung', 'EUR'))
         
         # Generate XML string
