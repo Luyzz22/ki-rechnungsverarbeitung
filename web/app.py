@@ -366,7 +366,7 @@ async def process_invoices_background(job_id: str):
             return ("error", str(e), pdf_path.name)
     
     # Use ThreadPoolExecutor for parallel processing
-    max_workers = min(8, total_files) if total_files > 0 else 1
+    max_workers = min(12, total_files) if total_files > 0 else 1
     
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_pdf = {executor.submit(process_single_pdf, pdf): pdf for pdf in pdf_files}
