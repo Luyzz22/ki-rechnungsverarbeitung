@@ -280,13 +280,13 @@
       border: none;
       border-radius: 999px;
       padding: 0.55rem 1.1rem;
-      background: linear-gradient(135deg, #FFB900, #e5a700);
+      background: linear-gradient(135deg, #22c55e, #14b8a6);
       color: #f9fafb;
       font-size: 0.85rem;
       font-weight: 500;
       cursor: pointer;
       box-shadow:
-        0 12px 30px rgba(255, 185, 0, 0.45),
+        0 12px 30px rgba(5, 150, 105, 0.45),
         0 0 0 1px rgba(15, 23, 42, 0.7);
       transition:
         transform 120ms ease-out,
@@ -298,14 +298,14 @@
       transform: translateY(-1px);
       filter: brightness(1.06);
       box-shadow:
-        0 16px 40px rgba(255, 185, 0, 0.6),
+        0 16px 40px rgba(5, 150, 105, 0.6),
         0 0 0 1px rgba(15, 23, 42, 0.8);
     }
 
     .ai-upload-button:active {
       transform: translateY(0);
       box-shadow:
-        0 8px 18px rgba(255, 185, 0, 0.45),
+        0 8px 18px rgba(5, 150, 105, 0.45),
         0 0 0 1px rgba(15, 23, 42, 0.9);
     }
 
@@ -604,8 +604,8 @@
       </div>
       <h2 class="ai-upload-title">Belege fallen lassen. Erkenntnisse einsammeln.</h2>
       <p class="ai-upload-subtitle">
-        Ziehen Sie PDF-, PNG-, JPG-Rechnungen oder XRechnung/ZUGFeRD-Dateien hierher – unsere KI extrahiert Beträge,
-        Lieferanten und Zahlungsziele in Sekunden. XRechnung & ZUGFeRD Import/Export inklusive.
+        Ziehen Sie PDF-, PNG- oder JPG-Rechnungen hierher – unsere KI extrahiert Beträge,
+        Lieferanten und Zahlungsziele in Sekunden und übergibt die Daten an Ihr ERP.
       </p>
     </header>
 
@@ -630,7 +630,7 @@
           <input
             id="upload-file-input"
             type="file"
-            accept=".pdf,.png,.jpg,.jpeg,.xml"
+            accept=".pdf,.png,.jpg,.jpeg"
             multiple
             hidden
           />
@@ -647,7 +647,6 @@
           <span class="ai-pill">Auto-Posting in ERP</span>
           <span class="ai-pill">Anomalie-Erkennung</span>
           <span class="ai-pill">Audit-Log ready</span>
-          <span class="ai-pill">XRechnung & ZUGFeRD</span>
         </div>
         <div id="upload-status" class="ai-upload-status"></div>
       </footer>
