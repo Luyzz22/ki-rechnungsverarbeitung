@@ -1,538 +1,60 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <title>Team & Rollen · SBS KI-Rechnungsverarbeitung</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="icon" href="/static/favicon.ico" />
-  <link rel="stylesheet" href="/static/css/design-tokens.css" />
-  <link rel="stylesheet" href="/static/css/components.css" />
-  <link rel="stylesheet" href="/static/css/main.css" />
+  <meta charset="utf-8">
+  <title>Team · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/static/css/design-tokens.css">
+  <link rel="stylesheet" href="/static/css/main.css">
   <style>
-    .team-hero {
-      background: linear-gradient(135deg, #003856 0%, #00507a 100%);
-      color: white;
-      padding: 40px 24px;
-      text-align: center;
-    }
-    .team-hero h1 { margin: 0; font-size: 2rem; }
-    .team-hero p { margin: 8px 0 0; opacity: 0.9; }
-    
-    .team-container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
-    
-    .team-card {
-      background: var(--sbs-card-bg, #fff);
-      border: 1px solid var(--sbs-border, #e5e7eb);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
-    }
-    .team-card h2 {
-      margin: 0 0 16px;
-      font-size: 1.1rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .team-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    
-    .team-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .team-table th, .team-table td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid var(--sbs-border, #e5e7eb);
-    }
-    .team-table th {
-      background: var(--sbs-bg-soft, #f9fafb);
-      font-weight: 600;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--sbs-muted, #6b7280);
-    }
-    .team-table tr:hover { background: var(--sbs-bg-soft, #f9fafb); }
-    
-    .role-pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      margin: 2px;
-    }
-    
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-    .status-active { background: #dcfce7; color: #15803d; }
-    .status-inactive { background: #fee2e2; color: #991b1b; }
-    
-    .btn-primary {
-      background: linear-gradient(135deg, #003856 0%, #00507a 100%);
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-    .btn-primary:hover { opacity: 0.9; }
-    
-    .btn-secondary {
-      background: var(--sbs-bg-soft, #f3f4f6);
-      color: var(--sbs-dark, #111827);
-      border: 1px solid var(--sbs-border, #e5e7eb);
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      cursor: pointer;
-    }
-    .btn-secondary:hover { background: #e5e7eb; }
-    
-    .btn-danger {
-      background: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #fecaca;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      cursor: pointer;
-    }
-    .btn-danger:hover { background: #fecaca; }
-    
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-overlay.active { display: flex; }
-    
-    .modal {
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      max-width: 500px;
-      width: 90%;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    .modal h3 { margin: 0 0 16px; }
-    
-    .form-group { margin-bottom: 16px; }
-    .form-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 500;
-      font-size: 0.9rem;
-    }
-    .form-group input, .form-group select {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--sbs-border, #e5e7eb);
-      border-radius: 8px;
-      font-size: 0.95rem;
-    }
-    
-    .invite-link-box {
-      background: var(--sbs-bg-soft, #f9fafb);
-      border: 1px solid var(--sbs-border, #e5e7eb);
-      border-radius: 8px;
-      padding: 12px;
-      font-family: monospace;
-      font-size: 0.8rem;
-      word-break: break-all;
-      margin-top: 12px;
-    }
-    
-    .empty-state {
-      text-align: center;
-      padding: 40px;
-      color: var(--sbs-muted, #6b7280);
-    }
-    
-    /* admin-only wird global via .hidden Klasse gesteuert */
+    .team-container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+    .team-card { background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 24px; }
+    .member-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid #f1f5f9; }
+    .member-row:last-child { border: none; }
+    .member-info { display: flex; align-items: center; gap: 16px; }
+    .member-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #003856, #00507a); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+    .btn-invite { background: linear-gradient(135deg, #FFB900, #e6a600); color: #003856; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; }
   </style>
 </head>
 <body>
-  {% include 'partials/header.html' %}
+{% include 'partials/header.html' %}
 
-  <section class="team-hero">
-    <h1>👥 Team & Rollen</h1>
-    <p>Verwalten Sie Ihr Team und deren Berechtigungen</p>
-  </section>
-
-  <div class="team-container">
-    <!-- Team-Mitglieder -->
-    <div class="team-card">
-      <div class="team-header">
-        <h2>👥 Team-Mitglieder</h2>
-        <button class="btn-primary admin-only hidden" onclick="openInviteModal()">+ Mitglied einladen</button>
+<div class="team-container">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+    <h1>👥 Team-Verwaltung</h1>
+    <button class="btn-invite" onclick="inviteUser()">+ Mitglied einladen</button>
+  </div>
+  
+  <div class="team-card">
+    <h3 style="margin-bottom: 20px;">Mitglieder</h3>
+    
+    <div class="member-row">
+      <div class="member-info">
+        <div class="member-avatar">{{ user.name[0] if user else 'U' }}</div>
+        <div>
+          <strong>{{ user.name if user else 'User' }}</strong>
+          <br><small style="color: #64748b;">{{ user.email if user else '' }} · Admin</small>
+        </div>
       </div>
-      
-      <table class="team-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>E-Mail</th>
-            <th>Rollen</th>
-            <th>Status</th>
-            <th class="admin-only hidden">Aktionen</th>
-          </tr>
-        </thead>
-        <tbody id="teamTableBody">
-          <tr><td colspan="5" class="empty-state">Lade Team-Mitglieder...</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Offene Einladungen -->
-    <div class="team-card admin-only hidden" id="invitationsCard">
-      <h2>📧 Offene Einladungen</h2>
-      <table class="team-table">
-        <thead>
-          <tr>
-            <th>E-Mail</th>
-            <th>Rolle</th>
-            <th>Eingeladen von</th>
-            <th>Datum</th>
-            <th>Aktionen</th>
-          </tr>
-        </thead>
-        <tbody id="invitationsTableBody">
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Rollen-Übersicht -->
-    <div class="team-card">
-      <h2>🎭 Verfügbare Rollen</h2>
-      <div id="rolesGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
-      </div>
+      <span style="color: #10b981;">👑 Owner</span>
     </div>
   </div>
-
-  <!-- Einladungs-Modal -->
-  <div class="modal-overlay" id="inviteModal">
-    <div class="modal">
-      <h3>👤 Neues Mitglied einladen</h3>
-      <form id="inviteForm" onsubmit="sendInvite(event)">
-        <div class="form-group">
-          <label>E-Mail-Adresse</label>
-          <input type="email" id="inviteEmail" required placeholder="kollege@firma.de" />
-        </div>
-        <div class="form-group">
-          <label>Rolle</label>
-          <select id="inviteRole"></select>
-        </div>
-        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
-          <button type="button" class="btn-secondary" onclick="closeInviteModal()">Abbrechen</button>
-          <button type="submit" class="btn-primary">Einladung senden</button>
-        </div>
-      </form>
-      <div id="inviteResult" style="display:none;"></div>
-    </div>
+  
+  <div class="team-card" style="text-align: center; padding: 48px;">
+    <p style="color: #64748b; margin-bottom: 16px;">Team-Features sind in Ihrem aktuellen Plan verfügbar.</p>
+    <button class="btn-invite" onclick="inviteUser()">+ Erstes Mitglied einladen</button>
   </div>
+</div>
 
-  <!-- Rollen-Modal -->
-  <div class="modal-overlay" id="rolesModal">
-    <div class="modal">
-      <h3>🎭 Rollen bearbeiten</h3>
-      <p id="rolesModalUser" style="color: var(--sbs-muted); margin-bottom: 16px;"></p>
-      <div id="rolesCheckboxes"></div>
-      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
-        <button type="button" class="btn-secondary" onclick="closeRolesModal()">Schließen</button>
-      </div>
-    </div>
-  </div>
+<script>
+function inviteUser() {
+  var email = prompt('E-Mail-Adresse des neuen Mitglieds:');
+  if (email) {
+    alert('Einladung an ' + email + ' wird versendet... (Demo)');
+  }
+}
+</script>
 
-  {% include 'partials/footer.html' %}
-
-  <script>
-    let allRoles = [];
-    let isAdmin = false;
-    let currentUserId = null;
-
-    async function loadTeam() {
-      try {
-        // User-Info laden
-        const userRes = await fetch('/api/user');
-        const userData = await userRes.json();
-        isAdmin = userData.is_admin;
-        
-        if (isAdmin) {
-          document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
-          document.getElementById('invitationsCard').style.display = 'block';
-          loadInvitations();
-        }
-
-        // Team laden
-        const res = await fetch('/api/team/members');
-        const data = await res.json();
-        
-        if (data.error) {
-          document.getElementById('teamTableBody').innerHTML = 
-            `<tr><td colspan="5" class="empty-state">${data.error}</td></tr>`;
-          return;
-        }
-
-        allRoles = data.roles || [];
-        renderMembers(data.members || []);
-        renderRoles(allRoles);
-        populateRoleSelect();
-        
-      } catch (e) {
-        console.error(e);
-        document.getElementById('teamTableBody').innerHTML = 
-          `<tr><td colspan="5" class="empty-state">Fehler beim Laden</td></tr>`;
-      }
-    }
-
-    function renderMembers(members) {
-      const tbody = document.getElementById('teamTableBody');
-      
-      if (!members.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Keine Team-Mitglieder gefunden</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = members.map(m => {
-        const roles = m.roles ? m.roles.split(',') : [];
-        const colors = m.role_colors ? m.role_colors.split(',') : [];
-        
-        const rolePills = roles.map((r, i) => 
-          `<span class="role-pill" style="background: ${colors[i] || '#e5e7eb'}20; color: ${colors[i] || '#6b7280'};">${r}</span>`
-        ).join('') || '<span style="color: #9ca3af;">Keine Rolle</span>';
-
-        const statusClass = m.is_active ? 'status-active' : 'status-inactive';
-        const statusText = m.is_active ? 'Aktiv' : 'Inaktiv';
-
-        const adminBadge = m.is_admin ? '<span class="role-pill" style="background: #fef3c7; color: #92400e;">👑 System-Admin</span>' : '';
-
-        const actions = isAdmin ? `
-          <td>
-            <button class="btn-secondary" onclick="openRolesModal(${m.id}, '${m.name || m.email}')" style="margin-right: 8px;">Rollen</button>
-            ${m.is_admin ? '' : `<button class="btn-danger" onclick="toggleStatus(${m.id}, ${m.is_active})">${m.is_active ? 'Deaktivieren' : 'Aktivieren'}</button>`}
-          </td>
-        ` : '';
-
-        return `
-          <tr>
-            <td><strong>${m.name || '-'}</strong> ${adminBadge}</td>
-            <td>${m.email}</td>
-            <td>${rolePills}</td>
-            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-            ${actions}
-          </tr>
-        `;
-      }).join('');
-    }
-
-    function renderRoles(roles) {
-      const grid = document.getElementById('rolesGrid');
-      grid.innerHTML = roles.map(r => `
-        <div style="background: var(--sbs-bg-soft); border-radius: 8px; padding: 16px;">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <span class="role-pill" style="background: ${r.color}20; color: ${r.color};">${r.display_name}</span>
-          </div>
-          <p style="font-size: 0.85rem; color: var(--sbs-muted); margin: 0;">${r.description}</p>
-        </div>
-      `).join('');
-    }
-
-    function populateRoleSelect() {
-      const select = document.getElementById('inviteRole');
-      select.innerHTML = allRoles.map(r => 
-        `<option value="${r.id}">${r.display_name}</option>`
-      ).join('');
-    }
-
-    async function loadInvitations() {
-      try {
-        const res = await fetch('/api/team/invitations');
-        const data = await res.json();
-        
-        const tbody = document.getElementById('invitationsTableBody');
-        const invitations = data.invitations || [];
-        
-        if (!invitations.length) {
-          tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Keine offenen Einladungen</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = invitations.map(inv => `
-          <tr>
-            <td>${inv.email}</td>
-            <td><span class="role-pill">${inv.role_name}</span></td>
-            <td>${inv.invited_by_name}</td>
-            <td>${inv.created_at ? inv.created_at.slice(0, 10) : '-'}</td>
-            <td>
-              <button class="btn-danger" onclick="cancelInvitation(${inv.id})">Zurückziehen</button>
-            </td>
-          </tr>
-        `).join('');
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    // Modals
-    function openInviteModal() {
-      document.getElementById('inviteModal').classList.add('active');
-      document.getElementById('inviteResult').style.display = 'none';
-      document.getElementById('inviteForm').style.display = 'block';
-    }
-
-    function closeInviteModal() {
-      document.getElementById('inviteModal').classList.remove('active');
-      document.getElementById('inviteEmail').value = '';
-    }
-
-    async function sendInvite(e) {
-      e.preventDefault();
-      const email = document.getElementById('inviteEmail').value;
-      const roleId = document.getElementById('inviteRole').value;
-
-      try {
-        const res = await fetch('/api/team/invite', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({email, role_id: parseInt(roleId)})
-        });
-        const data = await res.json();
-
-        const resultDiv = document.getElementById('inviteResult');
-        document.getElementById('inviteForm').style.display = 'none';
-        resultDiv.style.display = 'block';
-
-        if (data.success) {
-          resultDiv.innerHTML = `
-            <div style="text-align: center;">
-              <div style="font-size: 3rem; margin-bottom: 16px;">✅</div>
-              <p><strong>Einladung erstellt!</strong></p>
-              <p style="font-size: 0.9rem; color: var(--sbs-muted);">Teilen Sie diesen Link:</p>
-              <div class="invite-link-box">${data.invite_link}</div>
-              <button class="btn-primary" style="margin-top: 16px;" onclick="copyInviteLink('${data.invite_link}')">Link kopieren</button>
-            </div>
-          `;
-          loadInvitations();
-        } else {
-          resultDiv.innerHTML = `
-            <div style="text-align: center; color: #991b1b;">
-              <div style="font-size: 3rem; margin-bottom: 16px;">❌</div>
-              <p>${data.error}</p>
-              <button class="btn-secondary" style="margin-top: 16px;" onclick="document.getElementById('inviteForm').style.display='block'; document.getElementById('inviteResult').style.display='none';">Erneut versuchen</button>
-            </div>
-          `;
-        }
-      } catch (e) {
-        alert('Fehler: ' + e.message);
-      }
-    }
-
-    function copyInviteLink(link) {
-      navigator.clipboard.writeText(link);
-      alert('Link in Zwischenablage kopiert!');
-    }
-
-    async function cancelInvitation(id) {
-      if (!confirm('Einladung wirklich zurückziehen?')) return;
-      
-      try {
-        await fetch(`/api/team/invitation/${id}`, {method: 'DELETE'});
-        loadInvitations();
-      } catch (e) {
-        alert('Fehler: ' + e.message);
-      }
-    }
-
-    function openRolesModal(userId, userName) {
-      currentUserId = userId;
-      document.getElementById('rolesModalUser').textContent = `Rollen für: ${userName}`;
-      document.getElementById('rolesModal').classList.add('active');
-      
-      // Aktuelle Rollen laden
-      fetch('/api/team/members').then(r => r.json()).then(data => {
-        const member = data.members.find(m => m.id === userId);
-        const currentRoleIds = member && member.role_ids ? member.role_ids.split(',').map(Number) : [];
-        
-        const checkboxes = allRoles.map(r => `
-          <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer;">
-            <input type="checkbox" ${currentRoleIds.includes(r.id) ? 'checked' : ''} 
-                   onchange="toggleRole(${userId}, ${r.id}, this.checked)" />
-            <span class="role-pill" style="background: ${r.color}20; color: ${r.color};">${r.display_name}</span>
-            <span style="font-size: 0.8rem; color: var(--sbs-muted);">${r.description}</span>
-          </label>
-        `).join('');
-        
-        document.getElementById('rolesCheckboxes').innerHTML = checkboxes;
-      });
-    }
-
-    function closeRolesModal() {
-      document.getElementById('rolesModal').classList.remove('active');
-      currentUserId = null;
-    }
-
-    async function toggleRole(userId, roleId, checked) {
-      try {
-        await fetch('/api/team/role', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            user_id: userId,
-            role_id: roleId,
-            action: checked ? 'add' : 'remove'
-          })
-        });
-        loadTeam();
-      } catch (e) {
-        alert('Fehler: ' + e.message);
-      }
-    }
-
-    async function toggleStatus(userId, currentStatus) {
-      const action = currentStatus ? 'deaktivieren' : 'aktivieren';
-      if (!confirm(`User wirklich ${action}?`)) return;
-      
-      try {
-        await fetch(`/api/team/member/${userId}/status`, {
-          method: 'PUT',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({is_active: !currentStatus})
-        });
-        loadTeam();
-      } catch (e) {
-        alert('Fehler: ' + e.message);
-      }
-    }
-
-    // Init
-    document.addEventListener('DOMContentLoaded', loadTeam);
-  </script>
-<!-- SBS Chat Widget -->
-<link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
-<script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
+{% include 'partials/footer.html' %}
 </body>
 </html>

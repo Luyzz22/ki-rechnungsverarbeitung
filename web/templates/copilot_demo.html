@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finance Copilot Demo · KI-Finanzanalyse – SBS Deutschland</title>
+  <meta name="description" content="Testen Sie den KI-Finance Copilot kostenlos. Fragen Sie Ihre Finanzdaten in natürlicher Sprache.">
+  
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/css/design-tokens.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="stylesheet" href="/static/css/main.css">
+  
+  <style>
+    /* ===== Copilot Demo Styles ===== */
+    
+    .demo-hero {
+      background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+      color: white;
+      padding: 60px 24px;
+      text-align: center;
+    }
+    
+    .demo-hero h1 {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    
+    .demo-hero p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      max-width: 600px;
+      margin: 0 auto 24px;
+    }
+    
+    .demo-badge {
+      display: inline-block;
+      background: rgba(255,185,0,0.2);
+      border: 1px solid rgba(255,185,0,0.5);
+      color: #FFB900;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    
+    .demo-badge.admin {
+      background: rgba(16,185,129,0.2);
+      border-color: rgba(16,185,129,0.5);
+      color: #10b981;
+    }
+    
+    /* Chat Container */
+    .copilot-section {
+      background: #f8fafc;
+      padding: 40px 24px 60px;
+    }
+    
+    .copilot-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .chat-container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .chat-header {
+      background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+      color: white;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .chat-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #FFB900, #f59e0b);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .chat-info h3 {
+      margin: 0 0 4px;
+      font-size: 1.2rem;
+    }
+    
+    .chat-info p {
+      margin: 0;
+      opacity: 0.8;
+      font-size: 0.9rem;
+    }
+    
+    .chat-status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+    
+    .chat-status-dot {
+      width: 10px;
+      height: 10px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    /* Messages */
+    .chat-messages {
+      min-height: 350px;
+      max-height: 500px;
+      overflow-y: auto;
+      padding: 24px;
+      background: #fafbfc;
+    }
+    
+    .message {
+      margin-bottom: 20px;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .message-user {
+      display: flex;
+      justify-content: flex-end;
+    }
+    
+    .message-user .message-content {
+      background: linear-gradient(135deg, #003856, #00507a);
+      color: white;
+      border-radius: 16px 16px 4px 16px;
+      padding: 14px 18px;
+      max-width: 75%;
+      font-size: 0.95rem;
+    }
+    
+    .message-bot {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .message-bot .bot-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #FFB900, #f59e0b);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 20px;
+    }
+    
+    .message-bot .message-content {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px 16px 16px 16px;
+      padding: 18px 22px;
+      max-width: 85%;
+      line-height: 1.7;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    
+    .message-bot .message-content h4 {
+      color: #003856;
+      margin: 20px 0 10px;
+      font-size: 0.95rem;
+      border-bottom: 2px solid #FFB900;
+      padding-bottom: 6px;
+      display: inline-block;
+    }
+    
+    .message-bot .message-content h4:first-child {
+      margin-top: 0;
+    }
+    
+    .message-bot .message-content ul {
+      margin: 12px 0;
+      padding-left: 0;
+      list-style: none;
+    }
+    
+    .message-bot .message-content li {
+      margin: 10px 0;
+      padding-left: 24px;
+      position: relative;
+    }
+    
+    .message-bot .message-content li::before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: #FFB900;
+      font-weight: bold;
+    }
+    
+    .message-bot .message-content strong {
+      color: #003856;
+    }
+    
+    /* Typing Indicator */
+    .typing-indicator {
+      display: flex;
+      gap: 6px;
+      padding: 14px 18px;
+    }
+    
+    .typing-indicator span {
+      width: 10px;
+      height: 10px;
+      background: #94a3b8;
+      border-radius: 50%;
+      animation: typing 1.4s infinite;
+    }
+    
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    
+    @keyframes typing {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+    
+    /* Input Area */
+    .chat-input-area {
+      padding: 20px 24px;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+    }
+    
+    .chat-input-wrapper {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .chat-input {
+      flex: 1;
+      background: #f8fafc;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+    
+    .chat-input::placeholder {
+      color: #9ca3af;
+    }
+    
+    .chat-input:focus {
+      border-color: #003856;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(0,56,86,0.1);
+    }
+    
+    .chat-input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-send {
+      background: linear-gradient(135deg, #FFB900, #e6a600);
+      color: #003856;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 28px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .btn-send:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255,185,0,0.4);
+    }
+    
+    .btn-send:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    /* Suggestions */
+    .suggestions {
+      margin-top: 16px;
+    }
+    
+    .suggestions-title {
+      color: #6b7280;
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+    }
+    
+    .suggestion-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .suggestion-chip {
+      background: #f1f5f9;
+      border: 1px solid #e5e7eb;
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .suggestion-chip:hover {
+      background: #003856;
+      border-color: #003856;
+      color: white;
+    }
+    
+    /* Info Cards */
+    .info-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 32px;
+    }
+    
+    .info-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    
+    .info-card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #003856, #00507a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    
+    .info-card h4 {
+      margin: 0 0 6px;
+      color: #003856;
+      font-size: 1rem;
+    }
+    
+    .info-card p {
+      margin: 0;
+      color: #6b7280;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    
+    /* Trust Badges */
+    .trust-section {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 40px;
+      flex-wrap: wrap;
+    }
+    
+    .trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+    
+    .trust-badge-icon {
+      font-size: 1.3rem;
+    }
+    
+    /* Limit Overlay */
+    .limit-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    
+    .limit-overlay.show {
+      display: flex;
+    }
+    
+    .limit-card {
+      background: white;
+      border-radius: 20px;
+      padding: 48px;
+      max-width: 450px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    .limit-card-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
+    
+    .limit-card h2 {
+      margin: 0 0 12px;
+      color: #003856;
+    }
+    
+    .limit-card p {
+      color: #6b7280;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    
+    .limit-card .btn-register {
+      display: inline-block;
+      background: linear-gradient(135deg, #FFB900, #e6a600);
+      color: #003856;
+      padding: 14px 32px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    
+    .limit-card .btn-register:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(255,185,0,0.4);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .demo-hero h1 {
+        font-size: 1.8rem;
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .chat-input-wrapper {
+        flex-direction: column;
+      }
+      
+      .btn-send {
+        justify-content: center;
+      }
+      
+      .info-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+{% include 'partials/header_public.html' %}
+
+<!-- Hero Section -->
+<section class="demo-hero">
+  <h1>🤖 Finance Copilot</h1>
+  <p>Fragen Sie Ihre Finanzdaten in natürlicher Sprache. Erhalten Sie sofort CFO-taugliche Analysen und Handlungsempfehlungen.</p>
+  <div class="demo-badge" id="usageBadge">
+    🎯 <span id="usageText">3 von 3 Demo-Fragen verfügbar</span>
+  </div>
+</section>
+
+<!-- Chat Section -->
+<section class="copilot-section">
+  <div class="copilot-container">
+    
+    <!-- Chat Container -->
+    <div class="chat-container">
+      <div class="chat-header">
+        <div class="chat-avatar">🤖</div>
+        <div class="chat-info">
+          <h3>Finance Copilot</h3>
+          <p>KI-gestützte Finanzanalyse • Demo-Modus</p>
+        </div>
+        <div class="chat-status">
+          <span class="chat-status-dot"></span>
+          Online
+        </div>
+      </div>
+      
+      <div class="chat-messages" id="chatMessages">
+        <div class="message message-bot">
+          <div class="bot-avatar">🤖</div>
+          <div class="message-content">
+            <p><strong>Willkommen beim Finance Copilot!</strong> 👋</p>
+            <p>In dieser Demo können Sie den Copilot mit <strong>Beispiel-Finanzdaten</strong> eines fiktiven Unternehmens testen. Stellen Sie Fragen wie:</p>
+            <ul>
+              <li>"Wo können wir nächstes Quartal sparen?"</li>
+              <li>"Wer sind unsere Top 5 Lieferanten?"</li>
+              <li>"Gibt es auffällige Kostenentwicklungen?"</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <div class="chat-input-area">
+        <div class="chat-input-wrapper">
+          <input 
+            type="text" 
+            class="chat-input" 
+            id="chatInput" 
+            placeholder="Stellen Sie Ihre Frage..." 
+            onkeypress="if(event.key==='Enter')sendQuestion()"
+          >
+          <button class="btn-send" id="sendBtn" onclick="sendQuestion()">
+            Fragen →
+          </button>
+        </div>
+        
+        <div class="suggestions">
+          <div class="suggestions-title">Beispielfragen:</div>
+          <div class="suggestion-chips">
+            <span class="suggestion-chip" onclick="askSuggestion(this)">Wo können wir Kosten senken?</span>
+            <span class="suggestion-chip" onclick="askSuggestion(this)">Top 5 Lieferanten</span>
+            <span class="suggestion-chip" onclick="askSuggestion(this)">Auffällige Entwicklungen?</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Info Cards -->
+    <div class="info-cards">
+      <div class="info-card">
+        <div class="info-card-icon">ℹ️</div>
+        <div>
+          <h4>Demo-Modus</h4>
+          <p>Diese Demo verwendet Beispiel-Finanzdaten. Registrieren Sie sich kostenlos, um Ihre eigenen Rechnungen zu analysieren.</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-icon">🚀</div>
+        <div>
+          <h4>Voller Zugang</h4>
+          <p>Mit einem kostenlosen Account erhalten Sie Zugang zu allen Features inkl. eigener Datenanalyse.</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Trust Badges -->
+    <div class="trust-section">
+      <div class="trust-badge">
+        <span class="trust-badge-icon">🔒</span>
+        DSGVO-konform
+      </div>
+      <div class="trust-badge">
+        <span class="trust-badge-icon">🇩🇪</span>
+        Server in Deutschland
+      </div>
+      <div class="trust-badge">
+        <span class="trust-badge-icon">🤖</span>
+        GPT-4 Powered
+      </div>
+      <div class="trust-badge">
+        <span class="trust-badge-icon">⚡</span>
+        Echtzeit-Analyse
+      </div>
+    </div>
+    
+  </div>
+</section>
+
+{% include 'partials/footer.html' %}
+
+<!-- Limit Overlay -->
+<div class="limit-overlay" id="limitOverlay">
+  <div class="limit-card">
+    <div class="limit-card-icon">🎯</div>
+    <h2>Demo-Limit erreicht</h2>
+    <p>Sie haben heute bereits 3 kostenlose Fragen gestellt. Registrieren Sie sich für unbegrenzten Zugang zum Finance Copilot.</p>
+    <a href="/register?source=copilot-demo" class="btn-register">Kostenlos registrieren</a>
+  </div>
+</div>
+
+<script>
+// State
+let remaining = 3;
+
+// Load usage from API
+async function loadUsage() {
+  try {
+    const resp = await fetch('/api/demo/copilot/status');
+    const data = await resp.json();
+    remaining = data.remaining || 0;
+    updateUsageDisplay(data.is_admin);
+    
+    if (!data.allowed && !data.is_admin) {
+      document.getElementById('limitOverlay').classList.add('show');
+      document.getElementById('chatInput').disabled = true;
+      document.getElementById('sendBtn').disabled = true;
+    }
+  } catch (e) {
+    console.error('Usage load error:', e);
+  }
+}
+
+function updateUsageDisplay(isAdmin) {
+  const badge = document.getElementById('usageBadge');
+  const text = document.getElementById('usageText');
+  
+  if (isAdmin || remaining >= 999) {
+    text.textContent = 'Admin: Unbegrenzte Fragen';
+    badge.classList.add('admin');
+  } else if (remaining <= 0) {
+    text.textContent = '0 von 3 Demo-Fragen verfügbar';
+    badge.style.background = 'rgba(239,68,68,0.2)';
+    badge.style.borderColor = 'rgba(239,68,68,0.5)';
+    badge.style.color = '#ef4444';
+  } else {
+    text.textContent = `${remaining} von 3 Demo-Fragen verfügbar`;
+  }
+}
+
+// Send question
+async function sendQuestion() {
+  const input = document.getElementById('chatInput');
+  const question = input.value.trim();
+  
+  if (!question) return;
+  if (remaining <= 0 && remaining < 999) {
+    document.getElementById('limitOverlay').classList.add('show');
+    return;
+  }
+  
+  // Add user message
+  addMessage(question, 'user');
+  input.value = '';
+  
+  // Show typing indicator
+  const typingId = showTyping();
+  
+  // Disable input
+  input.disabled = true;
+  document.getElementById('sendBtn').disabled = true;
+  
+  try {
+    const resp = await fetch('/api/demo/copilot/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: question })
+    });
+    
+    const data = await resp.json();
+    
+    // Remove typing indicator
+    hideTyping(typingId);
+    
+    if (data.error) {
+      if (data.error.includes('Limit')) {
+        document.getElementById('limitOverlay').classList.add('show');
+      } else {
+        addMessage('❌ ' + data.error, 'bot');
+      }
+    } else {
+      addMessage(data.answer || 'Keine Antwort erhalten.', 'bot');
+      
+      // Update remaining
+      if (data.remaining !== undefined) {
+        remaining = data.remaining;
+        updateUsageDisplay(remaining >= 999);
+      }
+      
+      // Add suggestions if provided
+      if (data.suggested_questions && data.suggested_questions.length > 0) {
+        updateSuggestions(data.suggested_questions);
+      }
+    }
+  } catch (e) {
+    hideTyping(typingId);
+    addMessage('❌ Fehler bei der Verbindung. Bitte versuchen Sie es erneut.', 'bot');
+  }
+  
+  // Re-enable input
+  input.disabled = false;
+  document.getElementById('sendBtn').disabled = false;
+  input.focus();
+}
+
+function addMessage(content, type) {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'message message-' + type;
+  
+  if (type === 'user') {
+    div.innerHTML = `<div class="message-content">${escapeHtml(content)}</div>`;
+  } else {
+    // Format bot message (convert markdown-like to HTML)
+    const formatted = formatBotMessage(content);
+    div.innerHTML = `
+      <div class="bot-avatar">🤖</div>
+      <div class="message-content">${formatted}</div>
+    `;
+  }
+  
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function formatBotMessage(text) {
+  // Convert **bold** to <strong>
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // Convert headers
+  text = text.replace(/^### (.*?)$/gm, '<h4>$1</h4>');
+  text = text.replace(/^## (.*?)$/gm, '<h4>$1</h4>');
+  // Convert numbered lists
+  text = text.replace(/^\d+\.\s+(.*?)$/gm, '<li>$1</li>');
+  // Convert bullet points
+  text = text.replace(/^[-•]\s+(.*?)$/gm, '<li>$1</li>');
+  // Wrap consecutive li in ul
+  text = text.replace(/(<li>.*?<\/li>\n?)+/gs, '<ul>$&</ul>');
+  // Convert newlines to paragraphs
+  text = text.replace(/\n\n/g, '</p><p>');
+  // Single newlines to br
+  text = text.replace(/\n/g, '<br>');
+  // Wrap in p if no tags
+  if (!text.startsWith('<')) {
+    text = '<p>' + text + '</p>';
+  }
+  return text;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+let typingCounter = 0;
+function showTyping() {
+  const id = 'typing-' + (++typingCounter);
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'message message-bot';
+  div.id = id;
+  div.innerHTML = `
+    <div class="bot-avatar">🤖</div>
+    <div class="message-content">
+      <div class="typing-indicator">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  `;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return id;
+}
+
+function hideTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function askSuggestion(el) {
+  document.getElementById('chatInput').value = el.textContent;
+  sendQuestion();
+}
+
+function updateSuggestions(suggestions) {
+  const chips = document.querySelector('.suggestion-chips');
+  chips.innerHTML = suggestions.slice(0, 3).map(s => 
+    `<span class="suggestion-chip" onclick="askSuggestion(this)">${escapeHtml(s)}</span>`
+  ).join('');
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', loadUsage);
+</script>
+
+</body>
+</html>
