@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Preise · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/static/css/design-tokens.css">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .pricing-hero { text-align: center; padding: 60px 24px; background: linear-gradient(180deg, #f8fafc 0%, #fff 100%); }
+    .pricing-hero h1 { font-size: 2.5rem; margin-bottom: 16px; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; max-width: 1100px; margin: -40px auto 60px; padding: 0 24px; }
+    .pricing-card { background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 2px solid transparent; transition: all 0.3s; }
+    .pricing-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+    .pricing-card.popular { border-color: #FFB900; position: relative; }
+    .pricing-card.popular::before { content: "Beliebt"; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #FFB900; color: #003856; padding: 4px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+    .plan-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+    .plan-price { font-size: 3rem; font-weight: 700; color: #003856; }
+    .plan-price span { font-size: 1rem; color: #64748b; font-weight: 400; }
+    .plan-features { list-style: none; padding: 0; margin: 24px 0; }
+    .plan-features li { padding: 12px 0; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px; }
+    .plan-features li:last-child { border: none; }
+    .btn-plan { display: block; width: 100%; padding: 16px; border-radius: 10px; font-weight: 600; text-align: center; text-decoration: none; transition: all 0.2s; }
+    .btn-plan.primary { background: linear-gradient(135deg, #FFB900, #e6a600); color: #003856; }
+    .btn-plan.secondary { background: #f1f5f9; color: #334155; }
+    .btn-plan:hover { transform: scale(1.02); }
+  </style>
+</head>
+<body>
+{% include 'partials/header.html' %}
+
+<section class="pricing-hero">
+  <h1>Transparente Preise</h1>
+  <p style="color: #64748b; font-size: 1.1rem;">Wählen Sie den Plan, der zu Ihrem Unternehmen passt</p>
+</section>
+
+<div class="pricing-grid">
+  <div class="pricing-card">
+    <div class="plan-name">Starter</div>
+    <div class="plan-price">69€ <span>/ Monat</span></div>
+    <ul class="plan-features">
+      <li>✅ 100 Rechnungen / Monat</li>
+      <li>✅ Excel & CSV Export</li>
+      <li>✅ E-Mail Support</li>
+      <li>✅ 1 Benutzer</li>
+      <li>❌ DATEV Export</li>
+      <li>❌ API-Zugang</li>
+    </ul>
+    <a href="/register?plan=starter" class="btn-plan secondary">Jetzt starten</a>
+  </div>
+  
+  <div class="pricing-card popular">
+    <div class="plan-name">Professional</div>
+    <div class="plan-price">179€ <span>/ Monat</span></div>
+    <ul class="plan-features">
+      <li>✅ 500 Rechnungen / Monat</li>
+      <li>✅ Alle Export-Formate</li>
+      <li>✅ DATEV Export</li>
+      <li>✅ Priority Support</li>
+      <li>✅ 5 Benutzer</li>
+      <li>✅ API-Zugang</li>
+    </ul>
+    <a href="/register?plan=professional" class="btn-plan primary">Jetzt starten</a>
+  </div>
+  
+  <div class="pricing-card">
+    <div class="plan-name">Enterprise</div>
+    <div class="plan-price">449€+ <span>/ Monat</span></div>
+    <ul class="plan-features">
+      <li>✅ Unbegrenzte Rechnungen</li>
+      <li>✅ Alle Export-Formate</li>
+      <li>✅ Dedicated Support</li>
+      <li>✅ Unbegrenzte Benutzer</li>
+      <li>✅ Custom Integration</li>
+      <li>✅ SLA Garantie</li>
+    </ul>
+    <a href="/kontakt" class="btn-plan secondary">Kontakt aufnehmen</a>
+  </div>
+</div>
+
+{% include 'partials/footer.html' %}
+</body>
+</html>

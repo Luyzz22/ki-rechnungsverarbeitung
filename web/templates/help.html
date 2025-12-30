@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Hilfe & FAQ · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/static/css/design-tokens.css">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .help-container { max-width: 800px; margin: 0 auto; padding: 40px 24px; }
+    .faq-item { background: white; border-radius: 12px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .faq-question { padding: 20px 24px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .faq-question:hover { background: #f8fafc; }
+    .faq-answer { padding: 0 24px 20px; color: #64748b; display: none; }
+    .faq-item.open .faq-answer { display: block; }
+    .faq-item.open .faq-icon { transform: rotate(180deg); }
+    .contact-box { background: linear-gradient(135deg, #003856, #00507a); color: white; border-radius: 16px; padding: 32px; margin-top: 40px; text-align: center; }
+  </style>
+</head>
+<body>
+{% include 'partials/header.html' %}
+
+<div class="help-container">
+  <h1 style="margin-bottom: 32px;">❓ Hilfe & FAQ</h1>
+  
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-question">Wie lade ich Rechnungen hoch? <span class="faq-icon">▼</span></div>
+    <div class="faq-answer">Klicken Sie auf "Upload" in der Navigation und ziehen Sie Ihre PDF-Rechnungen in den Upload-Bereich oder klicken Sie um Dateien auszuwählen.</div>
+  </div>
+  
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-question">Welche Dateiformate werden unterstützt? <span class="faq-icon">▼</span></div>
+    <div class="faq-answer">Wir unterstützen PDF-Dateien sowie E-Rechnungen im ZUGFeRD und XRechnung Format. Die maximale Dateigröße beträgt 10 MB.</div>
+  </div>
+  
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-question">Wie funktioniert der DATEV-Export? <span class="faq-icon">▼</span></div>
+    <div class="faq-answer">Nach der Verarbeitung können Sie unter "Verlauf" den DATEV-Export auswählen. Die Datei ist kompatibel mit DATEV Unternehmen Online.</div>
+  </div>
+  
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-question">Sind meine Daten sicher? <span class="faq-icon">▼</span></div>
+    <div class="faq-answer">Ja! Alle Daten werden DSGVO-konform auf deutschen Servern gespeichert und mit SSL/TLS verschlüsselt übertragen.</div>
+  </div>
+  
+  <div class="contact-box">
+    <h2>Noch Fragen?</h2>
+    <p style="opacity: 0.9; margin: 16px 0;">Unser Support-Team hilft Ihnen gerne weiter.</p>
+    <a href="mailto:support@sbsdeutschland.com" style="display: inline-block; background: #FFB900; color: #003856; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">✉️ support@sbsdeutschland.com</a>
+  </div>
+</div>
+
+{% include 'partials/footer.html' %}
+</body>
+</html>

@@ -1006,24 +1006,17 @@ def verify_user(email: str, password: str) -> dict:
     return None
 
 def get_user_by_id(user_id: int) -> dict:
-    """Get user by ID inkl. Admin-Status"""
+    """Get user by ID"""
     conn = get_connection()
     cursor = conn.cursor()
     
-    cursor.execute('SELECT id, email, name, company, is_admin, totp_enabled FROM users WHERE id = ?', (user_id,))
+    cursor.execute('SELECT id, email, name, company FROM users WHERE id = ?', (user_id,))
     row = cursor.fetchone()
     
     conn.close()
     
     if row:
-        return {
-            'id': row[0], 
-            'email': row[1], 
-            'name': row[2], 
-            'company': row[3],
-            'is_admin': bool(row[4]) if row[4] is not None else False,
-            'totp_enabled': bool(row[5]) if row[5] is not None else False
-        }
+        return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
     return None
 
 def email_exists(email: str) -> bool:
@@ -1120,24 +1113,17 @@ def verify_user(email: str, password: str) -> dict:
     return None
 
 def get_user_by_id(user_id: int) -> dict:
-    """Get user by ID inkl. Admin-Status"""
+    """Get user by ID"""
     conn = get_connection()
     cursor = conn.cursor()
     
-    cursor.execute('SELECT id, email, name, company, is_admin, totp_enabled FROM users WHERE id = ?', (user_id,))
+    cursor.execute('SELECT id, email, name, company FROM users WHERE id = ?', (user_id,))
     row = cursor.fetchone()
     
     conn.close()
     
     if row:
-        return {
-            'id': row[0], 
-            'email': row[1], 
-            'name': row[2], 
-            'company': row[3],
-            'is_admin': bool(row[4]) if row[4] is not None else False,
-            'totp_enabled': bool(row[5]) if row[5] is not None else False
-        }
+        return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
     return None
 
 def email_exists(email: str) -> bool:
