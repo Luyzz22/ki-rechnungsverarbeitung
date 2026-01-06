@@ -5504,3 +5504,16 @@ async def preview_datev_export(request: Request, invoice_id: int):
         "buchungen": preview,
         "detected_account": converter.detect_account(invoice),
     })
+
+
+# =============================================================================
+# E-RECHNUNG 2025 LANDING PAGE
+# =============================================================================
+
+@app.get("/e-rechnung-2025", response_class=HTMLResponse, tags=["Landing"])
+@app.get("/e-rechnung", response_class=HTMLResponse, tags=["Landing"])
+@app.get("/xrechnung", response_class=HTMLResponse, tags=["Landing"])
+@app.get("/zugferd", response_class=HTMLResponse, tags=["Landing"])
+async def erechnung_landing(request: Request):
+    """E-Rechnung 2025 Landing Page - SEO optimiert"""
+    return templates.TemplateResponse("landing_erechnung.html", {"request": request})
