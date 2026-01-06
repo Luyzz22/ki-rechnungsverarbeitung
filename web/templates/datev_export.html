@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DATEV Export - SBS Invoice Processing</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root { --sbs-blue: #003856; --sbs-yellow: #FFB900; --datev-green: #006341; }
+        body { background-color: #f8f9fa; }
+        .navbar { background: linear-gradient(135deg, var(--sbs-blue) 0%, #00537d 100%); }
+        .datev-header {
+            background: linear-gradient(135deg, var(--datev-green) 0%, #004d31 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        .datev-logo { font-size: 2rem; font-weight: 700; }
+        .config-card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .format-option {
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .format-option:hover { border-color: var(--datev-green); background: #f8fff8; }
+        .format-option.selected { 
+            border-color: var(--datev-green); 
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        }
+        .format-option i { font-size: 2.5rem; color: var(--datev-green); }
+        .invoice-select-row { cursor: pointer; }
+        .invoice-select-row:hover { background: #f0f7ff; }
+        .export-btn {
+            background: var(--datev-green);
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .export-btn:hover { background: #004d31; }
+        .preview-section { background: #f8f9fa; border-radius: 8px; padding: 1rem; }
+        .buchung-preview { font-family: monospace; font-size: 0.9rem; }
+        .step-badge {
+            width: 32px; height: 32px;
+            background: var(--datev-green);
+            color: white;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <i class="bi bi-receipt me-2"></i>SBS Invoice
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/approvals"><i class="bi bi-check2-square me-1"></i>Freigaben</a>
+                <a class="nav-link" href="/history"><i class="bi bi-clock-history me-1"></i>Historie</a>
+                <a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- DATEV Header -->
+        <div class="datev-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="datev-logo mb-2">
+                        <i class="bi bi-box-arrow-up-right me-2"></i>DATEV Export
+                    </div>
+                    <p class="mb-0 opacity-75">
+                        Exportieren Sie freigegebene Rechnungen für DATEV Unternehmen Online oder DATEV Rechnungswesen
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-light text-dark fs-6">
+                        <i class="bi bi-check-circle me-1"></i>{{ invoices|length }} Rechnungen verfügbar
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Konfiguration -->
+            <div class="col-lg-4 mb-4">
+                <div class="card config-card h-100">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><span class="step-badge">1</span>Konfiguration</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Beraternummer</label>
+                            <input type="text" class="form-control" id="beraterNummer" 
+                                   value="12345" placeholder="5-stellig">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Mandantennummer</label>
+                            <input type="text" class="form-control" id="mandantenNummer" 
+                                   value="00001" placeholder="5-stellig">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Kontenrahmen</label>
+                            <select class="form-select" id="kontenrahmen">
+                                <option value="SKR03" selected>SKR03 (Standard)</option>
+                                <option value="SKR04">SKR04</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Wirtschaftsjahr Beginn</label>
+                            <input type="date" class="form-control" id="wjBeginn" 
+                                   value="2025-01-01">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Format Auswahl -->
+            <div class="col-lg-8 mb-4">
+                <div class="card config-card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><span class="step-badge">2</span>Export-Format wählen</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="format-option selected" data-format="csv" onclick="selectFormat('csv')">
+                                    <i class="bi bi-file-earmark-spreadsheet d-block mb-2"></i>
+                                    <h6 class="mb-1">EXTF/CSV</h6>
+                                    <small class="text-muted">Für DATEV Rechnungswesen<br>Buchungsdatenservice</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="format-option" data-format="xml" onclick="selectFormat('xml')">
+                                    <i class="bi bi-file-earmark-code d-block mb-2"></i>
+                                    <h6 class="mb-1">XML</h6>
+                                    <small class="text-muted">Für DATEV Unternehmen Online<br>Rechnungsdatenservice 1.0</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="format-option" data-format="zip" onclick="selectFormat('zip')">
+                                    <i class="bi bi-file-earmark-zip d-block mb-2"></i>
+                                    <h6 class="mb-1">ZIP-Paket</h6>
+                                    <small class="text-muted">XML + PDF-Belege<br>Komplett-Upload</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rechnungsauswahl -->
+                <div class="card config-card mt-4">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><span class="step-badge">3</span>Rechnungen auswählen</h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary me-2" onclick="selectAll()">
+                                Alle auswählen
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="selectNone()">
+                                Keine
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th style="width: 40px;"></th>
+                                        <th>Rechnung</th>
+                                        <th>Lieferant</th>
+                                        <th>Datum</th>
+                                        <th class="text-end">Betrag</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for inv in invoices %}
+                                    <tr class="invoice-select-row" onclick="toggleInvoice({{ inv.id }})">
+                                        <td>
+                                            <input type="checkbox" class="form-check-input invoice-cb" 
+                                                   value="{{ inv.id }}" data-amount="{{ inv.betrag_brutto }}">
+                                        </td>
+                                        <td class="fw-medium">{{ inv.rechnungsnummer or 'N/A' }}</td>
+                                        <td>{{ (inv.rechnungsaussteller or 'Unbekannt')[:30] }}</td>
+                                        <td>{{ inv.datum or '-' }}</td>
+                                        <td class="text-end">{{ "%.2f"|format(inv.betrag_brutto or 0) }} €</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4 text-muted">
+                                            Keine freigegebenen Rechnungen vorhanden
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-bold" id="selectedCount">0</span> ausgewählt
+                                <span class="mx-2">|</span>
+                                Summe: <span class="fw-bold" id="selectedSum">0,00</span> €
+                            </div>
+                            <button class="btn export-btn text-white" onclick="startExport()" id="exportBtn" disabled>
+                                <i class="bi bi-download me-2"></i>DATEV Export starten
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Cards -->
+        <div class="row mt-2">
+            <div class="col-md-4">
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6><i class="bi bi-info-circle text-primary me-2"></i>EXTF/CSV Format</h6>
+                        <small class="text-muted">
+                            Standard-Format für DATEV Rechnungswesen. Importieren Sie die Datei über 
+                            "Stapelverarbeitung" oder den Buchungsdatenservice.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6><i class="bi bi-info-circle text-primary me-2"></i>XML Format</h6>
+                        <small class="text-muted">
+                            Für DATEV Unternehmen Online. Unterstützt strukturierte Belegdaten 
+                            gemäß Rechnungsdatenservice 1.0.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6><i class="bi bi-info-circle text-primary me-2"></i>ZIP-Paket</h6>
+                        <small class="text-muted">
+                            Komplettes Paket mit XML-Daten und PDF-Belegen. Ideal für den 
+                            automatisierten Upload via Belegtransfer.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Progress Modal -->
+    <div class="modal fade" id="exportModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center py-5">
+                    <div id="exportProgress">
+                        <div class="spinner-border text-success mb-3" style="width: 3rem; height: 3rem;"></div>
+                        <h5>Export wird erstellt...</h5>
+                        <p class="text-muted">Bitte warten Sie einen Moment</p>
+                    </div>
+                    <div id="exportSuccess" style="display: none;">
+                        <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
+                        <h5 class="mt-3">Export erfolgreich!</h5>
+                        <p class="text-muted" id="exportInfo"></p>
+                        <a href="#" id="downloadLink" class="btn btn-success btn-lg mt-2">
+                            <i class="bi bi-download me-2"></i>Download
+                        </a>
+                    </div>
+                    <div id="exportError" style="display: none;">
+                        <i class="bi bi-x-circle text-danger" style="font-size: 4rem;"></i>
+                        <h5 class="mt-3">Export fehlgeschlagen</h5>
+                        <p class="text-danger" id="errorMessage"></p>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedFormat = 'csv';
+
+        function selectFormat(format) {
+            selectedFormat = format;
+            document.querySelectorAll('.format-option').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`[data-format="${format}"]`).classList.add('selected');
+        }
+
+        function toggleInvoice(id) {
+            const cb = document.querySelector(`.invoice-cb[value="${id}"]`);
+            cb.checked = !cb.checked;
+            updateSelection();
+        }
+
+        function selectAll() {
+            document.querySelectorAll('.invoice-cb').forEach(cb => cb.checked = true);
+            updateSelection();
+        }
+
+        function selectNone() {
+            document.querySelectorAll('.invoice-cb').forEach(cb => cb.checked = false);
+            updateSelection();
+        }
+
+        function updateSelection() {
+            const checked = document.querySelectorAll('.invoice-cb:checked');
+            let sum = 0;
+            checked.forEach(cb => sum += parseFloat(cb.dataset.amount) || 0);
+            
+            document.getElementById('selectedCount').textContent = checked.length;
+            document.getElementById('selectedSum').textContent = sum.toLocaleString('de-DE', {minimumFractionDigits: 2});
+            document.getElementById('exportBtn').disabled = checked.length === 0;
+        }
+
+        async function startExport() {
+            const modal = new bootstrap.Modal(document.getElementById('exportModal'));
+            modal.show();
+            
+            document.getElementById('exportProgress').style.display = 'block';
+            document.getElementById('exportSuccess').style.display = 'none';
+            document.getElementById('exportError').style.display = 'none';
+            
+            const invoiceIds = Array.from(document.querySelectorAll('.invoice-cb:checked'))
+                                   .map(cb => parseInt(cb.value));
+            
+            const data = {
+                invoice_ids: invoiceIds,
+                format: selectedFormat,
+                berater_nummer: document.getElementById('beraterNummer').value,
+                mandanten_nummer: document.getElementById('mandantenNummer').value,
+                kontenrahmen: document.getElementById('kontenrahmen').value,
+                wirtschaftsjahr_beginn: document.getElementById('wjBeginn').value
+            };
+            
+            try {
+                const response = await fetch('/api/datev/export', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('exportProgress').style.display = 'none';
+                    document.getElementById('exportSuccess').style.display = 'block';
+                    document.getElementById('exportInfo').textContent = 
+                        `${result.invoice_count} Rechnungen als ${result.format.toUpperCase()} exportiert`;
+                    document.getElementById('downloadLink').href = result.download_url;
+                } else {
+                    throw new Error(result.error || 'Export fehlgeschlagen');
+                }
+            } catch (error) {
+                document.getElementById('exportProgress').style.display = 'none';
+                document.getElementById('exportError').style.display = 'block';
+                document.getElementById('errorMessage').textContent = error.message;
+            }
+        }
+
+        // Init
+        updateSelection();
+    </script>
+</body>
+</html>
