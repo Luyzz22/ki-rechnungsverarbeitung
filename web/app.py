@@ -1,6 +1,6 @@
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from database import create_password_reset_token, verify_reset_token, reset_password
-# FIXED (was broken): from database import create_password_reset_token, verify_reset_token, reset_password\nfrom fastapi.responses import HTMLResponse, RedirectResponse
+# FIXED (was broken): from database import create_password_reset_token, verify_reset_token, reset_password\nfrom fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi import FastAPI, Request, Form
 #!/usr/bin/env python3
 from dotenv import load_dotenv
@@ -21,7 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException, BackgroundTasks
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 import logging
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
@@ -61,7 +61,7 @@ logger.addHandler(console_handler)
 
 # App Logger
 app_logger = logging.getLogger('invoice_app')
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 templates = Jinja2Templates(directory="web/templates")
@@ -93,7 +93,7 @@ from exceptions import (
     InvoiceAppError, NotFoundError, ValidationError,
     ProcessingError, AuthError, QuotaExceededError
 )
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from logging_utils import LogContext, log_job_event, log_error_with_context
 from models import Invoice, InvoiceStatus, Job, JobStatus
 from schemas import JobStatusResponse, JobResultsResponse, UserResponse, SuccessResponse, ErrorResponse
@@ -796,7 +796,7 @@ def require_login(request: Request):
       - None, wenn eingeloggt
       - RedirectResponse auf /login, wenn nicht
     """
-    from fastapi.responses import RedirectResponse
+    from fastapi.responses import FileResponse, RedirectResponse
 
     # Session auslesen
     try:
@@ -818,7 +818,7 @@ def require_login(request: Request):
 
 def require_admin(request: Request):
     """Prüft ob User Admin ist. Gibt None wenn OK, sonst Redirect/Error."""
-    from fastapi.responses import RedirectResponse
+    from fastapi.responses import FileResponse, RedirectResponse
     from database import get_connection
     
     # Erst Login prüfen
@@ -851,7 +851,7 @@ def is_admin_user(user_id: int) -> bool:
     return bool(row and row[0])
 
     if not user_id:
-        from fastapi.responses import RedirectResponse
+        from fastapi.responses import FileResponse, RedirectResponse
         next_url = request.url.path
         return RedirectResponse(url=f"/login?next={next_url}", status_code=303)
     return None
@@ -1426,7 +1426,7 @@ def require_login(request: Request):
       - None, wenn eingeloggt
       - RedirectResponse auf /login, wenn nicht
     """
-    from fastapi.responses import RedirectResponse
+    from fastapi.responses import FileResponse, RedirectResponse
 
     # Session auslesen
     try:
@@ -1753,7 +1753,7 @@ async def login_submit(request: Request):
     - setzt Session
     - leitet auf gewünschte Seite weiter
     """
-    from fastapi.responses import RedirectResponse
+    from fastapi.responses import FileResponse, RedirectResponse
     # Rate Limiting: 5 Login-Versuche pro Minute
     check_rate_limit(request, "auth")
     from database import verify_user
@@ -2969,7 +2969,7 @@ async def download_invoice(request: Request, subscription_id: int):
     
     pdf_bytes = generate_invoice_pdf(invoice_data)
     
-    from fastapi.responses import Response
+    from fastapi.responses import FileResponse, Response
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
@@ -5287,3 +5287,220 @@ async def delete_approval_rule(rule_id: int, request: Request):
     manager.delete_rule(rule_id)
     
     return JSONResponse({"success": True})
+
+
+# =============================================================================
+# DATEV EXPORT ENDPOINTS
+# =============================================================================
+
+import sys
+sys.path.insert(0, '/var/www/invoice-app')
+from datev import (
+    DatevExportConfig, Kontenrahmen, export_invoices_to_datev_csv,
+    export_invoices_to_datev_xml, export_invoices_to_datev_zip,
+    InvoiceToBuchungConverter
+)
+from datetime import date as date_type
+
+@app.get("/datev", response_class=HTMLResponse, tags=["DATEV"])
+async def datev_export_page(request: Request):
+    """DATEV Export Konfiguration"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return RedirectResponse(url="/login", status_code=303)
+    
+    user_info = get_user_info(user_id)
+    
+    # Get invoices for export
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, rechnungsnummer, datum, rechnungsaussteller, 
+               betrag_brutto, mwst_satz, waehrung, status
+        FROM invoices 
+        WHERE status = 'approved'
+        ORDER BY datum DESC
+        LIMIT 100
+    """)
+    invoices = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    return templates.TemplateResponse("datev_export.html", {
+        "request": request,
+        "user": user_info,
+        "invoices": invoices,
+        "kontenrahmen": ["SKR03", "SKR04"],
+    })
+
+
+@app.post("/api/datev/export", tags=["DATEV"])
+async def export_to_datev(request: Request):
+    """Exportiert ausgewählte Rechnungen nach DATEV"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    
+    invoice_ids = data.get('invoice_ids', [])
+    export_format = data.get('format', 'csv')  # csv, xml, zip
+    berater_nr = data.get('berater_nummer', '12345')
+    mandanten_nr = data.get('mandanten_nummer', '00001')
+    kontenrahmen = data.get('kontenrahmen', 'SKR03')
+    wj_beginn = data.get('wirtschaftsjahr_beginn', f'{datetime.now().year}-01-01')
+    
+    if not invoice_ids:
+        return JSONResponse({"error": "Keine Rechnungen ausgewählt"}, status_code=400)
+    
+    # Load invoices
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    placeholders = ','.join(['?' for _ in invoice_ids])
+    cursor.execute(f"""
+        SELECT * FROM invoices WHERE id IN ({placeholders})
+    """, invoice_ids)
+    
+    invoices = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    if not invoices:
+        return JSONResponse({"error": "Keine Rechnungen gefunden"}, status_code=404)
+    
+    # Parse wirtschaftsjahr
+    try:
+        wj_parts = wj_beginn.split('-')
+        wj_date = date_type(int(wj_parts[0]), int(wj_parts[1]), int(wj_parts[2]))
+    except:
+        wj_date = date_type(datetime.now().year, 1, 1)
+    
+    # Create config
+    config = DatevExportConfig(
+        berater_nummer=berater_nr,
+        mandanten_nummer=mandanten_nr,
+        wirtschaftsjahr_beginn=wj_date,
+        kontenrahmen=Kontenrahmen.SKR03 if kontenrahmen == 'SKR03' else Kontenrahmen.SKR04,
+        bezeichnung=f"SBS Export {datetime.now().strftime('%Y-%m-%d')}"
+    )
+    
+    # Generate export
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    export_dir = "/var/www/invoice-app/exports"
+    os.makedirs(export_dir, exist_ok=True)
+    
+    try:
+        if export_format == 'csv':
+            filepath = f"{export_dir}/EXTF_Buchungen_{timestamp}.csv"
+            export_invoices_to_datev_csv(invoices, config, filepath)
+            filename = os.path.basename(filepath)
+            
+        elif export_format == 'xml':
+            filepath = f"{export_dir}/DATEV_Rechnungen_{timestamp}.xml"
+            export_invoices_to_datev_xml(invoices, config, filepath)
+            filename = os.path.basename(filepath)
+            
+        elif export_format == 'zip':
+            filepath = f"{export_dir}/DATEV_Paket_{timestamp}.zip"
+            export_invoices_to_datev_zip(invoices, config, output_path=filepath)
+            filename = os.path.basename(filepath)
+            
+        else:
+            return JSONResponse({"error": f"Unbekanntes Format: {export_format}"}, status_code=400)
+        
+        # Log export
+        logger.info(f"DATEV Export: {len(invoices)} Rechnungen, Format: {export_format}, User: {user_id}")
+        
+        return JSONResponse({
+            "success": True,
+            "filename": filename,
+            "download_url": f"/api/datev/download/{filename}",
+            "invoice_count": len(invoices),
+            "format": export_format
+        })
+        
+    except Exception as e:
+        logger.error(f"DATEV Export Fehler: {str(e)}")
+        return JSONResponse({"error": f"Export fehlgeschlagen: {str(e)}"}, status_code=500)
+
+
+@app.get("/api/datev/download/{filename}", tags=["DATEV"])
+async def download_datev_export(filename: str, request: Request):
+    """Download einer DATEV Export-Datei"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    # Security: Only allow specific file patterns
+    import re
+    if not re.match(r'^(EXTF_Buchungen_|DATEV_Rechnungen_|DATEV_Paket_)\d{8}_\d{6}\.(csv|xml|zip)$', filename):
+        return JSONResponse({"error": "Invalid filename"}, status_code=400)
+    
+    filepath = f"/var/www/invoice-app/exports/{filename}"
+    
+    if not os.path.exists(filepath):
+        return JSONResponse({"error": "Datei nicht gefunden"}, status_code=404)
+    
+    # Determine content type
+    if filename.endswith('.csv'):
+        media_type = "text/csv"
+    elif filename.endswith('.xml'):
+        media_type = "application/xml"
+    elif filename.endswith('.zip'):
+        media_type = "application/zip"
+    else:
+        media_type = "application/octet-stream"
+    
+    return FileResponse(
+        filepath,
+        media_type=media_type,
+        filename=filename,
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@app.get("/api/datev/preview", tags=["DATEV"])
+async def preview_datev_export(request: Request, invoice_id: int):
+    """Vorschau der DATEV-Buchung für eine Rechnung"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM invoices WHERE id = ?", (invoice_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row:
+        return JSONResponse({"error": "Rechnung nicht gefunden"}, status_code=404)
+    
+    invoice = dict(row)
+    
+    # Convert to Buchung
+    converter = InvoiceToBuchungConverter(Kontenrahmen.SKR03)
+    buchungen = converter.convert(invoice)
+    
+    # Prepare preview
+    preview = []
+    for b in buchungen:
+        preview.append({
+            "umsatz": str(b.umsatz),
+            "soll_haben": b.soll_haben,
+            "konto": b.konto,
+            "gegenkonto": b.gegenkonto,
+            "belegdatum": b.belegdatum.isoformat() if b.belegdatum else None,
+            "belegnummer": b.belegnummer,
+            "buchungstext": b.buchungstext,
+            "steuerschluessel": b.steuerschluessel,
+        })
+    
+    return JSONResponse({
+        "invoice": {
+            "id": invoice['id'],
+            "rechnungsnummer": invoice.get('rechnungsnummer'),
+            "rechnungsaussteller": invoice.get('rechnungsaussteller'),
+            "betrag_brutto": invoice.get('betrag_brutto'),
+        },
+        "buchungen": preview,
+        "detected_account": converter.detect_account(invoice),
+    })
