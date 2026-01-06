@@ -5012,3 +5012,278 @@ WICHTIG: Dies ist eine Demo mit Beispieldaten. Erwähne das NICHT in deiner Antw
         app_logger.error(f"Copilot demo error: {e}")
         return {"error": f"Analyse fehlgeschlagen: {str(e)}"}
 
+
+
+# =============================================================================
+# APPROVAL WORKFLOW ENDPOINTS
+# =============================================================================
+
+from approval import get_approval_manager, InvoiceStatus, ApprovalAction
+
+@app.get("/approvals", response_class=HTMLResponse, tags=["Approvals"])
+async def approvals_page(request: Request, status: str = None):
+    """Freigabe-Queue Übersicht"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return RedirectResponse(url="/login", status_code=303)
+    
+    manager = get_approval_manager()
+    
+    # Get queue
+    invoices, total = manager.get_approval_queue(status=status, limit=100)
+    
+    # Get stats
+    stats = manager.get_approval_stats()
+    
+    # Get rules for display
+    rules = manager.get_all_rules()
+    
+    # Get current user info
+    user_info = get_user_info(user_id)
+    
+    return templates.TemplateResponse("approvals.html", {
+        "request": request,
+        "invoices": invoices,
+        "total": total,
+        "stats": stats,
+        "rules": rules,
+        "current_status": status,
+        "user": user_info,
+        "statuses": [s.value for s in InvoiceStatus],
+        "now": datetime.now().strftime("%Y-%m-%d"),
+    })
+
+
+@app.get("/approvals/my", response_class=HTMLResponse, tags=["Approvals"])
+async def my_approvals_page(request: Request):
+    """Meine zugewiesenen Freigaben"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return RedirectResponse(url="/login", status_code=303)
+    
+    manager = get_approval_manager()
+    invoices = manager.get_pending_approvals(user_id)
+    stats = manager.get_approval_stats(user_id=user_id)
+    user_info = get_user_info(user_id)
+    
+    return templates.TemplateResponse("approvals_my.html", {
+        "request": request,
+        "invoices": invoices,
+        "stats": stats,
+        "user": user_info,
+        "now": datetime.now().strftime("%Y-%m-%d"),
+    })
+
+
+@app.post("/api/approvals/{invoice_id}/approve", tags=["Approvals"])
+async def approve_invoice(invoice_id: int, request: Request, comment: str = Form(None)):
+    """Rechnung freigeben"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    manager = get_approval_manager()
+    
+    # Permission check
+    if not manager.can_user_approve(user_id, invoice_id):
+        return JSONResponse({"error": "Keine Berechtigung für diese Freigabe"}, status_code=403)
+    
+    # Get client info for audit
+    ip = request.client.host if request.client else None
+    ua = request.headers.get("user-agent", "")[:200]
+    
+    success = manager.update_status(
+        invoice_id, 
+        InvoiceStatus.APPROVED, 
+        user_id, 
+        comment,
+        ip_address=ip,
+        user_agent=ua
+    )
+    
+    if success:
+        return JSONResponse({"success": True, "message": "Rechnung freigegeben"})
+    return JSONResponse({"error": "Freigabe fehlgeschlagen"}, status_code=500)
+
+
+@app.post("/api/approvals/{invoice_id}/reject", tags=["Approvals"])
+async def reject_invoice(invoice_id: int, request: Request, comment: str = Form(None)):
+    """Rechnung ablehnen"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    if not comment:
+        return JSONResponse({"error": "Ablehnungsgrund erforderlich"}, status_code=400)
+    
+    manager = get_approval_manager()
+    
+    ip = request.client.host if request.client else None
+    ua = request.headers.get("user-agent", "")[:200]
+    
+    success = manager.update_status(
+        invoice_id,
+        InvoiceStatus.REJECTED,
+        user_id,
+        comment,
+        ip_address=ip,
+        user_agent=ua
+    )
+    
+    if success:
+        return JSONResponse({"success": True, "message": "Rechnung abgelehnt"})
+    return JSONResponse({"error": "Ablehnung fehlgeschlagen"}, status_code=500)
+
+
+@app.post("/api/approvals/{invoice_id}/assign", tags=["Approvals"])
+async def assign_invoice(invoice_id: int, request: Request, assignee_id: int = Form(...)):
+    """Rechnung einem Benutzer zuweisen"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    # Check if user is admin or manager
+    user_info = get_user_info(user_id)
+    if not user_info.get('is_admin'):
+        return JSONResponse({"error": "Keine Berechtigung"}, status_code=403)
+    
+    manager = get_approval_manager()
+    success = manager.assign_invoice(invoice_id, assignee_id, user_id)
+    
+    if success:
+        return JSONResponse({"success": True, "message": "Rechnung zugewiesen"})
+    return JSONResponse({"error": "Zuweisung fehlgeschlagen"}, status_code=500)
+
+
+@app.post("/api/approvals/{invoice_id}/comment", tags=["Approvals"])
+async def add_invoice_comment(invoice_id: int, request: Request, comment: str = Form(...)):
+    """Kommentar zu einer Rechnung hinzufügen"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    manager = get_approval_manager()
+    ip = request.client.host if request.client else None
+    
+    success = manager.add_comment(invoice_id, user_id, comment, ip)
+    
+    if success:
+        return JSONResponse({"success": True})
+    return JSONResponse({"error": "Kommentar fehlgeschlagen"}, status_code=500)
+
+
+@app.get("/api/approvals/{invoice_id}/history", tags=["Approvals"])
+async def get_invoice_approval_history(invoice_id: int, request: Request):
+    """Holt die Freigabe-Historie einer Rechnung"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    manager = get_approval_manager()
+    history = manager.get_invoice_history(invoice_id)
+    
+    return JSONResponse({"history": history})
+
+
+@app.post("/api/approvals/bulk-approve", tags=["Approvals"])
+async def bulk_approve_invoices(request: Request):
+    """Mehrere Rechnungen auf einmal freigeben"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    invoice_ids = data.get('invoice_ids', [])
+    comment = data.get('comment', 'Bulk approval')
+    
+    if not invoice_ids:
+        return JSONResponse({"error": "Keine Rechnungen ausgewählt"}, status_code=400)
+    
+    manager = get_approval_manager()
+    results = manager.bulk_approve(invoice_ids, user_id, comment)
+    
+    return JSONResponse(results)
+
+
+@app.get("/api/approvals/stats", tags=["Approvals"])
+async def get_approval_stats_api(request: Request, days: int = 30):
+    """Holt Freigabe-Statistiken"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    manager = get_approval_manager()
+    stats = manager.get_approval_stats(days=days)
+    
+    return JSONResponse(stats)
+
+
+# Approval Rules Management (Admin only)
+@app.get("/approvals/rules", response_class=HTMLResponse, tags=["Approvals"])
+async def approval_rules_page(request: Request):
+    """Freigabe-Regeln verwalten"""
+    admin_check = require_admin(request)
+    if admin_check:
+        return admin_check
+    
+    manager = get_approval_manager()
+    rules = manager.get_all_rules()
+    user_info = get_user_info(request.session.get("user_id"))
+    
+    return templates.TemplateResponse("approval_rules.html", {
+        "request": request,
+        "rules": rules,
+        "user": user_info,
+        "now": datetime.now().strftime("%Y-%m-%d"),
+    })
+
+
+@app.post("/api/approvals/rules", tags=["Approvals"])
+async def create_approval_rule(request: Request):
+    """Neue Freigabe-Regel erstellen"""
+    admin_check = require_admin(request)
+    if admin_check:
+        return JSONResponse({"error": "Admin required"}, status_code=403)
+    
+    data = await request.json()
+    user_id = request.session.get("user_id")
+    
+    manager = get_approval_manager()
+    rule_id = manager.create_rule(
+        name=data.get('name'),
+        min_amount=float(data.get('min_amount', 0)),
+        max_amount=float(data.get('max_amount')) if data.get('max_amount') else None,
+        required_role=data.get('required_role', 'manager'),
+        auto_approve=data.get('auto_approve', False),
+        created_by=user_id
+    )
+    
+    return JSONResponse({"success": True, "rule_id": rule_id})
+
+
+@app.put("/api/approvals/rules/{rule_id}", tags=["Approvals"])
+async def update_approval_rule(rule_id: int, request: Request):
+    """Freigabe-Regel aktualisieren"""
+    admin_check = require_admin(request)
+    if admin_check:
+        return JSONResponse({"error": "Admin required"}, status_code=403)
+    
+    data = await request.json()
+    
+    manager = get_approval_manager()
+    manager.update_rule(rule_id, **data)
+    
+    return JSONResponse({"success": True})
+
+
+@app.delete("/api/approvals/rules/{rule_id}", tags=["Approvals"])
+async def delete_approval_rule(rule_id: int, request: Request):
+    """Freigabe-Regel löschen"""
+    admin_check = require_admin(request)
+    if admin_check:
+        return JSONResponse({"error": "Admin required"}, status_code=403)
+    
+    manager = get_approval_manager()
+    manager.delete_rule(rule_id)
+    
+    return JSONResponse({"success": True})

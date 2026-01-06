@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meine Freigaben - SBS Invoice Processing</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root { --sbs-blue: #003856; --sbs-yellow: #FFB900; }
+        body { background-color: #f8f9fa; }
+        .navbar { background: linear-gradient(135deg, var(--sbs-blue) 0%, #00537d 100%); }
+        .approval-card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+            margin-bottom: 1rem;
+        }
+        .approval-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.12); }
+        .amount-display { font-size: 1.5rem; font-weight: 700; }
+        .amount-high { color: #dc3545; }
+        .amount-medium { color: #fd7e14; }
+        .amount-low { color: #28a745; }
+        .supplier-name { font-size: 1.1rem; font-weight: 600; color: var(--sbs-blue); }
+        .meta-info { font-size: 0.85rem; color: #6c757d; }
+        .action-buttons .btn { padding: 0.75rem 1.5rem; font-weight: 600; border-radius: 8px; }
+        .empty-state { padding: 4rem 2rem; text-align: center; }
+        .empty-state i { font-size: 4rem; color: #dee2e6; }
+        .priority-badge { position: absolute; top: -8px; right: -8px; }
+        .due-warning { background: #fff3cd; border-left: 4px solid #ffc107; }
+        .due-danger { background: #f8d7da; border-left: 4px solid #dc3545; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <i class="bi bi-receipt me-2"></i>SBS Invoice
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/approvals"><i class="bi bi-list-check me-1"></i>Alle Freigaben</a>
+                <a class="nav-link" href="/history"><i class="bi bi-clock-history me-1"></i>Historie</a>
+                <a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1"><i class="bi bi-person-check me-2"></i>Meine Freigaben</h2>
+                <p class="text-muted mb-0">Rechnungen, die auf Ihre Freigabe warten</p>
+            </div>
+            <div class="text-end">
+                <div class="fs-4 fw-bold text-primary">{{ invoices|length }}</div>
+                <div class="text-muted small">ausstehend</div>
+            </div>
+        </div>
+
+        {% if invoices %}
+        <div class="row">
+            {% for inv in invoices %}
+            <div class="col-lg-6">
+                <div class="card approval-card position-relative {% if inv.faelligkeitsdatum and inv.faelligkeitsdatum < now %}due-danger{% endif %}">
+                    {% if inv.betrag_brutto > 5000 %}
+                    <span class="badge bg-danger priority-badge">Hoher Betrag</span>
+                    {% endif %}
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-8">
+                                <div class="supplier-name mb-1">{{ inv.rechnungsaussteller or 'Unbekannter Lieferant' }}</div>
+                                <div class="meta-info">
+                                    <i class="bi bi-hash"></i> {{ inv.rechnungsnummer or 'N/A' }}
+                                    <span class="mx-2">|</span>
+                                    <i class="bi bi-calendar"></i> {{ inv.datum or '-' }}
+                                </div>
+                                {% if inv.faelligkeitsdatum %}
+                                <div class="meta-info mt-1">
+                                    <i class="bi bi-clock{% if inv.faelligkeitsdatum < now %}-fill text-danger{% endif %}"></i>
+                                    Fällig: {{ inv.faelligkeitsdatum }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-4 text-end">
+                                <div class="amount-display {% if inv.betrag_brutto > 5000 %}amount-high{% elif inv.betrag_brutto > 1000 %}amount-medium{% else %}amount-low{% endif %}">
+                                    {{ "%.2f"|format(inv.betrag_brutto or 0) }}€
+                                </div>
+                                <div class="meta-info">{{ inv.waehrung or 'EUR' }}</div>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-3">
+                        
+                        <div class="action-buttons d-flex gap-2">
+                            <a href="/invoice/{{ inv.id }}" class="btn btn-outline-primary flex-grow-1">
+                                <i class="bi bi-eye me-1"></i>Details
+                            </a>
+                            <button class="btn btn-success flex-grow-1" onclick="quickApprove({{ inv.id }})">
+                                <i class="bi bi-check-lg me-1"></i>Freigeben
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="showRejectModal({{ inv.id }}, '{{ inv.rechnungsnummer }}')">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="empty-state">
+                <i class="bi bi-inbox d-block mb-3"></i>
+                <h4>Keine ausstehenden Freigaben</h4>
+                <p class="text-muted">Alle Rechnungen wurden bearbeitet.</p>
+                <a href="/approvals" class="btn btn-primary mt-2">
+                    <i class="bi bi-list-check me-1"></i>Zur Übersicht
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Reject Modal -->
+    <div class="modal fade" id="rejectModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="bi bi-x-circle text-danger me-2"></i>Rechnung ablehnen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Rechnung: <strong id="rejectInvoiceNr"></strong></p>
+                    <input type="hidden" id="rejectInvoiceId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ablehnungsgrund *</label>
+                        <textarea class="form-control" id="rejectComment" rows="3" 
+                                  placeholder="z.B. Falscher Betrag, fehlende Unterschrift..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-danger" onclick="submitReject()">
+                        <i class="bi bi-x-lg me-1"></i>Ablehnen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        async function quickApprove(invoiceId) {
+            if (!confirm('Rechnung freigeben?')) return;
+            
+            const formData = new FormData();
+            formData.append('comment', 'Freigegeben');
+            
+            const response = await fetch(`/api/approvals/${invoiceId}/approve`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                showToast('✅ Rechnung freigegeben!', 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showToast(data.error || 'Fehler bei der Freigabe', 'danger');
+            }
+        }
+
+        function showRejectModal(invoiceId, invoiceNr) {
+            document.getElementById('rejectInvoiceId').value = invoiceId;
+            document.getElementById('rejectInvoiceNr').textContent = invoiceNr || invoiceId;
+            document.getElementById('rejectComment').value = '';
+            new bootstrap.Modal(document.getElementById('rejectModal')).show();
+        }
+
+        async function submitReject() {
+            const invoiceId = document.getElementById('rejectInvoiceId').value;
+            const comment = document.getElementById('rejectComment').value.trim();
+            
+            if (!comment) {
+                alert('Bitte geben Sie einen Ablehnungsgrund an.');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('comment', comment);
+            
+            const response = await fetch(`/api/approvals/${invoiceId}/reject`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
+                showToast('Rechnung abgelehnt', 'warning');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showToast(data.error || 'Fehler', 'danger');
+            }
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} position-fixed top-0 start-50 translate-middle-x mt-3`;
+            toast.style.zIndex = '9999';
+            toast.innerHTML = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+    </script>
+</body>
+</html>
