@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freigabe-Regeln - SBS Invoice Processing</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root { --sbs-blue: #003856; --sbs-yellow: #FFB900; }
+        body { background-color: #f8f9fa; }
+        .navbar { background: linear-gradient(135deg, var(--sbs-blue) 0%, #00537d 100%); }
+        .rule-card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 1rem;
+        }
+        .rule-card.auto-approve { border-left: 4px solid #28a745; }
+        .rule-card.manual { border-left: 4px solid var(--sbs-blue); }
+        .amount-range { font-family: monospace; background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 4px; }
+        .role-badge { 
+            padding: 0.35rem 0.75rem; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: 600;
+        }
+        .role-user { background: #e9ecef; color: #495057; }
+        .role-team_lead { background: #cce5ff; color: #004085; }
+        .role-manager { background: #d4edda; color: #155724; }
+        .role-cfo { background: #fff3cd; color: #856404; }
+        .role-ceo { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <i class="bi bi-receipt me-2"></i>SBS Invoice
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/approvals"><i class="bi bi-list-check me-1"></i>Freigaben</a>
+                <a class="nav-link" href="/admin"><i class="bi bi-gear me-1"></i>Admin</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1"><i class="bi bi-sliders me-2"></i>Freigabe-Regeln</h2>
+                <p class="text-muted mb-0">Definieren Sie, wer welche Rechnungen freigeben darf</p>
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ruleModal">
+                <i class="bi bi-plus-lg me-1"></i>Neue Regel
+            </button>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                {% for rule in rules %}
+                <div class="card rule-card {% if rule.auto_approve %}auto-approve{% else %}manual{% endif %}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="mb-2">{{ rule.name }}</h5>
+                                <div class="mb-2">
+                                    <span class="amount-range">
+                                        {{ "%.0f"|format(rule.min_amount) }}€
+                                        {% if rule.max_amount %}
+                                        – {{ "%.0f"|format(rule.max_amount) }}€
+                                        {% else %}
+                                        – unbegrenzt
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div>
+                                    {% if rule.auto_approve %}
+                                    <span class="badge bg-success"><i class="bi bi-lightning me-1"></i>Auto-Freigabe</span>
+                                    {% else %}
+                                    <span class="role-badge role-{{ rule.required_role }}">
+                                        <i class="bi bi-person me-1"></i>{{ rule.required_role|title }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editRule({{ rule.id }}, '{{ rule.name }}', {{ rule.min_amount }}, {{ rule.max_amount or 'null' }}, '{{ rule.required_role }}', {{ rule.auto_approve }})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteRule({{ rule.id }}, '{{ rule.name }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>Noch keine Regeln definiert. Erstellen Sie Ihre erste Regel.
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Hinweise</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0 ps-3">
+                            <li class="mb-2">Regeln werden nach <strong>Priorität</strong> ausgewertet</li>
+                            <li class="mb-2"><strong>Auto-Freigabe</strong> für kleine Beträge spart Zeit</li>
+                            <li class="mb-2">Höhere Beträge sollten von <strong>Managern/CFO</strong> freigegeben werden</li>
+                            <li>Das <strong>4-Augen-Prinzip</strong> erhöht die Sicherheit</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0"><i class="bi bi-people me-2"></i>Rollen</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-2"><span class="role-badge role-user">User</span> Basis-Freigaben</div>
+                        <div class="mb-2"><span class="role-badge role-team_lead">Team Lead</span> bis 500€</div>
+                        <div class="mb-2"><span class="role-badge role-manager">Manager</span> bis 2.000€</div>
+                        <div class="mb-2"><span class="role-badge role-cfo">CFO</span> bis 10.000€</div>
+                        <div><span class="role-badge role-ceo">CEO</span> unbegrenzt</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rule Modal -->
+    <div class="modal fade" id="ruleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ruleModalTitle">Neue Freigabe-Regel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="ruleId">
+                    <div class="mb-3">
+                        <label class="form-label">Name der Regel *</label>
+                        <input type="text" class="form-control" id="ruleName" placeholder="z.B. Manager-Freigabe">
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Min. Betrag (€)</label>
+                            <input type="number" class="form-control" id="ruleMinAmount" value="0" min="0">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Max. Betrag (€)</label>
+                            <input type="number" class="form-control" id="ruleMaxAmount" placeholder="Unbegrenzt">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Erforderliche Rolle</label>
+                        <select class="form-select" id="ruleRole">
+                            <option value="user">User</option>
+                            <option value="team_lead">Team Lead</option>
+                            <option value="manager" selected>Manager</option>
+                            <option value="cfo">CFO</option>
+                            <option value="ceo">CEO</option>
+                        </select>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ruleAutoApprove">
+                        <label class="form-check-label" for="ruleAutoApprove">
+                            <i class="bi bi-lightning text-warning me-1"></i>Automatisch freigeben (keine manuelle Prüfung)
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-primary" onclick="saveRule()">
+                        <i class="bi bi-check-lg me-1"></i>Speichern
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function editRule(id, name, minAmount, maxAmount, role, autoApprove) {
+            document.getElementById('ruleModalTitle').textContent = 'Regel bearbeiten';
+            document.getElementById('ruleId').value = id;
+            document.getElementById('ruleName').value = name;
+            document.getElementById('ruleMinAmount').value = minAmount;
+            document.getElementById('ruleMaxAmount').value = maxAmount || '';
+            document.getElementById('ruleRole').value = role;
+            document.getElementById('ruleAutoApprove').checked = autoApprove;
+            new bootstrap.Modal(document.getElementById('ruleModal')).show();
+        }
+
+        async function saveRule() {
+            const id = document.getElementById('ruleId').value;
+            const data = {
+                name: document.getElementById('ruleName').value,
+                min_amount: parseFloat(document.getElementById('ruleMinAmount').value) || 0,
+                max_amount: document.getElementById('ruleMaxAmount').value ? parseFloat(document.getElementById('ruleMaxAmount').value) : null,
+                required_role: document.getElementById('ruleRole').value,
+                auto_approve: document.getElementById('ruleAutoApprove').checked
+            };
+            
+            if (!data.name) {
+                alert('Bitte geben Sie einen Namen ein.');
+                return;
+            }
+            
+            const url = id ? `/api/approvals/rules/${id}` : '/api/approvals/rules';
+            const method = id ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                location.reload();
+            } else {
+                const result = await response.json();
+                alert(result.error || 'Fehler beim Speichern');
+            }
+        }
+
+        async function deleteRule(id, name) {
+            if (!confirm(`Regel "${name}" wirklich löschen?`)) return;
+            
+            const response = await fetch(`/api/approvals/rules/${id}`, {method: 'DELETE'});
+            if (response.ok) {
+                location.reload();
+            }
+        }
+
+        // Reset modal on close
+        document.getElementById('ruleModal').addEventListener('hidden.bs.modal', function() {
+            document.getElementById('ruleModalTitle').textContent = 'Neue Freigabe-Regel';
+            document.getElementById('ruleId').value = '';
+            document.getElementById('ruleName').value = '';
+            document.getElementById('ruleMinAmount').value = '0';
+            document.getElementById('ruleMaxAmount').value = '';
+            document.getElementById('ruleRole').value = 'manager';
+            document.getElementById('ruleAutoApprove').checked = false;
+        });
+    </script>
+</body>
+</html>

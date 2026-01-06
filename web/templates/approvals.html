@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rechnungsfreigabe - SBS Invoice Processing</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --sbs-blue: #003856;
+            --sbs-yellow: #FFB900;
+        }
+        body { background-color: #f8f9fa; }
+        .navbar { background: linear-gradient(135deg, var(--sbs-blue) 0%, #00537d 100%); }
+        .navbar-brand { font-weight: 700; }
+        .stats-card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+        .stats-card:hover { transform: translateY(-2px); }
+        .stats-number { font-size: 2rem; font-weight: 700; }
+        .status-badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-pending { background: #fef3cd; color: #856404; }
+        .status-assigned { background: #cce5ff; color: #004085; }
+        .status-in_review { background: #d4edda; color: #155724; }
+        .status-approved { background: #d4edda; color: #155724; }
+        .status-rejected { background: #f8d7da; color: #721c24; }
+        .status-on_hold { background: #e2e3e5; color: #383d41; }
+        .invoice-row { cursor: pointer; transition: background 0.2s; }
+        .invoice-row:hover { background: #f0f7ff; }
+        .invoice-row.selected { background: #e3f2fd; }
+        .amount-high { color: #dc3545; font-weight: 600; }
+        .amount-medium { color: #fd7e14; }
+        .amount-low { color: #28a745; }
+        .action-btn {
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        .approve-btn { background: #28a745; border: none; }
+        .approve-btn:hover { background: #218838; }
+        .reject-btn { background: #dc3545; border: none; }
+        .reject-btn:hover { background: #c82333; }
+        .filter-tabs .nav-link {
+            color: #6c757d;
+            border: none;
+            padding: 0.75rem 1.5rem;
+        }
+        .filter-tabs .nav-link.active {
+            color: var(--sbs-blue);
+            border-bottom: 3px solid var(--sbs-yellow);
+            background: transparent;
+        }
+        .quick-actions {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding: 1rem;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+            border-radius: 12px 12px 0 0;
+        }
+        .select-all-checkbox { transform: scale(1.2); }
+        .supplier-info { font-size: 0.9rem; color: #6c757d; }
+        .due-date-warning { color: #dc3545; }
+        .due-date-ok { color: #28a745; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard">
+                <i class="bi bi-receipt me-2"></i>SBS Invoice
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/approvals/my">
+                    <i class="bi bi-person-check me-1"></i>Meine Freigaben
+                    {% if stats.pending_count > 0 %}
+                    <span class="badge bg-warning text-dark">{{ stats.pending_count }}</span>
+                    {% endif %}
+                </a>
+                <a class="nav-link" href="/history"><i class="bi bi-clock-history me-1"></i>Historie</a>
+                <a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a>
+                {% if user.is_admin %}
+                <a class="nav-link" href="/approvals/rules"><i class="bi bi-gear me-1"></i>Regeln</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <!-- Stats Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card h-100">
+                    <div class="card-body text-center">
+                        <div class="stats-number text-warning">{{ stats.pending_count }}</div>
+                        <div class="text-muted">Ausstehend</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card h-100">
+                    <div class="card-body text-center">
+                        <div class="stats-number text-success">{{ stats.by_status.get('approved', {}).get('count', 0) }}</div>
+                        <div class="text-muted">Freigegeben (30 Tage)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card h-100">
+                    <div class="card-body text-center">
+                        <div class="stats-number text-danger">{{ stats.overdue_count }}</div>
+                        <div class="text-muted">Überfällig</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card h-100">
+                    <div class="card-body text-center">
+                        <div class="stats-number text-info">{{ stats.avg_approval_days }}</div>
+                        <div class="text-muted">Ø Tage bis Freigabe</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <ul class="nav filter-tabs mb-3">
+            <li class="nav-item">
+                <a class="nav-link {% if not current_status %}active{% endif %}" href="/approvals">
+                    Alle ausstehenden
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if current_status == 'pending' %}active{% endif %}" href="/approvals?status=pending">
+                    <i class="bi bi-hourglass me-1"></i>Neu
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if current_status == 'assigned' %}active{% endif %}" href="/approvals?status=assigned">
+                    <i class="bi bi-person me-1"></i>Zugewiesen
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if current_status == 'approved' %}active{% endif %}" href="/approvals?status=approved">
+                    <i class="bi bi-check-circle me-1"></i>Freigegeben
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if current_status == 'rejected' %}active{% endif %}" href="/approvals?status=rejected">
+                    <i class="bi bi-x-circle me-1"></i>Abgelehnt
+                </a>
+            </li>
+        </ul>
+
+        <!-- Invoice Table -->
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" class="form-check-input select-all-checkbox" 
+                                           id="selectAll" onchange="toggleSelectAll()">
+                                </th>
+                                <th>Rechnung</th>
+                                <th>Lieferant</th>
+                                <th>Betrag</th>
+                                <th>Datum</th>
+                                <th>Fällig</th>
+                                <th>Status</th>
+                                <th>Zugewiesen an</th>
+                                <th style="width: 150px;">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inv in invoices %}
+                            <tr class="invoice-row" data-id="{{ inv.id }}">
+                                <td onclick="event.stopPropagation()">
+                                    <input type="checkbox" class="form-check-input invoice-checkbox" 
+                                           value="{{ inv.id }}" data-amount="{{ inv.betrag_brutto }}">
+                                </td>
+                                <td>
+                                    <a href="/invoice/{{ inv.id }}" class="text-decoration-none fw-bold">
+                                        {{ inv.rechnungsnummer or 'N/A' }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <div class="fw-medium">{{ inv.rechnungsaussteller or 'Unbekannt' }}</div>
+                                    <div class="supplier-info">{{ (inv.rechnungsaussteller_adresse or '')[:40] }}...</div>
+                                </td>
+                                <td>
+                                    <span class="{% if inv.betrag_brutto > 5000 %}amount-high{% elif inv.betrag_brutto > 1000 %}amount-medium{% else %}amount-low{% endif %}">
+                                        {{ "%.2f"|format(inv.betrag_brutto or 0) }} {{ inv.waehrung or 'EUR' }}
+                                    </span>
+                                </td>
+                                <td>{{ inv.datum or '-' }}</td>
+                                <td>
+                                    {% if inv.faelligkeitsdatum %}
+                                        <span class="{% if inv.faelligkeitsdatum < now %}due-date-warning{% else %}due-date-ok{% endif %}">
+                                            {{ inv.faelligkeitsdatum }}
+                                        </span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ inv.status }}">
+                                        {% if inv.status == 'pending' %}Neu
+                                        {% elif inv.status == 'assigned' %}Zugewiesen
+                                        {% elif inv.status == 'in_review' %}In Prüfung
+                                        {% elif inv.status == 'approved' %}Freigegeben
+                                        {% elif inv.status == 'rejected' %}Abgelehnt
+                                        {% elif inv.status == 'on_hold' %}Zurückgestellt
+                                        {% else %}{{ inv.status }}{% endif %}
+                                    </span>
+                                </td>
+                                <td>{{ inv.assigned_to_name or '-' }}</td>
+                                <td onclick="event.stopPropagation()">
+                                    {% if inv.status in ['pending', 'assigned', 'in_review'] %}
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-success" onclick="approveInvoice({{ inv.id }})" 
+                                                title="Freigeben">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                        <button class="btn btn-danger" onclick="showRejectModal({{ inv.id }})" 
+                                                title="Ablehnen">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary" onclick="showHistoryModal({{ inv.id }})" 
+                                                title="Historie">
+                                            <i class="bi bi-clock-history"></i>
+                                        </button>
+                                    </div>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="showHistoryModal({{ inv.id }})">
+                                        <i class="bi bi-clock-history me-1"></i>Historie
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                                    Keine Rechnungen in dieser Kategorie
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions Bar -->
+        <div class="quick-actions mt-3" id="quickActions" style="display: none;">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="fw-bold" id="selectedCount">0</span> Rechnungen ausgewählt
+                    <span class="ms-3 text-muted">Summe: <span id="selectedTotal">0,00</span> €</span>
+                </div>
+                <div>
+                    <button class="btn btn-outline-secondary me-2" onclick="clearSelection()">
+                        Auswahl aufheben
+                    </button>
+                    <button class="btn approve-btn text-white action-btn" onclick="bulkApprove()">
+                        <i class="bi bi-check-all me-1"></i>Alle freigeben
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div class="modal fade" id="rejectModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rechnung ablehnen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="rejectInvoiceId">
+                    <div class="mb-3">
+                        <label class="form-label">Grund der Ablehnung *</label>
+                        <textarea class="form-control" id="rejectComment" rows="3" 
+                                  placeholder="Bitte geben Sie einen Grund an..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-danger" onclick="submitReject()">
+                        <i class="bi bi-x-lg me-1"></i>Ablehnen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal fade" id="historyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Freigabe-Historie</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="historyContent">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Selection management
+        function toggleSelectAll() {
+            const checked = document.getElementById('selectAll').checked;
+            document.querySelectorAll('.invoice-checkbox').forEach(cb => cb.checked = checked);
+            updateSelectionInfo();
+        }
+
+        function updateSelectionInfo() {
+            const checkboxes = document.querySelectorAll('.invoice-checkbox:checked');
+            const count = checkboxes.length;
+            let total = 0;
+            checkboxes.forEach(cb => total += parseFloat(cb.dataset.amount) || 0);
+            
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('selectedTotal').textContent = total.toLocaleString('de-DE', {minimumFractionDigits: 2});
+            document.getElementById('quickActions').style.display = count > 0 ? 'block' : 'none';
+        }
+
+        function clearSelection() {
+            document.querySelectorAll('.invoice-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAll').checked = false;
+            updateSelectionInfo();
+        }
+
+        document.querySelectorAll('.invoice-checkbox').forEach(cb => {
+            cb.addEventListener('change', updateSelectionInfo);
+        });
+
+        // Approve single invoice
+        async function approveInvoice(invoiceId) {
+            if (!confirm('Rechnung wirklich freigeben?')) return;
+            
+            const formData = new FormData();
+            formData.append('comment', 'Freigegeben via Dashboard');
+            
+            const response = await fetch(`/api/approvals/${invoiceId}/approve`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                showToast('Rechnung freigegeben', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast(data.error || 'Fehler bei der Freigabe', 'danger');
+            }
+        }
+
+        // Bulk approve
+        async function bulkApprove() {
+            const ids = Array.from(document.querySelectorAll('.invoice-checkbox:checked'))
+                           .map(cb => parseInt(cb.value));
+            
+            if (ids.length === 0) return;
+            if (!confirm(`${ids.length} Rechnungen freigeben?`)) return;
+            
+            const response = await fetch('/api/approvals/bulk-approve', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({invoice_ids: ids, comment: 'Bulk approval via Dashboard'})
+            });
+            
+            const data = await response.json();
+            showToast(`${data.approved.length} Rechnungen freigegeben`, 'success');
+            setTimeout(() => location.reload(), 1000);
+        }
+
+        // Reject modal
+        function showRejectModal(invoiceId) {
+            document.getElementById('rejectInvoiceId').value = invoiceId;
+            document.getElementById('rejectComment').value = '';
+            new bootstrap.Modal(document.getElementById('rejectModal')).show();
+        }
+
+        async function submitReject() {
+            const invoiceId = document.getElementById('rejectInvoiceId').value;
+            const comment = document.getElementById('rejectComment').value;
+            
+            if (!comment.trim()) {
+                alert('Bitte geben Sie einen Ablehnungsgrund an.');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('comment', comment);
+            
+            const response = await fetch(`/api/approvals/${invoiceId}/reject`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
+                showToast('Rechnung abgelehnt', 'warning');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast(data.error || 'Fehler', 'danger');
+            }
+        }
+
+        // History modal
+        async function showHistoryModal(invoiceId) {
+            const modal = new bootstrap.Modal(document.getElementById('historyModal'));
+            modal.show();
+            
+            const content = document.getElementById('historyContent');
+            content.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+            
+            const response = await fetch(`/api/approvals/${invoiceId}/history`);
+            const data = await response.json();
+            
+            if (data.history && data.history.length > 0) {
+                let html = '<div class="timeline">';
+                data.history.forEach(h => {
+                    const icon = h.action === 'approved' ? 'check-circle text-success' :
+                                 h.action === 'rejected' ? 'x-circle text-danger' :
+                                 h.action === 'assigned' ? 'person text-primary' :
+                                 'chat-dots text-muted';
+                    html += `
+                        <div class="d-flex mb-3">
+                            <div class="me-3"><i class="bi bi-${icon} fs-4"></i></div>
+                            <div>
+                                <div class="fw-bold">${h.user_name || 'System'}</div>
+                                <div class="text-muted small">${h.created_at}</div>
+                                <div>${h.action}: ${h.comment || '-'}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                content.innerHTML = html;
+            } else {
+                content.innerHTML = '<p class="text-muted text-center">Keine Historie vorhanden</p>';
+            }
+        }
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+            toast.style.zIndex = '9999';
+            toast.innerHTML = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Row click
+        document.querySelectorAll('.invoice-row').forEach(row => {
+            row.addEventListener('click', () => {
+                window.location.href = '/invoice/' + row.dataset.id;
+            });
+        });
+    </script>
+</body>
+</html>
