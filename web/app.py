@@ -5517,3 +5517,150 @@ async def preview_datev_export(request: Request, invoice_id: int):
 async def erechnung_landing(request: Request):
     """E-Rechnung 2025 Landing Page - SEO optimiert"""
     return templates.TemplateResponse("landing_erechnung.html", {"request": request})
+
+
+# =============================================================================
+# INTEGRATIONS API (Lexoffice, sevDesk)
+# =============================================================================
+
+from lexoffice import create_lexoffice_client, LexofficeInvoiceSync, test_lexoffice_connection
+from sevdesk import create_sevdesk_client, SevdeskInvoiceSync, test_sevdesk_connection
+
+# Integration settings table
+def init_integrations_table():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS integrations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER DEFAULT 1,
+            provider TEXT NOT NULL,
+            api_key TEXT,
+            enabled INTEGER DEFAULT 0,
+            last_sync TIMESTAMP,
+            sync_count INTEGER DEFAULT 0,
+            settings TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(org_id, provider)
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+init_integrations_table()
+
+
+@app.get("/integrations", response_class=HTMLResponse, tags=["Integrations"])
+async def integrations_page(request: Request):
+    """Integrations Settings Page"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return RedirectResponse(url="/login", status_code=303)
+    
+    user_info = get_user_info(user_id)
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM integrations WHERE org_id = 1")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    integrations = {}
+    for row in rows:
+        integrations[row['provider']] = dict(row)
+    
+    return templates.TemplateResponse("integrations.html", {
+        "request": request,
+        "user": user_info,
+        "integrations": integrations
+    })
+
+
+@app.post("/api/integrations/test", tags=["Integrations"])
+async def test_integration(request: Request):
+    """Test integration connection"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    provider = data.get('provider')
+    api_key = data.get('api_key')
+    
+    if not provider or not api_key:
+        return JSONResponse({"error": "Provider und API-Key erforderlich"}, status_code=400)
+    
+    if provider == 'lexoffice':
+        result = test_lexoffice_connection(api_key)
+    elif provider == 'sevdesk':
+        result = test_sevdesk_connection(api_key)
+    else:
+        return JSONResponse({"error": f"Unbekannter Provider: {provider}"}, status_code=400)
+    
+    return JSONResponse(result)
+
+
+@app.post("/api/integrations/save", tags=["Integrations"])
+async def save_integration(request: Request):
+    """Save integration settings"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    provider = data.get('provider')
+    api_key = data.get('api_key')
+    enabled = data.get('enabled', False)
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO integrations (org_id, provider, api_key, enabled, updated_at)
+        VALUES (1, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(org_id, provider) DO UPDATE SET
+            api_key = excluded.api_key,
+            enabled = excluded.enabled,
+            updated_at = CURRENT_TIMESTAMP
+    """, (provider, api_key, 1 if enabled else 0))
+    conn.commit()
+    conn.close()
+    
+    return JSONResponse({"success": True, "message": f"{provider.title()} gespeichert"})
+
+
+@app.post("/api/integrations/sync", tags=["Integrations"])
+async def sync_to_integration(request: Request):
+    """Sync invoices to external system"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    data = await request.json()
+    provider = data.get('provider')
+    invoice_ids = data.get('invoice_ids', [])
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT api_key FROM integrations WHERE org_id = 1 AND provider = ? AND enabled = 1", (provider,))
+    row = cursor.fetchone()
+    
+    if not row:
+        conn.close()
+        return JSONResponse({"error": f"{provider} nicht konfiguriert"}, status_code=400)
+    
+    api_key = row['api_key']
+    placeholders = ','.join(['?' for _ in invoice_ids])
+    cursor.execute(f"SELECT * FROM invoices WHERE id IN ({placeholders})", invoice_ids)
+    invoices = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    
+    if provider == 'lexoffice':
+        client = create_lexoffice_client(api_key)
+        sync = LexofficeInvoiceSync(client)
+    else:
+        client = create_sevdesk_client(api_key)
+        sync = SevdeskInvoiceSync(client)
+    
+    result = sync.sync_batch(invoices)
+    return JSONResponse(result)
