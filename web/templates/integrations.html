@@ -1,159 +1,302 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Integrationen - SBS Invoice</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <style>
-        :root { --sbs-blue: #003856; --sbs-yellow: #FFB900; }
-        body { background: #f8f9fa; }
-        .navbar { background: linear-gradient(135deg, var(--sbs-blue) 0%, #00537d 100%); }
-        .integration-card { border: none; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        .logo-lexoffice { background: linear-gradient(135deg, #00A3E0, #0077B5); }
-        .logo-sevdesk { background: linear-gradient(135deg, #FF6B35, #F7931E); }
-        .logo-datev { background: linear-gradient(135deg, #006341, #004d31); }
-        .integration-logo { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; }
-        .status-connected { background: #d4edda; color: #155724; padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.8rem; }
-        .status-disconnected { background: #f8d7da; color: #721c24; padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.8rem; }
-    </style>
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="/dashboard"><i class="bi bi-receipt me-2"></i>SBS Invoice</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/datev">DATEV</a>
-                <a class="nav-link active" href="/integrations">Integrationen</a>
-                <a class="nav-link" href="/dashboard">Dashboard</a>
-            </div>
-        </div>
-    </nav>
+{% extends "base_app.html" %}
 
-    <div class="container">
-        <h2 class="mb-4"><i class="bi bi-plug me-2"></i>Integrationen</h2>
+{% block title %}Integrationen{% endblock %}
+
+{% block styles %}
+<style>
+  .integrations-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-6);
+  }
+  
+  .page-header {
+    margin-bottom: var(--space-6);
+  }
+  
+  .page-title {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+  }
+  
+  .page-subtitle {
+    color: var(--color-text-secondary);
+  }
+  
+  .integrations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: var(--space-6);
+  }
+  
+  .integration-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+  }
+  
+  .integration-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    background: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
+  }
+  
+  .integration-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+  }
+  
+  .integration-logo.lexoffice {
+    background: linear-gradient(135deg, #00A3E0, #0077B5);
+  }
+  
+  .integration-logo.sevdesk {
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+  }
+  
+  .integration-logo.datev {
+    background: linear-gradient(135deg, #006341, #004d31);
+  }
+  
+  .integration-info {
+    flex: 1;
+  }
+  
+  .integration-name {
+    font-weight: var(--font-semibold);
+    margin-bottom: 2px;
+  }
+  
+  .integration-provider {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+  }
+  
+  .status-badge {
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+  }
+  
+  .status-badge.connected {
+    background: var(--color-success-light);
+    color: var(--color-success-dark);
+  }
+  
+  .status-badge.disconnected {
+    background: var(--color-gray-100);
+    color: var(--color-gray-600);
+  }
+  
+  .integration-body {
+    padding: var(--space-5);
+  }
+  
+  .integration-desc {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-4);
+  }
+  
+  .form-group {
+    margin-bottom: var(--space-4);
+  }
+  
+  .form-label {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    margin-bottom: var(--space-2);
+  }
+  
+  .form-input {
+    width: 100%;
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    font-family: var(--font-family-mono);
+  }
+  
+  .form-hint {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    margin-top: var(--space-1);
+  }
+  
+  .form-hint a {
+    color: var(--color-primary);
+  }
+  
+  .integration-actions {
+    display: flex;
+    gap: var(--space-2);
+  }
+  
+  .btn-test {
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  
+  .btn-test:hover {
+    background: var(--color-bg-secondary);
+  }
+  
+  .btn-save {
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  
+  .btn-save:hover {
+    background: var(--color-primary-light);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="integrations-container">
+  <div class="page-header">
+    <h1 class="page-title">Integrationen</h1>
+    <p class="page-subtitle">Verbinden Sie SBS Invoice mit Ihrer Buchhaltungssoftware</p>
+  </div>
+  
+  <div class="integrations-grid">
+    <!-- Lexoffice -->
+    <div class="integration-card">
+      <div class="integration-header">
+        <div class="integration-logo lexoffice">📊</div>
+        <div class="integration-info">
+          <div class="integration-name">Lexoffice</div>
+          <div class="integration-provider">Lexware / Haufe Group</div>
+        </div>
+        <span class="status-badge {% if integrations.get('lexoffice', {}).get('enabled') %}connected{% else %}disconnected{% endif %}">
+          {% if integrations.get('lexoffice', {}).get('enabled') %}✓ Verbunden{% else %}Nicht verbunden{% endif %}
+        </span>
+      </div>
+      <div class="integration-body">
+        <p class="integration-desc">Synchronisieren Sie Eingangsrechnungen automatisch mit Lexoffice. Kontakte und Belege werden angelegt.</p>
         
-        <div class="row g-4">
-            <!-- Lexoffice -->
-            <div class="col-lg-6">
-                <div class="card integration-card">
-                    <div class="card-header bg-white d-flex align-items-center py-3">
-                        <div class="integration-logo logo-lexoffice me-3"><i class="bi bi-journal-text"></i></div>
-                        <div class="flex-grow-1">
-                            <h5 class="mb-0">Lexoffice</h5>
-                            <small class="text-muted">Lexware / Haufe Group</small>
-                        </div>
-                        {% if integrations.get('lexoffice', {}).get('enabled') %}
-                        <span class="status-connected"><i class="bi bi-check-circle me-1"></i>Verbunden</span>
-                        {% else %}
-                        <span class="status-disconnected"><i class="bi bi-x-circle me-1"></i>Nicht verbunden</span>
-                        {% endif %}
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">API-Key</label>
-                            <input type="password" class="form-control" id="lexoffice-key" 
-                                   value="{{ integrations.get('lexoffice', {}).get('api_key', '') }}"
-                                   placeholder="Lexoffice API Key">
-                            <small class="text-muted"><a href="https://app.lexoffice.de/settings/public-api" target="_blank">API-Key generieren</a></small>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-outline-primary" onclick="testConn('lexoffice')"><i class="bi bi-wifi me-1"></i>Testen</button>
-                            <button class="btn btn-primary" onclick="saveInt('lexoffice')"><i class="bi bi-save me-1"></i>Speichern</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- sevDesk -->
-            <div class="col-lg-6">
-                <div class="card integration-card">
-                    <div class="card-header bg-white d-flex align-items-center py-3">
-                        <div class="integration-logo logo-sevdesk me-3"><i class="bi bi-calculator"></i></div>
-                        <div class="flex-grow-1">
-                            <h5 class="mb-0">sevDesk</h5>
-                            <small class="text-muted">Cloud-Buchhaltung</small>
-                        </div>
-                        {% if integrations.get('sevdesk', {}).get('enabled') %}
-                        <span class="status-connected"><i class="bi bi-check-circle me-1"></i>Verbunden</span>
-                        {% else %}
-                        <span class="status-disconnected"><i class="bi bi-x-circle me-1"></i>Nicht verbunden</span>
-                        {% endif %}
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">API-Token</label>
-                            <input type="password" class="form-control" id="sevdesk-key"
-                                   value="{{ integrations.get('sevdesk', {}).get('api_key', '') }}"
-                                   placeholder="sevDesk API Token">
-                            <small class="text-muted"><a href="https://my.sevdesk.de/#/admin/userManagement" target="_blank">Token generieren</a></small>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-outline-primary" onclick="testConn('sevdesk')"><i class="bi bi-wifi me-1"></i>Testen</button>
-                            <button class="btn btn-primary" onclick="saveInt('sevdesk')"><i class="bi bi-save me-1"></i>Speichern</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- DATEV -->
-            <div class="col-lg-6">
-                <div class="card integration-card">
-                    <div class="card-header bg-white d-flex align-items-center py-3">
-                        <div class="integration-logo logo-datev me-3"><i class="bi bi-building"></i></div>
-                        <div class="flex-grow-1">
-                            <h5 class="mb-0">DATEV</h5>
-                            <small class="text-muted">Export für Steuerberater</small>
-                        </div>
-                        <span class="status-connected"><i class="bi bi-check-circle me-1"></i>Verfügbar</span>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted small">EXTF/CSV und XML Export für DATEV Rechnungswesen und Unternehmen Online.</p>
-                        <a href="/datev" class="btn btn-success"><i class="bi bi-box-arrow-up-right me-2"></i>Zum DATEV Export</a>
-                    </div>
-                </div>
-            </div>
+        <div class="form-group">
+          <label class="form-label">API-Key</label>
+          <input type="password" class="form-input" id="lexoffice-key" placeholder="Lexoffice API Key" value="{{ integrations.get('lexoffice', {}).get('api_key', '') }}">
+          <div class="form-hint"><a href="https://app.lexoffice.de/settings/public-api" target="_blank">API-Key hier generieren →</a></div>
         </div>
+        
+        <div class="integration-actions">
+          <button class="btn-test" onclick="testConnection('lexoffice')">🔌 Testen</button>
+          <button class="btn-save" onclick="saveIntegration('lexoffice')">💾 Speichern</button>
+        </div>
+      </div>
     </div>
-
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="toast" class="toast" role="alert">
-            <div class="toast-body" id="toastBody"></div>
+    
+    <!-- sevDesk -->
+    <div class="integration-card">
+      <div class="integration-header">
+        <div class="integration-logo sevdesk">🧮</div>
+        <div class="integration-info">
+          <div class="integration-name">sevDesk</div>
+          <div class="integration-provider">Cloud-Buchhaltung</div>
         </div>
+        <span class="status-badge {% if integrations.get('sevdesk', {}).get('enabled') %}connected{% else %}disconnected{% endif %}">
+          {% if integrations.get('sevdesk', {}).get('enabled') %}✓ Verbunden{% else %}Nicht verbunden{% endif %}
+        </span>
+      </div>
+      <div class="integration-body">
+        <p class="integration-desc">Übertragen Sie Belege direkt in sevDesk. Lieferanten werden automatisch angelegt und verknüpft.</p>
+        
+        <div class="form-group">
+          <label class="form-label">API-Token</label>
+          <input type="password" class="form-input" id="sevdesk-key" placeholder="sevDesk API Token" value="{{ integrations.get('sevdesk', {}).get('api_key', '') }}">
+          <div class="form-hint"><a href="https://my.sevdesk.de/#/admin/userManagement" target="_blank">Token hier generieren →</a></div>
+        </div>
+        
+        <div class="integration-actions">
+          <button class="btn-test" onclick="testConnection('sevdesk')">🔌 Testen</button>
+          <button class="btn-save" onclick="saveIntegration('sevdesk')">💾 Speichern</button>
+        </div>
+      </div>
     </div>
+    
+    <!-- DATEV -->
+    <div class="integration-card">
+      <div class="integration-header">
+        <div class="integration-logo datev">🏢</div>
+        <div class="integration-info">
+          <div class="integration-name">DATEV</div>
+          <div class="integration-provider">Export für Steuerberater</div>
+        </div>
+        <span class="status-badge connected">✓ Verfügbar</span>
+      </div>
+      <div class="integration-body">
+        <p class="integration-desc">Exportieren Sie Buchungsdaten im DATEV-Format (EXTF/CSV, XML) für Rechnungswesen und Unternehmen Online.</p>
+        
+        <a href="/datev" class="btn-save" style="display: inline-block; text-decoration: none;">
+          📥 Zum DATEV Export →
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function showToast(msg, ok=true) {
-            const t = document.getElementById('toast');
-            document.getElementById('toastBody').innerHTML = msg;
-            t.className = 'toast ' + (ok ? 'bg-success' : 'bg-danger') + ' text-white';
-            new bootstrap.Toast(t).show();
-        }
-        
-        async function testConn(p) {
-            const key = document.getElementById(p + '-key').value;
-            if (!key) { showToast('API-Key eingeben', false); return; }
-            const r = await fetch('/api/integrations/test', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({provider: p, api_key: key})
-            });
-            const d = await r.json();
-            showToast(d.success ? '✅ Verbindung OK: ' + (d.company_name || d.email || '') : '❌ ' + d.error, d.success);
-        }
-        
-        async function saveInt(p) {
-            const key = document.getElementById(p + '-key').value;
-            if (!key) { showToast('API-Key eingeben', false); return; }
-            const r = await fetch('/api/integrations/save', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({provider: p, api_key: key, enabled: true})
-            });
-            const d = await r.json();
-            showToast(d.success ? '✅ Gespeichert' : '❌ ' + d.error, d.success);
-            if (d.success) setTimeout(() => location.reload(), 1000);
-        }
-    </script>
-</body>
-</html>
+{% block scripts %}
+<script>
+  async function testConnection(provider) {
+    const key = document.getElementById(provider + '-key').value;
+    if (!key) { alert('Bitte API-Key eingeben'); return; }
+    
+    const res = await fetch('/api/integrations/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, api_key: key })
+    });
+    
+    const data = await res.json();
+    alert(data.success ? '✅ Verbindung erfolgreich!' : '❌ Fehler: ' + data.error);
+  }
+  
+  async function saveIntegration(provider) {
+    const key = document.getElementById(provider + '-key').value;
+    if (!key) { alert('Bitte API-Key eingeben'); return; }
+    
+    const res = await fetch('/api/integrations/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, api_key: key, enabled: true })
+    });
+    
+    const data = await res.json();
+    if (data.success) {
+      alert('✅ Gespeichert');
+      location.reload();
+    } else {
+      alert('❌ Fehler: ' + data.error);
+    }
+  }
+</script>
+{% endblock %}
