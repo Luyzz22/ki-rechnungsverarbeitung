@@ -1,0 +1,222 @@
+<header class="header">
+  <div class="header-inner">
+    <!-- Home Button -->
+    <a href="/dashboard" class="home-btn" title="Dashboard">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+    </a>
+    
+    <a href="/" class="logo-wrap">
+      <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" class="logo-img" />
+      <div class="logo-text"><strong>SBS Deutschland</strong><span>Smart Business Service · Weinheim</span></div>
+    </a>
+
+    <button class="burger" id="burger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav" id="nav">
+      <a href="/">Upload</a>
+      <a href="/history">Verlauf</a>
+      <a href="/analytics">Analytics</a>
+      
+      <!-- Tools Dropdown -->
+      <div class="dropdown">
+        <span class="dropdown-toggle">Tools</span>
+        <div class="dropdown-menu">
+          <a href="/copilot">🤖 Finance Copilot</a>
+          <a href="/accounting">📊 Auto-Kontierung</a>
+          <a href="/email-config">📧 Email-Inbox</a>
+        </div>
+      </div>
+
+      <!-- App Switcher -->
+      <div class="dropdown app-switcher">
+        <button class="app-switcher-btn" title="Apps wechseln">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="5" r="2.5"/>
+            <circle cx="12" cy="5" r="2.5"/>
+            <circle cx="19" cy="5" r="2.5"/>
+            <circle cx="5" cy="12" r="2.5"/>
+            <circle cx="12" cy="12" r="2.5"/>
+            <circle cx="19" cy="12" r="2.5"/>
+            <circle cx="5" cy="19" r="2.5"/>
+            <circle cx="12" cy="19" r="2.5"/>
+            <circle cx="19" cy="19" r="2.5"/>
+          </svg>
+        </button>
+        <div class="dropdown-menu app-switcher-menu">
+          <div class="dropdown-section">SBS Plattform</div>
+          <a href="/dashboard" class="app-item">
+            <span class="app-icon" style="background:linear-gradient(135deg,#003856,#004d73);">🏠</span>
+            <div class="app-info">
+              <strong>Dashboard</strong>
+              <small>Übersicht & Kennzahlen</small>
+            </div>
+          </a>
+          <div class="dropdown-section">Produkte</div>
+          <a href="/" class="app-item active-app">
+            <span class="app-icon" style="background:linear-gradient(135deg,#22c55e,#16a34a);">📄</span>
+            <div class="app-info">
+              <strong>KI-Rechnungen</strong>
+              <small>Rechnungsverarbeitung</small>
+            </div>
+          </a>
+          <a href="https://contract.sbsdeutschland.com" class="app-item">
+            <span class="app-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);">📋</span>
+            <div class="app-info">
+              <strong>KI-Verträge</strong>
+              <small>Vertragsanalyse</small>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Account Dropdown -->
+      <div class="account-dropdown">
+        <span class="account-toggle">👤 <span id="accountName">Account</span> ▾</span>
+        <div class="account-menu">
+          <div class="account-menu-header" id="accountHeader">
+            <strong id="accountFullName">Account</strong>
+            <span id="accountEmail"></span>
+          </div>
+          
+          <div class="divider"></div>
+          <div class="dropdown-section">Workspace</div>
+          <a href="/">📥 Upload</a>
+          <a href="/history">📊 Verlauf</a>
+          <a href="/analytics">📈 Analytics</a>
+          <a href="/exports">📁 Export-Historie</a>
+
+          <div class="divider"></div>
+          <div class="dropdown-section">Konto</div>
+          <a href="/profile">⚙️ Einstellungen</a>
+          <a href="/account">💳 Abrechnung</a>
+          <a href="/team">👥 Team</a>
+          <a href="/audit-log">📜 Audit-Log</a>
+          
+          <div class="divider admin-only hidden"></div>
+          <div class="dropdown-section admin-only hidden">Administration</div>
+          <a href="/admin" class="admin-only hidden">🔧 System-Dashboard</a>
+          <a href="/admin/users" class="admin-only hidden">👥 User-Verwaltung</a>
+          <a href="/analytics/costs" class="admin-only hidden">💰 API-Kosten</a>
+          
+          <div class="divider"></div>
+          <a href="/logout" class="logout-link">🚪 Abmelden</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<style>
+/* Home Button */
+.home-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: #003856;
+  background: rgba(0,56,86,0.08);
+  margin-right: 12px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.home-btn:hover { background: rgba(0,56,86,0.15); transform: scale(1.05); }
+
+/* App Switcher */
+.app-switcher { position: relative; }
+.app-switcher-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.app-switcher-btn:hover { background: rgba(0,56,86,0.08); color: #003856; }
+
+.app-switcher-menu {
+  width: 300px !important;
+  right: 0;
+  left: auto;
+}
+
+.app-item {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px !important;
+  text-decoration: none;
+  color: inherit;
+}
+.app-item:hover { background: rgba(0,56,86,0.05); }
+.app-item.active-app { 
+  background: rgba(255,185,0,0.1); 
+  border-left: 3px solid #FFB900; 
+}
+
+.app-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.app-info { display: flex; flex-direction: column; }
+.app-info strong { font-size: 14px; color: #1e293b; }
+.app-info small { font-size: 12px; color: #64748b; }
+</style>
+
+<script>
+  // Burger Menu Toggle
+  const burger = document.getElementById('burger');
+  const nav = document.getElementById('nav');
+  if (burger && nav) {
+    burger.addEventListener('click', () => {
+      nav.classList.toggle('open');
+      burger.classList.toggle('active');
+    });
+  }
+
+  // User Info & Admin Check laden
+  async function loadUserInfo() {
+    try {
+      const res = await fetch('/api/user', {credentials: 'include'});
+      const user = await res.json();
+      
+      if (user && user.logged_in) {
+        const nameEl = document.getElementById('accountName');
+        const fullNameEl = document.getElementById('accountFullName');
+        const emailEl = document.getElementById('accountEmail');
+        
+        if (nameEl) nameEl.textContent = user.name || 'Account';
+        if (fullNameEl) fullNameEl.textContent = user.name || 'Account';
+        if (emailEl) emailEl.textContent = user.email || '';
+        
+        if (user.is_admin) {
+          document.querySelectorAll('.admin-only').forEach(el => {
+            el.classList.remove('hidden');
+          });
+        }
+      }
+    } catch(e) {
+      console.error('User info error:', e);
+    }
+  }
+  document.addEventListener('DOMContentLoaded', loadUserInfo);
+</script>
