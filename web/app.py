@@ -5312,7 +5312,7 @@ async def datev_export_page(request: Request):
     user_info = get_user_info(user_id)
     
     # Get invoices for export
-    conn = get_db()
+    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
         SELECT id, rechnungsnummer, datum, rechnungsaussteller, 
@@ -5353,7 +5353,7 @@ async def export_to_datev(request: Request):
         return JSONResponse({"error": "Keine Rechnungen ausgewählt"}, status_code=400)
     
     # Load invoices
-    conn = get_db()
+    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
     placeholders = ','.join(['?' for _ in invoice_ids])
@@ -5465,7 +5465,7 @@ async def preview_datev_export(request: Request, invoice_id: int):
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
     
-    conn = get_db()
+    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM invoices WHERE id = ?", (invoice_id,))
     row = cursor.fetchone()
@@ -5520,6 +5520,8 @@ async def erechnung_landing(request: Request):
 
 
 # =============================================================================
+import sqlite3
+
 # INTEGRATIONS API (Lexoffice, sevDesk)
 # =============================================================================
 
@@ -5528,7 +5530,7 @@ from sevdesk import create_sevdesk_client, SevdeskInvoiceSync, test_sevdesk_conn
 
 # Integration settings table
 def init_integrations_table():
-    conn = get_db()
+    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS integrations (
@@ -5560,7 +5562,7 @@ async def integrations_page(request: Request):
     
     user_info = get_user_info(user_id)
     
-    conn = get_db()
+    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM integrations WHERE org_id = 1")
     rows = cursor.fetchall()
@@ -5613,7 +5615,7 @@ async def save_integration(request: Request):
     api_key = data.get('api_key')
     enabled = data.get('enabled', False)
     
-    conn = get_db()
+    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO integrations (org_id, provider, api_key, enabled, updated_at)
@@ -5640,7 +5642,7 @@ async def sync_to_integration(request: Request):
     provider = data.get('provider')
     invoice_ids = data.get('invoice_ids', [])
     
-    conn = get_db()
+    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT api_key FROM integrations WHERE org_id = 1 AND provider = ? AND enabled = 1", (provider,))
     row = cursor.fetchone()
