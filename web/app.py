@@ -780,6 +780,17 @@ async def startup_event():
 
 
 
+
+# Helper: Get user initials for App Shell
+def get_user_initials(user_info):
+    if not user_info:
+        return 'U'
+    name = user_info.get('name') or user_info.get('email') or 'User'
+    parts = name.strip().split()
+    if len(parts) >= 2:
+        return (parts[0][0] + parts[-1][0]).upper()
+    return name[:2].upper() if len(name) >= 2 else 'U'
+
 # =====================================================
 # PASSWORD RESET ROUTES
 # =====================================================
