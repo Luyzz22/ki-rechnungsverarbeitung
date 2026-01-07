@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integrationen - SBS Invoice</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root { --sbs-blue: #003856; --sbs-yellow: #FFB900; }
+        body { background: #f8f9fa; }
+        .navbar { background: linear-gradient(135deg, var(--sbs-blue) 0%, #00537d 100%); }
+        .integration-card { border: none; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .logo-lexoffice { background: linear-gradient(135deg, #00A3E0, #0077B5); }
+        .logo-sevdesk { background: linear-gradient(135deg, #FF6B35, #F7931E); }
+        .logo-datev { background: linear-gradient(135deg, #006341, #004d31); }
+        .integration-logo { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; }
+        .status-connected { background: #d4edda; color: #155724; padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.8rem; }
+        .status-disconnected { background: #f8d7da; color: #721c24; padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard"><i class="bi bi-receipt me-2"></i>SBS Invoice</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/datev">DATEV</a>
+                <a class="nav-link active" href="/integrations">Integrationen</a>
+                <a class="nav-link" href="/dashboard">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 class="mb-4"><i class="bi bi-plug me-2"></i>Integrationen</h2>
+        
+        <div class="row g-4">
+            <!-- Lexoffice -->
+            <div class="col-lg-6">
+                <div class="card integration-card">
+                    <div class="card-header bg-white d-flex align-items-center py-3">
+                        <div class="integration-logo logo-lexoffice me-3"><i class="bi bi-journal-text"></i></div>
+                        <div class="flex-grow-1">
+                            <h5 class="mb-0">Lexoffice</h5>
+                            <small class="text-muted">Lexware / Haufe Group</small>
+                        </div>
+                        {% if integrations.get('lexoffice', {}).get('enabled') %}
+                        <span class="status-connected"><i class="bi bi-check-circle me-1"></i>Verbunden</span>
+                        {% else %}
+                        <span class="status-disconnected"><i class="bi bi-x-circle me-1"></i>Nicht verbunden</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">API-Key</label>
+                            <input type="password" class="form-control" id="lexoffice-key" 
+                                   value="{{ integrations.get('lexoffice', {}).get('api_key', '') }}"
+                                   placeholder="Lexoffice API Key">
+                            <small class="text-muted"><a href="https://app.lexoffice.de/settings/public-api" target="_blank">API-Key generieren</a></small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary" onclick="testConn('lexoffice')"><i class="bi bi-wifi me-1"></i>Testen</button>
+                            <button class="btn btn-primary" onclick="saveInt('lexoffice')"><i class="bi bi-save me-1"></i>Speichern</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- sevDesk -->
+            <div class="col-lg-6">
+                <div class="card integration-card">
+                    <div class="card-header bg-white d-flex align-items-center py-3">
+                        <div class="integration-logo logo-sevdesk me-3"><i class="bi bi-calculator"></i></div>
+                        <div class="flex-grow-1">
+                            <h5 class="mb-0">sevDesk</h5>
+                            <small class="text-muted">Cloud-Buchhaltung</small>
+                        </div>
+                        {% if integrations.get('sevdesk', {}).get('enabled') %}
+                        <span class="status-connected"><i class="bi bi-check-circle me-1"></i>Verbunden</span>
+                        {% else %}
+                        <span class="status-disconnected"><i class="bi bi-x-circle me-1"></i>Nicht verbunden</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">API-Token</label>
+                            <input type="password" class="form-control" id="sevdesk-key"
+                                   value="{{ integrations.get('sevdesk', {}).get('api_key', '') }}"
+                                   placeholder="sevDesk API Token">
+                            <small class="text-muted"><a href="https://my.sevdesk.de/#/admin/userManagement" target="_blank">Token generieren</a></small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary" onclick="testConn('sevdesk')"><i class="bi bi-wifi me-1"></i>Testen</button>
+                            <button class="btn btn-primary" onclick="saveInt('sevdesk')"><i class="bi bi-save me-1"></i>Speichern</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DATEV -->
+            <div class="col-lg-6">
+                <div class="card integration-card">
+                    <div class="card-header bg-white d-flex align-items-center py-3">
+                        <div class="integration-logo logo-datev me-3"><i class="bi bi-building"></i></div>
+                        <div class="flex-grow-1">
+                            <h5 class="mb-0">DATEV</h5>
+                            <small class="text-muted">Export für Steuerberater</small>
+                        </div>
+                        <span class="status-connected"><i class="bi bi-check-circle me-1"></i>Verfügbar</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small">EXTF/CSV und XML Export für DATEV Rechnungswesen und Unternehmen Online.</p>
+                        <a href="/datev" class="btn btn-success"><i class="bi bi-box-arrow-up-right me-2"></i>Zum DATEV Export</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="toast" class="toast" role="alert">
+            <div class="toast-body" id="toastBody"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showToast(msg, ok=true) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastBody').innerHTML = msg;
+            t.className = 'toast ' + (ok ? 'bg-success' : 'bg-danger') + ' text-white';
+            new bootstrap.Toast(t).show();
+        }
+        
+        async function testConn(p) {
+            const key = document.getElementById(p + '-key').value;
+            if (!key) { showToast('API-Key eingeben', false); return; }
+            const r = await fetch('/api/integrations/test', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({provider: p, api_key: key})
+            });
+            const d = await r.json();
+            showToast(d.success ? '✅ Verbindung OK: ' + (d.company_name || d.email || '') : '❌ ' + d.error, d.success);
+        }
+        
+        async function saveInt(p) {
+            const key = document.getElementById(p + '-key').value;
+            if (!key) { showToast('API-Key eingeben', false); return; }
+            const r = await fetch('/api/integrations/save', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({provider: p, api_key: key, enabled: true})
+            });
+            const d = await r.json();
+            showToast(d.success ? '✅ Gespeichert' : '❌ ' + d.error, d.success);
+            if (d.success) setTimeout(() => location.reload(), 1000);
+        }
+    </script>
+</body>
+</html>
