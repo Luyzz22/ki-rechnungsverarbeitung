@@ -14,8 +14,7 @@
     /* Hero Slider Styles */
     .hero-slider {
       position: relative;
-      margin-top: -20px;
-      min-height: auto;
+      min-height: 600px;
       overflow: hidden;
     }
     
@@ -29,7 +28,7 @@
       transform: translateX(30px);
       transition: opacity 0.8s ease, transform 0.8s ease;
       pointer-events: none;
-      padding: 10px 24px 20px;
+      padding: 80px 24px;
     }
     
     .hero-slide.active {
@@ -58,7 +57,7 @@
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 14px;
+      margin-bottom: 24px;
       color: rgba(255,255,255,0.9);
     }
     

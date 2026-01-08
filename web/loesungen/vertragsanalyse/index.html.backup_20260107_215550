@@ -38,7 +38,7 @@
       font-size: 0.8rem;
       font-weight: 600;
       color: #22d3ee;
-      margin-bottom: 14px;
+      margin-bottom: 24px;
     }
     .contract-hero h1 {
       font-size: clamp(2.4rem, 5vw, 3.5rem);
@@ -161,11 +161,11 @@
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: #003856;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
     }
     .section-title {
       font-size: 2rem;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
       color: #003856;
     }
     .section-subtitle {
@@ -200,7 +200,7 @@
       align-items: center;
       justify-content: center;
       font-size: 1.5rem;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
     }
     .feature-card h3 {
       font-size: 1.15rem;
@@ -319,7 +319,7 @@
       font-size: 0.8rem;
       font-weight: 700;
       color: #78350f;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
     }
     .pricing-card h2 {
       font-size: 1.8rem;
@@ -356,277 +356,13 @@
     .cta-section h2 {
       font-size: 2rem;
       color: #fff;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
     }
     .cta-section p {
       color: rgba(255,255,255,0.8);
       max-width: 600px;
       margin: 0 auto 32px;
     }
-  
-    /* ============================================
-       HERO SLIDER - Enterprise Contract Intelligence
-       ============================================ */
-    .hero-slider {
-      position: relative;
-      min-height: auto;
-      overflow: hidden;
-    }
-    
-    .hero-slide {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.8s ease, visibility 0.8s ease;
-      padding: 0 24px 25px;
-    }
-    
-    .hero-slide.active {
-      position: relative;
-      opacity: 1;
-      visibility: visible;
-    }
-    
-    .hero-slide-content {
-      max-width: 1000px;
-      margin: 0 auto;
-      text-align: center;
-    }
-    
-    .hero-slide .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 22px;
-      background: rgba(34, 211, 238, 0.15);
-      border: 1px solid rgba(34, 211, 238, 0.3);
-      border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #22d3ee;
-      margin-bottom: 10px;
-    }
-    
-    .hero-slide .hero-badge .pulse {
-      width: 8px;
-      height: 8px;
-      background: #06b6d4;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(1.2); }
-    }
-    
-    .hero-slide h1 {
-      font-size: clamp(2.2rem, 5vw, 3.2rem);
-      font-weight: 700;
-      line-height: 1.15;
-      margin-bottom: 14px;
-      color: #fff;
-    }
-    
-    .hero-slide h1 .highlight {
-      color: #22d3ee;
-    }
-    
-    .hero-slide .hero-subtitle {
-      font-size: 1.15rem;
-      color: rgba(255,255,255,0.8);
-      max-width: 700px;
-      margin: 0 auto 20px;
-      line-height: 1.7;
-    }
-    
-    .hero-slide .hero-metrics {
-      display: flex;
-      justify-content: center;
-      gap: 48px;
-      flex-wrap: wrap;
-      margin-bottom: 36px;
-    }
-    
-    .hero-metric {
-      text-align: center;
-    }
-    
-    .hero-metric-value {
-      font-size: 2.2rem;
-      font-weight: 700;
-      color: #fff;
-      line-height: 1;
-    }
-    
-    .hero-metric-label {
-      font-size: 0.85rem;
-      color: rgba(255,255,255,0.6);
-      margin-top: 6px;
-    }
-    
-    .hero-cta-group {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    
-    .hero-cta {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 28px;
-      border-radius: 8px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.3s ease;
-    }
-    
-    .hero-cta.primary {
-      background: #fff;
-      color: #003856;
-    }
-    
-    .hero-cta.primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
-    
-    .hero-cta.secondary {
-      background: rgba(34, 211, 238, 0.15);
-      border: 1px solid rgba(34, 211, 238, 0.4);
-      color: #22d3ee;
-    }
-    
-    .hero-cta.secondary:hover {
-      background: rgba(34, 211, 238, 0.25);
-    }
-    
-    /* Slider Navigation */
-    .slider-nav {
-      position: absolute;
-      bottom: 32px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 12px;
-      z-index: 10;
-    }
-    
-    .slider-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.3);
-      border: none;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      padding: 0;
-    }
-    
-    .slider-dot:hover {
-      background: rgba(255,255,255,0.5);
-    }
-    
-    .slider-dot.active {
-      background: #22d3ee;
-      transform: scale(1.2);
-    }
-    
-    /* Slider Arrows */
-    .slider-arrows {
-      position: absolute;
-      top: 50%;
-      left: 0;
-      right: 0;
-      transform: translateY(-50%);
-      display: flex;
-      justify-content: space-between;
-      padding: 0 24px;
-      pointer-events: none;
-      z-index: 10;
-    }
-    
-    .slider-arrow {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.2);
-      color: #fff;
-      font-size: 1.5rem;
-      cursor: pointer;
-      pointer-events: auto;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .slider-arrow:hover {
-      background: rgba(255,255,255,0.2);
-      transform: scale(1.1);
-    }
-    
-    /* Feature Highlight Cards */
-    .feature-highlight {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-    
-    @media (max-width: 768px) {
-      .feature-highlight {
-        grid-template-columns: 1fr;
-        max-width: 400px;
-      }
-      .slider-arrows {
-        display: none;
-      }
-    }
-    
-    .feature-highlight-card {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 16px;
-      padding: 24px;
-      text-align: left;
-    }
-    
-    .feature-highlight-card .icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      margin-bottom: 10px;
-    }
-    
-    .feature-highlight-card h4 {
-      color: #fff;
-      font-size: 1.1rem;
-      margin: 0 0 8px;
-    }
-    
-    .feature-highlight-card p {
-      color: rgba(255,255,255,0.7);
-      font-size: 0.9rem;
-      margin: 0;
-      line-height: 1.5;
-    }
-
   </style>
 </head>
 <body>
@@ -743,163 +479,28 @@
   </div>
 </header>
 
-<section class="contract-hero hero-slider" id="heroSlider">
-  
-  <!-- Slide 1: Platform Overview -->
-  <div class="hero-slide active" data-slide="0">
-    <div class="hero-slide-content">
-      <div class="hero-badge">
-        <span class="pulse"></span>
-        Enterprise KI-Plattform
-      </div>
-      <h1>Die Zukunft der<br><span class="highlight">Vertragsanalyse</span></h1>
-      <p class="hero-subtitle">
-        End-to-End Vertragsautomatisierung mit KI. Von der Analyse über das Risikomanagement 
-        bis zur Fristenverwaltung – eine Plattform für den gesamten Vertragslebenszyklus.
-      </p>
-      <div class="hero-metrics">
-        <div class="hero-metric">
-          <div class="hero-metric-value">98%</div>
-          <div class="hero-metric-label">Erkennungsgenauigkeit</div>
-        </div>
-        <div class="hero-metric">
-          <div class="hero-metric-value">&lt;30s</div>
-          <div class="hero-metric-label">pro Vertrag</div>
-        </div>
-        <div class="hero-metric">
-          <div class="hero-metric-value">100%</div>
-          <div class="hero-metric-label">DSGVO-konform</div>
-        </div>
-      </div>
-      <div class="hero-cta-group">
-        <a href="https://contract.sbsdeutschland.com/upload" class="hero-cta primary">Vertrag analysieren →</a>
-        <a href="/sbshomepage/kontakt.html" class="hero-cta secondary">Beratungsgespräch</a>
-      </div>
+<section class="contract-hero">
+  <div class="hero-badge">📋 KI-Vertragsanalyse</div>
+  <h1>Verträge verstehen.<br><span class="highlight">In Sekunden.</span></h1>
+  <p class="subtitle">Unsere KI analysiert Ihre Verträge automatisch: Kündigungsfristen, Risiken, Zahlungsbedingungen und kritische Klauseln – sofort erkannt und übersichtlich aufbereitet.</p>
+  <div class="hero-ctas">
+    <a href="https://contract.sbsdeutschland.com/upload" class="btn-primary">Vertrag analysieren →</a>
+    <a href="https://contract.sbsdeutschland.com/docs" class="btn-secondary">API Dokumentation</a>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="value">98%</div>
+      <div class="label">Erkennungsgenauigkeit</div>
+    </div>
+    <div class="hero-stat">
+      <div class="value">&lt;30s</div>
+      <div class="label">Analysezeit</div>
+    </div>
+    <div class="hero-stat">
+      <div class="value">GPT-4o</div>
+      <div class="label">Powered by</div>
     </div>
   </div>
-
-  <!-- Slide 2: Contract Copilot -->
-  <div class="hero-slide" data-slide="1">
-    <div class="hero-slide-content">
-      <div class="hero-badge">
-        <span class="pulse"></span>
-        NEU: Contract Copilot
-      </div>
-      <h1>Ihr Vertragsassistent<br><span class="highlight">auf Knopfdruck</span></h1>
-      <p class="hero-subtitle">
-        Fragen Sie Ihre Verträge in natürlicher Sprache. Der Contract Copilot analysiert 
-        Klauseln, vergleicht Konditionen und identifiziert Optimierungspotenziale.
-      </p>
-      <div class="feature-highlight">
-        <div class="feature-highlight-card">
-          <div class="icon">💬</div>
-          <h4>Natürliche Sprache</h4>
-          <p>"Welche Verträge haben eine Kündigungsfrist unter 3 Monaten?"</p>
-        </div>
-        <div class="feature-highlight-card">
-          <div class="icon">⚖️</div>
-          <h4>Klausel-Vergleich</h4>
-          <p>Automatischer Vergleich von Konditionen über alle Verträge</p>
-        </div>
-        <div class="feature-highlight-card">
-          <div class="icon">🎯</div>
-          <h4>Handlungsempfehlungen</h4>
-          <p>Konkrete Vorschläge zur Vertragsoptimierung</p>
-        </div>
-      </div>
-      <div class="hero-cta-group" style="margin-top: 40px;">
-        <a href="https://contract.sbsdeutschland.com/copilot" class="hero-cta primary">Copilot testen →</a>
-        <a href="/loesungen/vertragsanalyse/preise.html" class="hero-cta secondary">Preise ansehen</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- Slide 3: Fristenmanagement -->
-  <div class="hero-slide" data-slide="2">
-    <div class="hero-slide-content">
-      <div class="hero-badge">
-        <span class="pulse"></span>
-        Fristenmanagement
-      </div>
-      <h1>Keine Frist mehr<br><span class="highlight">verpassen</span></h1>
-      <p class="hero-subtitle">
-        Automatische Erkennung aller Fristen: Kündigungsfristen, Verlängerungsoptionen, 
-        Preisanpassungen – mit proaktiven E-Mail-Alerts vor jeder kritischen Deadline.
-      </p>
-      <div class="feature-highlight">
-        <div class="feature-highlight-card">
-          <div class="icon">📅</div>
-          <h4>Auto-Extraktion</h4>
-          <p>KI erkennt alle Fristen automatisch aus dem Vertragstext</p>
-        </div>
-        <div class="feature-highlight-card">
-          <div class="icon">🔔</div>
-          <h4>Proaktive Alerts</h4>
-          <p>E-Mail-Benachrichtigung 90, 60, 30 Tage vor Ablauf</p>
-        </div>
-        <div class="feature-highlight-card">
-          <div class="icon">📊</div>
-          <h4>Dashboard-Übersicht</h4>
-          <p>Alle anstehenden Fristen auf einen Blick</p>
-        </div>
-      </div>
-      <div class="hero-cta-group" style="margin-top: 40px;">
-        <a href="https://contract.sbsdeutschland.com/deadlines" class="hero-cta primary">Fristen-Dashboard →</a>
-        <a href="/loesungen/vertragsanalyse/kanzleien.html" class="hero-cta secondary">Für Kanzleien</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- Slide 4: Risiko-Engine -->
-  <div class="hero-slide" data-slide="3">
-    <div class="hero-slide-content">
-      <div class="hero-badge">
-        <span class="pulse"></span>
-        KI-Risikoanalyse
-      </div>
-      <h1>Vertragsrisiken<br><span class="highlight">sofort erkennen</span></h1>
-      <p class="hero-subtitle">
-        Automatische Bewertung von Haftungsklauseln, Gewährleistungen, IP-Rechten und 
-        Compliance-Risiken. Farbcodierte Risk-Scores für schnelle Entscheidungen.
-      </p>
-      <div class="feature-highlight">
-        <div class="feature-highlight-card">
-          <div class="icon">🔴</div>
-          <h4>Risk-Scoring</h4>
-          <p>Kritisch · Hoch · Mittel · Niedrig für jede Klausel</p>
-        </div>
-        <div class="feature-highlight-card">
-          <div class="icon">📋</div>
-          <h4>8 Vertragstypen</h4>
-          <p>Spezialisierte Analyse für jede Vertragsart</p>
-        </div>
-        <div class="feature-highlight-card">
-          <div class="icon">📄</div>
-          <h4>Board-Ready Reports</h4>
-          <p>Professionelle PDF-Reports für Management & Vorstand</p>
-        </div>
-      </div>
-      <div class="hero-cta-group" style="margin-top: 40px;">
-        <a href="https://contract.sbsdeutschland.com/upload" class="hero-cta primary">Risiko-Analyse starten →</a>
-        <a href="/loesungen/vertragsanalyse/einkauf.html" class="hero-cta secondary">Für Einkauf</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- Slider Navigation -->
-  <div class="slider-nav">
-    <button class="slider-dot active" data-slide="0" aria-label="Slide 1"></button>
-    <button class="slider-dot" data-slide="1" aria-label="Slide 2"></button>
-    <button class="slider-dot" data-slide="2" aria-label="Slide 3"></button>
-    <button class="slider-dot" data-slide="3" aria-label="Slide 4"></button>
-  </div>
-  
-  <!-- Slider Arrows -->
-  <div class="slider-arrows">
-    <button class="slider-arrow" id="prevSlide" aria-label="Vorheriger Slide">‹</button>
-    <button class="slider-arrow" id="nextSlide" aria-label="Nächster Slide">›</button>
-  </div>
-  
 </section>
 
 <div class="trust-bar">
@@ -1122,74 +723,5 @@ document.addEventListener('DOMContentLoaded', checkAuthStatus);
 <script src="/static/js/main.js"></script>
 <link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
 <script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
-
-<script>
-// Hero Slider Controller
-(function() {
-  const slides = document.querySelectorAll('.hero-slide');
-  const dots = document.querySelectorAll('.slider-dot');
-  const prevBtn = document.getElementById('prevSlide');
-  const nextBtn = document.getElementById('nextSlide');
-  let currentSlide = 0;
-  let autoplayInterval;
-  
-  function showSlide(index) {
-    // Wrap around
-    if (index >= slides.length) index = 0;
-    if (index < 0) index = slides.length - 1;
-    
-    // Update slides
-    slides.forEach((slide, i) => {
-      slide.classList.toggle('active', i === index);
-    });
-    
-    // Update dots
-    dots.forEach((dot, i) => {
-      dot.classList.toggle('active', i === index);
-    });
-    
-    currentSlide = index;
-  }
-  
-  function nextSlide() {
-    showSlide(currentSlide + 1);
-  }
-  
-  function prevSlide() {
-    showSlide(currentSlide - 1);
-  }
-  
-  function startAutoplay() {
-    autoplayInterval = setInterval(nextSlide, 6000);
-  }
-  
-  function stopAutoplay() {
-    clearInterval(autoplayInterval);
-  }
-  
-  // Event Listeners
-  if (nextBtn) nextBtn.addEventListener('click', () => { stopAutoplay(); nextSlide(); startAutoplay(); });
-  if (prevBtn) prevBtn.addEventListener('click', () => { stopAutoplay(); prevSlide(); startAutoplay(); });
-  
-  dots.forEach((dot, index) => {
-    dot.addEventListener('click', () => {
-      stopAutoplay();
-      showSlide(index);
-      startAutoplay();
-    });
-  });
-  
-  // Pause on hover
-  const slider = document.getElementById('heroSlider');
-  if (slider) {
-    slider.addEventListener('mouseenter', stopAutoplay);
-    slider.addEventListener('mouseleave', startAutoplay);
-  }
-  
-  // Start autoplay
-  startAutoplay();
-})();
-</script>
-
 </body>
 </html>
