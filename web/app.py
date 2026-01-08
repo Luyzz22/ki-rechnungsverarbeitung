@@ -178,7 +178,8 @@ async def home(request: Request):
     if redirect:
         return redirect
     """Main upload page"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    user_info = get_user_info(request.session.get("user_id"))
+    return templates.TemplateResponse("index.html", {"request": request, "user": user_info})
 
 @app.post("/api/upload", tags=["Jobs"])
 async def upload_files(request: Request, files: List[UploadFile] = File(default=[])):
@@ -800,6 +801,34 @@ def get_user_initials(user_info):
 
 
 
+
+def get_user_info(user_id):
+    """Holt User-Informationen aus der Datenbank"""
+    if not user_id:
+        return {"id": 0, "email": "", "name": "User", "is_admin": False, "plan": "Free"}
+    
+    try:
+        conn = sqlite3.connect("invoices.db", check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, email, name, is_admin FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return {
+                "id": row["id"],
+                "email": row["email"] or "",
+                "name": row["name"] or "",
+                "is_admin": bool(row["is_admin"]),
+                "plan": "Enterprise" if row["is_admin"] else "Free"
+            }
+    except Exception as e:
+        print(f"Error getting user info: {e}")
+    
+    return {"id": user_id, "email": "", "name": "User", "is_admin": False, "plan": "Free"}
+
+
 def require_login(request: Request):
     """Prüft, ob ein Benutzer eingeloggt ist.
 
@@ -982,10 +1011,12 @@ async def history_page(request: Request):
     jobs = get_all_jobs(limit=50, user_id=request.session["user_id"])
     stats = get_statistics(user_id=request.session["user_id"])
     
+    user_info = get_user_info(request.session.get("user_id"))
     return templates.TemplateResponse("history.html", {
         "request": request,
         "jobs": jobs,
-        "stats": stats
+        "stats": stats,
+        "user": user_info
     })
 
 @app.get("/job_old/{job_id}", response_class=HTMLResponse)
@@ -1062,6 +1093,7 @@ async def analytics_page(request: Request):
     user_id = request.session.get("user_id")
     data = get_analytics_data(user_id=user_id)
     
+    user_info = get_user_info(request.session.get("user_id"))
     return templates.TemplateResponse("analytics.html", {
         "request": request,
         "stats": data['stats'],
@@ -1071,7 +1103,8 @@ async def analytics_page(request: Request):
         "weekday_data": data['weekday_data'],
         "insights": get_analytics_insights(user_id=user_id),
         "confidence_distribution": get_confidence_distribution(user_id=user_id)["distribution"],
-        "method_distribution": get_method_distribution(user_id=user_id)["distribution"]
+        "method_distribution": get_method_distribution(user_id=user_id)["distribution"],
+        "user": user_info
     })
 
 @app.get("/admin", response_class=HTMLResponse, tags=["Admin"])
@@ -1236,10 +1269,12 @@ async def export_history_page(request: Request):
     exports = get_export_history(user_id)
     stats = get_export_stats(user_id)
     
+    user_info = get_user_info(request.session.get("user_id"))
     return templates.TemplateResponse("export_history.html", {
         "request": request,
         "exports": exports,
-        "stats": stats
+        "stats": stats,
+        "user": user_info
     })
 
 @app.get("/api/invoice/{invoice_id}")
@@ -3072,11 +3107,8 @@ async def copilot_page(request: Request):
 
 @app.get("/account", response_class=HTMLResponse)
 async def account_page(request: Request):
-
-    redirect = require_login(request)
-    if redirect:
-        return redirect
-    return templates.TemplateResponse("account.html", {"request": request})
+    """Redirect zu unified settings - Abonnement Tab"""
+    return RedirectResponse(url="/profile", status_code=303)
 
 @app.get("/team", response_class=HTMLResponse)
 async def team_page(request: Request):

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<invoice version="5.0" generator_info="SBS Deutschland Invoice Processing" generating_system="SBS-KI-Rechnungsverarbeitung" consolidate="false" description="SBS Deutschland GmbH &amp; Co. KG">
+  <invoice_info>
+    <invoice_id>IT2025035</invoice_id>
+    <invoice_date>2025-10-27</invoice_date>
+    <invoice_type>Eingangsrechnung</invoice_type>
+    <currency_code>EUR</currency_code>
+  </invoice_info>
+  <accounting_info>
+    <booking_text>SBS Deutschland GmbH &amp; Co. KG IT2025035</booking_text>
+    <account_no>6800</account_no>
+  </accounting_info>
+  <supplier_party>
+    <name>SBS Deutschland GmbH &amp; Co. KG</name>
+    <address>
+      <street>In der Dell 19</street>
+    </address>
+    <tax_id>DE300066949</tax_id>
+    <bank_account>
+      <iban>DE19100101238495732107</iban>
+      <bic>QNTODEB2XXX</bic>
+    </bank_account>
+  </supplier_party>
+  <total_amount>
+    <gross_amount>1785.00</gross_amount>
+    <net_amount>1500.00</net_amount>
+    <tax_amount>285.00</tax_amount>
+    <tax_rate>19</tax_rate>
+  </total_amount>
+</invoice>

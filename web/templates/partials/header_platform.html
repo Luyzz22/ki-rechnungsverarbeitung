@@ -1,10 +1,9 @@
-{# Platform Hub Header - Nur für das Unified Dashboard #}
+{# Platform Hub Header - Enterprise SaaS #}
 <link rel="stylesheet" href="/static/css/app-shell.css" />
 
-<!-- GLOBAL HEADER (Layer 1) - PLATFORM MODE -->
 <header class="app-global-header">
   <div class="app-global-header-left">
-    <button class="app-switcher-btn" id="appSwitcherBtn" aria-label="Apps wechseln">
+    <button class="app-switcher-btn" id="appSwitcherBtn" aria-label="Apps">
       <svg viewBox="0 0 24 24" fill="currentColor">
         <circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/>
         <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
@@ -27,36 +26,25 @@
     </div>
   </div>
   <div class="app-global-header-right">
-    <button class="app-header-action" title="Hilfe" onclick="window.open('/static/landing/support.html')">
+    <a href="/static/landing/support.html" class="app-header-action" title="Hilfe">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/>
       </svg>
-    </button>
-    <button class="app-header-action" title="Benachrichtigungen">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-      </svg>
-    </button>
+    </a>
     <button class="app-user-btn" id="appUserBtn">
-      <div class="app-user-avatar">{{ (user.name or user.email or 'U')[:2]|upper }}</div>
-      <span class="app-user-name">{{ user.name or user.email or 'User' }}</span>
+      <div class="app-user-avatar">{% if user and user.name %}{{ user.name[:2]|upper }}{% elif user and user.email %}{{ user.email[:2]|upper }}{% else %}U{% endif %}</div>
+      <span class="app-user-name">{% if user and user.name %}{{ user.name }}{% elif user and user.email %}{{ user.email }}{% else %}User{% endif %}</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
   </div>
 </header>
 
-<!-- App Switcher Panel - PLATFORM VERSION -->
 <div class="app-switcher-panel" id="appSwitcherPanel">
   <div class="app-switcher-header">Ihre Apps</div>
   <div class="app-switcher-grid">
     <a href="/dashboard" class="app-switcher-item active">
-      <div class="app-switcher-item-icon" style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));">
-        <svg viewBox="0 0 24 24" fill="white" width="24" height="24">
-          <rect x="3" y="3" width="7" height="7" rx="1"/>
-          <rect x="14" y="3" width="7" height="7" rx="1"/>
-          <rect x="3" y="14" width="7" height="7" rx="1"/>
-          <rect x="14" y="14" width="7" height="7" rx="1"/>
-        </svg>
+      <div class="app-switcher-item-icon" style="background: linear-gradient(135deg, #003856, #004d7a);">
+        <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       </div>
       <span class="app-switcher-item-name">Dashboard</span>
       <span class="app-switcher-item-badge">Aktiv</span>
@@ -74,70 +62,61 @@
   <div class="app-switcher-links">
     <a href="https://sbsdeutschland.com/sbshomepage/" class="app-switcher-link">🌐 Zur Website</a>
     <a href="/static/landing/ressourcen.html" class="app-switcher-link">📚 Dokumentation</a>
-    <a href="/static/landing/support.html" class="app-switcher-link">💬 Support</a>
   </div>
 </div>
 
-<!-- User Menu -->
 <div class="app-user-menu" id="appUserMenu">
   <div class="app-user-menu-header">
-    <div class="app-user-menu-name">{{ user.name or 'User' }}</div>
-    <div class="app-user-menu-email">{{ user.email or '' }}</div>
-    <span class="app-user-menu-plan">{{ user.plan or 'Free' }}</span>
+    <div class="app-user-menu-name">{% if user and user.name %}{{ user.name }}{% else %}User{% endif %}</div>
+    <div class="app-user-menu-email">{% if user and user.email %}{{ user.email }}{% endif %}</div>
+    <span class="app-user-menu-plan">{% if user and user.plan %}{{ user.plan }}{% else %}Free{% endif %}</span>
   </div>
   <div class="app-user-menu-links">
     <a href="/profile" class="app-user-menu-link">⚙️ Profil & Einstellungen</a>
-    <a href="/account" class="app-user-menu-link">💳 Abrechnung & Plan</a>
+    <a href="/profile#subscription" class="app-user-menu-link">💳 Abonnement & Plan</a>
     <div class="app-user-menu-divider"></div>
     <a href="/logout" class="app-user-menu-link danger">🚪 Abmelden</a>
   </div>
 </div>
 
-<!-- PLATFORM NAV BAR (Layer 2) - Zeigt App-Shortcuts -->
 <nav class="app-nav-bar">
   <div class="app-nav-tabs">
-    <a href="/dashboard" class="app-nav-tab active">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-      </svg>
+    <a href="/dashboard" class="app-nav-tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       Übersicht
     </a>
     <div class="app-nav-dropdown">
-      <button class="app-nav-dropdown-btn">
+      <button class="app-nav-dropdown-btn" type="button">
         <span style="font-size: 16px;">🧾</span>
         Rechnungen
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="app-nav-dropdown-menu">
-        <a href="/dashboard" class="app-nav-dropdown-item">📤 Neue hochladen</a>
+        <a href="/" class="app-nav-dropdown-item">📤 Neue hochladen</a>
         <a href="/history" class="app-nav-dropdown-item">📁 Historie</a>
         <a href="/copilot" class="app-nav-dropdown-item">🤖 Finance Copilot</a>
         <div class="app-nav-dropdown-divider"></div>
         <a href="/approvals" class="app-nav-dropdown-item">✅ Freigaben</a>
         <a href="/datev" class="app-nav-dropdown-item">🏢 DATEV Export</a>
         <a href="/integrations" class="app-nav-dropdown-item">🔗 Integrationen</a>
+        <div class="app-nav-dropdown-divider"></div>
+        <a href="/analytics" class="app-nav-dropdown-item">📊 Analytics</a>
       </div>
     </div>
     <div class="app-nav-dropdown">
-      <button class="app-nav-dropdown-btn">
+      <button class="app-nav-dropdown-btn" type="button">
         <span style="font-size: 16px;">📋</span>
         Verträge
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="app-nav-dropdown-menu">
-        <a href="https://contract.sbsdeutschland.com/upload" class="app-nav-dropdown-item">📤 Neuen analysieren</a>
-        <a href="https://contract.sbsdeutschland.com/contracts" class="app-nav-dropdown-item">📁 Vertragsregister</a>
-        <a href="https://contract.sbsdeutschland.com/risks" class="app-nav-dropdown-item">⚠️ Risiko-Übersicht</a>
+        <a href="https://contract.sbsdeutschland.com/" class="app-nav-dropdown-item">📤 Neuen analysieren</a>
+        <a href="https://contract.sbsdeutschland.com/history" class="app-nav-dropdown-item">📁 Vertragsregister</a>
         <div class="app-nav-dropdown-divider"></div>
-        <a href="https://contract.sbsdeutschland.com/export" class="app-nav-dropdown-item">📥 Export</a>
+        <a href="https://contract.sbsdeutschland.com/exports" class="app-nav-dropdown-item">📥 Export</a>
+        <a href="https://contract.sbsdeutschland.com/analytics" class="app-nav-dropdown-item">📊 Analytics</a>
       </div>
     </div>
-    <a href="/analytics" class="app-nav-tab">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-      </svg>
-      Analytics
-    </a>
     <a href="/profile" class="app-nav-tab">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
         <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -148,4 +127,3 @@
 </nav>
 
 <div class="app-overlay" id="appOverlay"></div>
-<script src="/static/js/app-shell.js"></script>
