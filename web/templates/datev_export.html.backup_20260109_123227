@@ -1,0 +1,355 @@
+{% extends "base_app.html" %}
+
+{% block title %}DATEV Export{% endblock %}
+
+{% block styles %}
+<style>
+  .datev-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-6);
+  }
+  
+  .datev-header {
+    background: linear-gradient(135deg, #006341 0%, #004d31 100%);
+    color: white;
+    padding: var(--space-8);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-6);
+  }
+  
+  .datev-header h1 {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-2);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  
+  .datev-header p {
+    opacity: 0.9;
+  }
+  
+  .config-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: var(--space-6);
+  }
+  
+  .config-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+  }
+  
+  .config-card h2 {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-4);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  
+  .step-badge {
+    width: 28px;
+    height: 28px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+  }
+  
+  .form-group {
+    margin-bottom: var(--space-4);
+  }
+  
+  .form-label {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    margin-bottom: var(--space-2);
+    color: var(--color-text);
+  }
+  
+  .form-input {
+    width: 100%;
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    transition: all var(--transition-fast);
+  }
+  
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-50);
+  }
+  
+  .format-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+  }
+  
+  .format-option {
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  
+  .format-option:hover {
+    border-color: #006341;
+    background: #f0fdf4;
+  }
+  
+  .format-option.selected {
+    border-color: #006341;
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  }
+  
+  .format-option-icon {
+    font-size: 32px;
+    margin-bottom: var(--space-2);
+  }
+  
+  .format-option-name {
+    font-weight: var(--font-semibold);
+    margin-bottom: var(--space-1);
+  }
+  
+  .format-option-desc {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+  }
+  
+  .invoice-list {
+    max-height: 350px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+  
+  .invoice-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border-light);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+  }
+  
+  .invoice-row:hover {
+    background: var(--color-bg-secondary);
+  }
+  
+  .invoice-row:last-child {
+    border-bottom: none;
+  }
+  
+  .export-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+  }
+  
+  .selection-info {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+  }
+  
+  .selection-info strong {
+    color: var(--color-text);
+  }
+  
+  .btn-export {
+    background: #006341;
+    color: white;
+    padding: var(--space-3) var(--space-6);
+    border: none;
+    border-radius: var(--radius-lg);
+    font-weight: var(--font-semibold);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  
+  .btn-export:hover {
+    background: #004d31;
+  }
+  
+  .btn-export:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  @media (max-width: 768px) {
+    .config-grid {
+      grid-template-columns: 1fr;
+    }
+    .format-options {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="datev-container">
+  <div class="datev-header">
+    <h1>🏢 DATEV Export</h1>
+    <p>Exportieren Sie freigegebene Rechnungen für DATEV Unternehmen Online oder Rechnungswesen</p>
+  </div>
+  
+  <div class="config-grid">
+    <div class="config-card">
+      <h2><span class="step-badge">1</span> Konfiguration</h2>
+      
+      <div class="form-group">
+        <label class="form-label">Beraternummer</label>
+        <input type="text" class="form-input" id="beraterNummer" value="12345" placeholder="5-stellig">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Mandantennummer</label>
+        <input type="text" class="form-input" id="mandantenNummer" value="00001" placeholder="5-stellig">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Kontenrahmen</label>
+        <select class="form-input" id="kontenrahmen">
+          <option value="SKR03">SKR03 (Standard)</option>
+          <option value="SKR04">SKR04</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Wirtschaftsjahr Beginn</label>
+        <input type="date" class="form-input" id="wjBeginn" value="2025-01-01">
+      </div>
+    </div>
+    
+    <div>
+      <div class="config-card" style="margin-bottom: var(--space-6);">
+        <h2><span class="step-badge">2</span> Export-Format</h2>
+        
+        <div class="format-options">
+          <div class="format-option selected" data-format="csv" onclick="selectFormat('csv')">
+            <div class="format-option-icon">📊</div>
+            <div class="format-option-name">EXTF/CSV</div>
+            <div class="format-option-desc">Für DATEV Rechnungswesen</div>
+          </div>
+          <div class="format-option" data-format="xml" onclick="selectFormat('xml')">
+            <div class="format-option-icon">📄</div>
+            <div class="format-option-name">XML</div>
+            <div class="format-option-desc">Für Unternehmen Online</div>
+          </div>
+          <div class="format-option" data-format="zip" onclick="selectFormat('zip')">
+            <div class="format-option-icon">📦</div>
+            <div class="format-option-name">ZIP-Paket</div>
+            <div class="format-option-desc">XML + PDF-Belege</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="config-card">
+        <h2><span class="step-badge">3</span> Rechnungen auswählen</h2>
+        
+        <div class="invoice-list">
+          {% for inv in invoices %}
+          <label class="invoice-row">
+            <input type="checkbox" class="invoice-cb" value="{{ inv.id }}" data-amount="{{ inv.betrag_brutto }}">
+            <span style="flex: 1;">
+              <strong>{{ inv.rechnungsnummer or 'N/A' }}</strong>
+              <small style="color: var(--color-text-secondary); display: block;">{{ (inv.rechnungsaussteller or 'Unbekannt')[:30] }}</small>
+            </span>
+            <span style="font-family: var(--font-family-mono);">{{ "%.2f"|format(inv.betrag_brutto or 0) }} €</span>
+          </label>
+          {% else %}
+          <div style="text-align: center; padding: var(--space-8); color: var(--color-text-secondary);">
+            Keine freigegebenen Rechnungen vorhanden
+          </div>
+          {% endfor %}
+        </div>
+        
+        <div class="export-footer">
+          <div class="selection-info">
+            <strong id="selectedCount">0</strong> ausgewählt · Summe: <strong id="selectedSum">0,00</strong> €
+          </div>
+          <button class="btn-export" id="exportBtn" disabled onclick="startExport()">
+            📥 Export starten
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let selectedFormat = 'csv';
+  
+  function selectFormat(format) {
+    selectedFormat = format;
+    document.querySelectorAll('.format-option').forEach(el => el.classList.remove('selected'));
+    document.querySelector(`[data-format="${format}"]`).classList.add('selected');
+  }
+  
+  document.querySelectorAll('.invoice-cb').forEach(cb => {
+    cb.addEventListener('change', updateSelection);
+  });
+  
+  function updateSelection() {
+    const checked = document.querySelectorAll('.invoice-cb:checked');
+    let sum = 0;
+    checked.forEach(cb => sum += parseFloat(cb.dataset.amount) || 0);
+    
+    document.getElementById('selectedCount').textContent = checked.length;
+    document.getElementById('selectedSum').textContent = sum.toLocaleString('de-DE', {minimumFractionDigits: 2});
+    document.getElementById('exportBtn').disabled = checked.length === 0;
+  }
+  
+  async function startExport() {
+    const invoiceIds = Array.from(document.querySelectorAll('.invoice-cb:checked')).map(cb => parseInt(cb.value));
+    
+    const data = {
+      invoice_ids: invoiceIds,
+      format: selectedFormat,
+      berater_nummer: document.getElementById('beraterNummer').value,
+      mandanten_nummer: document.getElementById('mandantenNummer').value,
+      kontenrahmen: document.getElementById('kontenrahmen').value,
+      wirtschaftsjahr_beginn: document.getElementById('wjBeginn').value
+    };
+    
+    try {
+      const res = await fetch('/api/datev/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await res.json();
+      if (result.success) {
+        window.location.href = result.download_url;
+      } else {
+        alert('Export fehlgeschlagen: ' + result.error);
+      }
+    } catch (e) {
+      alert('Fehler: ' + e.message);
+    }
+  }
+</script>
+{% endblock %}

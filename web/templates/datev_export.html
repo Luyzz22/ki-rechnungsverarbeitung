@@ -203,6 +203,196 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* Buchungsvorschau Styles */
+  .preview-section {
+    display: none;
+    margin-top: var(--space-6);
+  }
+  
+  .preview-section.active {
+    display: block;
+  }
+  
+  .preview-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    margin-bottom: var(--space-4);
+  }
+  
+  .preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-4);
+  }
+  
+  .preview-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+    padding: var(--space-4);
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border-radius: var(--radius-lg);
+  }
+  
+  .preview-stat {
+    text-align: center;
+  }
+  
+  .preview-stat-value {
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: #006341;
+  }
+  
+  .preview-stat-label {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+  }
+  
+  .buchung-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+  }
+  
+  .buchung-table th {
+    background: var(--color-bg-secondary);
+    padding: var(--space-3);
+    text-align: left;
+    font-weight: var(--font-semibold);
+    border-bottom: 2px solid var(--color-border);
+  }
+  
+  .buchung-table td {
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--color-border-light);
+    vertical-align: middle;
+  }
+  
+  .buchung-table tr:hover {
+    background: var(--color-bg-secondary);
+  }
+  
+  .konto-select {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    min-width: 200px;
+    background: white;
+  }
+  
+  .konto-select:focus {
+    outline: none;
+    border-color: #006341;
+  }
+  
+  .confidence-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  
+  .confidence-high {
+    background: #dcfce7;
+    color: #166534;
+  }
+  
+  .confidence-medium {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  
+  .confidence-low {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  
+  .konten-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+  }
+  
+  .konto-chip {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+  }
+  
+  .konto-chip-number {
+    font-weight: var(--font-bold);
+    color: #006341;
+  }
+  
+  .btn-preview {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    padding: var(--space-3) var(--space-5);
+    border: none;
+    border-radius: var(--radius-lg);
+    font-weight: var(--font-semibold);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-right: var(--space-3);
+  }
+  
+  .btn-preview:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  }
+  
+  .btn-preview:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  .btn-back {
+    background: var(--color-bg-secondary);
+    color: var(--color-text);
+    padding: var(--space-3) var(--space-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    font-weight: var(--font-semibold);
+    cursor: pointer;
+    margin-right: var(--space-3);
+  }
+  
+  .learned-badge {
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    margin-left: 4px;
+  }
+  
+  @media (max-width: 768px) {
+    .preview-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .buchung-table {
+      font-size: var(--text-xs);
+    }
+  }
+
 </style>
 {% endblock %}
 
@@ -288,10 +478,79 @@
           <div class="selection-info">
             <strong id="selectedCount">0</strong> ausgewählt · Summe: <strong id="selectedSum">0,00</strong> €
           </div>
-          <button class="btn-export" id="exportBtn" disabled onclick="startExport()">
-            📥 Export starten
+          <div>
+            <button class="btn-preview" id="previewBtn" disabled onclick="showBuchungsvorschau()">
+              📋 Buchungsvorschau
+            </button>
+            <button class="btn-export" id="exportBtn" disabled onclick="startExport()">
+              📥 Export starten
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- STEP 4: Buchungsvorschau -->
+    <div class="preview-section" id="previewSection">
+      <div class="preview-card">
+        <div class="preview-header">
+          <h2><span class="step-badge">4</span> Buchungsvorschau prüfen</h2>
+          <button class="btn-back" onclick="hidePreview()">← Zurück zur Auswahl</button>
+        </div>
+        
+        <div class="preview-stats" id="previewStats">
+          <div class="preview-stat">
+            <div class="preview-stat-value" id="statAnzahl">0</div>
+            <div class="preview-stat-label">Buchungen</div>
+          </div>
+          <div class="preview-stat">
+            <div class="preview-stat-value" id="statBrutto">0,00 €</div>
+            <div class="preview-stat-label">Brutto gesamt</div>
+          </div>
+          <div class="preview-stat">
+            <div class="preview-stat-value" id="statNetto">0,00 €</div>
+            <div class="preview-stat-label">Netto gesamt</div>
+          </div>
+          <div class="preview-stat">
+            <div class="preview-stat-value" id="statMwst">0,00 €</div>
+            <div class="preview-stat-label">MwSt gesamt</div>
+          </div>
+        </div>
+        
+        <div style="overflow-x: auto;">
+          <table class="buchung-table" id="buchungTable">
+            <thead>
+              <tr>
+                <th>Beleg</th>
+                <th>Lieferant</th>
+                <th>Datum</th>
+                <th>Netto</th>
+                <th>MwSt</th>
+                <th>Soll-Konto</th>
+                <th>Konfidenz</th>
+                <th>Buchungstext</th>
+              </tr>
+            </thead>
+            <tbody id="buchungTableBody">
+              <!-- Wird dynamisch gefüllt -->
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="konten-summary" id="kontenSummary">
+          <!-- Wird dynamisch gefüllt -->
+        </div>
+        
+        <div class="export-footer" style="margin-top: var(--space-6);">
+          <div class="selection-info">
+            💡 <em>Konten können vor dem Export angepasst werden. Änderungen werden für zukünftige Kontierungen gelernt.</em>
+          </div>
+          <button class="btn-export" onclick="startExportWithPreview()">
+            ✅ Kontierung bestätigen & Exportieren
           </button>
         </div>
+      </div>
+    </div>
       </div>
     </div>
   </div>
@@ -301,6 +560,26 @@
 {% block scripts %}
 <script>
   let selectedFormat = 'csv';
+  let currentBuchungen = [];
+  let availableKonten = [];
+  
+  // Lade verfügbare Konten beim Start
+  async function loadKonten() {
+    try {
+      const skr = document.getElementById('kontenrahmen').value;
+      const res = await fetch(`/api/kontierung/konten?skr=${skr}`);
+      const data = await res.json();
+      availableKonten = data.konten || [];
+    } catch (e) {
+      console.error('Konten laden fehlgeschlagen:', e);
+    }
+  }
+  
+  // Bei Kontenrahmen-Änderung neu laden
+  document.getElementById('kontenrahmen').addEventListener('change', loadKonten);
+  
+  // Initial laden
+  loadKonten();
   
   function selectFormat(format) {
     selectedFormat = format;
@@ -320,6 +599,162 @@
     document.getElementById('selectedCount').textContent = checked.length;
     document.getElementById('selectedSum').textContent = sum.toLocaleString('de-DE', {minimumFractionDigits: 2});
     document.getElementById('exportBtn').disabled = checked.length === 0;
+    document.getElementById('previewBtn').disabled = checked.length === 0;
+  }
+  
+  function getConfidenceClass(confidence) {
+    if (confidence >= 0.7) return 'confidence-high';
+    if (confidence >= 0.4) return 'confidence-medium';
+    return 'confidence-low';
+  }
+  
+  function getConfidenceLabel(confidence) {
+    if (confidence >= 0.7) return '✓ Sicher';
+    if (confidence >= 0.4) return '? Prüfen';
+    return '! Unsicher';
+  }
+  
+  async function showBuchungsvorschau() {
+    const invoiceIds = Array.from(document.querySelectorAll('.invoice-cb:checked')).map(cb => parseInt(cb.value));
+    const skr = document.getElementById('kontenrahmen').value;
+    
+    if (invoiceIds.length === 0) return;
+    
+    // Loading State
+    document.getElementById('previewBtn').disabled = true;
+    document.getElementById('previewBtn').innerHTML = '⏳ Lädt...';
+    
+    try {
+      const res = await fetch('/api/kontierung/vorschau', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoice_ids: invoiceIds, kontenrahmen: skr })
+      });
+      
+      const data = await res.json();
+      
+      if (!data.success) {
+        alert('Fehler: ' + (data.error || 'Unbekannter Fehler'));
+        return;
+      }
+      
+      currentBuchungen = data.buchungen;
+      
+      // Statistiken
+      document.getElementById('statAnzahl').textContent = data.statistik.anzahl;
+      document.getElementById('statBrutto').textContent = data.statistik.summe_brutto.toLocaleString('de-DE', {minimumFractionDigits: 2}) + ' €';
+      document.getElementById('statNetto').textContent = data.statistik.summe_netto.toLocaleString('de-DE', {minimumFractionDigits: 2}) + ' €';
+      document.getElementById('statMwst').textContent = data.statistik.summe_mwst.toLocaleString('de-DE', {minimumFractionDigits: 2}) + ' €';
+      
+      // Buchungstabelle
+      const tbody = document.getElementById('buchungTableBody');
+      tbody.innerHTML = '';
+      
+      data.buchungen.forEach((b, idx) => {
+        const confClass = getConfidenceClass(b.confidence);
+        const confLabel = getConfidenceLabel(b.confidence);
+        
+        // Konto-Select erstellen
+        let kontoOptions = `<option value="${b.soll_konto}">${b.soll_konto} - ${b.soll_konto_name}</option>`;
+        
+        // Alternativen hinzufügen
+        if (b.alternatives && b.alternatives.length > 0) {
+          b.alternatives.forEach(alt => {
+            kontoOptions += `<option value="${alt.account}">${alt.account} - ${alt.name}</option>`;
+          });
+        }
+        
+        // Weitere gängige Konten
+        availableKonten.forEach(k => {
+          if (k.konto !== b.soll_konto && !b.alternatives?.find(a => a.account === k.konto)) {
+            kontoOptions += `<option value="${k.konto}">${k.konto} - ${k.name}</option>`;
+          }
+        });
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><strong>${b.belegnummer || '-'}</strong></td>
+          <td>${(b.lieferant || 'Unbekannt').substring(0, 25)}</td>
+          <td>${b.belegdatum || '-'}</td>
+          <td style="text-align: right; font-family: var(--font-family-mono);">${b.betrag_netto.toLocaleString('de-DE', {minimumFractionDigits: 2})} €</td>
+          <td style="text-align: right; font-family: var(--font-family-mono);">${b.mwst_betrag.toLocaleString('de-DE', {minimumFractionDigits: 2})} €</td>
+          <td>
+            <select class="konto-select" data-idx="${idx}" data-original="${b.soll_konto}" onchange="onKontoChange(this)">
+              ${kontoOptions}
+            </select>
+          </td>
+          <td><span class="confidence-badge ${confClass}">${confLabel}</span></td>
+          <td style="font-size: 12px; color: var(--color-text-secondary);">${b.buchungstext || ''}</td>
+        `;
+        tbody.appendChild(row);
+      });
+      
+      // Konten-Zusammenfassung
+      const summaryDiv = document.getElementById('kontenSummary');
+      summaryDiv.innerHTML = '<strong style="width: 100%; margin-bottom: 8px;">Konten-Übersicht:</strong>';
+      data.konten_uebersicht.forEach(k => {
+        summaryDiv.innerHTML += `
+          <div class="konto-chip">
+            <span class="konto-chip-number">${k.konto}</span>
+            <span>${k.name}</span>
+            <span style="color: var(--color-text-secondary);">(${k.count}x · ${k.summe.toLocaleString('de-DE', {minimumFractionDigits: 2})} €)</span>
+          </div>
+        `;
+      });
+      
+      // Zeige Preview-Section
+      document.getElementById('previewSection').classList.add('active');
+      document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
+      
+    } catch (e) {
+      alert('Fehler beim Laden der Vorschau: ' + e.message);
+    } finally {
+      document.getElementById('previewBtn').disabled = false;
+      document.getElementById('previewBtn').innerHTML = '📋 Buchungsvorschau';
+    }
+  }
+  
+  function hidePreview() {
+    document.getElementById('previewSection').classList.remove('active');
+  }
+  
+  function onKontoChange(select) {
+    const idx = parseInt(select.dataset.idx);
+    const newKonto = select.value;
+    const originalKonto = select.dataset.original;
+    
+    if (currentBuchungen[idx]) {
+      currentBuchungen[idx].soll_konto = newKonto;
+      currentBuchungen[idx].was_changed = (newKonto !== originalKonto);
+      
+      // Finde Kontoname
+      const option = select.options[select.selectedIndex];
+      currentBuchungen[idx].soll_konto_name = option.text.split(' - ')[1] || '';
+    }
+  }
+  
+  async function startExportWithPreview() {
+    // Speichere Kontierungsentscheidungen für Lernalgorithmus
+    for (const b of currentBuchungen) {
+      try {
+        await fetch('/api/kontierung/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lieferant: b.lieferant,
+            suggested_account: b.was_changed ? null : b.soll_konto,
+            final_account: b.soll_konto,
+            account_name: b.soll_konto_name,
+            kostenstelle: ''
+          })
+        });
+      } catch (e) {
+        console.warn('Kontierung speichern fehlgeschlagen:', e);
+      }
+    }
+    
+    // Dann normalen Export starten
+    await startExport();
   }
   
   async function startExport() {

@@ -1,0 +1,373 @@
+{% extends "base_app.html" %}
+
+{% block title %}Zahlungen & Skonto{% endblock %}
+
+{% block styles %}
+<style>
+  .zahlungen-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-6);
+  }
+  
+  .zahlungen-header {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+    padding: var(--space-8);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-6);
+  }
+  
+  .zahlungen-header h1 {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-2);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+  
+  .stat-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    text-align: center;
+  }
+  
+  .stat-card.highlight {
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    border-color: #10b981;
+  }
+  
+  .stat-card.warning {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    border-color: #f59e0b;
+  }
+  
+  .stat-card.danger {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    border-color: #ef4444;
+  }
+  
+  .stat-value {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: var(--color-text);
+  }
+  
+  .stat-card.highlight .stat-value { color: #059669; }
+  .stat-card.warning .stat-value { color: #d97706; }
+  .stat-card.danger .stat-value { color: #dc2626; }
+  
+  .stat-label {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin-top: var(--space-1);
+  }
+  
+  .section-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-6);
+    overflow: hidden;
+  }
+  
+  .section-header {
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .section-header h2 {
+    font-size: var(--text-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  
+  .section-body {
+    padding: var(--space-5);
+  }
+  
+  .zahlungen-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .zahlungen-table th {
+    background: var(--color-bg-secondary);
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    font-weight: var(--font-semibold);
+    font-size: var(--text-sm);
+    border-bottom: 2px solid var(--color-border);
+  }
+  
+  .zahlungen-table td {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border-light);
+    font-size: var(--text-sm);
+  }
+  
+  .zahlungen-table tr:hover {
+    background: var(--color-bg-secondary);
+  }
+  
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .status-offen { background: #fee2e2; color: #991b1b; }
+  .status-geplant { background: #dbeafe; color: #1e40af; }
+  .status-bezahlt { background: #dcfce7; color: #166534; }
+  .status-ueberfaellig { background: #fecaca; color: #7f1d1d; }
+  .status-normal { background: #f3f4f6; color: #6b7280; }
+  
+  .empty-state {
+    text-align: center;
+    padding: var(--space-8);
+    color: var(--color-text-secondary);
+  }
+  
+  .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: var(--space-3);
+  }
+  
+  .btn-action {
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-right: 4px;
+  }
+  
+  .btn-zahlen {
+    background: #059669;
+    color: white;
+  }
+  
+  .btn-zahlen:hover {
+    background: #047857;
+  }
+  
+  @media (max-width: 1024px) {
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="zahlungen-container">
+  <div class="zahlungen-header">
+    <h1>💰 Zahlungen & Skonto-Optimierung</h1>
+    <p>Optimieren Sie Ihre Zahlungen und nutzen Sie Skonto-Vorteile</p>
+  </div>
+  
+  <!-- Statistik-Karten -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">{{ dashboard.uebersicht.anzahl_rechnungen if dashboard and dashboard.uebersicht else 0 }}</div>
+      <div class="stat-label">Offene Rechnungen</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-value">{{ "%.2f"|format(dashboard.uebersicht.total_offen if dashboard and dashboard.uebersicht else 0) }} €</div>
+      <div class="stat-label">Offene Summe</div>
+    </div>
+    <div class="stat-card highlight">
+      <div class="stat-value">{{ "%.2f"|format(dashboard.uebersicht.skonto_potenzial if dashboard and dashboard.uebersicht else 0) }} €</div>
+      <div class="stat-label">Skonto-Potential</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-value">{{ dashboard.kategorien.ueberfaellig.anzahl if dashboard and dashboard.kategorien and dashboard.kategorien.ueberfaellig else 0 }}</div>
+      <div class="stat-label">Überfällig</div>
+    </div>
+  </div>
+  
+  <!-- Überfällige Rechnungen -->
+  {% if dashboard and dashboard.kategorien and dashboard.kategorien.ueberfaellig and dashboard.kategorien.ueberfaellig.anzahl > 0 %}
+  <div class="section-card">
+    <div class="section-header">
+      <h2>⚠️ Überfällige Rechnungen ({{ dashboard.kategorien.ueberfaellig.anzahl }})</h2>
+      <span style="color: #dc2626; font-weight: bold;">{{ "%.2f"|format(dashboard.kategorien.ueberfaellig.summe) }} €</span>
+    </div>
+    <div class="section-body" style="padding: 0;">
+      <table class="zahlungen-table">
+        <thead>
+          <tr>
+            <th>Rechnung</th>
+            <th>Lieferant</th>
+            <th>Betrag</th>
+            <th>Fälligkeit</th>
+            <th>Status</th>
+            <th>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for z in dashboard.kategorien.ueberfaellig.rechnungen[:10] %}
+          <tr>
+            <td><strong>{{ z.rechnungsnummer or '-' }}</strong></td>
+            <td>{{ (z.lieferant or 'Unbekannt')[:25] }}</td>
+            <td style="font-family: monospace;">{{ "%.2f"|format(z.betrag_brutto or 0) }} €</td>
+            <td>{{ z.faelligkeit }}</td>
+            <td><span class="status-badge status-ueberfaellig">{{ z.tage_bis_faelligkeit|abs }} Tage überfällig</span></td>
+            <td>
+              <button class="btn-action btn-zahlen" onclick="markAsPaid({{ z.invoice_id }})">✓ Bezahlt</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+  
+  <!-- Skonto-Chancen -->
+  {% if dashboard and dashboard.skonto_chancen and dashboard.skonto_chancen|length > 0 %}
+  <div class="section-card">
+    <div class="section-header">
+      <h2>⚡ Skonto-Chancen ({{ dashboard.skonto_chancen|length }})</h2>
+      <span style="color: #059669; font-weight: bold;">{{ "%.2f"|format(dashboard.uebersicht.skonto_potenzial) }} € sparen</span>
+    </div>
+    <div class="section-body" style="padding: 0;">
+      <table class="zahlungen-table">
+        <thead>
+          <tr>
+            <th>Rechnung</th>
+            <th>Lieferant</th>
+            <th>Betrag</th>
+            <th>Skonto</th>
+            <th>Frist</th>
+            <th>Ersparnis</th>
+            <th>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for z in dashboard.skonto_chancen %}
+          <tr>
+            <td><strong>{{ z.rechnungsnummer or '-' }}</strong></td>
+            <td>{{ (z.lieferant or 'Unbekannt')[:25] }}</td>
+            <td style="font-family: monospace;">{{ "%.2f"|format(z.betrag_brutto or 0) }} €</td>
+            <td><span class="status-badge status-geplant">{{ z.skonto_prozent }}%</span></td>
+            <td>{{ z.skonto_datum }}<br><small>{{ z.tage_bis_skonto }} Tage</small></td>
+            <td style="color: #059669; font-weight: bold;">{{ "%.2f"|format(z.skonto_ersparnis or 0) }} €</td>
+            <td>
+              <button class="btn-action btn-zahlen" onclick="markAsPaid({{ z.invoice_id }})">✓ Bezahlt</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+  
+  <!-- Alle offenen Zahlungen -->
+  <div class="section-card">
+    <div class="section-header">
+      <h2>📋 Alle offenen Zahlungen</h2>
+      <span style="color: var(--color-text-secondary);">{{ dashboard.alle_zahlungen|length if dashboard and dashboard.alle_zahlungen else 0 }} Rechnungen</span>
+    </div>
+    <div class="section-body" style="padding: 0; max-height: 500px; overflow-y: auto;">
+      {% if dashboard and dashboard.alle_zahlungen and dashboard.alle_zahlungen|length > 0 %}
+      <table class="zahlungen-table">
+        <thead>
+          <tr>
+            <th>Rechnung</th>
+            <th>Lieferant</th>
+            <th>Betrag</th>
+            <th>Fälligkeit</th>
+            <th>Status</th>
+            <th>Empfehlung</th>
+            <th>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for z in dashboard.alle_zahlungen[:50] %}
+          <tr>
+            <td><strong>{{ z.rechnungsnummer or '-' }}</strong></td>
+            <td>{{ (z.lieferant or 'Unbekannt')[:20] }}</td>
+            <td style="font-family: monospace;">{{ "%.2f"|format(z.betrag_brutto or 0) }} €</td>
+            <td>{{ z.faelligkeit or '-' }}</td>
+            <td>
+              {% if z.tage_bis_faelligkeit < 0 %}
+              <span class="status-badge status-ueberfaellig">Überfällig</span>
+              {% elif z.tage_bis_faelligkeit <= 7 %}
+              <span class="status-badge status-offen">{{ z.tage_bis_faelligkeit }} Tage</span>
+              {% else %}
+              <span class="status-badge status-normal">{{ z.tage_bis_faelligkeit }} Tage</span>
+              {% endif %}
+            </td>
+            <td style="font-size: 11px;">{{ z.empfehlung_text[:40] if z.empfehlung_text else '-' }}...</td>
+            <td>
+              <button class="btn-action btn-zahlen" onclick="markAsPaid({{ z.invoice_id }})" title="Als bezahlt markieren">✓</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon">📭</div>
+        <p>Keine offenen Zahlungen</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function markAsPaid(invoiceId) {
+    if (!confirm('Rechnung als bezahlt markieren?')) return;
+    
+    try {
+      const res = await fetch('/api/zahlungen/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invoice_id: invoiceId,
+          status: 'bezahlt',
+          bezahlt_am: new Date().toISOString().split('T')[0]
+        })
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Fehler: ' + (data.error || 'Unbekannt'));
+      }
+    } catch (e) {
+      alert('Fehler: ' + e.message);
+    }
+  }
+</script>
+{% endblock %}
