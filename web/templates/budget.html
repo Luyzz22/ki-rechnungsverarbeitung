@@ -1,0 +1,190 @@
+{% extends "base_app.html" %}
+{% block title %}Budget-Dashboard - SBS Invoice System{% endblock %}
+
+{% block styles %}
+<style>
+    :root { --sbs-blue: #003856; --sbs-yellow: #FFB900; }
+    .budget-header { background: linear-gradient(135deg, var(--sbs-blue) 0%, #005580 100%); color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; }
+    .month-selector { background: rgba(255,255,255,0.15); border: none; color: white; padding: 0.5rem 1rem; border-radius: 8px; }
+    .month-selector option { color: var(--sbs-blue); }
+    .summary-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 12px rgba(0,0,0,0.08); height: 100%; }
+    .summary-card .card-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; }
+    .summary-card .card-value { font-size: 1.75rem; font-weight: 700; color: var(--sbs-blue); }
+    .summary-card .card-label { color: #6c757d; font-size: 0.875rem; }
+    .icon-budget { background: rgba(0, 56, 86, 0.1); color: var(--sbs-blue); }
+    .icon-ausgaben { background: rgba(255, 185, 0, 0.15); color: #cc9400; }
+    .icon-verbleibend { background: rgba(40, 167, 69, 0.1); color: #28a745; }
+    .icon-auslastung { background: rgba(23, 162, 184, 0.1); color: #17a2b8; }
+    .status-badge { display: inline-flex; align-items: center; padding: 0.5rem 1rem; border-radius: 50px; font-weight: 600; font-size: 0.875rem; }
+    .status-ok { background: rgba(40, 167, 69, 0.1); color: #28a745; }
+    .status-warning { background: rgba(255, 185, 0, 0.15); color: #cc9400; }
+    .status-danger { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
+    .status-critical { background: rgba(111, 66, 193, 0.1); color: #6f42c1; }
+    .chart-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
+    .chart-card h5 { color: var(--sbs-blue); font-weight: 600; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #f0f0f0; }
+    .budget-table { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .budget-table thead { background: var(--sbs-blue); color: white; }
+    .budget-table th { font-weight: 600; padding: 1rem; border: none; }
+    .budget-table td { padding: 1rem; vertical-align: middle; border-bottom: 1px solid #f0f0f0; }
+    .budget-progress { height: 24px; border-radius: 12px; background: #e9ecef; position: relative; }
+    .budget-progress-bar { height: 100%; border-radius: 12px; transition: width 0.6s ease; }
+    .budget-progress-bar.bg-success { background: linear-gradient(90deg, #28a745, #34ce57); }
+    .budget-progress-bar.bg-warning { background: linear-gradient(90deg, #ffc107, #ffda6a); }
+    .budget-progress-bar.bg-danger { background: linear-gradient(90deg, #dc3545, #e4606d); }
+    .budget-progress-bar.bg-critical { background: linear-gradient(90deg, #6f42c1, #9d7cd8); }
+    .progress-label { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; font-weight: 600; color: white; }
+    .trend-up { color: #dc3545; } .trend-down { color: #28a745; } .trend-stable { color: #6c757d; }
+    .alert-card { border-left: 4px solid; background: white; padding: 1rem; margin-bottom: 0.75rem; border-radius: 0 8px 8px 0; }
+    .alert-card.alert-warning { border-left-color: var(--sbs-yellow); }
+    .alert-card.alert-danger { border-left-color: #dc3545; }
+    .alert-card.alert-critical { border-left-color: #6f42c1; }
+    .quick-action-btn { border: 2px dashed #dee2e6; background: transparent; padding: 1rem; border-radius: 12px; text-align: center; cursor: pointer; display: block; width: 100%; color: #6c757d; }
+    .quick-action-btn:hover { border-color: var(--sbs-blue); background: rgba(0,56,86,0.05); color: var(--sbs-blue); }
+    .quick-action-btn i { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="budget-header">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1><i class="bi bi-pie-chart-fill me-2"></i>Budget-Dashboard</h1>
+                <p class="mb-0 opacity-75">Ist vs. Soll Vergleich & Kostenkontrolle</p>
+            </div>
+            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                <select class="month-selector me-2" id="monatSelect" onchange="loadDashboard()">
+                    {% for m in range(1, 13) %}<option value="{{ m }}" {% if m == monat %}selected{% endif %}>{{ monat_namen[m-1] }}</option>{% endfor %}
+                </select>
+                <select class="month-selector" id="jahrSelect" onchange="loadDashboard()">
+                    {% for j in range(jahr - 2, jahr + 2) %}<option value="{{ j }}" {% if j == jahr %}selected{% endif %}>{{ j }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-sm-6"><div class="summary-card"><div class="card-icon icon-budget"><i class="bi bi-calculator"></i></div><div class="card-value">{{ '{:,.2f}'.format(summary.gesamt_budget) }} €</div><div class="card-label">Gesamt-Budget</div></div></div>
+        <div class="col-md-3 col-sm-6"><div class="summary-card"><div class="card-icon icon-ausgaben"><i class="bi bi-receipt"></i></div><div class="card-value">{{ '{:,.2f}'.format(summary.gesamt_ausgaben) }} €</div><div class="card-label">Aktuelle Ausgaben</div></div></div>
+        <div class="col-md-3 col-sm-6"><div class="summary-card"><div class="card-icon icon-verbleibend"><i class="bi bi-wallet2"></i></div><div class="card-value">{{ '{:,.2f}'.format(summary.gesamt_verbleibend) }} €</div><div class="card-label">Verbleibend</div></div></div>
+        <div class="col-md-3 col-sm-6"><div class="summary-card"><div class="card-icon icon-auslastung"><i class="bi bi-speedometer2"></i></div><div class="card-value">{{ summary.gesamt_auslastung }}%</div><div class="card-label">Gesamt-Auslastung</div></div></div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex flex-wrap gap-3 justify-content-center">
+                <span class="status-badge status-ok"><i class="bi bi-check-circle-fill me-2"></i>{{ summary.status_ok }} im Budget</span>
+                <span class="status-badge status-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ summary.status_achtung }} nähern sich</span>
+                <span class="status-badge status-danger"><i class="bi bi-x-circle-fill me-2"></i>{{ summary.status_warnung }} überschritten</span>
+                <span class="status-badge status-critical"><i class="bi bi-fire me-2"></i>{{ summary.status_kritisch }} kritisch</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="chart-card"><h5><i class="bi bi-graph-up me-2"></i>Budget-Trend</h5><canvas id="trendChart" height="120"></canvas></div>
+            <div class="budget-table">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Kategorie</th><th class="text-end">Budget</th><th class="text-end">Ist</th><th style="width:200px">Auslastung</th><th class="text-center">Trend</th><th class="text-center">Aktion</th></tr></thead>
+                    <tbody>
+                        {% for kat in summary.kategorien %}
+                        <tr>
+                            <td><strong>{{ kat.kategorie_name }}</strong>{% if kat.anzahl_buchungen > 0 %}<br><small class="text-muted">{{ kat.anzahl_buchungen }} Buchungen</small>{% endif %}</td>
+                            <td class="text-end">{{ '{:,.2f}'.format(kat.budget_soll) }} €</td>
+                            <td class="text-end">{{ '{:,.2f}'.format(kat.ist_ausgaben) }} €</td>
+                            <td><div class="budget-progress">{% set pc = 'bg-success' if kat.auslastung_prozent < 80 else 'bg-warning' if kat.auslastung_prozent < 100 else 'bg-danger' if kat.auslastung_prozent < 120 else 'bg-critical' %}{% set w = [kat.auslastung_prozent, 100]|min %}<div class="budget-progress-bar {{ pc }}" style="width:{{ w }}%"><span class="progress-label">{{ kat.auslastung_prozent }}%</span></div></div></td>
+                            <td class="text-center">{% if kat.trend == 'steigend' %}<i class="bi bi-arrow-up-circle-fill trend-up"></i>{% elif kat.trend == 'fallend' %}<i class="bi bi-arrow-down-circle-fill trend-down"></i>{% else %}<i class="bi bi-dash-circle trend-stable"></i>{% endif %}</td>
+                            <td class="text-center"><button class="btn btn-sm btn-outline-primary" onclick="editBudget({{ kat.kategorie_id }},'{{ kat.kategorie_name }}',{{ kat.budget_soll }})"><i class="bi bi-pencil"></i></button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="chart-card"><h5><i class="bi bi-pie-chart me-2"></i>Ausgaben-Verteilung</h5><canvas id="pieChart" height="200"></canvas></div>
+            <div class="chart-card">
+                <div class="d-flex justify-content-between align-items-center mb-3"><h5 class="mb-0"><i class="bi bi-bell me-2"></i>Budget-Alerts</h5>{% if summary.ungelesene_alerts > 0 %}<span class="badge bg-danger">{{ summary.ungelesene_alerts }} neu</span>{% endif %}</div>
+                {% if summary.alerts %}{% for alert in summary.alerts %}<div class="alert-card alert-{{ alert.severity }}"><div class="d-flex justify-content-between"><strong>{{ alert.kategorie_name }}</strong><span class="small text-muted">{{ alert.erstellt_am[:16] }}</span></div><div class="small">{{ alert.nachricht }}</div></div>{% endfor %}{% else %}<div class="text-center text-muted py-3"><i class="bi bi-check-circle" style="font-size:2rem"></i><p class="mb-0 mt-2">Keine Alerts</p></div>{% endif %}
+            </div>
+            <div class="chart-card">
+                <h5><i class="bi bi-lightning me-2"></i>Schnellaktionen</h5>
+                <div class="row g-2">
+                    <div class="col-6"><button class="quick-action-btn" onclick="openBudgetModal()"><i class="bi bi-plus-circle"></i>Budgets setzen</button></div>
+                    <div class="col-6"><button class="quick-action-btn" onclick="copyBudgets()"><i class="bi bi-files"></i>Monat kopieren</button></div>
+                    <div class="col-6"><button class="quick-action-btn" onclick="exportBudgets()"><i class="bi bi-download"></i>Export</button></div>
+                    <div class="col-6"><button class="quick-action-btn" onclick="showJahresansicht()"><i class="bi bi-calendar3"></i>Jahresansicht</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="budgetModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header" style="background:var(--sbs-blue);color:white"><h5 class="modal-title"><i class="bi bi-calculator me-2"></i><span id="modalTitle">Budgets bearbeiten</span></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body" id="budgetModalBody"></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button><button type="button" class="btn btn-primary" onclick="saveBudgets()"><i class="bi bi-check-lg me-1"></i>Speichern</button></div></div></div></div>
+
+<div class="modal fade" id="copyModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header" style="background:var(--sbs-blue);color:white"><h5 class="modal-title"><i class="bi bi-files me-2"></i>Budgets kopieren</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body">
+<div class="mb-3"><label class="form-label">Von Monat</label><div class="row"><div class="col-8"><select class="form-select" id="copyVonMonat">{% for m in range(1,13) %}<option value="{{ m }}">{{ monat_namen[m-1] }}</option>{% endfor %}</select></div><div class="col-4"><select class="form-select" id="copyVonJahr">{% for j in range(jahr-1,jahr+1) %}<option value="{{ j }}">{{ j }}</option>{% endfor %}</select></div></div></div>
+<div class="mb-3"><label class="form-label">Nach Monat</label><div class="row"><div class="col-8"><select class="form-select" id="copyNachMonat">{% for m in range(1,13) %}<option value="{{ m }}" {% if m==monat %}selected{% endif %}>{{ monat_namen[m-1] }}</option>{% endfor %}</select></div><div class="col-4"><select class="form-select" id="copyNachJahr">{% for j in range(jahr-1,jahr+2) %}<option value="{{ j }}" {% if j==jahr %}selected{% endif %}>{{ j }}</option>{% endfor %}</select></div></div></div>
+<div class="mb-3"><label class="form-label">Prozentuale Anpassung</label><div class="input-group"><input type="number" class="form-control" id="copyProzent" value="0" step="1"><span class="input-group-text">%</span></div></div>
+</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button><button type="button" class="btn btn-primary" onclick="doCopyBudgets()"><i class="bi bi-files me-1"></i>Kopieren</button></div></div></div></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const trendData = {{ trend_data | tojson | safe }};
+const pieData = {{ pie_data | tojson | safe }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    new Chart(document.getElementById('trendChart').getContext('2d'), {
+        type: 'line', data: { labels: trendData.labels, datasets: [
+            { label: 'Budget (Soll)', data: trendData.soll, borderColor: '#003856', backgroundColor: 'rgba(0,56,86,0.1)', borderWidth: 2, fill: true, tension: 0.3 },
+            { label: 'Ausgaben (Ist)', data: trendData.ist, borderColor: '#FFB900', backgroundColor: 'rgba(255,185,0,0.1)', borderWidth: 2, fill: true, tension: 0.3 }
+        ]}, options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+    new Chart(document.getElementById('pieChart').getContext('2d'), {
+        type: 'doughnut', data: { labels: pieData.labels, datasets: [{ data: pieData.werte, backgroundColor: pieData.farben, borderWidth: 2, borderColor: '#fff' }] },
+        options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } } } }
+    });
+});
+
+function loadDashboard() { window.location.href = `/budget?jahr=${document.getElementById('jahrSelect').value}&monat=${document.getElementById('monatSelect').value}`; }
+
+function editBudget(id, name, budget) {
+    document.getElementById('modalTitle').textContent = `Budget: ${name}`;
+    document.getElementById('budgetModalBody').innerHTML = `<div class="mb-3"><label>${name}</label><div class="input-group"><input type="number" class="form-control text-end" id="budgetInput_${id}" value="${budget.toFixed(2)}" step="100" min="0"><span class="input-group-text">€</span></div></div><input type="hidden" id="editKategorieId" value="${id}"><input type="hidden" id="editMonat" value="${document.getElementById('monatSelect').value}"><input type="hidden" id="editJahr" value="${document.getElementById('jahrSelect').value}">`;
+    new bootstrap.Modal(document.getElementById('budgetModal')).show();
+}
+
+function openBudgetModal() {
+    fetch('/api/budget/kategorien').then(r=>r.json()).then(kategorien => {
+        document.getElementById('modalTitle').textContent = 'Alle Budgets bearbeiten';
+        let html = '<div class="alert alert-info mb-3"><i class="bi bi-info-circle me-2"></i>Budgets für den ausgewählten Monat setzen</div>';
+        kategorien.forEach(kat => { html += `<div class="d-flex justify-content-between align-items-center py-2 border-bottom"><label class="mb-0">${kat.name}</label><div class="input-group" style="width:180px"><input type="number" class="form-control text-end budget-input" data-kategorie="${kat.id}" value="0" step="100" min="0"><span class="input-group-text">€</span></div></div>`; });
+        html += `<input type="hidden" id="editMonat" value="${document.getElementById('monatSelect').value}"><input type="hidden" id="editJahr" value="${document.getElementById('jahrSelect').value}">`;
+        document.getElementById('budgetModalBody').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('budgetModal')).show();
+    });
+}
+
+function saveBudgets() {
+    const monat = document.getElementById('editMonat').value, jahr = document.getElementById('editJahr').value, single = document.getElementById('editKategorieId');
+    if (single) {
+        fetch('/api/budget/set', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ kategorie_id: parseInt(single.value), jahr: parseInt(jahr), monat: parseInt(monat), betrag: parseFloat(document.getElementById(`budgetInput_${single.value}`).value) }) }).then(() => { bootstrap.Modal.getInstance(document.getElementById('budgetModal')).hide(); loadDashboard(); });
+    } else {
+        Promise.all([...document.querySelectorAll('.budget-input')].filter(i => parseFloat(i.value) > 0).map(i => fetch('/api/budget/set', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ kategorie_id: parseInt(i.dataset.kategorie), jahr: parseInt(jahr), monat: parseInt(monat), betrag: parseFloat(i.value) }) }))).then(() => { bootstrap.Modal.getInstance(document.getElementById('budgetModal')).hide(); loadDashboard(); });
+    }
+}
+
+function copyBudgets() { new bootstrap.Modal(document.getElementById('copyModal')).show(); }
+
+function doCopyBudgets() {
+    fetch('/api/budget/copy', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ von_jahr: parseInt(document.getElementById('copyVonJahr').value), von_monat: parseInt(document.getElementById('copyVonMonat').value), nach_jahr: parseInt(document.getElementById('copyNachJahr').value), nach_monat: parseInt(document.getElementById('copyNachMonat').value), prozent_aenderung: parseFloat(document.getElementById('copyProzent').value) }) })
+    .then(r => r.json()).then(d => { bootstrap.Modal.getInstance(document.getElementById('copyModal')).hide(); alert(`${d.kopiert} Budgets kopiert!`); document.getElementById('monatSelect').value = document.getElementById('copyNachMonat').value; document.getElementById('jahrSelect').value = document.getElementById('copyNachJahr').value; loadDashboard(); });
+}
+
+function exportBudgets() { window.location.href = `/api/budget/export?jahr=${document.getElementById('jahrSelect').value}&monat=${document.getElementById('monatSelect').value}`; }
+function showJahresansicht() { window.location.href = `/budget/jahr?jahr=${document.getElementById('jahrSelect').value}`; }
+</script>
+{% endblock %}

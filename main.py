@@ -1,4 +1,5 @@
 from fastapi import FastAPI, responses
+from budget_routes import router as budget_router
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
