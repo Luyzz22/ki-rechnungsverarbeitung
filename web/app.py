@@ -18,6 +18,7 @@ import os
 from pathlib import Path
 
 # Add parent directory to path to import existing modules
+from budget_routes import router as budget_router
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException, BackgroundTasks
@@ -154,6 +155,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+app.include_router(budget_router)
 @app.get("/landing")
 async def landing_page():
     """Landing Page für Marketing"""
