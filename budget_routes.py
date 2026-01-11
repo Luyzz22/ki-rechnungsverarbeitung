@@ -42,11 +42,39 @@ async def budget_dashboard(request: Request, jahr: int = Query(default=None), mo
     trend_data = budget_service.get_trend_data(monate_zurueck=12)
     pie_data = budget_service.get_kategorie_verteilung(jahr, monat)
     
+    # Integration: Bezahlt/Offen Status laden
+    try:
+        conn = budget_service._get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 
+                COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN betrag_brutto ELSE 0 END), 0) as bezahlt,
+                COALESCE(SUM(CASE WHEN payment_status != 'paid' OR payment_status IS NULL THEN betrag_brutto ELSE 0 END), 0) as offen,
+                COUNT(CASE WHEN payment_status = 'paid' THEN 1 END) as anz_bezahlt,
+                COUNT(CASE WHEN payment_status != 'paid' OR payment_status IS NULL THEN 1 END) as anz_offen
+            FROM invoices 
+            WHERE datum IS NOT NULL 
+                AND strftime('%Y', datum) = ? 
+                AND strftime('%m', datum) = ?
+        """, (str(jahr), str(monat).zfill(2)))
+        row = cursor.fetchone()
+        summary["gesamt_bezahlt"] = round(row["bezahlt"], 2) if row else 0
+        summary["gesamt_offen"] = round(row["offen"], 2) if row else 0
+        summary["anzahl_bezahlt"] = row["anz_bezahlt"] if row else 0
+        summary["anzahl_offen"] = row["anz_offen"] if row else 0
+        conn.close()
+    except Exception as e:
+        summary["gesamt_bezahlt"] = 0
+        summary["gesamt_offen"] = 0
+        summary["anzahl_bezahlt"] = 0
+        summary["anzahl_offen"] = 0
+    
     return templates.TemplateResponse("budget.html", {
         "request": request, "jahr": jahr, "monat": monat,
         "monat_namen": MONAT_NAMEN, "summary": summary,
         "trend_data": trend_data, "pie_data": pie_data
     })
+
 
 @router.get("/budget/jahr", response_class=HTMLResponse)
 async def budget_jahresansicht(request: Request, jahr: int = Query(default=None)):
@@ -166,3 +194,160 @@ async def init_demo():
     from budget_service import create_demo_budgets
     create_demo_budgets()
     return {"success": True, "message": "Demo-Daten erstellt"}
+
+
+# ==================== INTEGRATION MIT ZAHLUNGEN & KONTIERUNG ====================
+
+@router.get("/api/budget/integration/uebersicht")
+async def get_integration_uebersicht(jahr: int = Query(...), monat: int = Query(...)):
+    """
+    Kombinierte Übersicht: Budget + Zahlungsstatus + Kontierungen
+    """
+    from zahlungs_service import get_zahlungs_service
+    
+    # Budget-Daten
+    budget_data = budget_service.get_monatsauswertung(jahr, monat)
+    
+    # Zahlungs-Daten aus DB
+    conn = budget_service._get_connection()
+    cursor = conn.cursor()
+    
+    # Bezahlte vs offene Beträge pro Kategorie
+    cursor.execute("""
+        SELECT 
+            bk.id as kategorie_id,
+            bk.name as kategorie_name,
+            COALESCE(SUM(CASE WHEN i.payment_status = 'paid' THEN i.betrag_brutto ELSE 0 END), 0) as bezahlt,
+            COALESCE(SUM(CASE WHEN i.payment_status != 'paid' OR i.payment_status IS NULL THEN i.betrag_brutto ELSE 0 END), 0) as offen,
+            COUNT(CASE WHEN i.payment_status = 'paid' THEN 1 END) as anzahl_bezahlt,
+            COUNT(CASE WHEN i.payment_status != 'paid' OR i.payment_status IS NULL THEN 1 END) as anzahl_offen
+        FROM budget_kategorien bk
+        LEFT JOIN kontierung_historie kh ON 1=1
+        LEFT JOIN invoices i ON LOWER(i.rechnungsaussteller) LIKE '%' || LOWER(kh.lieferant_pattern) || '%'
+            AND strftime('%Y', i.datum) = ?
+            AND strftime('%m', i.datum) = ?
+            AND (""" + " OR ".join([f"kh.final_account LIKE '{k}%'" for kat in budget_service.get_kategorien() for k in kat.get("konten_mapping", [])[:1]]) + """)
+        WHERE bk.aktiv = 1
+        GROUP BY bk.id
+    """, (str(jahr), str(monat).zfill(2)))
+    
+    zahlungs_status = {row["kategorie_id"]: dict(row) for row in cursor.fetchall()}
+    
+    # Gesamt-Zahlungsstatus
+    cursor.execute("""
+        SELECT 
+            COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN betrag_brutto ELSE 0 END), 0) as gesamt_bezahlt,
+            COALESCE(SUM(CASE WHEN payment_status != 'paid' THEN betrag_brutto ELSE 0 END), 0) as gesamt_offen,
+            COUNT(CASE WHEN payment_status = 'paid' THEN 1 END) as anzahl_bezahlt,
+            COUNT(CASE WHEN payment_status != 'paid' THEN 1 END) as anzahl_offen
+        FROM invoices
+        WHERE strftime('%Y', datum) = ? AND strftime('%m', datum) = ?
+    """, (str(jahr), str(monat).zfill(2)))
+    
+    gesamt = cursor.fetchone()
+    conn.close()
+    
+    # Kombiniere Budget mit Zahlungsstatus
+    for kat in budget_data:
+        zs = zahlungs_status.get(kat["kategorie_id"], {})
+        kat["bezahlt"] = zs.get("bezahlt", 0)
+        kat["offen"] = zs.get("offen", 0)
+        kat["anzahl_bezahlt"] = zs.get("anzahl_bezahlt", 0)
+        kat["anzahl_offen"] = zs.get("anzahl_offen", 0)
+    
+    return {
+        "jahr": jahr,
+        "monat": monat,
+        "kategorien": budget_data,
+        "gesamt_bezahlt": gesamt["gesamt_bezahlt"] if gesamt else 0,
+        "gesamt_offen": gesamt["gesamt_offen"] if gesamt else 0,
+        "anzahl_bezahlt": gesamt["anzahl_bezahlt"] if gesamt else 0,
+        "anzahl_offen": gesamt["anzahl_offen"] if gesamt else 0
+    }
+
+
+@router.post("/api/budget/sync-from-kontierung")
+async def sync_budget_from_kontierung():
+    """
+    Synchronisiert Budget-Ist-Werte aus allen Kontierungen
+    """
+    conn = budget_service._get_connection()
+    cursor = conn.cursor()
+    
+    # Lösche alte Ist-Werte
+    cursor.execute("DELETE FROM budget_ist_werte")
+    
+    # Hole alle Kategorien
+    kategorien = budget_service.get_kategorien()
+    
+    synced = 0
+    for kategorie in kategorien:
+        konten = kategorie.get("konten_mapping", [])
+        if not konten:
+            continue
+        
+        konten_filter = " OR ".join([f"kh.final_account LIKE '{k}%'" for k in konten])
+        
+        cursor.execute(f"""
+            SELECT 
+                strftime('%Y', i.datum) as jahr,
+                strftime('%m', i.datum) as monat,
+                SUM(i.betrag_brutto) as summe,
+                COUNT(*) as anzahl
+            FROM invoices i
+            INNER JOIN kontierung_historie kh 
+                ON LOWER(i.rechnungsaussteller) LIKE '%' || LOWER(kh.lieferant_pattern) || '%'
+            WHERE i.datum IS NOT NULL AND ({konten_filter})
+            GROUP BY jahr, monat
+        """)
+        
+        for row in cursor.fetchall():
+            if row["jahr"] and row["monat"] and row["summe"]:
+                cursor.execute("""
+                    INSERT INTO budget_ist_werte (kategorie_id, jahr, monat, ist_betrag, anzahl_buchungen)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (kategorie["id"], int(row["jahr"]), int(row["monat"]), row["summe"], row["anzahl"]))
+                synced += 1
+    
+    conn.commit()
+    conn.close()
+    
+    return {"success": True, "synced_entries": synced}
+
+
+@router.get("/api/budget/offene-posten")
+async def get_offene_posten(kategorie_id: int = Query(default=None)):
+    """
+    Zeigt offene (unbezahlte) Rechnungen pro Budget-Kategorie
+    """
+    conn = budget_service._get_connection()
+    cursor = conn.cursor()
+    
+    query = """
+        SELECT 
+            i.id, i.rechnungsnummer, i.rechnungsaussteller, i.betrag_brutto,
+            i.datum, i.faelligkeitsdatum, i.payment_status,
+            bk.id as kategorie_id, bk.name as kategorie_name,
+            kh.final_account
+        FROM invoices i
+        LEFT JOIN kontierung_historie kh 
+            ON LOWER(i.rechnungsaussteller) LIKE '%' || LOWER(kh.lieferant_pattern) || '%'
+        LEFT JOIN budget_kategorien bk ON 1=1
+        WHERE i.payment_status != 'paid' OR i.payment_status IS NULL
+    """
+    
+    if kategorie_id:
+        kategorie = next((k for k in budget_service.get_kategorien() if k["id"] == kategorie_id), None)
+        if kategorie:
+            konten = kategorie.get("konten_mapping", [])
+            if konten:
+                konten_filter = " OR ".join([f"kh.final_account LIKE '{k}%'" for k in konten])
+                query += f" AND ({konten_filter})"
+    
+    query += " ORDER BY i.faelligkeitsdatum ASC LIMIT 100"
+    
+    cursor.execute(query)
+    posten = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    return {"offene_posten": posten, "anzahl": len(posten)}
