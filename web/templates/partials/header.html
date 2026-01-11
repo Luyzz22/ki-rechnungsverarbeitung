@@ -1,4 +1,4 @@
-{# Invoice App Header - Enterprise SaaS v5 #}
+{# Invoice App Header - Enterprise SaaS v6 - CFO Edition #}
 <link rel="stylesheet" href="/static/css/app-shell.css" />
 
 <header class="app-global-header">
@@ -74,12 +74,15 @@
 
 <nav class="app-nav-bar">
   <div class="app-nav-tabs">
-    <a href="/dashboard" class="app-nav-tab">
+    <!-- Dashboard -->
+    <a href="/dashboard" class="app-nav-tab {% if active_nav == 'dashboard' %}active{% endif %}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       Dashboard
     </a>
+    
+    <!-- Rechnungen Dropdown -->
     <div class="app-nav-dropdown">
-      <button class="app-nav-dropdown-btn" type="button">
+      <button class="app-nav-dropdown-btn {% if active_nav == 'invoices' %}active{% endif %}" type="button" onclick="this.parentElement.classList.toggle('open'); document.querySelectorAll('.app-nav-dropdown').forEach(d => { if(d !== this.parentElement) d.classList.remove('open'); }); event.stopPropagation();">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         Rechnungen
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
@@ -92,12 +95,16 @@
         <a href="/accounting" class="app-nav-dropdown-item">📊 Auto-Kontierung</a>
       </div>
     </div>
-    <a href="/approvals" class="app-nav-tab">
+    
+    <!-- Freigaben -->
+    <a href="/approvals" class="app-nav-tab {% if active_nav == 'approvals' %}active{% endif %}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
       Freigaben
     </a>
+    
+    <!-- Export Dropdown -->
     <div class="app-nav-dropdown">
-      <button class="app-nav-dropdown-btn" type="button">
+      <button class="app-nav-dropdown-btn {% if active_nav == 'export' %}active{% endif %}" type="button" onclick="this.parentElement.classList.toggle('open'); document.querySelectorAll('.app-nav-dropdown').forEach(d => { if(d !== this.parentElement) d.classList.remove('open'); }); event.stopPropagation();">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
@@ -109,7 +116,25 @@
         <a href="/exports" class="app-nav-dropdown-item">📄 Export-Historie</a>
       </div>
     </div>
-    <a href="/analytics" class="app-nav-tab">
+    
+    <!-- NEU: Finanzen/CFO Dropdown -->
+    <div class="app-nav-dropdown">
+      <button class="app-nav-dropdown-btn {% if active_nav == 'finanzen' %}active{% endif %}" type="button" onclick="this.parentElement.classList.toggle('open'); document.querySelectorAll('.app-nav-dropdown').forEach(d => { if(d !== this.parentElement) d.classList.remove('open'); }); event.stopPropagation();">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Finanzen
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="app-nav-dropdown-menu">
+        <a href="/budget" class="app-nav-dropdown-item">📊 Budget-Dashboard</a>
+        <a href="/zahlungen" class="app-nav-dropdown-item">💰 Zahlungen & Skonto</a>
+        <div class="app-nav-dropdown-divider"></div>
+        <a href="/budget/jahr" class="app-nav-dropdown-item">📅 Jahresübersicht</a>
+        <a href="/finanzen/offene-posten" class="app-nav-dropdown-item">⏰ Offene Posten</a>
+      </div>
+    </div>
+    
+    <!-- Analytics -->
+    <a href="/analytics" class="app-nav-tab {% if active_nav == 'analytics' %}active{% endif %}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Analytics
     </a>
@@ -117,3 +142,60 @@
 </nav>
 
 <div class="app-overlay" id="appOverlay"></div>
+
+<script>
+// Toggle dropdowns and menus
+document.addEventListener('DOMContentLoaded', function() {
+  // App Switcher
+  const appSwitcherBtn = document.getElementById('appSwitcherBtn');
+  const appSwitcherPanel = document.getElementById('appSwitcherPanel');
+  const appUserBtn = document.getElementById('appUserBtn');
+  const appUserMenu = document.getElementById('appUserMenu');
+  const appOverlay = document.getElementById('appOverlay');
+  
+  if (appSwitcherBtn) {
+    appSwitcherBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      appSwitcherPanel.classList.toggle('open');
+      appUserMenu.classList.remove('open');
+      appOverlay.classList.toggle('active', appSwitcherPanel.classList.contains('open'));
+    });
+  }
+  
+  if (appUserBtn) {
+    appUserBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      appUserMenu.classList.toggle('open');
+      appSwitcherPanel.classList.remove('open');
+      appOverlay.classList.toggle('active', appUserMenu.classList.contains('open'));
+    });
+  }
+  
+  // Nav dropdowns
+  document.querySelectorAll('.app-nav-dropdown-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const dropdown = this.parentElement;
+      const wasOpen = dropdown.classList.contains('open');
+      document.querySelectorAll('.app-nav-dropdown').forEach(d => d.classList.remove('open'));
+      if (!wasOpen) dropdown.classList.add('open');
+    });
+  });
+  
+  // Close all on overlay/outside click
+  document.addEventListener('click', function() {
+    appSwitcherPanel.classList.remove('open');
+    appUserMenu.classList.remove('open');
+    appOverlay.classList.remove('active');
+    document.querySelectorAll('.app-nav-dropdown').forEach(d => d.classList.remove('open'));
+  });
+  
+  if (appOverlay) {
+    appOverlay.addEventListener('click', function() {
+      appSwitcherPanel.classList.remove('open');
+      appUserMenu.classList.remove('open');
+      appOverlay.classList.remove('active');
+    });
+  }
+});
+</script>

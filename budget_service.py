@@ -219,9 +219,14 @@ class BudgetService:
         return jahresbudget
     
     def update_ist_werte_from_invoices(self, jahr: int = None, monat: int = None):
+        """
+        Aktualisiert Ist-Werte aus Rechnungen mit Kontierungsdaten.
+        Verknüpft invoices mit kontierung_historie für korrekte Kategoriezuordnung.
+        """
         conn = self._get_connection()
         cursor = conn.cursor()
         
+        # Prüfe ob benötigte Tabellen existieren
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='invoices'")
         if not cursor.fetchone():
             self._create_demo_ist_werte(conn, jahr or datetime.now().year)
@@ -235,42 +240,99 @@ class BudgetService:
             if not konten:
                 continue
             
-            konten_filter = " OR ".join([f"gegenkonto LIKE '{k}%'" for k in konten])
-            query = f"""SELECT strftime('%Y', rechnungsdatum) as jahr, strftime('%m', rechnungsdatum) as monat, SUM(bruttobetrag) as summe, COUNT(*) as anzahl FROM invoices WHERE ({konten_filter})"""
+            # Baue Konten-Filter für SKR03 Konten
+            konten_filter = " OR ".join([f"kh.final_account LIKE '{k}%'" for k in konten])
+            
+            # Query: Verknüpfe invoices mit kontierung_historie über Lieferant
+            query = f"""
+                SELECT 
+                    strftime('%Y', i.datum) as jahr,
+                    strftime('%m', i.datum) as monat,
+                    SUM(i.betrag_brutto) as summe,
+                    COUNT(*) as anzahl
+                FROM invoices i
+                LEFT JOIN kontierung_historie kh 
+                    ON LOWER(i.rechnungsaussteller) LIKE '%' || LOWER(kh.lieferant_pattern) || '%'
+                WHERE i.datum IS NOT NULL
+                    AND ({konten_filter})
+            """
+            
             params = []
             if jahr:
-                query += " AND strftime('%Y', rechnungsdatum) = ?"
+                query += " AND strftime('%Y', i.datum) = ?"
                 params.append(str(jahr))
             if monat:
-                query += " AND strftime('%m', rechnungsdatum) = ?"
+                query += " AND strftime('%m', i.datum) = ?"
                 params.append(str(monat).zfill(2))
+            
             query += " GROUP BY jahr, monat"
             
             try:
                 cursor.execute(query, params)
                 for row in cursor.fetchall():
                     if row["jahr"] and row["monat"]:
-                        cursor.execute("""INSERT INTO budget_ist_werte (kategorie_id, jahr, monat, ist_betrag, anzahl_buchungen) VALUES (?, ?, ?, ?, ?) ON CONFLICT(kategorie_id, jahr, monat) DO UPDATE SET ist_betrag = excluded.ist_betrag, anzahl_buchungen = excluded.anzahl_buchungen, letzte_aktualisierung = CURRENT_TIMESTAMP""",
-                            (kategorie["id"], int(row["jahr"]), int(row["monat"]), row["summe"] or 0, row["anzahl"] or 0))
+                        cursor.execute("""
+                            INSERT INTO budget_ist_werte (kategorie_id, jahr, monat, ist_betrag, anzahl_buchungen)
+                            VALUES (?, ?, ?, ?, ?)
+                            ON CONFLICT(kategorie_id, jahr, monat) DO UPDATE SET 
+                                ist_betrag = excluded.ist_betrag, 
+                                anzahl_buchungen = excluded.anzahl_buchungen,
+                                letzte_aktualisierung = CURRENT_TIMESTAMP
+                        """, (kategorie["id"], int(row["jahr"]), int(row["monat"]), row["summe"] or 0, row["anzahl"] or 0))
             except sqlite3.OperationalError as e:
-                logger.error(f"Fehler bei Ist-Wert Aktualisierung: {e}")
+                logger.error(f"Fehler bei Ist-Wert Aktualisierung fuer {kategorie['name']}: {e}")
+                continue
+        
+        # Fallback: Rechnungen ohne Kontierung
+        self._update_unkontierte_rechnungen(cursor, jahr, monat)
         
         conn.commit()
         conn.close()
+        logger.info(f"Ist-Werte aktualisiert")
     
-    def _create_demo_ist_werte(self, conn: sqlite3.Connection, jahr: int):
-        import random
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM budget_kategorien WHERE aktiv = 1")
-        kategorien = cursor.fetchall()
-        aktueller_monat = datetime.now().month
+    def _update_unkontierte_rechnungen(self, cursor, jahr: int = None, monat: int = None):
+        """Ordnet Rechnungen ohne Kontierung der Kategorie Sonstige Kosten zu"""
+        cursor.execute("SELECT id FROM budget_kategorien WHERE name = 'Sonstige Kosten'")
+        row = cursor.fetchone()
+        if not row:
+            return
+        sonstige_id = row["id"]
         
-        for kat in kategorien:
-            for monat in range(1, aktueller_monat + 1):
-                basis = random.uniform(1000, 15000)
-                cursor.execute("""INSERT OR REPLACE INTO budget_ist_werte (kategorie_id, jahr, monat, ist_betrag, anzahl_buchungen) VALUES (?, ?, ?, ?, ?)""",
-                    (kat["id"], jahr, monat, round(basis, 2), random.randint(5, 30)))
-        conn.commit()
+        query = """
+            SELECT 
+                strftime('%Y', i.datum) as jahr,
+                strftime('%m', i.datum) as monat,
+                SUM(i.betrag_brutto) as summe,
+                COUNT(*) as anzahl
+            FROM invoices i
+            LEFT JOIN kontierung_historie kh 
+                ON LOWER(i.rechnungsaussteller) LIKE '%' || LOWER(kh.lieferant_pattern) || '%'
+            WHERE i.datum IS NOT NULL AND kh.id IS NULL
+        """
+        params = []
+        if jahr:
+            query += " AND strftime('%Y', i.datum) = ?"
+            params.append(str(jahr))
+        if monat:
+            query += " AND strftime('%m', i.datum) = ?"
+            params.append(str(monat).zfill(2))
+        query += " GROUP BY jahr, monat"
+        
+        try:
+            cursor.execute(query, params)
+            for row in cursor.fetchall():
+                if row["jahr"] and row["monat"] and row["summe"]:
+                    cursor.execute("""
+                        INSERT INTO budget_ist_werte (kategorie_id, jahr, monat, ist_betrag, anzahl_buchungen)
+                        VALUES (?, ?, ?, ?, ?)
+                        ON CONFLICT(kategorie_id, jahr, monat) DO UPDATE SET 
+                            ist_betrag = ist_betrag + excluded.ist_betrag, 
+                            anzahl_buchungen = anzahl_buchungen + excluded.anzahl_buchungen,
+                            letzte_aktualisierung = CURRENT_TIMESTAMP
+                    """, (sonstige_id, int(row["jahr"]), int(row["monat"]), row["summe"], row["anzahl"]))
+        except sqlite3.OperationalError as e:
+            logger.error(f"Fehler bei unkontierte Rechnungen: {e}")
+
     
     def get_monatsauswertung(self, jahr: int, monat: int) -> List[Dict]:
         conn = self._get_connection()

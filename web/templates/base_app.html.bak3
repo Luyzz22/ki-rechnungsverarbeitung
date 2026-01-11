@@ -156,31 +156,63 @@
        ============================================================ -->
   <nav class="app-nav-bar">
     <div class="app-nav-tabs">
-      <!-- Dashboard -->
       <a href="/dashboard" class="app-nav-tab {% if active_nav == 'dashboard' %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
         Dashboard
       </a>
       
       <!-- Rechnungen Dropdown -->
       <div class="app-nav-dropdown">
         <button class="app-nav-dropdown-btn {% if active_nav == 'invoices' %}active{% endif %}" onclick="this.parentElement.classList.toggle('open'); document.querySelectorAll('.app-nav-dropdown').forEach(d => { if(d !== this.parentElement) d.classList.remove('open'); }); event.stopPropagation();">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
           Rechnungen
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
         </button>
         <div class="app-nav-dropdown-menu">
-          <a href="/" class="app-nav-dropdown-item">📤 Neue hochladen</a>
-          <a href="/history" class="app-nav-dropdown-item">📁 Historie</a>
+          <a href="/dashboard" class="app-nav-dropdown-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Neue hochladen
+          </a>
+          <a href="/history" class="app-nav-dropdown-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Historie
+          </a>
           <div class="app-nav-dropdown-divider"></div>
-          <a href="/copilot" class="app-nav-dropdown-item">🤖 Finance Copilot</a>
-          <a href="/accounting" class="app-nav-dropdown-item">📊 Auto-Kontierung</a>
+          <a href="/copilot" class="app-nav-dropdown-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a10 10 0 1 0 10 10H12V2z"/>
+              <path d="M12 2a10 10 0 0 1 10 10"/>
+              <circle cx="12" cy="12" r="4"/>
+            </svg>
+            Finance Copilot
+          </a>
         </div>
       </div>
       
-      <!-- Freigaben -->
       <a href="/approvals" class="app-nav-tab {% if active_nav == 'approvals' %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
         Freigaben
         {% if pending_approvals is defined and pending_approvals > 0 %}<span class="badge">{{ pending_approvals }}</span>{% endif %}
       </a>
@@ -188,37 +220,83 @@
       <!-- Export Dropdown -->
       <div class="app-nav-dropdown">
         <button class="app-nav-dropdown-btn {% if active_nav == 'export' %}active{% endif %}" onclick="this.parentElement.classList.toggle('open'); document.querySelectorAll('.app-nav-dropdown').forEach(d => { if(d !== this.parentElement) d.classList.remove('open'); }); event.stopPropagation();">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
           Export
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
         </button>
         <div class="app-nav-dropdown-menu">
-          <a href="/datev" class="app-nav-dropdown-item">🏢 DATEV Export</a>
-          <a href="/integrations" class="app-nav-dropdown-item">🔗 Lexoffice / sevDesk</a>
+          <div class="app-nav-dropdown-header">Buchhaltung</div>
+          <a href="/datev" class="app-nav-dropdown-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            DATEV Export
+          </a>
+          <a href="/integrations" class="app-nav-dropdown-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            Lexoffice / sevDesk
+          </a>
           <div class="app-nav-dropdown-divider"></div>
-          <a href="/exports" class="app-nav-dropdown-item">📄 Export-Historie</a>
+          <div class="app-nav-dropdown-header">Dateien</div>
+          <a href="/exports" class="app-nav-dropdown-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+              <polyline points="13 2 13 9 20 9"/>
+            </svg>
+            Export-Historie
+          </a>
         </div>
       </div>
+      
       
       <!-- Finanzen/CFO Dropdown -->
       <div class="app-nav-dropdown">
         <button class="app-nav-dropdown-btn {% if active_nav == 'finanzen' %}active{% endif %}" onclick="this.parentElement.classList.toggle('open'); document.querySelectorAll('.app-nav-dropdown').forEach(d => { if(d !== this.parentElement) d.classList.remove('open'); }); event.stopPropagation();">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
           Finanzen
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
         </button>
         <div class="app-nav-dropdown-menu">
-          <a href="/budget" class="app-nav-dropdown-item">📊 Budget-Dashboard</a>
-          <a href="/zahlungen" class="app-nav-dropdown-item">💰 Zahlungen & Skonto</a>
+          <a href="/budget" class="app-nav-dropdown-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            Budget-Dashboard
+          </a>
+          <a href="/zahlungen" class="app-nav-dropdown-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Zahlungen & Skonto
+          </a>
           <div class="app-nav-dropdown-divider"></div>
-          <a href="/budget/jahr" class="app-nav-dropdown-item">📅 Jahresübersicht</a>
-          <a href="/finanzen/offene-posten" class="app-nav-dropdown-item">⏰ Offene Posten</a>
+          <a href="/budget/jahr" class="app-nav-dropdown-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Jahresübersicht
+          </a>
+          <a href="/finanzen/offene-posten" class="app-nav-dropdown-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Offene Posten
+          </a>
         </div>
       </div>
-      
-      <!-- Analytics -->
       <a href="/analytics" class="app-nav-tab {% if active_nav == 'analytics' %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
         Analytics
       </a>
     </div>
