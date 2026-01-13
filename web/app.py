@@ -2618,6 +2618,39 @@ async def checkout_success(request: Request, session_id: str = None):
                     )
                     
                 app_logger.info(f"✅ Checkout erfolgreich: User {user_id}, Product {product}, Plan {plan}")
+                
+                # Abo-Bestätigungs-Email senden
+                try:
+                    from sendgrid_mailer import send_subscription_email
+                    # User-Daten aus DB holen
+                    conn = get_db_connection()
+                    user_row = conn.execute("SELECT email, name FROM users WHERE id = ?", (user_id,)).fetchone()
+                    conn.close()
+                    
+                    if user_row:
+                        user_email = user_row[0]
+                        user_name = user_row[1] or user_email.split('@')[0]
+                        
+                        # Preis berechnen
+                        PRICES = {
+                            "invoice": {"starter": 4900, "professional": 14900, "enterprise": 44900},
+                            "contract": {"starter": 3900, "professional": 11900, "enterprise": 34900},
+                            "bundle": {"starter": 7000, "professional": 21400, "enterprise": 63800},
+                        }
+                        amount = PRICES.get(product, {}).get(plan, 0)
+                        
+                        send_subscription_email(
+                            to_email=user_email,
+                            user_name=user_name,
+                            product=product,
+                            plan=plan,
+                            billing_cycle=billing,
+                            amount_cents=amount
+                        )
+                        app_logger.info(f"📧 Abo-Email gesendet an {user_email}")
+                except Exception as email_err:
+                    app_logger.error(f"Email-Versand fehlgeschlagen: {email_err}")
+                    
         except Exception as e:
             app_logger.error(f"Error processing checkout: {e}")
     
