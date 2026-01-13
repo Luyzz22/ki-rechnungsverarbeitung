@@ -1,4 +1,4 @@
-<!-- SBS Deutschland - Unified Marketing Header (App-Style) -->
+<!-- SBS Deutschland - Unified Marketing Header (App-Style) v2 -->
 <style>
   .sbs-header {
     background: linear-gradient(135deg, #003856 0%, #00507a 100%);
@@ -99,7 +99,7 @@
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
-    min-width: 280px;
+    min-width: 300px;
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.15);
@@ -260,11 +260,16 @@
           <a href="/static/landing/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
           <a href="/loesungen/vertragsanalyse/" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
           <div class="sbs-dropdown-divider"></div>
-          <div class="sbs-dropdown-section">Features</div>
+          <div class="sbs-dropdown-section">Rechnungs-Features</div>
           <a href="https://app.sbsdeutschland.com/copilot" class="sbs-dropdown-item"><span class="emoji">🤖</span> Finance Copilot</a>
           <a href="https://app.sbsdeutschland.com/accounting" class="sbs-dropdown-item"><span class="emoji">📊</span> Auto-Kontierung</a>
           <a href="https://app.sbsdeutschland.com/budget" class="sbs-dropdown-item"><span class="emoji">💰</span> Budget-Dashboard</a>
           <a href="https://app.sbsdeutschland.com/zahlungen" class="sbs-dropdown-item"><span class="emoji">💳</span> Zahlungsmanagement</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">Vertrags-Features</div>
+          <a href="https://contract.sbsdeutschland.com/upload" class="sbs-dropdown-item"><span class="emoji">📄</span> Vertragsanalyse</a>
+          <a href="https://contract.sbsdeutschland.com/compare" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Vertragsvergleich</a>
+          <a href="https://contract.sbsdeutschland.com/library" class="sbs-dropdown-item"><span class="emoji">📚</span> Klausel-Bibliothek</a>
         </div>
       </div>
       
@@ -275,10 +280,15 @@
           <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="sbs-nav-dropdown-menu">
-          <div class="sbs-dropdown-section">Nach Branche</div>
+          <div class="sbs-dropdown-section">KI-Rechnungen</div>
           <a href="/static/landing/loesungen-steuerberater.html" class="sbs-dropdown-item"><span class="emoji">📋</span> Für Steuerberater</a>
           <a href="/static/landing/loesungen-finanzleitung.html" class="sbs-dropdown-item"><span class="emoji">💼</span> Für CFOs & Finanzleitung</a>
           <a href="/static/landing/loesungen-handel-filialnetz.html" class="sbs-dropdown-item"><span class="emoji">🏪</span> Für Handel & Filialnetz</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">KI-Verträge</div>
+          <a href="/loesungen/vertragsanalyse/kanzleien.html" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Für Kanzleien & Notare</a>
+          <a href="/loesungen/vertragsanalyse/hr.html" class="sbs-dropdown-item"><span class="emoji">👔</span> Für HR-Abteilungen</a>
+          <a href="/loesungen/vertragsanalyse/einkauf.html" class="sbs-dropdown-item"><span class="emoji">🛒</span> Für Einkauf & Beschaffung</a>
           <div class="sbs-dropdown-divider"></div>
           <div class="sbs-dropdown-section">Consulting</div>
           <a href="/sbshomepage/sap-consulting.html" class="sbs-dropdown-item"><span class="emoji">📊</span> SAP Consulting</a>
@@ -287,8 +297,19 @@
         </div>
       </div>
       
-      <!-- Preise -->
-      <a href="/static/preise/" class="sbs-nav-item">💰 Preise</a>
+      <!-- Preise Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          💰 Preise
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <a href="/static/preise/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
+          <a href="/loesungen/vertragsanalyse/preise.html" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
+          <div class="sbs-dropdown-divider"></div>
+          <a href="/static/preise/#bundle" class="sbs-dropdown-item" style="color: #8b5cf6; font-weight: 600;"><span class="emoji">🎁</span> Bundle-Angebot (20% sparen)</a>
+        </div>
+      </div>
       
       <!-- Ressourcen Dropdown -->
       <div class="sbs-nav-dropdown">

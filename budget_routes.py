@@ -7,6 +7,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+import sqlite3
 
 from budget_service import BudgetService
 
@@ -16,12 +17,41 @@ budget_service = BudgetService()
 
 MONAT_NAMEN = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
 
+def get_user_info(request: Request):
+    """Holt User-Informationen aus Session"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return {"id": 0, "email": "", "name": "User", "is_admin": False, "plan": "Free"}
+    
+    try:
+        conn = sqlite3.connect("invoices.db", check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, email, name, is_admin FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return {
+                "id": row["id"],
+                "email": row["email"],
+                "name": row["name"] or row["email"].split("@")[0],
+                "is_admin": bool(row["is_admin"]),
+                "plan": "Pro"
+            }
+    except Exception as e:
+        print(f"Error getting user info: {e}")
+    
+    return {"id": 0, "email": "", "name": "User", "is_admin": False, "plan": "Free"}
+
+
 class BudgetSetRequest(BaseModel):
     kategorie_id: int
     jahr: int
     monat: int
     betrag: float
     notiz: Optional[str] = None
+
 
 class BudgetCopyRequest(BaseModel):
     von_jahr: int
@@ -42,47 +72,21 @@ async def budget_dashboard(request: Request, jahr: int = Query(default=None), mo
     trend_data = budget_service.get_trend_data(monate_zurueck=12)
     pie_data = budget_service.get_kategorie_verteilung(jahr, monat)
     
-    # Integration: Bezahlt/Offen Status laden
-    try:
-        conn = budget_service._get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT 
-                COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN betrag_brutto ELSE 0 END), 0) as bezahlt,
-                COALESCE(SUM(CASE WHEN payment_status != 'paid' OR payment_status IS NULL THEN betrag_brutto ELSE 0 END), 0) as offen,
-                COUNT(CASE WHEN payment_status = 'paid' THEN 1 END) as anz_bezahlt,
-                COUNT(CASE WHEN payment_status != 'paid' OR payment_status IS NULL THEN 1 END) as anz_offen
-            FROM invoices 
-            WHERE datum IS NOT NULL 
-                AND strftime('%Y', datum) = ? 
-                AND strftime('%m', datum) = ?
-        """, (str(jahr), str(monat).zfill(2)))
-        row = cursor.fetchone()
-        summary["gesamt_bezahlt"] = round(row["bezahlt"], 2) if row else 0
-        summary["gesamt_offen"] = round(row["offen"], 2) if row else 0
-        summary["anzahl_bezahlt"] = row["anz_bezahlt"] if row else 0
-        summary["anzahl_offen"] = row["anz_offen"] if row else 0
-        conn.close()
-    except Exception as e:
-        summary["gesamt_bezahlt"] = 0
-        summary["gesamt_offen"] = 0
-        summary["anzahl_bezahlt"] = 0
-        summary["anzahl_offen"] = 0
-    
+    user = get_user_info(request)
     return templates.TemplateResponse("budget.html", {
         "request": request, "jahr": jahr, "monat": monat,
         "monat_namen": MONAT_NAMEN, "summary": summary,
-        "trend_data": trend_data, "pie_data": pie_data
+        "trend_data": trend_data, "pie_data": pie_data, "user": user
     })
-
 
 @router.get("/budget/jahr", response_class=HTMLResponse)
 async def budget_jahresansicht(request: Request, jahr: int = Query(default=None)):
     if jahr is None:
         jahr = datetime.now().year
     jahresbudget = budget_service.get_jahresbudget(jahr)
+    user = get_user_info(request)
     return templates.TemplateResponse("budget_jahr.html", {
-        "request": request, "jahr": jahr, "monat_namen": MONAT_NAMEN, "jahresbudget": jahresbudget
+        "request": request, "jahr": jahr, "monat_namen": MONAT_NAMEN, "jahresbudget": jahresbudget, "user": user
     })
 
 @router.get("/api/budget/kategorien")
@@ -351,3 +355,14 @@ async def get_offene_posten(kategorie_id: int = Query(default=None)):
     conn.close()
     
     return {"offene_posten": posten, "anzahl": len(posten)}
+
+
+@router.get("/finanzen/offene-posten", response_class=HTMLResponse)
+async def offene_posten_page(request: Request):
+    """Offene Posten Übersicht"""
+    user = get_user_info(request)
+    return templates.TemplateResponse("offene_posten.html", {
+        "request": request,
+        "active_nav": "finanzen",
+        "user": user
+    })
