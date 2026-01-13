@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Offene Posten · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/css/design-tokens.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    :root {
+      --sbs-blue: #003856;
+      --sbs-yellow: #FFB900;
+      --green-500: #10b981;
+      --green-100: #d1fae5;
+      --amber-500: #f59e0b;
+      --amber-100: #fef3c7;
+      --red-500: #ef4444;
+      --red-100: #fee2e2;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-600: #4b5563;
+      --gray-900: #111827;
+    }
+    
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--gray-50); }
+    
+    /* Page Header */
+    .page-header {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      padding: 32px 24px;
+      color: #fff;
+    }
+    .page-header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .page-title-icon {
+      width: 56px;
+      height: 56px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+    }
+    .page-title h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    .page-title p {
+      color: rgba(255,255,255,0.8);
+      margin: 4px 0 0;
+      font-size: 0.95rem;
+    }
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .header-btn {
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .header-btn.primary {
+      background: #fff;
+      color: #dc2626;
+    }
+    .header-btn.secondary {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    
+    /* Stats Bar */
+    .stats-bar {
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 20px 24px;
+    }
+    .stats-bar-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .stats-bar-inner { grid-template-columns: repeat(3, 1fr); }
+    }
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+    .stat-icon.red { background: var(--red-100); }
+    .stat-icon.amber { background: var(--amber-100); }
+    .stat-icon.green { background: var(--green-100); }
+    .stat-icon.blue { background: #dbeafe; }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gray-900);
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--gray-600);
+      margin-top: 2px;
+    }
+    
+    /* Main Container */
+    .main-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    
+    /* Alert Banner */
+    .alert-banner {
+      background: linear-gradient(135deg, var(--red-100) 0%, #fecaca 100%);
+      border: 1px solid #fca5a5;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .alert-banner.warning {
+      background: linear-gradient(135deg, var(--amber-100) 0%, #fde68a 100%);
+      border-color: #fcd34d;
+    }
+    .alert-banner-icon {
+      font-size: 1.5rem;
+    }
+    .alert-banner-text h4 {
+      margin: 0;
+      font-size: 0.95rem;
+      color: #991b1b;
+    }
+    .alert-banner.warning .alert-banner-text h4 { color: #92400e; }
+    .alert-banner-text p {
+      margin: 4px 0 0;
+      font-size: 0.85rem;
+      color: #b91c1c;
+    }
+    .alert-banner.warning .alert-banner-text p { color: #a16207; }
+    
+    /* Data Table */
+    .data-table-container {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .data-table-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .data-table-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .filter-row {
+      display: flex;
+      gap: 12px;
+    }
+    .filter-select {
+      padding: 8px 12px;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: #fff;
+    }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th {
+      background: var(--gray-50);
+      padding: 14px 16px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .data-table td {
+      padding: 16px;
+      border-bottom: 1px solid var(--gray-100);
+      font-size: 0.9rem;
+    }
+    .data-table tr:hover {
+      background: var(--gray-50);
+    }
+    
+    /* Status Badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .status-badge.overdue {
+      background: var(--red-100);
+      color: #991b1b;
+    }
+    .status-badge.due-soon {
+      background: var(--amber-100);
+      color: #92400e;
+    }
+    .status-badge.pending {
+      background: var(--gray-100);
+      color: var(--gray-600);
+    }
+    
+    /* Days Badge */
+    .days-badge {
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .days-badge.overdue { color: var(--red-500); }
+    .days-badge.warning { color: var(--amber-500); }
+    .days-badge.ok { color: var(--green-500); }
+    
+    /* Action Button */
+    .action-btn {
+      padding: 8px 14px;
+      border: 1px solid var(--gray-200);
+      background: #fff;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .action-btn:hover {
+      background: var(--sbs-blue);
+      color: #fff;
+      border-color: var(--sbs-blue);
+    }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 80px 24px;
+    }
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
+    .empty-state h3 {
+      font-size: 1.3rem;
+      color: var(--gray-900);
+      margin: 0 0 8px;
+    }
+    .empty-state p {
+      color: var(--gray-600);
+      margin: 0;
+    }
+    
+    /* Loading */
+    .loading-state {
+      text-align: center;
+      padding: 60px 24px;
+    }
+    .spinner-ring {
+      width: 48px;
+      height: 48px;
+      border: 4px solid var(--gray-200);
+      border-top-color: var(--red-500);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  {% include 'partials/header.html' %}
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-inner">
+      <div class="page-title">
+        <div class="page-title-icon">⏰</div>
+        <div>
+          <h1>Offene Posten</h1>
+          <p>Unbezahlte Rechnungen & Fälligkeiten im Überblick</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="/zahlungen" class="header-btn secondary">💳 Zahlungen</a>
+        <button class="header-btn primary" onclick="loadData()">🔄 Aktualisieren</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stats-bar-inner">
+      <div class="stat-card">
+        <div class="stat-icon red">📋</div>
+        <div>
+          <div class="stat-value" id="stat-total">-</div>
+          <div class="stat-label">Offene Posten</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red">💰</div>
+        <div>
+          <div class="stat-value" id="stat-amount">-</div>
+          <div class="stat-label">Gesamtbetrag</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red">🚨</div>
+        <div>
+          <div class="stat-value" id="stat-overdue">-</div>
+          <div class="stat-label">Überfällig</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber">⚠️</div>
+        <div>
+          <div class="stat-value" id="stat-due-soon">-</div>
+          <div class="stat-label">Fällig in 7 Tagen</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">💸</div>
+        <div>
+          <div class="stat-value" id="stat-skonto">-</div>
+          <div class="stat-label">Skonto möglich</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="main-container">
+    <!-- Alert Banner -->
+    <div class="alert-banner" id="alert-banner" style="display: none;">
+      <div class="alert-banner-icon">🚨</div>
+      <div class="alert-banner-text">
+        <h4 id="alert-title">Achtung: Überfällige Rechnungen!</h4>
+        <p id="alert-text">Sie haben überfällige Rechnungen, die sofort bezahlt werden sollten.</p>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="data-table-container">
+      <div class="data-table-header">
+        <h3>📋 Offene Rechnungen</h3>
+        <div class="filter-row">
+          <select class="filter-select" id="filter-status" onchange="loadData()">
+            <option value="">Alle Status</option>
+            <option value="overdue">Überfällig</option>
+            <option value="due-soon">Fällig in 7 Tagen</option>
+            <option value="pending">Noch Zeit</option>
+          </select>
+          <select class="filter-select" id="filter-sort" onchange="loadData()">
+            <option value="due_asc">Fälligkeit (nächste zuerst)</option>
+            <option value="due_desc">Fälligkeit (späteste zuerst)</option>
+            <option value="amount_desc">Betrag (höchste zuerst)</option>
+            <option value="amount_asc">Betrag (niedrigste zuerst)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div id="table-content">
+        <div class="loading-state">
+          <div class="spinner-ring"></div>
+          <p style="color: var(--gray-600);">Lade offene Posten...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  {% include 'partials/footer.html' %}
+
+  <script>
+    let allPosten = [];
+    
+    async function loadData() {
+      const container = document.getElementById('table-content');
+      container.innerHTML = `
+        <div class="loading-state">
+          <div class="spinner-ring"></div>
+          <p style="color: var(--gray-600);">Lade offene Posten...</p>
+        </div>
+      `;
+      
+      try {
+        const res = await fetch('/api/budget/offene-posten');
+        const data = await res.json();
+        allPosten = data.offene_posten || [];
+        
+        updateStats();
+        renderTable();
+      } catch (err) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">❌</div>
+            <h3>Fehler beim Laden</h3>
+            <p>${err.message}</p>
+          </div>
+        `;
+      }
+    }
+    
+    function updateStats() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      let totalAmount = 0;
+      let overdueCount = 0;
+      let dueSoonCount = 0;
+      let skontoCount = 0;
+      
+      allPosten.forEach(p => {
+        const amount = parseFloat(p.betrag_brutto) || 0;
+        totalAmount += amount;
+        
+        if (p.faelligkeitsdatum) {
+          const due = new Date(p.faelligkeitsdatum);
+          const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+          
+          if (diffDays < 0) overdueCount++;
+          else if (diffDays <= 7) dueSoonCount++;
+        }
+        
+        if (p.skonto_prozent && p.skonto_prozent > 0) skontoCount++;
+      });
+      
+      document.getElementById('stat-total').textContent = allPosten.length;
+      document.getElementById('stat-amount').textContent = totalAmount.toLocaleString('de-DE', {maximumFractionDigits: 0}) + ' €';
+      document.getElementById('stat-overdue').textContent = overdueCount;
+      document.getElementById('stat-due-soon').textContent = dueSoonCount;
+      document.getElementById('stat-skonto').textContent = skontoCount;
+      
+      // Alert Banner
+      const alertBanner = document.getElementById('alert-banner');
+      if (overdueCount > 0) {
+        alertBanner.style.display = 'flex';
+        alertBanner.className = 'alert-banner';
+        document.getElementById('alert-title').textContent = `🚨 ${overdueCount} überfällige Rechnung(en)!`;
+        document.getElementById('alert-text').textContent = 'Diese Rechnungen sollten sofort bezahlt werden, um Mahngebühren zu vermeiden.';
+      } else if (dueSoonCount > 0) {
+        alertBanner.style.display = 'flex';
+        alertBanner.className = 'alert-banner warning';
+        document.getElementById('alert-title').textContent = `⚠️ ${dueSoonCount} Rechnung(en) bald fällig`;
+        document.getElementById('alert-text').textContent = 'Diese Rechnungen werden in den nächsten 7 Tagen fällig.';
+      } else {
+        alertBanner.style.display = 'none';
+      }
+    }
+    
+    function renderTable() {
+      const container = document.getElementById('table-content');
+      const filterStatus = document.getElementById('filter-status').value;
+      const filterSort = document.getElementById('filter-sort').value;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Filter & Sort
+      let filtered = allPosten.map(p => {
+        const due = p.faelligkeitsdatum ? new Date(p.faelligkeitsdatum) : null;
+        const diffDays = due ? Math.ceil((due - today) / (1000 * 60 * 60 * 24)) : 999;
+        return { ...p, diffDays };
+      });
+      
+      if (filterStatus === 'overdue') {
+        filtered = filtered.filter(p => p.diffDays < 0);
+      } else if (filterStatus === 'due-soon') {
+        filtered = filtered.filter(p => p.diffDays >= 0 && p.diffDays <= 7);
+      } else if (filterStatus === 'pending') {
+        filtered = filtered.filter(p => p.diffDays > 7);
+      }
+      
+      if (filterSort === 'due_asc') {
+        filtered.sort((a, b) => a.diffDays - b.diffDays);
+      } else if (filterSort === 'due_desc') {
+        filtered.sort((a, b) => b.diffDays - a.diffDays);
+      } else if (filterSort === 'amount_desc') {
+        filtered.sort((a, b) => (parseFloat(b.betrag_brutto) || 0) - (parseFloat(a.betrag_brutto) || 0));
+      } else if (filterSort === 'amount_asc') {
+        filtered.sort((a, b) => (parseFloat(a.betrag_brutto) || 0) - (parseFloat(b.betrag_brutto) || 0));
+      }
+      
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">✅</div>
+            <h3>Keine offenen Posten</h3>
+            <p>Alle Rechnungen sind bezahlt – großartig!</p>
+          </div>
+        `;
+        return;
+      }
+      
+      let html = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Rechnung</th>
+              <th>Lieferant</th>
+              <th style="text-align: right;">Betrag</th>
+              <th>Fälligkeit</th>
+              <th>Status</th>
+              <th>Aktion</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      filtered.forEach(p => {
+        const amount = parseFloat(p.betrag_brutto) || 0;
+        const dueDate = p.faelligkeitsdatum ? new Date(p.faelligkeitsdatum).toLocaleDateString('de-DE') : '-';
+        
+        let statusBadge = '';
+        let daysBadge = '';
+        
+        if (p.diffDays < 0) {
+          statusBadge = '<span class="status-badge overdue">🚨 Überfällig</span>';
+          daysBadge = `<span class="days-badge overdue">${Math.abs(p.diffDays)} Tage</span>`;
+        } else if (p.diffDays <= 7) {
+          statusBadge = '<span class="status-badge due-soon">⚠️ Bald fällig</span>';
+          daysBadge = `<span class="days-badge warning">${p.diffDays} Tage</span>`;
+        } else {
+          statusBadge = '<span class="status-badge pending">⏳ Offen</span>';
+          daysBadge = `<span class="days-badge ok">${p.diffDays} Tage</span>`;
+        }
+        
+        html += `
+          <tr>
+            <td>
+              <strong>${p.rechnungsnummer || 'Ohne Nr.'}</strong><br>
+              <small style="color: var(--gray-600);">${p.datum || ''}</small>
+            </td>
+            <td>${p.rechnungsaussteller || 'Unbekannt'}</td>
+            <td style="text-align: right; font-weight: 600;">
+              ${amount.toLocaleString('de-DE', {minimumFractionDigits: 2})} €
+            </td>
+            <td>
+              ${dueDate}<br>
+              ${daysBadge}
+            </td>
+            <td>${statusBadge}</td>
+            <td>
+              <button class="action-btn" onclick="markAsPaid(${p.id})">✅ Bezahlt</button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    
+    async function markAsPaid(id) {
+      if (!confirm('Rechnung als bezahlt markieren?')) return;
+      
+      try {
+        await fetch(`/api/invoice/${id}/payment-status`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ status: 'paid' })
+        });
+        loadData();
+      } catch (err) {
+        alert('Fehler: ' + err.message);
+      }
+    }
+    
+    // Load on page load
+    loadData();
+  </script>
+  <link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
+  <script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
+  <script src="/static/js/app-shell.js"></script>
+</body>
+</html>

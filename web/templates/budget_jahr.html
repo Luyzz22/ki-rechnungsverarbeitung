@@ -1,156 +1,580 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <title>Budget Jahresansicht {{ jahr }} · SBS KI-Rechnungsverarbeitung</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="icon" href="/static/favicon.ico" />
-  <link rel="stylesheet" href="/static/css/design-tokens.css" />
-  <link rel="stylesheet" href="/static/css/components.css" />
-  <link rel="stylesheet" href="/static/css/app-shell.css" />
+  <meta charset="utf-8">
+  <title>Jahresübersicht {{ jahr }} · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/css/design-tokens.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="stylesheet" href="/static/css/main.css">
   <style>
-    :root { --sbs-blue: #003856; --sbs-yellow: #FFB900; }
-    .budget-container { max-width: 1600px; margin: 0 auto; }
-    .page-header { background: linear-gradient(135deg, var(--sbs-blue) 0%, #005580 100%); color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; }
-    .jahr-selector { background: rgba(255,255,255,0.15); border: none; color: white; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; }
-    .jahr-selector option { color: var(--sbs-blue); }
-    .back-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; }
-    .back-btn:hover { background: rgba(255,255,255,0.25); color: white; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-    @media (max-width: 768px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-    .kpi-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center; }
-    .kpi-card .value { font-size: 1.75rem; font-weight: 700; color: var(--sbs-blue); }
-    .kpi-card .label { color: #6c757d; font-size: 0.875rem; }
-    .card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
-    .jahres-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-    .jahres-table thead { background: var(--sbs-blue); color: white; position: sticky; top: 0; }
-    .jahres-table th { font-weight: 600; padding: 0.75rem 0.5rem; text-align: center; border: none; white-space: nowrap; }
-    .jahres-table th:first-child { text-align: left; padding-left: 1rem; min-width: 160px; }
-    .jahres-table td { padding: 0.5rem; text-align: center; border-bottom: 1px solid #f0f0f0; }
-    .jahres-table td:first-child { text-align: left; padding-left: 1rem; font-weight: 500; }
-    .cell-ok { background: rgba(40, 167, 69, 0.1); }
-    .cell-warning { background: rgba(255, 193, 7, 0.2); }
-    .cell-danger { background: rgba(220, 53, 69, 0.15); }
-    .cell-critical { background: rgba(111, 66, 193, 0.15); }
-    .cell-value { display: block; font-weight: 600; }
-    .cell-budget { display: block; font-size: 0.65rem; color: #6c757d; }
-    .total-row { background: #f8f9fa !important; font-weight: 700; }
-    .total-row td { border-top: 2px solid var(--sbs-blue); padding: 1rem 0.5rem; }
-    .legend { display: flex; gap: 1.5rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap; }
-    .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
-    .legend-color { width: 20px; height: 20px; border-radius: 4px; }
+    :root {
+      --sbs-blue: #003856;
+      --sbs-yellow: #FFB900;
+      --green-500: #10b981;
+      --green-100: #d1fae5;
+      --amber-500: #f59e0b;
+      --amber-100: #fef3c7;
+      --red-500: #ef4444;
+      --red-100: #fee2e2;
+      --purple-500: #8b5cf6;
+      --purple-100: #ede9fe;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-600: #4b5563;
+      --gray-900: #111827;
+    }
+    
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--gray-50); }
+    
+    /* Page Header */
+    .page-header {
+      background: linear-gradient(135deg, var(--sbs-blue) 0%, #00507a 100%);
+      padding: 32px 24px;
+      color: #fff;
+    }
+    .page-header-inner {
+      max-width: 1600px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .page-title-icon {
+      width: 56px;
+      height: 56px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+    }
+    .page-title h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    .page-title p {
+      color: rgba(255,255,255,0.8);
+      margin: 4px 0 0;
+      font-size: 0.95rem;
+    }
+    .header-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .year-select {
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .year-select option { color: var(--gray-900); }
+    .header-btn {
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .header-btn.secondary {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    
+    /* Stats Bar */
+    .stats-bar {
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 20px 24px;
+    }
+    .stats-bar-inner {
+      max-width: 1600px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 1000px) {
+      .stats-bar-inner { grid-template-columns: repeat(3, 1fr); }
+    }
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+    .stat-icon.blue { background: #dbeafe; }
+    .stat-icon.green { background: var(--green-100); }
+    .stat-icon.amber { background: var(--amber-100); }
+    .stat-icon.red { background: var(--red-100); }
+    .stat-icon.purple { background: var(--purple-100); }
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--gray-900);
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--gray-600);
+      margin-top: 2px;
+    }
+    
+    /* Main Container */
+    .main-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    
+    /* Table Container */
+    .table-container {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .table-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .table-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    
+    /* Year Table */
+    .year-table-wrapper {
+      overflow-x: auto;
+    }
+    .year-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .year-table th {
+      background: var(--sbs-blue);
+      color: #fff;
+      padding: 14px 12px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.8rem;
+      position: sticky;
+      top: 0;
+    }
+    .year-table th:first-child {
+      text-align: left;
+      padding-left: 20px;
+      min-width: 180px;
+    }
+    .year-table th.total-col {
+      background: #1e3a5f;
+    }
+    .year-table td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .year-table td:first-child {
+      text-align: left;
+      padding-left: 20px;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+    .year-table tr:hover {
+      background: var(--gray-50);
+    }
+    
+    /* Cell Styles */
+    .cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .cell-ist {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .cell-budget {
+      font-size: 0.7rem;
+      color: var(--gray-600);
+    }
+    .cell-bar {
+      width: 100%;
+      height: 4px;
+      background: var(--gray-200);
+      border-radius: 2px;
+      margin-top: 4px;
+      overflow: hidden;
+    }
+    .cell-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+    
+    /* Status Colors */
+    .status-ok { background: rgba(16, 185, 129, 0.1); }
+    .status-ok .cell-ist { color: var(--green-500); }
+    .status-ok .cell-bar-fill { background: var(--green-500); }
+    
+    .status-warning { background: rgba(245, 158, 11, 0.1); }
+    .status-warning .cell-ist { color: var(--amber-500); }
+    .status-warning .cell-bar-fill { background: var(--amber-500); }
+    
+    .status-danger { background: rgba(239, 68, 68, 0.1); }
+    .status-danger .cell-ist { color: var(--red-500); }
+    .status-danger .cell-bar-fill { background: var(--red-500); }
+    
+    .status-critical { background: rgba(139, 92, 246, 0.15); }
+    .status-critical .cell-ist { color: var(--purple-500); }
+    .status-critical .cell-bar-fill { background: var(--purple-500); }
+    
+    .status-empty { background: var(--gray-50); }
+    .status-empty .cell-ist { color: var(--gray-400); }
+    
+    /* Total Row */
+    .total-row {
+      background: var(--gray-100) !important;
+      font-weight: 700;
+    }
+    .total-row td {
+      border-top: 2px solid var(--sbs-blue);
+      padding: 16px 12px;
+    }
+    .total-row td:first-child {
+      color: var(--sbs-blue);
+    }
+    
+    /* Legend */
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      padding: 20px;
+      border-top: 1px solid var(--gray-200);
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: var(--gray-600);
+    }
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+    }
+    .legend-color.ok { background: var(--green-100); border: 1px solid var(--green-500); }
+    .legend-color.warning { background: var(--amber-100); border: 1px solid var(--amber-500); }
+    .legend-color.danger { background: var(--red-100); border: 1px solid var(--red-500); }
+    .legend-color.critical { background: var(--purple-100); border: 1px solid var(--purple-500); }
   </style>
 </head>
 <body>
+  {% include 'partials/header.html' %}
 
-{% include 'partials/header.html' %}
-
-<section class="hero" style="padding: 24px;">
-  <div class="budget-container">
-    
-    <!-- Page Header -->
-    <div class="page-header">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-inner">
+      <div class="page-title">
+        <div class="page-title-icon">📅</div>
         <div>
-          <h1 style="margin: 0; font-size: 1.75rem;">📅 Budget Jahresansicht {{ jahr }}</h1>
-          <p style="margin: 0.5rem 0 0 0; opacity: 0.85;">Alle Kategorien im Jahresüberblick</p>
+          <h1>Jahresübersicht {{ jahr }}</h1>
+          <p>Budget-Auslastung aller Kategorien im Jahresvergleich</p>
         </div>
-        <div style="display: flex; gap: 0.75rem; align-items: center;">
-          <a href="/budget" class="back-btn">← Zurück</a>
-          <select class="jahr-selector" id="jahrSelect" onchange="window.location.href='/budget/jahr?jahr='+this.value">
-            {% for j in range(jahr - 2, jahr + 2) %}
-            <option value="{{ j }}" {% if j == jahr %}selected{% endif %}>{{ j }}</option>
-            {% endfor %}
-          </select>
+      </div>
+      <div class="header-controls">
+        <a href="/budget" class="header-btn secondary">← Zurück zum Dashboard</a>
+        <select class="year-select" onchange="window.location.href='/budget/jahr?jahr='+this.value">
+          {% for j in range(jahr - 2, jahr + 3) %}
+          <option value="{{ j }}" {% if j == jahr %}selected{% endif %}>{{ j }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stats-bar-inner">
+      <div class="stat-card">
+        <div class="stat-icon blue">📊</div>
+        <div>
+          <div class="stat-value" id="stat-budget">-</div>
+          <div class="stat-label">Jahresbudget</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">💰</div>
+        <div>
+          <div class="stat-value" id="stat-ist">-</div>
+          <div class="stat-label">Ausgaben YTD</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber">📈</div>
+        <div>
+          <div class="stat-value" id="stat-auslastung">-</div>
+          <div class="stat-label">Auslastung</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">✅</div>
+        <div>
+          <div class="stat-value" id="stat-ok">-</div>
+          <div class="stat-label">Im Budget</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red">⚠️</div>
+        <div>
+          <div class="stat-value" id="stat-over">-</div>
+          <div class="stat-label">Überschritten</div>
         </div>
       </div>
     </div>
-    
-    <!-- KPI Cards -->
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="value">{{ '{:,.0f}'.format(jahres_summen.gesamt_budget) }} €</div>
-        <div class="label">Jahres-Budget</div>
+  </div>
+
+  <main class="main-container">
+    <div class="table-container">
+      <div class="table-header">
+        <h3>📋 Monatsübersicht nach Kategorien</h3>
       </div>
-      <div class="kpi-card">
-        <div class="value">{{ '{:,.0f}'.format(jahres_summen.gesamt_ist) }} €</div>
-        <div class="label">Bisherige Ausgaben</div>
-      </div>
-      <div class="kpi-card">
-        <div class="value">{{ '{:,.0f}'.format(jahres_summen.gesamt_budget - jahres_summen.gesamt_ist) }} €</div>
-        <div class="label">Verbleibend</div>
-      </div>
-      <div class="kpi-card">
-        <div class="value">{{ '{:.1f}'.format((jahres_summen.gesamt_ist / jahres_summen.gesamt_budget * 100) if jahres_summen.gesamt_budget > 0 else 0) }}%</div>
-        <div class="label">Gesamt-Auslastung</div>
-      </div>
-    </div>
-    
-    <!-- Jahres-Tabelle -->
-    <div class="card">
-      <div style="overflow-x: auto;">
-        <table class="jahres-table">
+      
+      <div class="year-table-wrapper">
+        <table class="year-table" id="year-table">
           <thead>
             <tr>
               <th>Kategorie</th>
-              {% for m in range(1, 13) %}
-              <th>{{ monat_kurz[m-1] }}</th>
+              {% for m in monat_namen %}
+              <th>{{ m[:3] }}</th>
               {% endfor %}
-              <th style="background: #002840;">Gesamt</th>
+              <th class="total-col">Gesamt</th>
             </tr>
           </thead>
-          <tbody>
-            {% for kat in kategorien %}
+          <tbody id="table-body">
             <tr>
-              <td>{{ kat.name }}</td>
-              {% for m in range(1, 13) %}
-              {% set data = kat.monate.get(m, {'ist': 0, 'soll': 0, 'prozent': 0}) %}
-              {% set cell_class = 'cell-ok' if data.prozent < 80 else 'cell-warning' if data.prozent < 100 else 'cell-danger' if data.prozent < 120 else 'cell-critical' %}
-              <td class="{{ cell_class if data.ist > 0 or data.soll > 0 else '' }}">
-                {% if data.ist > 0 or data.soll > 0 %}
-                <span class="cell-value">{{ '{:,.0f}'.format(data.ist) }}</span>
-                <span class="cell-budget">/ {{ '{:,.0f}'.format(data.soll) }}</span>
-                {% else %}
-                -
-                {% endif %}
-              </td>
-              {% endfor %}
-              <td style="background: #f8f9fa; font-weight: 600;">
-                <span class="cell-value">{{ '{:,.0f}'.format(kat.jahres_ist) }}</span>
-                <span class="cell-budget">/ {{ '{:,.0f}'.format(kat.jahres_soll) }}</span>
-              </td>
-            </tr>
-            {% endfor %}
-            <tr class="total-row">
-              <td><strong>GESAMT</strong></td>
-              {% for m in range(1, 13) %}
-              <td>
-                <span class="cell-value">{{ '{:,.0f}'.format(monats_summen[m].ist) }}</span>
-                <span class="cell-budget">/ {{ '{:,.0f}'.format(monats_summen[m].soll) }}</span>
-              </td>
-              {% endfor %}
-              <td style="background: #e9ecef;">
-                <span class="cell-value">{{ '{:,.0f}'.format(jahres_summen.gesamt_ist) }}</span>
-                <span class="cell-budget">/ {{ '{:,.0f}'.format(jahres_summen.gesamt_budget) }}</span>
+              <td colspan="14" style="text-align: center; padding: 40px;">
+                <div style="font-size: 2rem; margin-bottom: 8px;">⏳</div>
+                Lade Jahresübersicht...
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+      
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-color ok"></div>
+          <span>Im Budget (< 80%)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color warning"></div>
+          <span>Warnung (80-100%)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color danger"></div>
+          <span>Überschritten (100-120%)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color critical"></div>
+          <span>Kritisch (> 120%)</span>
+        </div>
+      </div>
     </div>
-    
-    <!-- Legende -->
-    <div class="legend">
-      <div class="legend-item"><div class="legend-color cell-ok"></div> &lt; 80% (OK)</div>
-      <div class="legend-item"><div class="legend-color cell-warning"></div> 80-100% (Achtung)</div>
-      <div class="legend-item"><div class="legend-color cell-danger"></div> 100-120% (Überschritten)</div>
-      <div class="legend-item"><div class="legend-color cell-critical"></div> &gt; 120% (Kritisch)</div>
-    </div>
-    
-  </div>
-</section>
+  </main>
 
-{% include 'partials/footer.html' %}
+  {% include 'partials/footer.html' %}
 
+  <script>
+    const jahr = {{ jahr }};
+    
+    async function loadData() {
+      try {
+        const res = await fetch(`/api/budget/jahresbudget?jahr=${jahr}`);
+        const data = await res.json();
+        
+        renderTable(data);
+        updateStats(data);
+      } catch (err) {
+        document.getElementById('table-body').innerHTML = `
+          <tr>
+            <td colspan="14" style="text-align: center; padding: 40px; color: #ef4444;">
+              <div style="font-size: 2rem; margin-bottom: 8px;">❌</div>
+              Fehler beim Laden: ${err.message}
+            </td>
+          </tr>
+        `;
+      }
+    }
+    
+    function renderTable(data) {
+      const tbody = document.getElementById('table-body');
+      const kategorien = data.kategorien || [];
+      const monatsDaten = data.monats_daten || {};
+      
+      let html = '';
+      let totals = Array(12).fill(0).map(() => ({ ist: 0, budget: 0 }));
+      let gesamtIst = 0, gesamtBudget = 0;
+      
+      kategorien.forEach(kat => {
+        let jahresIst = 0, jahresBudget = 0;
+        
+        html += `<tr><td>${kat.icon || '📁'} ${kat.name}</td>`;
+        
+        for (let m = 1; m <= 12; m++) {
+          const key = `${kat.id}_${m}`;
+          const d = monatsDaten[key] || { ist: 0, budget: 0 };
+          const ist = d.ist || 0;
+          const budget = d.budget || 0;
+          const pct = budget > 0 ? (ist / budget) * 100 : 0;
+          
+          jahresIst += ist;
+          jahresBudget += budget;
+          totals[m-1].ist += ist;
+          totals[m-1].budget += budget;
+          
+          let statusClass = 'status-empty';
+          if (budget > 0) {
+            if (pct < 80) statusClass = 'status-ok';
+            else if (pct < 100) statusClass = 'status-warning';
+            else if (pct < 120) statusClass = 'status-danger';
+            else statusClass = 'status-critical';
+          }
+          
+          html += `
+            <td class="${statusClass}">
+              <div class="cell">
+                <span class="cell-ist">${ist > 0 ? ist.toLocaleString('de-DE', {maximumFractionDigits: 0}) : '-'}</span>
+                ${budget > 0 ? `<span class="cell-budget">/ ${budget.toLocaleString('de-DE', {maximumFractionDigits: 0})}</span>` : ''}
+                ${budget > 0 ? `<div class="cell-bar"><div class="cell-bar-fill" style="width: ${Math.min(pct, 100)}%"></div></div>` : ''}
+              </div>
+            </td>
+          `;
+        }
+        
+        gesamtIst += jahresIst;
+        gesamtBudget += jahresBudget;
+        
+        const jahresPct = jahresBudget > 0 ? (jahresIst / jahresBudget) * 100 : 0;
+        let jahresStatus = 'status-empty';
+        if (jahresBudget > 0) {
+          if (jahresPct < 80) jahresStatus = 'status-ok';
+          else if (jahresPct < 100) jahresStatus = 'status-warning';
+          else if (jahresPct < 120) jahresStatus = 'status-danger';
+          else jahresStatus = 'status-critical';
+        }
+        
+        html += `
+          <td class="${jahresStatus}" style="font-weight: 700;">
+            <div class="cell">
+              <span class="cell-ist">${jahresIst.toLocaleString('de-DE', {maximumFractionDigits: 0})}</span>
+              ${jahresBudget > 0 ? `<span class="cell-budget">/ ${jahresBudget.toLocaleString('de-DE', {maximumFractionDigits: 0})}</span>` : ''}
+            </div>
+          </td>
+        </tr>`;
+      });
+      
+      // Total Row
+      html += `<tr class="total-row"><td>📊 GESAMT</td>`;
+      for (let m = 0; m < 12; m++) {
+        html += `
+          <td>
+            <div class="cell">
+              <span class="cell-ist">${totals[m].ist.toLocaleString('de-DE', {maximumFractionDigits: 0})}</span>
+              <span class="cell-budget">/ ${totals[m].budget.toLocaleString('de-DE', {maximumFractionDigits: 0})}</span>
+            </div>
+          </td>
+        `;
+      }
+      html += `
+        <td>
+          <div class="cell">
+            <span class="cell-ist" style="color: var(--sbs-blue);">${gesamtIst.toLocaleString('de-DE', {maximumFractionDigits: 0})} €</span>
+            <span class="cell-budget">/ ${gesamtBudget.toLocaleString('de-DE', {maximumFractionDigits: 0})} €</span>
+          </div>
+        </td>
+      </tr>`;
+      
+      tbody.innerHTML = html;
+    }
+    
+    function updateStats(data) {
+      const kategorien = data.kategorien || [];
+      const monatsDaten = data.monats_daten || {};
+      
+      let gesamtBudget = 0, gesamtIst = 0;
+      let okCount = 0, overCount = 0;
+      
+      kategorien.forEach(kat => {
+        let katBudget = 0, katIst = 0;
+        for (let m = 1; m <= 12; m++) {
+          const key = `${kat.id}_${m}`;
+          const d = monatsDaten[key] || {};
+          katIst += d.ist || 0;
+          katBudget += d.budget || 0;
+        }
+        gesamtBudget += katBudget;
+        gesamtIst += katIst;
+        
+        if (katBudget > 0) {
+          if (katIst <= katBudget) okCount++;
+          else overCount++;
+        }
+      });
+      
+      const auslastung = gesamtBudget > 0 ? (gesamtIst / gesamtBudget) * 100 : 0;
+      
+      document.getElementById('stat-budget').textContent = gesamtBudget.toLocaleString('de-DE', {maximumFractionDigits: 0}) + ' €';
+      document.getElementById('stat-ist').textContent = gesamtIst.toLocaleString('de-DE', {maximumFractionDigits: 0}) + ' €';
+      document.getElementById('stat-auslastung').textContent = auslastung.toFixed(0) + '%';
+      document.getElementById('stat-ok').textContent = okCount;
+      document.getElementById('stat-over').textContent = overCount;
+    }
+    
+    loadData();
+  </script>
+  <link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
+  <script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
+  <script src="/static/js/app-shell.js"></script>
 </body>
 </html>

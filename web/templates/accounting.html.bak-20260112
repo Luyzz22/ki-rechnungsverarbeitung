@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Auto-Kontierung · SBS KI-Rechnungsverarbeitung</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/design-tokens.css" />
+  <link rel="stylesheet" href="/static/css/components.css" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .accounting-container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    
+    .config-card {
+      background: var(--sbs-white);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .config-card h3 { margin: 0 0 16px; color: var(--sbs-dark); }
+    
+    .config-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .config-row label { font-size: 0.85rem; color: var(--sbs-muted); display: block; margin-bottom: 4px; }
+    .config-row input, .config-row select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--sbs-border-soft);
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    
+    .invoice-table {
+      background: var(--sbs-white);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .invoice-table table { width: 100%; border-collapse: collapse; }
+    .invoice-table th, .invoice-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--sbs-border-soft);
+    }
+    .invoice-table th {
+      background: var(--sbs-bg-soft);
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--sbs-muted);
+      text-transform: uppercase;
+    }
+    .invoice-table tr:hover { background: var(--sbs-bg-soft); }
+    
+    .account-select {
+      padding: 8px 12px;
+      border: 1px solid var(--sbs-border-soft);
+      border-radius: 6px;
+      min-width: 180px;
+      font-size: 0.9rem;
+    }
+    .account-select.changed { border-color: #f59e0b; background: #fffbeb; }
+    .account-select.learned { border-color: #10b981; background: #ecfdf5; }
+    
+    .confidence-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .confidence-high { background: #dcfce7; color: #166534; }
+    .confidence-medium { background: #fef3c7; color: #92400e; }
+    .confidence-low { background: #fee2e2; color: #991b1b; }
+    
+    .method-badge {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #e5e7eb;
+      color: #6b7280;
+    }
+    .method-badge.llm { background: #dbeafe; color: #1d4ed8; }
+    .method-badge.learned { background: #dcfce7; color: #166534; }
+    
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      padding: 16px 24px;
+      background: var(--sbs-white);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .action-bar .stats { color: var(--sbs-muted); font-size: 0.9rem; }
+    .action-bar .buttons { display: flex; gap: 12px; }
+    
+    .btn-export {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-export.primary { background: var(--sbs-dark); color: white; }
+    .btn-export.secondary { background: var(--sbs-bg-soft); color: var(--sbs-dark); }
+    .btn-export:hover { opacity: 0.9; }
+    
+    .loading { opacity: 0.6; pointer-events: none; }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--sbs-muted);
+    }
+    .empty-state h3 { color: var(--sbs-dark); margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  {% include 'partials/header.html' %}
+
+  <section class="hero" style="padding: 40px 24px;">
+    <div class="hero-content">
+      <h1>📊 Auto-Kontierung</h1>
+      <p class="hero-subtitle">KI-gestützte Kontenvorschläge für Ihre Rechnungen</p>
+    </div>
+  </section>
+
+  <main class="accounting-container">
+    <!-- Konfiguration -->
+    <div class="config-card">
+      <h3>⚙️ Einstellungen</h3>
+      <div class="config-row">
+        <div>
+          <label>Kontenrahmen</label>
+          <select id="skr-select">
+            <option value="SKR03" selected>SKR03</option>
+            <option value="SKR04">SKR04</option>
+          </select>
+        </div>
+        <div>
+          <label>Job auswählen</label>
+          <select id="job-select">
+            <option value="">-- Job wählen --</option>
+            {% for job in jobs %}
+            <option value="{{ job.job_id }}">{{ job.filename }} ({{ job.invoice_count }} Rechnungen)</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button class="btn-export secondary" onclick="loadInvoices()">🔄 Laden</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rechnungstabelle -->
+    <div class="invoice-table" id="invoice-container">
+      <div class="empty-state">
+        <h3>Keine Rechnungen geladen</h3>
+        <p>Wählen Sie einen Job aus und klicken Sie auf "Laden"</p>
+      </div>
+    </div>
+
+    <!-- Aktionen -->
+    <div class="action-bar" id="action-bar" style="display: none;">
+      <div class="stats">
+        <span id="stats-text">0 Rechnungen · 0,00 € Gesamt</span>
+      </div>
+      <div class="buttons">
+        <button class="btn-export secondary" onclick="exportDATEV()">📥 DATEV Export</button>
+        <button class="btn-export secondary" onclick="exportSEPA()">💳 SEPA-XML</button>
+        <button class="btn-export primary" onclick="saveAll()">💾 Kontierung speichern</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- SEPA Modal -->
+  <div id="sepa-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div style="background:white; max-width:500px; margin:100px auto; border-radius:12px; padding:24px;">
+      <h3 style="margin:0 0 16px;">💳 SEPA-Überweisung</h3>
+      <div style="margin-bottom:12px;">
+        <label style="display:block; margin-bottom:4px; font-size:0.85rem;">Firmenname</label>
+        <input type="text" id="sepa-name" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block; margin-bottom:4px; font-size:0.85rem;">IBAN</label>
+        <input type="text" id="sepa-iban" placeholder="DE89 3704 0044 0532 0130 00" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block; margin-bottom:4px; font-size:0.85rem;">BIC (optional)</label>
+        <input type="text" id="sepa-bic" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+      </div>
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <button onclick="closeSepaModal()" style="padding:10px 20px; border:1px solid #ddd; background:white; border-radius:6px; cursor:pointer;">Abbrechen</button>
+        <button onclick="generateSEPA()" style="padding:10px 20px; border:none; background:#003856; color:white; border-radius:6px; cursor:pointer;">Generieren</button>
+      </div>
+    </div>
+  </div>
+
+  {% include 'partials/footer.html' %}
+
+  <script>
+    let currentInvoices = [];
+    let currentJobId = null;
+    let accountsList = [];
+
+    // Konten laden
+    async function loadAccounts() {
+      const res = await fetch('/api/accounting/accounts');
+      const data = await res.json();
+      accountsList = data.accounts || [];
+    }
+    loadAccounts();
+
+    // Rechnungen laden
+    async function loadInvoices() {
+      const jobId = document.getElementById('job-select').value;
+      if (!jobId) return alert('Bitte Job auswählen');
+
+      currentJobId = jobId;
+      const container = document.getElementById('invoice-container');
+      container.innerHTML = '<div class="empty-state"><div class="spinner" style="font-size:2rem;">⏳</div><p>Lade Kontierungsvorschläge...</p></div>';
+
+      try {
+        // Rechnungen holen
+        const invRes = await fetch(`/api/job/${jobId}/invoices`);
+        const invData = await invRes.json();
+        const invoices = invData.invoices || [];
+
+        if (!invoices.length) {
+          container.innerHTML = '<div class="empty-state"><h3>Keine Rechnungen</h3></div>';
+          return;
+        }
+
+        // Kontierungsvorschläge holen
+        const skr = document.getElementById('skr-select').value;
+        const suggestRes = await fetch('/api/accounting/suggest/batch', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ invoices, skr })
+        });
+        const suggestData = await suggestRes.json();
+        const suggestions = suggestData.suggestions || [];
+
+        // Zusammenführen
+        currentInvoices = invoices.map((inv, i) => ({
+          ...inv,
+          suggestion: suggestions[i] || {}
+        }));
+
+        renderTable();
+      } catch (err) {
+        container.innerHTML = `<div class="empty-state"><h3>Fehler</h3><p>${err.message}</p></div>`;
+      }
+    }
+
+    function renderTable() {
+      const container = document.getElementById('invoice-container');
+      const total = currentInvoices.reduce((s, i) => s + (parseFloat(i.betrag_brutto) || 0), 0);
+
+      let html = `<table>
+        <thead>
+          <tr>
+            <th>Rechnung</th>
+            <th>Lieferant</th>
+            <th>Betrag</th>
+            <th>Konto</th>
+            <th>Konfidenz</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+      currentInvoices.forEach((inv, idx) => {
+        const sug = inv.suggestion?.suggested || {};
+        const conf = (sug.confidence || 0) * 100;
+        const confClass = conf >= 70 ? 'high' : conf >= 40 ? 'medium' : 'low';
+        const method = inv.suggestion?.method || 'rule_based';
+        const methodClass = method.includes('llm') ? 'llm' : method === 'learned' ? 'learned' : '';
+
+        html += `<tr>
+          <td><strong>${inv.rechnungsnummer || '-'}</strong><br><small>${inv.datum || ''}</small></td>
+          <td>${inv.rechnungsaussteller || 'Unbekannt'}</td>
+          <td style="text-align:right;">${(parseFloat(inv.betrag_brutto) || 0).toLocaleString('de-DE', {minimumFractionDigits: 2})} €</td>
+          <td>
+            <select class="account-select" data-idx="${idx}" onchange="markChanged(this)">
+              ${accountsList.map(a => `<option value="${a.account}" ${a.account === sug.account ? 'selected' : ''}>${a.account} - ${a.name}</option>`).join('')}
+            </select>
+          </td>
+          <td>
+            <span class="confidence-badge confidence-${confClass}">${conf.toFixed(0)}%</span>
+            <span class="method-badge ${methodClass}">${method}</span>
+          </td>
+        </tr>`;
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+
+      document.getElementById('action-bar').style.display = 'flex';
+      document.getElementById('stats-text').textContent = 
+        `${currentInvoices.length} Rechnungen · ${total.toLocaleString('de-DE', {minimumFractionDigits: 2})} € Gesamt`;
+    }
+
+    function markChanged(select) {
+      select.classList.add('changed');
+      const idx = select.dataset.idx;
+      currentInvoices[idx].selectedAccount = select.value;
+    }
+
+    async function saveAll() {
+      const changed = currentInvoices.filter(i => i.selectedAccount);
+      if (!changed.length) return alert('Keine Änderungen zum Speichern');
+
+      for (const inv of changed) {
+        await fetch('/api/accounting/learn', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ invoice: inv, account: inv.selectedAccount })
+        });
+      }
+
+      alert(`${changed.length} Kontierungen gespeichert!`);
+      document.querySelectorAll('.account-select.changed').forEach(s => {
+        s.classList.remove('changed');
+        s.classList.add('learned');
+      });
+    }
+
+    function exportDATEV() {
+      if (!currentJobId) return;
+      window.location.href = `/api/job/${currentJobId}/export/datev`;
+    }
+
+    function exportSEPA() {
+      document.getElementById('sepa-modal').style.display = 'block';
+    }
+
+    function closeSepaModal() {
+      document.getElementById('sepa-modal').style.display = 'none';
+    }
+
+    async function generateSEPA() {
+      const name = document.getElementById('sepa-name').value;
+      const iban = document.getElementById('sepa-iban').value.replace(/\s/g, '');
+      const bic = document.getElementById('sepa-bic').value;
+
+      if (!name || !iban) return alert('Name und IBAN erforderlich');
+
+      try {
+        const res = await fetch(`/api/job/${currentJobId}/export/sepa`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ debtor: { name, iban, bic } })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          return alert('Fehler: ' + (err.error || 'Unbekannt'));
+        }
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sepa_${currentJobId.slice(0, 8)}.xml`;
+        a.click();
+
+        closeSepaModal();
+      } catch (err) {
+        alert('Fehler: ' + err.message);
+      }
+    }
+  </script>
+<!-- SBS Chat Widget -->
+<link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
+<script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
+<script src="/static/js/app-shell.js"></script>
+</body>
+</html>

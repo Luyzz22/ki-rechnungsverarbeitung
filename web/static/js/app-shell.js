@@ -1,112 +1,139 @@
 /**
  * SBS Deutschland – App Shell JavaScript
  * =======================================
- * Interaktionen für App-Navigation.
+ * Handles app navigation interactions.
+ * Safe to load multiple times - checks for existing initialization.
  */
 
-document.addEventListener('DOMContentLoaded', function() {
-  // Elements
-  const appSwitcherBtn = document.getElementById('appSwitcherBtn');
-  const appSwitcherPanel = document.getElementById('appSwitcherPanel');
-  const userBtn = document.getElementById('appUserBtn');
-  const userMenu = document.getElementById('appUserMenu');
-  const overlay = document.getElementById('appOverlay');
-  const navDropdowns = document.querySelectorAll('.app-nav-dropdown');
+(function() {
+  // Prevent double initialization
+  if (window.sbsAppShellInitialized) return;
+  window.sbsAppShellInitialized = true;
 
-  // App Switcher Toggle
-  if (appSwitcherBtn && appSwitcherPanel) {
-    appSwitcherBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      const isOpen = appSwitcherPanel.classList.contains('open');
-      closeAllMenus();
-      if (!isOpen) {
-        appSwitcherPanel.classList.add('open');
-        overlay.classList.add('active');
-      }
-    });
-  }
+  function initAppShell() {
+    // Elements
+    var appSwitcherBtn = document.getElementById('appSwitcherBtn');
+    var appSwitcherPanel = document.getElementById('appSwitcherPanel');
+    var userBtn = document.getElementById('appUserBtn');
+    var userMenu = document.getElementById('appUserMenu');
+    var overlay = document.getElementById('appOverlay');
 
-  // User Menu Toggle
-  if (userBtn && userMenu) {
-    userBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      const isOpen = userMenu.classList.contains('open');
-      closeAllMenus();
-      if (!isOpen) {
-        userMenu.classList.add('open');
-        overlay.classList.add('active');
-      }
-    });
-  }
+    // Helper: Close all menus
+    function closeAllMenus() {
+      if (appSwitcherPanel) appSwitcherPanel.classList.remove('open');
+      if (userMenu) userMenu.classList.remove('open');
+      if (overlay) overlay.classList.remove('active');
+      document.querySelectorAll('.app-nav-dropdown').forEach(function(d) {
+        d.classList.remove('open');
+      });
+    }
 
-  // Nav Dropdowns
-  navDropdowns.forEach(function(dropdown) {
-    const btn = dropdown.querySelector('.app-nav-dropdown-btn');
-    if (btn) {
-      btn.addEventListener('click', function(e) {
+    // App Switcher Toggle
+    if (appSwitcherBtn && appSwitcherPanel) {
+      // Remove any existing inline onclick
+      appSwitcherBtn.onclick = null;
+      appSwitcherBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        const isOpen = dropdown.classList.contains('open');
-        closeNavDropdowns();
+        var isOpen = appSwitcherPanel.classList.contains('open');
+        closeAllMenus();
         if (!isOpen) {
-          dropdown.classList.add('open');
+          appSwitcherPanel.classList.add('open');
+          if (overlay) overlay.classList.add('active');
         }
       });
     }
-  });
 
-  // Close on overlay click
-  if (overlay) {
-    overlay.addEventListener('click', closeAllMenus);
-  }
-
-  // Close on outside click
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('.app-nav-dropdown')) {
-      closeNavDropdowns();
+    // User Menu Toggle
+    if (userBtn && userMenu) {
+      // Remove any existing inline onclick
+      userBtn.onclick = null;
+      userBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var isOpen = userMenu.classList.contains('open');
+        closeAllMenus();
+        if (!isOpen) {
+          userMenu.classList.add('open');
+          if (overlay) overlay.classList.add('active');
+        }
+      });
     }
-  });
 
-  // Close on Escape
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-      closeAllMenus();
+    // Nav Dropdowns
+    document.querySelectorAll('.app-nav-dropdown').forEach(function(dropdown) {
+      var btn = dropdown.querySelector('.app-nav-dropdown-btn');
+      if (btn) {
+        // Remove any existing inline onclick
+        btn.onclick = null;
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var wasOpen = dropdown.classList.contains('open');
+          // Close other dropdowns
+          document.querySelectorAll('.app-nav-dropdown').forEach(function(d) {
+            if (d !== dropdown) d.classList.remove('open');
+          });
+          // Toggle this dropdown
+          dropdown.classList.toggle('open', !wasOpen);
+        });
+      }
+    });
+
+    // Close on overlay click
+    if (overlay) {
+      overlay.onclick = null;
+      overlay.addEventListener('click', closeAllMenus);
     }
-  });
 
-  // Helper Functions
-  function closeAllMenus() {
-    if (appSwitcherPanel) appSwitcherPanel.classList.remove('open');
-    if (userMenu) userMenu.classList.remove('open');
-    if (overlay) overlay.classList.remove('active');
-    closeNavDropdowns();
-  }
+    // Close on outside click
+    document.addEventListener('click', function(e) {
+      // Close nav dropdowns
+      if (!e.target.closest('.app-nav-dropdown')) {
+        document.querySelectorAll('.app-nav-dropdown').forEach(function(d) {
+          d.classList.remove('open');
+        });
+      }
+      // Close user menu
+      if (!e.target.closest('.app-user-btn') && !e.target.closest('.app-user-menu')) {
+        if (userMenu) userMenu.classList.remove('open');
+      }
+      // Close app switcher
+      if (!e.target.closest('.app-switcher-btn') && !e.target.closest('.app-switcher-panel')) {
+        if (appSwitcherPanel) appSwitcherPanel.classList.remove('open');
+      }
+      // Update overlay
+      if (overlay && appSwitcherPanel && userMenu) {
+        if (!appSwitcherPanel.classList.contains('open') && !userMenu.classList.contains('open')) {
+          overlay.classList.remove('active');
+        }
+      }
+    });
 
-  function closeNavDropdowns() {
-    navDropdowns.forEach(function(d) {
-      d.classList.remove('open');
+    // Close on Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeAllMenus();
+      }
+    });
+
+    // Highlight current page in nav
+    var currentPath = window.location.pathname;
+    document.querySelectorAll('.app-nav-tab, .app-nav-dropdown-item').forEach(function(link) {
+      var href = link.getAttribute('href');
+      if (href === currentPath || (currentPath !== '/' && href && currentPath.startsWith(href))) {
+        link.classList.add('active');
+        // If in dropdown, also highlight parent
+        var parentDropdown = link.closest('.app-nav-dropdown');
+        if (parentDropdown) {
+          var parentBtn = parentDropdown.querySelector('.app-nav-dropdown-btn');
+          if (parentBtn) parentBtn.classList.add('active');
+        }
+      }
     });
   }
 
-  // Highlight current page in nav
-  const currentPath = window.location.pathname;
-  document.querySelectorAll('.app-nav-tab, .app-nav-dropdown-item').forEach(function(link) {
-    if (link.getAttribute('href') === currentPath) {
-      link.classList.add('active');
-      // If in dropdown, also highlight parent
-      const parentDropdown = link.closest('.app-nav-dropdown');
-      if (parentDropdown) {
-        parentDropdown.querySelector('.app-nav-dropdown-btn').classList.add('active');
-      }
-    }
-  });
-});
-
-// Utility: Get user initials
-function getUserInitials(name) {
-  if (!name) return '?';
-  const parts = name.trim().split(' ');
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAppShell);
+  } else {
+    initAppShell();
   }
-  return name.substring(0, 2).toUpperCase();
-}
+})();

@@ -2,9 +2,9 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>Preise KI-Rechnungsverarbeitung | SBS Deutschland</title>
+  <title>Security &amp; Compliance · SBS Deutschland</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="Transparente Preise für KI-Rechnungsverarbeitung. Starter, Professional und Enterprise – monatliche Pakete ohne versteckte Kosten." />
+  <meta name="description" content="Security, Datenschutz und Compliance bei SBS Deutschland: Hosting in der EU, Verschlüsselung, DSGVO, GoBD und Auditfähigkeit." />
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/css/design-tokens.css" />
   <link rel="stylesheet" href="/static/css/components.css" />
@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/static/css/flyout-menu.css" />
 </head>
 <body>
+
 <!-- SBS Deutschland - Unified Marketing Header (App-Style) v2 -->
 <style>
   .sbs-header {
@@ -380,150 +381,111 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <section class="hero">
   <div class="hero-content">
-    <div class="hero-badge">💰 TRANSPARENTE PREISE</div>
-    <h1>Faire Preise für jede<br>Unternehmensgröße</h1>
+    <div class="hero-badge">SECURITY · DSGVO · COMPLIANCE</div>
+    <h1>Security &amp; Compliance<br>für Finanz- und Rechnungsdaten.</h1>
     <p class="hero-subtitle">
-      Wählen Sie das Paket, das zu Ihrem Rechnungsvolumen passt. Alle Pakete mit voller
-      Funktionalität – keine versteckten Kosten.
+      Rechnungsdaten sind hochsensibel. SBS wurde von Beginn an mit Blick auf Datenschutz,
+      Revisionssicherheit und Compliance im DACH-Markt konzipiert.
+    </p>
+    <a href="/sbshomepage/kontakt.html" class="hero-cta">
+      Technisches Security-Gespräch vereinbaren →
+    </a>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2>Datenschutz &amp; DSGVO</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feature-icon">🇪🇺</span>
+        <h3>Hosting in der EU</h3>
+        <p>
+          Betrieb in europäischen Rechenzentren mit hohen Sicherheitsstandards und klaren Verträgen
+          zur Auftragsverarbeitung.
+        </p>
+        <ul>
+          <li>Rechenzentren nach anerkannten Standards zertifiziert</li>
+          <li>Auftragsverarbeitungsvertrag (AVV) auf Anfrage</li>
+          <li>Technische und organisatorische Maßnahmen dokumentiert</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔐</span>
+        <h3>Verschlüsselung &amp; Zugriff</h3>
+        <p>
+          Daten werden bei der Übertragung und – wo sinnvoll – im Ruhezustand verschlüsselt. Zugriffe
+          werden rollenbasiert vergeben.
+        </p>
+        <ul>
+          <li>HTTPS/TLS für sämtliche Verbindungen</li>
+          <li>Rollen- und Rechtekonzept für Nutzer</li>
+          <li>Feingranulare Zugriffskontrolle in der App</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🧾</span>
+        <h3>Aufbewahrung &amp; Löschung</h3>
+        <p>
+          Klare Regeln für Aufbewahrungsfristen und Löschung – abgestimmt auf Ihren
+          rechtlichen Rahmen und interne Policies.
+        </p>
+        <ul>
+          <li>Standard-Aufbewahrungszeiträume für Verarbeitungsjobs</li>
+          <li>Optionen für verkürzte oder verlängerte Speicherung</li>
+          <li>Detaillierte Protokollierung von Löschvorgängen</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2>GoBD &amp; Revisionssicherheit</h2>
+    <p>
+      SBS unterstützt Sie bei einem ordnungsgemäßen, nachvollziehbaren Prozess – von der Erfassung
+      bis zur Übergabe an Ihr Buchhaltungssystem.
+    </p>
+    <ul class="bullet-list">
+      <li>Protokollierung von Verarbeitungsjobs und Exporten</li>
+      <li>Nachvollziehbarkeit von Korrekturen (Wer, Was, Wann)</li>
+      <li>Exportfähige Protokolle für interne und externe Prüfungen</li>
+    </ul>
+    <p>
+      Unsere <a href="https://app.sbsdeutschland.com/history">History- und Analytics-Funktionen</a> dienen als Basis,
+      um Prozesse transparent darzustellen.
     </p>
   </div>
 </section>
 
-<div class="trust-bar">
-  <div class="trust-inner">
-    <div class="trust-item">
-      <strong>⚡</strong>
-      <span>8-Thread Performance</span>
-    </div>
-    <div class="trust-item">
-      <strong>🇩🇪</strong>
-      <span>Made in Germany</span>
-    </div>
-    <div class="trust-item">
-      <strong>📊</strong>
-      <span>DATEV-Export</span>
-    </div>
-    <div class="trust-item">
-      <strong>✅</strong>
-      <span>Produktionsreif getestet</span>
-    </div>
-  </div>
-</div>
-
 <section class="section">
   <div class="container">
-    <div class="pricing-grid">
-      <!-- Starter -->
-      <div class="pricing-card">
-        <div class="pricing-header">
-          <div class="pricing-name">Starter</div>
-          <div class="pricing-price">69€<span>/Monat</span></div>
-          <div class="pricing-desc">Für kleine Unternehmen</div>
-        </div>
-        <ul class="pricing-features">
-          <li><span class="check">✓</span> 100 Rechnungen/Monat</li>
-          <li><span class="check">✓</span> 8-Thread Verarbeitung</li>
-          <li><span class="check">✓</span> DATEV &amp; Excel Export</li>
-          <li><span class="check">✓</span> E-Mail Support</li>
-          <li><span class="check">✓</span> Überlauf: 0,70 €/Rechnung</li>
-        </ul>
-        <button class="pricing-cta" onclick="startCheckout('starter')">Jetzt starten</button>
+    <h2>Ihre Anforderungen – unsere Roadmap</h2>
+    <p>
+      Security ist kein „Haken setzen“, sondern ein laufender Prozess. Größere Kunden begleiten wir
+      aktiv bei Security-Fragen, Audits und Freigaben.
+    </p>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feature-icon">📋</span>
+        <h3>Security-Fragebögen &amp; Audits</h3>
+        <p>Wir unterstützen Sie bei IT-Security-Checks und regelmäßigen Reviews.</p>
       </div>
-
-      <!-- Professional -->
-      <div class="pricing-card featured">
-        <div class="pricing-badge">BELIEBT</div>
-        <div class="pricing-header">
-          <div class="pricing-name">Professional</div>
-          <div class="pricing-price">179€<span>/Monat</span></div>
-          <div class="pricing-desc">Für wachsende Unternehmen &amp; Kanzleien</div>
-        </div>
-        <ul class="pricing-features">
-          <li><span class="check">✓</span> 600 Rechnungen/Monat</li>
-          <li><span class="check">✓</span> 8-Thread Verarbeitung</li>
-          <li><span class="check">✓</span> DATEV &amp; Excel Export</li>
-          <li><span class="check">✓</span> Prioritäts-Support</li>
-          <li><span class="check">✓</span> Überlauf: 0,30 €/Rechnung</li>
-        </ul>
-        <button class="pricing-cta" onclick="startCheckout('professional')">Jetzt starten</button>
+      <div class="feature-card">
+        <span class="feature-icon">🧪</span>
+        <h3>Test- &amp; Sandbox-Umgebungen</h3>
+        <p>Getrennte Umgebungen für Tests, Proof-of-Concepts oder Piloten.</p>
       </div>
-
-      <!-- Enterprise -->
-      <div class="pricing-card">
-        <div class="pricing-header">
-          <div class="pricing-name">Enterprise</div>
-          <div class="pricing-price">449€<span>/Monat</span></div>
-          <div class="pricing-desc">Für große Unternehmen</div>
-        </div>
-        <ul class="pricing-features">
-          <li><span class="check">✓</span> Unbegrenztes Rechnungsvolumen</li>
-          <li><span class="check">✓</span> 8-Thread Verarbeitung</li>
-          <li><span class="check">✓</span> Alle Export-Formate</li>
-          <li><span class="check">✓</span> Persönlicher Ansprechpartner</li>
-          <li><span class="check">✓</span> API-Zugang &amp; Integration</li>
-        </ul>
-        <a href="/sbshomepage/kontakt.html" class="pricing-cta">Kontakt aufnehmen</a>
+      <div class="feature-card">
+        <span class="feature-icon">🤝</span>
+        <h3>Gemeinsame Policies</h3>
+        <p>Abstimmung von Löschkonzepten, Backup-Strategien und Zugriffsmodellen.</p>
       </div>
     </div>
-  </div>
-</section>
-
-<section class="section section-alt">
-  <div class="container">
-    <div class="section-header">
-      <div class="section-badge">FAQ</div>
-      <h2 class="section-title">Häufig gestellte Fragen</h2>
-    </div>
-
-    <div class="faq-list">
-      <div class="faq-item">
-        <button class="faq-question">
-          Gibt es eine kostenlose Testphase?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-answer">
-          <p>Ja, Sie können unsere Lösung kostenlos testen und eigene Rechnungen hochladen.</p>
-        </div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-question">
-          Was passiert bei Überschreitung des Kontingents?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-answer">
-          <p>Überschüssige Rechnungen werden zum angegebenen Überlaufpreis abgerechnet oder Sie wechseln in ein höheres Paket.</p>
-        </div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-question">
-          Kann ich mein Paket ändern oder kündigen?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-answer">
-          <p>Ja, Sie können zum Monatsende kündigen oder in ein anderes Paket wechseln.</p>
-        </div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-question">
-          Wie sicher sind meine Daten?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-answer">
-          <p>Die Verarbeitung erfolgt ausschließlich in Rechenzentren in Deutschland und ist DSGVO-orientiert.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section">
-  <div class="cta-section">
-    <h2>Noch Fragen?</h2>
-    <p>Unser Team berät Sie gerne zu Ihrem optimalen Paket.</p>
-    <a href="/sbshomepage/kontakt.html" class="btn">Kontakt aufnehmen →</a>
+    <p>
+      Sprechen Sie uns an – wir zeigen gerne offen, wie wir mit Sicherheit und Compliance umgehen.
+    </p>
   </div>
 </section>
 
@@ -546,10 +508,9 @@ document.addEventListener('DOMContentLoaded', function() {
     <div>
       <h4>Produkt</h4>
       <ul>
-        <li><a href="/static/landing/">KI-Rechnungsverarbeitung</a></li>
-        <li><a href="/loesungen/vertragsanalyse/">KI-Vertragsanalyse</a></li>
-        <li><a href="https://app.sbsdeutschland.com/copilot">Finance Copilot</a></li>
-        <li><a href="/static/preise/">Preise &amp; Pakete</a></li>
+        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="https://app.sbsdeutschland.com/demo/copilot">Finance Copilot</a></li>
+        <li><a href="/preise">Preise & Pakete</a></li>
         <li><a href="/static/landing/integrationen.html">Integrationen</a></li>
         <li><a href="/static/landing/security.html">Sicherheit</a></li>
       </ul>
@@ -576,111 +537,76 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 
   <div class="footer-bottom">
-    <p>© 2025 SBS Deutschland GmbH &amp; Co. KG. Alle Rechte vorbehalten.</p>
+    <p>© 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
     <p>Made with ❤️ in Weinheim</p>
   </div>
 </footer>
 
 <script src="/static/js/main.js"></script>
+
 <script>
-async function checkLoginStatus() {
-  try {
-    const r = await fetch("https://app.sbsdeutschland.com/api/user", {credentials: "include"});
-    const u = await r.json();
-    const loginLink = document.querySelector("a[href*=\"app.sbsdeutschland.com/login\"]");
-    if (loginLink && u.logged_in) {
-      loginLink.textContent = "👤 " + u.name;
-      loginLink.href = "https://app.sbsdeutschland.com/history";
+  (function() {
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+      const saved = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+      themeToggle.addEventListener('click', function() {
+        const current = document.documentElement.getAttribute('data-theme') || 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+      });
     }
-  } catch(e) {}
-}
-document.addEventListener("DOMContentLoaded", checkLoginStatus);
+
+    const el = document.getElementById('accountName');
+    if (el) {
+      fetch('https://app.sbsdeutschland.com/api/user', { credentials: 'include' })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(u) {
+          if (!u) return;
+          if (u.logged_in && u.name) {
+            el.textContent = u.name;
+          } else {
+            el.textContent = 'App Login';
+          }
+        })
+        .catch(function() {});
+    }
+  })();
 </script>
-<!-- SBS Chat Widget -->
+
+<script>
+// Auth Status Check
+async function checkAuthStatus() {
+  const guestEl = document.getElementById('authGuest');
+  const userEl = document.getElementById('authUser');
+  const nameEl = document.getElementById('accountName');
+  const emailEl = document.getElementById('accountEmail');
+  
+  try {
+    const res = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
+    const user = await res.json();
+    
+    if (user && user.logged_in) {
+      // Angemeldet
+      if (guestEl) guestEl.style.display = 'none';
+      if (userEl) userEl.style.display = 'block';
+      if (nameEl) nameEl.textContent = user.name || 'Account';
+      if (emailEl) emailEl.textContent = user.email || '';
+    } else {
+      // Nicht angemeldet
+      if (guestEl) guestEl.style.display = 'flex';
+      if (userEl) userEl.style.display = 'none';
+    }
+  } catch(e) {
+    // Fehler = nicht angemeldet
+    if (guestEl) guestEl.style.display = 'flex';
+    if (userEl) userEl.style.display = 'none';
+  }
+}
+document.addEventListener('DOMContentLoaded', checkAuthStatus);
+</script>
 <link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
 <script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
 </body>
-<script>
-async function checkLoginStatus() {
-  try {
-    const r = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
-    const u = await r.json();
-    const toggle = document.querySelector('.account-toggle');
-    const menu = document.querySelector('.account-menu');
-    
-    if (u.logged_in) {
-      document.getElementById('accountName').textContent = u.name;
-      // Update logout link with current page
-      const logoutLink = menu.querySelector('a[href*="logout"]');
-      if (logoutLink) {
-        logoutLink.href = 'https://app.sbsdeutschland.com/logout?next=' + encodeURIComponent(window.location.href);
-      }
-    } else {
-      // Show login link with return URL
-      const currentUrl = encodeURIComponent(window.location.href);
-      toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
-      if (menu) menu.style.display = 'none';
-    }
-  } catch(e) {
-    const toggle = document.querySelector('.account-toggle');
-    const currentUrl = encodeURIComponent(window.location.href);
-    if (toggle) toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login?next=' + currentUrl + '" style="text-decoration:none;color:inherit;">🔑 Login</a>';
-  }
-}
-document.addEventListener('DOMContentLoaded', checkLoginStatus);
-</script>
-<script>
-async function checkLoginStatus() {
-  try {
-    const r = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
-    const u = await r.json();
-    const toggle = document.querySelector('.account-toggle');
-    const menu = document.querySelector('.account-menu');
-    
-    if (u.logged_in) {
-      document.getElementById('accountName').textContent = u.name;
-    } else {
-      toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
-      if (menu) menu.style.display = 'none';
-    }
-  } catch(e) {
-    const toggle = document.querySelector('.account-toggle');
-    if (toggle) toggle.innerHTML = '<a href="https://app.sbsdeutschland.com/login" style="text-decoration:none;color:inherit;">🔑 Login</a>';
-  }
-}
-document.addEventListener('DOMContentLoaded', checkLoginStatus);
-</script>
 </html>
-<script>
-async function startCheckout(plan) {
-  // Prüfe ob eingeloggt
-  try {
-    const userResp = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
-    const user = await userResp.json();
-    
-    if (!user.logged_in) {
-      // Redirect to login with return URL
-      window.location.href = 'https://app.sbsdeutschland.com/login?next=' + encodeURIComponent(window.location.href);
-      return;
-    }
-    
-    // Erstelle Checkout Session
-    const response = await fetch('https://app.sbsdeutschland.com/api/checkout/create-session', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      credentials: 'include',
-      body: JSON.stringify({plan: plan})
-    });
-    
-    const data = await response.json();
-    
-    if (data.url) {
-      window.location.href = data.url;
-    } else if (data.error) {
-      alert('Fehler: ' + data.error);
-    }
-  } catch (e) {
-    alert('Verbindungsfehler. Bitte versuchen Sie es erneut.');
-  }
-}
-</script>

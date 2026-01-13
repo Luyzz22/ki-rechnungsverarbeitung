@@ -81,18 +81,12 @@
   <div class="app-switcher-panel" id="appSwitcherPanel">
     <div class="app-switcher-header">Ihre Apps</div>
     <div class="app-switcher-grid">
-      <a href="/dashboard" class="app-switcher-item">
-        <div class="app-switcher-item-icon" style="background: linear-gradient(135deg, #003856, #004d7a);">
-          <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        </div>
-        <span class="app-switcher-item-name">Dashboard</span>
-      </a>
-      <a href="/history" class="app-switcher-item active">
+      <a href="/dashboard" class="app-switcher-item active">
         <div class="app-switcher-item-icon invoice">🧾</div>
         <span class="app-switcher-item-name">Rechnungen</span>
         <span class="app-switcher-item-badge">Aktiv</span>
       </a>
-      <a href="https://contract.sbsdeutschland.com/" class="app-switcher-item">
+      <a href="https://contract.sbsdeutschland.com/dashboard" class="app-switcher-item">
         <div class="app-switcher-item-icon contract">📋</div>
         <span class="app-switcher-item-name">Verträge</span>
       </a>
@@ -315,6 +309,77 @@
   <link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
   <script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
 
+<script>
+(function() {
+  // App Switcher
+  var switcherBtn = document.getElementById('appSwitcherBtn');
+  var switcherPanel = document.getElementById('appSwitcherPanel');
+  var userBtn = document.getElementById('appUserBtn');
+  var userMenu = document.getElementById('appUserMenu');
+  var overlay = document.getElementById('appOverlay');
+  
+  if (switcherBtn && switcherPanel) {
+    switcherBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      switcherPanel.classList.toggle('open');
+      if (userMenu) userMenu.classList.remove('open');
+      if (overlay) overlay.classList.toggle('active', switcherPanel.classList.contains('open'));
+    });
+  }
+  
+  if (userBtn && userMenu) {
+    userBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      userMenu.classList.toggle('open');
+      if (switcherPanel) switcherPanel.classList.remove('open');
+      if (overlay) overlay.classList.toggle('active', userMenu.classList.contains('open'));
+    });
+  }
+  
+  // Nav Dropdowns
+  document.querySelectorAll('.app-nav-dropdown').forEach(function(dropdown) {
+    var btn = dropdown.querySelector('.app-nav-dropdown-btn');
+    if (btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var wasOpen = dropdown.classList.contains('open');
+        document.querySelectorAll('.app-nav-dropdown').forEach(function(d) {
+          d.classList.remove('open');
+        });
+        if (!wasOpen) dropdown.classList.add('open');
+      });
+    }
+  });
+  
+  // Close on overlay/outside click
+  if (overlay) {
+    overlay.addEventListener('click', function() {
+      if (switcherPanel) switcherPanel.classList.remove('open');
+      if (userMenu) userMenu.classList.remove('open');
+      overlay.classList.remove('active');
+      document.querySelectorAll('.app-nav-dropdown').forEach(function(d) {
+        d.classList.remove('open');
+      });
+    });
+  }
+  
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.app-nav-dropdown')) {
+      document.querySelectorAll('.app-nav-dropdown').forEach(function(d) {
+        d.classList.remove('open');
+      });
+    }
+    if (!e.target.closest('.app-user-btn') && !e.target.closest('.app-user-menu')) {
+      if (userMenu) userMenu.classList.remove('open');
+      if (overlay && !switcherPanel.classList.contains('open')) overlay.classList.remove('active');
+    }
+    if (!e.target.closest('.app-switcher-btn') && !e.target.closest('.app-switcher-panel')) {
+      if (switcherPanel) switcherPanel.classList.remove('open');
+      if (overlay && !userMenu.classList.contains('open')) overlay.classList.remove('active');
+    }
+  });
+})();
+</script>
 
 </body>
 </html>

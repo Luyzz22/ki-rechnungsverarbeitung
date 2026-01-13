@@ -143,5 +143,59 @@
 
 <div class="app-overlay" id="appOverlay"></div>
 
-
-<script src="/static/js/app-shell.js"></script>
+<script>
+// Toggle dropdowns and menus
+document.addEventListener('DOMContentLoaded', function() {
+  // App Switcher
+  const appSwitcherBtn = document.getElementById('appSwitcherBtn');
+  const appSwitcherPanel = document.getElementById('appSwitcherPanel');
+  const appUserBtn = document.getElementById('appUserBtn');
+  const appUserMenu = document.getElementById('appUserMenu');
+  const appOverlay = document.getElementById('appOverlay');
+  
+  if (appSwitcherBtn) {
+    appSwitcherBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      appSwitcherPanel.classList.toggle('open');
+      appUserMenu.classList.remove('open');
+      appOverlay.classList.toggle('active', appSwitcherPanel.classList.contains('open'));
+    });
+  }
+  
+  if (appUserBtn) {
+    appUserBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      appUserMenu.classList.toggle('open');
+      appSwitcherPanel.classList.remove('open');
+      appOverlay.classList.toggle('active', appUserMenu.classList.contains('open'));
+    });
+  }
+  
+  // Nav dropdowns
+  document.querySelectorAll('.app-nav-dropdown-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const dropdown = this.parentElement;
+      const wasOpen = dropdown.classList.contains('open');
+      document.querySelectorAll('.app-nav-dropdown').forEach(d => d.classList.remove('open'));
+      if (!wasOpen) dropdown.classList.add('open');
+    });
+  });
+  
+  // Close all on overlay/outside click
+  document.addEventListener('click', function() {
+    appSwitcherPanel.classList.remove('open');
+    appUserMenu.classList.remove('open');
+    appOverlay.classList.remove('active');
+    document.querySelectorAll('.app-nav-dropdown').forEach(d => d.classList.remove('open'));
+  });
+  
+  if (appOverlay) {
+    appOverlay.addEventListener('click', function() {
+      appSwitcherPanel.classList.remove('open');
+      appUserMenu.classList.remove('open');
+      appOverlay.classList.remove('active');
+    });
+  }
+});
+</script>

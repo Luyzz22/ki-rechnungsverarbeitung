@@ -1,212 +1,864 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
   <title>Auto-Kontierung · SBS KI-Rechnungsverarbeitung</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="icon" href="/static/favicon.ico" />
-  <link rel="stylesheet" href="/static/css/design-tokens.css" />
-  <link rel="stylesheet" href="/static/css/components.css" />
-  <link rel="stylesheet" href="/static/css/main.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/css/design-tokens.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="stylesheet" href="/static/css/main.css">
   <style>
-    .accounting-container { max-width: 1200px; margin: 0 auto; padding: 24px; }
-    
-    .config-card {
-      background: var(--sbs-white);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-    .config-card h3 { margin: 0 0 16px; color: var(--sbs-dark); }
-    
-    .config-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-    .config-row label { font-size: 0.85rem; color: var(--sbs-muted); display: block; margin-bottom: 4px; }
-    .config-row input, .config-row select {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--sbs-border-soft);
-      border-radius: 8px;
-      font-size: 0.95rem;
+    :root {
+      --sbs-blue: #003856;
+      --sbs-yellow: #FFB900;
+      --green-500: #10b981;
+      --green-100: #d1fae5;
+      --blue-500: #3b82f6;
+      --blue-100: #dbeafe;
+      --amber-500: #f59e0b;
+      --amber-100: #fef3c7;
+      --red-500: #ef4444;
+      --red-100: #fee2e2;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-400: #9ca3af;
+      --gray-600: #4b5563;
+      --gray-900: #111827;
     }
     
-    .invoice-table {
-      background: var(--sbs-white);
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-    .invoice-table table { width: 100%; border-collapse: collapse; }
-    .invoice-table th, .invoice-table td {
-      padding: 14px 16px;
-      text-align: left;
-      border-bottom: 1px solid var(--sbs-border-soft);
-    }
-    .invoice-table th {
-      background: var(--sbs-bg-soft);
-      font-weight: 600;
-      font-size: 0.85rem;
-      color: var(--sbs-muted);
-      text-transform: uppercase;
-    }
-    .invoice-table tr:hover { background: var(--sbs-bg-soft); }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--gray-50); }
     
-    .account-select {
-      padding: 8px 12px;
-      border: 1px solid var(--sbs-border-soft);
-      border-radius: 6px;
-      min-width: 180px;
-      font-size: 0.9rem;
+    /* Page Header */
+    .page-header {
+      background: linear-gradient(135deg, var(--sbs-blue) 0%, #00507a 100%);
+      padding: 32px 24px;
+      color: #fff;
     }
-    .account-select.changed { border-color: #f59e0b; background: #fffbeb; }
-    .account-select.learned { border-color: #10b981; background: #ecfdf5; }
-    
-    .confidence-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-    .confidence-high { background: #dcfce7; color: #166534; }
-    .confidence-medium { background: #fef3c7; color: #92400e; }
-    .confidence-low { background: #fee2e2; color: #991b1b; }
-    
-    .method-badge {
-      font-size: 0.7rem;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: #e5e7eb;
-      color: #6b7280;
-    }
-    .method-badge.llm { background: #dbeafe; color: #1d4ed8; }
-    .method-badge.learned { background: #dcfce7; color: #166534; }
-    
-    .action-bar {
+    .page-header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 24px;
-      padding: 16px 24px;
-      background: var(--sbs-white);
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      flex-wrap: wrap;
+      gap: 20px;
     }
-    .action-bar .stats { color: var(--sbs-muted); font-size: 0.9rem; }
-    .action-bar .buttons { display: flex; gap: 12px; }
-    
-    .btn-export {
-      padding: 12px 24px;
-      border: none;
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .page-title-icon {
+      width: 56px;
+      height: 56px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+    }
+    .page-title h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    .page-title p {
+      color: rgba(255,255,255,0.7);
+      margin: 4px 0 0;
+      font-size: 0.95rem;
+    }
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .header-btn {
+      padding: 12px 20px;
       border-radius: 8px;
       font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .header-btn.primary {
+      background: var(--sbs-yellow);
+      color: var(--sbs-blue);
+    }
+    .header-btn.secondary {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    .header-btn:hover { transform: translateY(-1px); }
+    
+    /* Stats Bar */
+    .stats-bar {
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 20px 24px;
+    }
+    .stats-bar-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 1000px) {
+      .stats-bar-inner { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .stats-bar-inner { grid-template-columns: repeat(2, 1fr); }
+    }
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+    .stat-icon.blue { background: var(--blue-100); }
+    .stat-icon.green { background: var(--green-100); }
+    .stat-icon.amber { background: var(--amber-100); }
+    .stat-icon.purple { background: #ede9fe; }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gray-900);
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--gray-600);
+      margin-top: 2px;
+    }
+    
+    /* Main Container */
+    .main-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    
+    /* Controls Panel */
+    .controls-panel {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: flex;
+      gap: 20px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    .control-group {
+      flex: 1;
+      min-width: 180px;
+    }
+    .control-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 8px;
+    }
+    .control-group select,
+    .control-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      background: #fff;
+      transition: all 0.2s;
+    }
+    .control-group select:focus,
+    .control-group input:focus {
+      outline: none;
+      border-color: var(--sbs-blue);
+      box-shadow: 0 0 0 3px rgba(0,56,86,0.1);
+    }
+    .btn-load {
+      padding: 12px 24px;
+      background: var(--sbs-blue);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.95rem;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 8px;
+      transition: all 0.2s;
+      height: 46px;
     }
-    .btn-export.primary { background: var(--sbs-dark); color: white; }
-    .btn-export.secondary { background: var(--sbs-bg-soft); color: var(--sbs-dark); }
-    .btn-export:hover { opacity: 0.9; }
+    .btn-load:hover { background: #004a6e; }
+    .btn-load:disabled { opacity: 0.5; cursor: not-allowed; }
     
-    .loading { opacity: 0.6; pointer-events: none; }
-    .spinner { animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    /* AI Insights Panel */
+    .ai-insights {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      color: #fff;
+      display: none;
+    }
+    .ai-insights.visible { display: block; }
+    .ai-insights-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .ai-insights-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    .ai-badge {
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .insights-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .insight-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .insight-card-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .insight-card-label {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.7);
+    }
+    .insight-card-trend {
+      font-size: 0.75rem;
+      margin-top: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 100px;
+    }
+    .insight-card-trend.up { background: rgba(16,185,129,0.2); color: #34d399; }
+    .insight-card-trend.down { background: rgba(239,68,68,0.2); color: #f87171; }
     
+    /* Data Table */
+    .data-table-container {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .data-table-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .data-table-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .data-table-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .table-action-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--gray-200);
+      background: #fff;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .table-action-btn:hover {
+      background: var(--gray-50);
+      border-color: var(--gray-400);
+    }
+    .table-action-btn.primary {
+      background: var(--sbs-blue);
+      color: #fff;
+      border-color: var(--sbs-blue);
+    }
+    .table-action-btn.primary:hover {
+      background: #004a6e;
+    }
+    
+    /* Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th {
+      background: var(--gray-50);
+      padding: 14px 16px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .data-table td {
+      padding: 16px;
+      border-bottom: 1px solid var(--gray-100);
+      font-size: 0.9rem;
+    }
+    .data-table tr:hover {
+      background: var(--gray-50);
+    }
+    .data-table tr.selected {
+      background: rgba(0,56,86,0.05);
+    }
+    
+    /* Invoice Cell */
+    .invoice-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .invoice-checkbox {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .invoice-info strong {
+      display: block;
+      color: var(--gray-900);
+      font-weight: 600;
+    }
+    .invoice-info small {
+      color: var(--gray-600);
+      font-size: 0.8rem;
+    }
+    
+    /* Vendor Cell */
+    .vendor-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .vendor-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--gray-100);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+    .vendor-name {
+      font-weight: 500;
+      color: var(--gray-900);
+    }
+    
+    /* Amount Cell */
+    .amount-cell {
+      text-align: right;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .amount-cell.large {
+      color: var(--sbs-blue);
+    }
+    
+    /* Account Select */
+    .account-select-wrapper {
+      position: relative;
+    }
+    .account-select {
+      width: 100%;
+      min-width: 200px;
+      padding: 10px 14px;
+      border: 2px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+    .account-select:focus {
+      outline: none;
+      border-color: var(--sbs-blue);
+      box-shadow: 0 0 0 3px rgba(0,56,86,0.1);
+    }
+    .account-select.changed {
+      border-color: var(--amber-500);
+      background-color: var(--amber-100);
+    }
+    .account-select.learned {
+      border-color: var(--green-500);
+      background-color: var(--green-100);
+    }
+    .account-select.ai-suggested {
+      border-color: var(--blue-500);
+    }
+    
+    /* Confidence Badge */
+    .confidence-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .confidence-bar-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .confidence-bar {
+      width: 60px;
+      height: 6px;
+      background: var(--gray-200);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .confidence-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+    .confidence-bar-fill.high { background: var(--green-500); }
+    .confidence-bar-fill.medium { background: var(--amber-500); }
+    .confidence-bar-fill.low { background: var(--red-500); }
+    .confidence-text {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .confidence-text.high { color: var(--green-500); }
+    .confidence-text.medium { color: var(--amber-500); }
+    .confidence-text.low { color: var(--red-500); }
+    
+    .method-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .method-badge.ai {
+      background: linear-gradient(135deg, #dbeafe, #c7d2fe);
+      color: #4338ca;
+    }
+    .method-badge.learned {
+      background: var(--green-100);
+      color: #166534;
+    }
+    .method-badge.rule {
+      background: var(--gray-100);
+      color: var(--gray-600);
+    }
+    
+    /* Empty State */
     .empty-state {
       text-align: center;
-      padding: 60px 24px;
-      color: var(--sbs-muted);
+      padding: 80px 24px;
     }
-    .empty-state h3 { color: var(--sbs-dark); margin-bottom: 8px; }
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
+    .empty-state h3 {
+      font-size: 1.3rem;
+      color: var(--gray-900);
+      margin: 0 0 8px;
+    }
+    .empty-state p {
+      color: var(--gray-600);
+      margin: 0;
+    }
+    
+    /* Loading State */
+    .loading-state {
+      text-align: center;
+      padding: 60px 24px;
+    }
+    .spinner-ring {
+      width: 48px;
+      height: 48px;
+      border: 4px solid var(--gray-200);
+      border-top-color: var(--sbs-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    /* Bottom Action Bar */
+    .bottom-action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border-top: 1px solid var(--gray-200);
+      padding: 16px 24px;
+      display: none;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+    .bottom-action-bar.visible { display: block; }
+    .bottom-action-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .selection-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .selection-count {
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+    .selection-total {
+      color: var(--gray-600);
+      font-size: 0.9rem;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+    }
+    
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-overlay.visible { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .modal h3 {
+      margin: 0 0 8px;
+      font-size: 1.3rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-subtitle {
+      color: var(--gray-600);
+      margin: 0 0 24px;
+    }
+    .modal-field {
+      margin-bottom: 16px;
+    }
+    .modal-field label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: 6px;
+    }
+    .modal-field input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    .modal-field input:focus {
+      outline: none;
+      border-color: var(--sbs-blue);
+      box-shadow: 0 0 0 3px rgba(0,56,86,0.1);
+    }
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+    .modal-btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .modal-btn.cancel {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      color: var(--gray-700);
+    }
+    .modal-btn.confirm {
+      background: var(--sbs-blue);
+      border: none;
+      color: #fff;
+    }
+    .modal-btn:hover { transform: translateY(-1px); }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--gray-900);
+      color: #fff;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-weight: 500;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 1001;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    .toast.success { background: var(--green-500); }
+    .toast.error { background: var(--red-500); }
   </style>
 </head>
 <body>
   {% include 'partials/header.html' %}
 
-  <section class="hero" style="padding: 40px 24px;">
-    <div class="hero-content">
-      <h1>📊 Auto-Kontierung</h1>
-      <p class="hero-subtitle">KI-gestützte Kontenvorschläge für Ihre Rechnungen</p>
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-inner">
+      <div class="page-title">
+        <div class="page-title-icon">🧠</div>
+        <div>
+          <h1>Auto-Kontierung</h1>
+          <p>KI-gestützte Kontenvorschläge nach SKR03/SKR04</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="/datev" class="header-btn secondary">📥 DATEV Export</a>
+        <button class="header-btn primary" onclick="loadInvoices()">🔄 Aktualisieren</button>
+      </div>
     </div>
-  </section>
+  </div>
 
-  <main class="accounting-container">
-    <!-- Konfiguration -->
-    <div class="config-card">
-      <h3>⚙️ Einstellungen</h3>
-      <div class="config-row">
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stats-bar-inner">
+      <div class="stat-card">
+        <div class="stat-icon blue">📄</div>
         <div>
-          <label>Kontenrahmen</label>
-          <select id="skr-select">
-            <option value="SKR03" selected>SKR03</option>
-            <option value="SKR04">SKR04</option>
-          </select>
+          <div class="stat-value" id="stat-invoices">0</div>
+          <div class="stat-label">Rechnungen</div>
         </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">💰</div>
         <div>
-          <label>Job auswählen</label>
-          <select id="job-select">
-            <option value="">-- Job wählen --</option>
-            {% for job in jobs %}
-            <option value="{{ job.job_id }}">{{ job.filename }} ({{ job.invoice_count }} Rechnungen)</option>
-            {% endfor %}
-          </select>
+          <div class="stat-value" id="stat-total">0 €</div>
+          <div class="stat-label">Gesamtbetrag</div>
         </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber">🎯</div>
         <div>
-          <label>&nbsp;</label>
-          <button class="btn-export secondary" onclick="loadInvoices()">🔄 Laden</button>
+          <div class="stat-value" id="stat-confidence">0%</div>
+          <div class="stat-label">Ø Konfidenz</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple">🧠</div>
+        <div>
+          <div class="stat-value" id="stat-ai">0</div>
+          <div class="stat-label">KI-Vorschläge</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">✅</div>
+        <div>
+          <div class="stat-value" id="stat-learned">0</div>
+          <div class="stat-label">Gelernt</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="main-container">
+    <!-- Controls -->
+    <div class="controls-panel">
+      <div class="control-group">
+        <label>Kontenrahmen</label>
+        <select id="skr-select">
+          <option value="SKR03" selected>SKR03 (Standard)</option>
+          <option value="SKR04">SKR04 (Industrie)</option>
+        </select>
+      </div>
+      <div class="control-group" style="flex: 2;">
+        <label>Job auswählen</label>
+        <select id="job-select">
+          <option value="">-- Verarbeiteten Job wählen --</option>
+          {% for job in jobs %}
+          <option value="{{ job.job_id }}">{{ job.filename }} ({{ job.invoice_count }} Rechnungen)</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="btn-load" id="load-btn" onclick="loadInvoices()">
+        <span>📊</span> Kontierung laden
+      </button>
+    </div>
+
+    <!-- AI Insights -->
+    <div class="ai-insights" id="ai-insights">
+      <div class="ai-insights-header">
+        <span style="font-size: 1.5rem;">🤖</span>
+        <h3>KI-Analyse</h3>
+        <span class="ai-badge">GPT-4 Powered</span>
+      </div>
+      <div class="insights-grid">
+        <div class="insight-card">
+          <div class="insight-card-value" id="insight-accuracy">--</div>
+          <div class="insight-card-label">Trefferquote</div>
+          <div class="insight-card-trend up" id="insight-accuracy-trend">↑ +2.3%</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-card-value" id="insight-categories">--</div>
+          <div class="insight-card-label">Kategorien erkannt</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-card-value" id="insight-vendors">--</div>
+          <div class="insight-card-label">Lieferanten</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-card-value" id="insight-learned">--</div>
+          <div class="insight-card-label">Aus Historie gelernt</div>
         </div>
       </div>
     </div>
 
-    <!-- Rechnungstabelle -->
-    <div class="invoice-table" id="invoice-container">
-      <div class="empty-state">
-        <h3>Keine Rechnungen geladen</h3>
-        <p>Wählen Sie einen Job aus und klicken Sie auf "Laden"</p>
+    <!-- Data Table -->
+    <div class="data-table-container">
+      <div class="data-table-header">
+        <h3>📋 Rechnungen & Kontierungsvorschläge</h3>
+        <div class="data-table-actions" id="table-actions" style="display: none;">
+          <button class="table-action-btn" onclick="exportExcel()">📊 Excel</button>
+          <button class="table-action-btn" onclick="exportDATEV()">💼 DATEV</button>
+          <button class="table-action-btn" onclick="openSepaModal()">💳 SEPA</button>
+          <button class="table-action-btn primary" onclick="saveAll()">💾 Speichern</button>
+        </div>
       </div>
-    </div>
-
-    <!-- Aktionen -->
-    <div class="action-bar" id="action-bar" style="display: none;">
-      <div class="stats">
-        <span id="stats-text">0 Rechnungen · 0,00 € Gesamt</span>
-      </div>
-      <div class="buttons">
-        <button class="btn-export secondary" onclick="exportDATEV()">📥 DATEV Export</button>
-        <button class="btn-export secondary" onclick="exportSEPA()">💳 SEPA-XML</button>
-        <button class="btn-export primary" onclick="saveAll()">💾 Kontierung speichern</button>
+      
+      <div id="table-content">
+        <div class="empty-state">
+          <div class="empty-state-icon">📂</div>
+          <h3>Keine Rechnungen geladen</h3>
+          <p>Wählen Sie einen Job aus und klicken Sie auf "Kontierung laden"</p>
+        </div>
       </div>
     </div>
   </main>
 
-  <!-- SEPA Modal -->
-  <div id="sepa-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000;">
-    <div style="background:white; max-width:500px; margin:100px auto; border-radius:12px; padding:24px;">
-      <h3 style="margin:0 0 16px;">💳 SEPA-Überweisung</h3>
-      <div style="margin-bottom:12px;">
-        <label style="display:block; margin-bottom:4px; font-size:0.85rem;">Firmenname</label>
-        <input type="text" id="sepa-name" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+  <!-- Bottom Action Bar -->
+  <div class="bottom-action-bar" id="bottom-bar">
+    <div class="bottom-action-inner">
+      <div class="selection-info">
+        <span class="selection-count" id="selection-count">0 ausgewählt</span>
+        <span class="selection-total" id="selection-total">0,00 € Summe</span>
       </div>
-      <div style="margin-bottom:12px;">
-        <label style="display:block; margin-bottom:4px; font-size:0.85rem;">IBAN</label>
-        <input type="text" id="sepa-iban" placeholder="DE89 3704 0044 0532 0130 00" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
-      </div>
-      <div style="margin-bottom:16px;">
-        <label style="display:block; margin-bottom:4px; font-size:0.85rem;">BIC (optional)</label>
-        <input type="text" id="sepa-bic" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
-      </div>
-      <div style="display:flex; gap:12px; justify-content:flex-end;">
-        <button onclick="closeSepaModal()" style="padding:10px 20px; border:1px solid #ddd; background:white; border-radius:6px; cursor:pointer;">Abbrechen</button>
-        <button onclick="generateSEPA()" style="padding:10px 20px; border:none; background:#003856; color:white; border-radius:6px; cursor:pointer;">Generieren</button>
+      <div class="action-buttons">
+        <button class="table-action-btn" onclick="exportDATEV()">📥 DATEV Export</button>
+        <button class="table-action-btn" onclick="openSepaModal()">💳 SEPA-XML</button>
+        <button class="table-action-btn primary" onclick="saveAll()">💾 Kontierungen speichern</button>
       </div>
     </div>
   </div>
+
+  <!-- SEPA Modal -->
+  <div class="modal-overlay" id="sepa-modal">
+    <div class="modal">
+      <h3>💳 SEPA-Überweisung generieren</h3>
+      <p class="modal-subtitle">Bankdaten für die Zahlungsdatei eingeben</p>
+      <div class="modal-field">
+        <label>Firmenname (Auftraggeber)</label>
+        <input type="text" id="sepa-name" placeholder="Ihre Firma GmbH">
+      </div>
+      <div class="modal-field">
+        <label>IBAN</label>
+        <input type="text" id="sepa-iban" placeholder="DE89 3704 0044 0532 0130 00">
+      </div>
+      <div class="modal-field">
+        <label>BIC (optional)</label>
+        <input type="text" id="sepa-bic" placeholder="COBADEFFXXX">
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn cancel" onclick="closeSepaModal()">Abbrechen</button>
+        <button class="modal-btn confirm" onclick="generateSEPA()">Generieren</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
 
   {% include 'partials/footer.html' %}
 
@@ -215,35 +867,60 @@
     let currentJobId = null;
     let accountsList = [];
 
-    // Konten laden
+    // Load accounts on page load
     async function loadAccounts() {
-      const res = await fetch('/api/accounting/accounts');
-      const data = await res.json();
-      accountsList = data.accounts || [];
+      try {
+        const res = await fetch('/api/accounting/accounts');
+        const data = await res.json();
+        accountsList = data.accounts || [];
+      } catch (e) {
+        console.error('Failed to load accounts:', e);
+      }
     }
     loadAccounts();
 
-    // Rechnungen laden
+    // Load invoices
     async function loadInvoices() {
       const jobId = document.getElementById('job-select').value;
-      if (!jobId) return alert('Bitte Job auswählen');
+      if (!jobId) {
+        showToast('Bitte wählen Sie einen Job aus', 'error');
+        return;
+      }
 
       currentJobId = jobId;
-      const container = document.getElementById('invoice-container');
-      container.innerHTML = '<div class="empty-state"><div class="spinner" style="font-size:2rem;">⏳</div><p>Lade Kontierungsvorschläge...</p></div>';
+      const container = document.getElementById('table-content');
+      const loadBtn = document.getElementById('load-btn');
+      
+      loadBtn.disabled = true;
+      loadBtn.innerHTML = '<span class="spinner-ring" style="width:20px;height:20px;border-width:2px;margin:0;"></span> Lädt...';
+      
+      container.innerHTML = `
+        <div class="loading-state">
+          <div class="spinner-ring"></div>
+          <p style="color: var(--gray-600);">KI analysiert Rechnungen...</p>
+        </div>
+      `;
 
       try {
-        // Rechnungen holen
+        // Get invoices
         const invRes = await fetch(`/api/job/${jobId}/invoices`);
         const invData = await invRes.json();
         const invoices = invData.invoices || [];
 
         if (!invoices.length) {
-          container.innerHTML = '<div class="empty-state"><h3>Keine Rechnungen</h3></div>';
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📭</div>
+              <h3>Keine Rechnungen gefunden</h3>
+              <p>Dieser Job enthält keine verarbeiteten Rechnungen</p>
+            </div>
+          `;
+          loadBtn.disabled = false;
+          loadBtn.innerHTML = '<span>📊</span> Kontierung laden';
           return;
         }
 
-        // Kontierungsvorschläge holen
+        // Get suggestions
         const skr = document.getElementById('skr-select').value;
         const suggestRes = await fetch('/api/accounting/suggest/batch', {
           method: 'POST',
@@ -253,101 +930,227 @@
         const suggestData = await suggestRes.json();
         const suggestions = suggestData.suggestions || [];
 
-        // Zusammenführen
+        // Merge
         currentInvoices = invoices.map((inv, i) => ({
           ...inv,
-          suggestion: suggestions[i] || {}
+          suggestion: suggestions[i] || {},
+          selected: true
         }));
 
         renderTable();
+        updateStats();
+        showAiInsights();
+        
+        document.getElementById('table-actions').style.display = 'flex';
+        document.getElementById('bottom-bar').classList.add('visible');
+        
+        showToast(`${currentInvoices.length} Rechnungen geladen`, 'success');
       } catch (err) {
-        container.innerHTML = `<div class="empty-state"><h3>Fehler</h3><p>${err.message}</p></div>`;
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">❌</div>
+            <h3>Fehler beim Laden</h3>
+            <p>${err.message}</p>
+          </div>
+        `;
       }
+      
+      loadBtn.disabled = false;
+      loadBtn.innerHTML = '<span>📊</span> Kontierung laden';
     }
 
     function renderTable() {
-      const container = document.getElementById('invoice-container');
-      const total = currentInvoices.reduce((s, i) => s + (parseFloat(i.betrag_brutto) || 0), 0);
-
-      let html = `<table>
-        <thead>
-          <tr>
-            <th>Rechnung</th>
-            <th>Lieferant</th>
-            <th>Betrag</th>
-            <th>Konto</th>
-            <th>Konfidenz</th>
-          </tr>
-        </thead>
-        <tbody>`;
+      const container = document.getElementById('table-content');
+      
+      let html = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;"><input type="checkbox" checked onchange="toggleAll(this)"></th>
+              <th>Rechnung</th>
+              <th>Lieferant</th>
+              <th style="text-align: right;">Betrag</th>
+              <th>Konto</th>
+              <th>Konfidenz</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
 
       currentInvoices.forEach((inv, idx) => {
         const sug = inv.suggestion?.suggested || {};
         const conf = (sug.confidence || 0) * 100;
         const confClass = conf >= 70 ? 'high' : conf >= 40 ? 'medium' : 'low';
         const method = inv.suggestion?.method || 'rule_based';
-        const methodClass = method.includes('llm') ? 'llm' : method === 'learned' ? 'learned' : '';
+        
+        let methodBadge = '';
+        if (method.includes('llm') || method.includes('gpt')) {
+          methodBadge = '<span class="method-badge ai">🤖 KI</span>';
+        } else if (method === 'learned') {
+          methodBadge = '<span class="method-badge learned">✅ Gelernt</span>';
+        } else {
+          methodBadge = '<span class="method-badge rule">📋 Regel</span>';
+        }
 
-        html += `<tr>
-          <td><strong>${inv.rechnungsnummer || '-'}</strong><br><small>${inv.datum || ''}</small></td>
-          <td>${inv.rechnungsaussteller || 'Unbekannt'}</td>
-          <td style="text-align:right;">${(parseFloat(inv.betrag_brutto) || 0).toLocaleString('de-DE', {minimumFractionDigits: 2})} €</td>
-          <td>
-            <select class="account-select" data-idx="${idx}" onchange="markChanged(this)">
-              ${accountsList.map(a => `<option value="${a.account}" ${a.account === sug.account ? 'selected' : ''}>${a.account} - ${a.name}</option>`).join('')}
-            </select>
-          </td>
-          <td>
-            <span class="confidence-badge confidence-${confClass}">${conf.toFixed(0)}%</span>
-            <span class="method-badge ${methodClass}">${method}</span>
-          </td>
-        </tr>`;
+        const vendorInitial = (inv.rechnungsaussteller || 'U')[0].toUpperCase();
+        const amount = parseFloat(inv.betrag_brutto) || 0;
+        const amountClass = amount > 1000 ? 'large' : '';
+
+        html += `
+          <tr class="${inv.selected ? 'selected' : ''}" data-idx="${idx}">
+            <td>
+              <input type="checkbox" class="invoice-checkbox" ${inv.selected ? 'checked' : ''} onchange="toggleRow(${idx}, this)">
+            </td>
+            <td>
+              <div class="invoice-info">
+                <strong>${inv.rechnungsnummer || 'Ohne Nr.'}</strong>
+                <small>${inv.datum || 'Kein Datum'}</small>
+              </div>
+            </td>
+            <td>
+              <div class="vendor-cell">
+                <div class="vendor-avatar">${vendorInitial}</div>
+                <span class="vendor-name">${inv.rechnungsaussteller || 'Unbekannt'}</span>
+              </div>
+            </td>
+            <td class="amount-cell ${amountClass}">
+              ${amount.toLocaleString('de-DE', {minimumFractionDigits: 2})} €
+            </td>
+            <td>
+              <div class="account-select-wrapper">
+                <select class="account-select ${method.includes('llm') ? 'ai-suggested' : ''}" 
+                        data-idx="${idx}" 
+                        onchange="markChanged(this)">
+                  ${accountsList.map(a => `
+                    <option value="${a.account}" ${a.account === sug.account ? 'selected' : ''}>
+                      ${a.account} - ${a.name}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+            </td>
+            <td>
+              <div class="confidence-cell">
+                <div class="confidence-bar-wrapper">
+                  <div class="confidence-bar">
+                    <div class="confidence-bar-fill ${confClass}" style="width: ${conf}%"></div>
+                  </div>
+                  <span class="confidence-text ${confClass}">${conf.toFixed(0)}%</span>
+                </div>
+                ${methodBadge}
+              </div>
+            </td>
+          </tr>
+        `;
       });
 
       html += '</tbody></table>';
       container.innerHTML = html;
+    }
 
-      document.getElementById('action-bar').style.display = 'flex';
-      document.getElementById('stats-text').textContent = 
-        `${currentInvoices.length} Rechnungen · ${total.toLocaleString('de-DE', {minimumFractionDigits: 2})} € Gesamt`;
+    function updateStats() {
+      const total = currentInvoices.reduce((s, i) => s + (parseFloat(i.betrag_brutto) || 0), 0);
+      const avgConf = currentInvoices.reduce((s, i) => s + ((i.suggestion?.suggested?.confidence || 0) * 100), 0) / currentInvoices.length;
+      const aiCount = currentInvoices.filter(i => (i.suggestion?.method || '').includes('llm')).length;
+      const learnedCount = currentInvoices.filter(i => i.suggestion?.method === 'learned').length;
+
+      document.getElementById('stat-invoices').textContent = currentInvoices.length;
+      document.getElementById('stat-total').textContent = total.toLocaleString('de-DE', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ' €';
+      document.getElementById('stat-confidence').textContent = avgConf.toFixed(0) + '%';
+      document.getElementById('stat-ai').textContent = aiCount;
+      document.getElementById('stat-learned').textContent = learnedCount;
+
+      updateSelectionInfo();
+    }
+
+    function showAiInsights() {
+      const panel = document.getElementById('ai-insights');
+      panel.classList.add('visible');
+
+      const avgConf = currentInvoices.reduce((s, i) => s + ((i.suggestion?.suggested?.confidence || 0) * 100), 0) / currentInvoices.length;
+      const categories = [...new Set(currentInvoices.map(i => i.suggestion?.suggested?.account).filter(Boolean))].length;
+      const vendors = [...new Set(currentInvoices.map(i => i.rechnungsaussteller).filter(Boolean))].length;
+      const learned = currentInvoices.filter(i => i.suggestion?.method === 'learned').length;
+
+      document.getElementById('insight-accuracy').textContent = avgConf.toFixed(0) + '%';
+      document.getElementById('insight-categories').textContent = categories;
+      document.getElementById('insight-vendors').textContent = vendors;
+      document.getElementById('insight-learned').textContent = learned;
+    }
+
+    function toggleAll(checkbox) {
+      currentInvoices.forEach((inv, idx) => {
+        inv.selected = checkbox.checked;
+      });
+      renderTable();
+      updateSelectionInfo();
+    }
+
+    function toggleRow(idx, checkbox) {
+      currentInvoices[idx].selected = checkbox.checked;
+      updateSelectionInfo();
+    }
+
+    function updateSelectionInfo() {
+      const selected = currentInvoices.filter(i => i.selected);
+      const total = selected.reduce((s, i) => s + (parseFloat(i.betrag_brutto) || 0), 0);
+      
+      document.getElementById('selection-count').textContent = `${selected.length} ausgewählt`;
+      document.getElementById('selection-total').textContent = `${total.toLocaleString('de-DE', {minimumFractionDigits: 2})} € Summe`;
     }
 
     function markChanged(select) {
+      select.classList.remove('ai-suggested');
       select.classList.add('changed');
-      const idx = select.dataset.idx;
+      const idx = parseInt(select.dataset.idx);
       currentInvoices[idx].selectedAccount = select.value;
     }
 
     async function saveAll() {
       const changed = currentInvoices.filter(i => i.selectedAccount);
-      if (!changed.length) return alert('Keine Änderungen zum Speichern');
-
-      for (const inv of changed) {
-        await fetch('/api/accounting/learn', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ invoice: inv, account: inv.selectedAccount })
-        });
+      if (!changed.length) {
+        showToast('Keine Änderungen zum Speichern', 'error');
+        return;
       }
 
-      alert(`${changed.length} Kontierungen gespeichert!`);
-      document.querySelectorAll('.account-select.changed').forEach(s => {
-        s.classList.remove('changed');
-        s.classList.add('learned');
-      });
+      try {
+        for (const inv of changed) {
+          await fetch('/api/accounting/learn', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ invoice: inv, account: inv.selectedAccount })
+          });
+        }
+
+        document.querySelectorAll('.account-select.changed').forEach(s => {
+          s.classList.remove('changed');
+          s.classList.add('learned');
+        });
+
+        showToast(`${changed.length} Kontierungen gespeichert`, 'success');
+      } catch (err) {
+        showToast('Fehler beim Speichern: ' + err.message, 'error');
+      }
     }
 
     function exportDATEV() {
       if (!currentJobId) return;
       window.location.href = `/api/job/${currentJobId}/export/datev`;
+      showToast('DATEV-Export gestartet', 'success');
     }
 
-    function exportSEPA() {
-      document.getElementById('sepa-modal').style.display = 'block';
+    function exportExcel() {
+      if (!currentJobId) return;
+      window.location.href = `/api/job/${currentJobId}/export/excel`;
+      showToast('Excel-Export gestartet', 'success');
+    }
+
+    function openSepaModal() {
+      document.getElementById('sepa-modal').classList.add('visible');
     }
 
     function closeSepaModal() {
-      document.getElementById('sepa-modal').style.display = 'none';
+      document.getElementById('sepa-modal').classList.remove('visible');
     }
 
     async function generateSEPA() {
@@ -355,7 +1158,10 @@
       const iban = document.getElementById('sepa-iban').value.replace(/\s/g, '');
       const bic = document.getElementById('sepa-bic').value;
 
-      if (!name || !iban) return alert('Name und IBAN erforderlich');
+      if (!name || !iban) {
+        showToast('Name und IBAN erforderlich', 'error');
+        return;
+      }
 
       try {
         const res = await fetch(`/api/job/${currentJobId}/export/sepa`, {
@@ -366,7 +1172,7 @@
 
         if (!res.ok) {
           const err = await res.json();
-          return alert('Fehler: ' + (err.error || 'Unbekannt'));
+          throw new Error(err.error || 'Unbekannter Fehler');
         }
 
         const blob = await res.blob();
@@ -377,14 +1183,23 @@
         a.click();
 
         closeSepaModal();
+        showToast('SEPA-XML generiert', 'success');
       } catch (err) {
-        alert('Fehler: ' + err.message);
+        showToast('Fehler: ' + err.message, 'error');
       }
     }
+
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast visible ' + type;
+      setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 3000);
+    }
   </script>
-<!-- SBS Chat Widget -->
-<link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
-<script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
-<script src="/static/js/app-shell.js"></script>
+  <link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
+  <script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
+  <script src="/static/js/app-shell.js"></script>
 </body>
 </html>
