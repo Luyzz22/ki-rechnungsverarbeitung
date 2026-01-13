@@ -1,780 +1,877 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Rechnung 2025 Pflicht | XRechnung & ZUGFeRD Software | SBS Deutschland</title>
-    <meta name="description" content="Ab 2025 gilt die E-Rechnungspflicht für B2B. Mit SBS Invoice verarbeiten Sie XRechnung, ZUGFeRD und EN16931 konform. Jetzt kostenlos testen!">
-    <meta name="keywords" content="E-Rechnung 2025, XRechnung, ZUGFeRD, E-Rechnungspflicht, EN16931, elektronische Rechnung, B2B Rechnung">
-    <link rel="canonical" href="https://invoice.sbs-deutschland.de/e-rechnung-2025">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-Rechnung 2025 Pflicht | XRechnung & ZUGFeRD Software | SBS Deutschland</title>
+  <meta name="description" content="Ab 2025 gilt die E-Rechnungspflicht für B2B. Mit SBS Invoice verarbeiten Sie XRechnung, ZUGFeRD und EN16931 konform. Jetzt kostenlos testen!">
+  <meta name="keywords" content="E-Rechnung 2025, XRechnung, ZUGFeRD, E-Rechnungspflicht, EN16931, elektronische Rechnung, B2B Rechnung">
+  <link rel="canonical" href="https://app.sbsdeutschland.com/e-rechnung-2025">
+  <link rel="icon" href="/static/favicon.ico">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="E-Rechnung 2025 - Sind Sie bereit?">
+  <meta property="og:description" content="Die E-Rechnungspflicht kommt. Automatisieren Sie jetzt Ihre Rechnungsverarbeitung mit KI.">
+  <meta property="og:type" content="website">
+  
+  <link rel="stylesheet" href="/static/css/design-tokens.css">
+  <style>
+    :root {
+      --sbs-blue: #003856;
+      --sbs-yellow: #FFB900;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-600: #4b5563;
+      --gray-900: #111827;
+    }
     
-    <!-- Open Graph -->
-    <meta property="og:title" content="E-Rechnung 2025 - Sind Sie bereit?">
-    <meta property="og:description" content="Die E-Rechnungspflicht kommt. Automatisieren Sie jetzt Ihre Rechnungsverarbeitung mit KI.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://invoice.sbs-deutschland.de/e-rechnung-2025">
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--gray-900); }
     
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <style>
-        :root {
-            --sbs-blue: #003856;
-            --sbs-yellow: #FFB900;
-            --sbs-light: #f8f9fa;
-            --gradient-primary: linear-gradient(135deg, #003856 0%, #00537d 100%);
-        }
-        
-        body { font-family: 'Segoe UI', system-ui, sans-serif; }
-        
-        /* Hero Section */
-        .hero-section {
-            background: var(--gradient-primary);
-            color: white;
-            padding: 100px 0 80px;
-            position: relative;
-            overflow: hidden;
-        }
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            top: 0; right: 0; bottom: 0; left: 0;
-            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-            opacity: 0.5;
-        }
-        .hero-badge {
-            background: var(--sbs-yellow);
-            color: var(--sbs-blue);
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            display: inline-block;
-            margin-bottom: 1.5rem;
-        }
-        .hero-title {
-            font-size: 3.5rem;
-            font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-        }
-        .hero-subtitle {
-            font-size: 1.3rem;
-            opacity: 0.9;
-            margin-bottom: 2rem;
-            max-width: 600px;
-        }
-        
-        /* CTA Buttons */
-        .btn-cta {
-            padding: 1rem 2rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-radius: 8px;
-            transition: all 0.3s;
-        }
-        .btn-cta-primary {
-            background: var(--sbs-yellow);
-            color: var(--sbs-blue);
-            border: none;
-        }
-        .btn-cta-primary:hover {
-            background: #e6a800;
-            color: var(--sbs-blue);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255,185,0,0.4);
-        }
-        .btn-cta-outline {
-            background: transparent;
-            color: white;
-            border: 2px solid white;
-        }
-        .btn-cta-outline:hover {
-            background: white;
-            color: var(--sbs-blue);
-        }
-        
-        /* Countdown */
-        .countdown-section {
-            background: #dc3545;
-            color: white;
-            padding: 1.5rem 0;
-        }
-        .countdown-item {
-            text-align: center;
-            padding: 0 1.5rem;
-        }
-        .countdown-number {
-            font-size: 2.5rem;
-            font-weight: 800;
-        }
-        .countdown-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-        
-        /* Features Section */
-        .features-section {
-            padding: 80px 0;
-            background: white;
-        }
-        .section-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--sbs-blue);
-            margin-bottom: 1rem;
-        }
-        .section-subtitle {
-            font-size: 1.1rem;
-            color: #6c757d;
-            max-width: 700px;
-            margin: 0 auto 3rem;
-        }
-        .feature-card {
-            background: white;
-            border-radius: 16px;
-            padding: 2rem;
-            height: 100%;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            transition: all 0.3s;
-            border: 1px solid #eee;
-        }
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.12);
-        }
-        .feature-icon {
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, #e8f4fc 0%, #d1e9f6 100%);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.5rem;
-        }
-        .feature-icon i {
-            font-size: 1.8rem;
-            color: var(--sbs-blue);
-        }
-        .feature-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--sbs-blue);
-            margin-bottom: 0.75rem;
-        }
-        
-        /* Compliance Section */
-        .compliance-section {
-            background: var(--sbs-light);
-            padding: 80px 0;
-        }
-        .format-badge {
-            background: white;
-            border: 2px solid #dee2e6;
-            border-radius: 12px;
-            padding: 1.5rem;
-            text-align: center;
-            transition: all 0.3s;
-        }
-        .format-badge:hover {
-            border-color: var(--sbs-blue);
-            box-shadow: 0 4px 20px rgba(0,56,86,0.1);
-        }
-        .format-badge.supported {
-            border-color: #28a745;
-            background: linear-gradient(135deg, #f8fff8 0%, #e8f5e9 100%);
-        }
-        .format-badge i.bi-check-circle-fill { color: #28a745; }
-        
-        /* Timeline */
-        .timeline-section {
-            padding: 80px 0;
-            background: white;
-        }
-        .timeline {
-            position: relative;
-            padding: 2rem 0;
-        }
-        .timeline::before {
-            content: '';
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 4px;
-            height: 100%;
-            background: linear-gradient(to bottom, var(--sbs-blue), var(--sbs-yellow));
-            border-radius: 4px;
-        }
-        .timeline-item {
-            position: relative;
-            margin-bottom: 3rem;
-        }
-        .timeline-content {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            width: 45%;
-        }
-        .timeline-item:nth-child(odd) .timeline-content { margin-left: auto; }
-        .timeline-item:nth-child(even) .timeline-content { margin-right: auto; }
-        .timeline-date {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--sbs-blue);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            top: 1rem;
-        }
-        .timeline-item.active .timeline-date {
-            background: var(--sbs-yellow);
-            color: var(--sbs-blue);
-        }
-        
-        /* Pricing Teaser */
-        .pricing-section {
-            background: var(--gradient-primary);
-            color: white;
-            padding: 80px 0;
-        }
-        .pricing-card {
-            background: white;
-            border-radius: 16px;
-            padding: 2.5rem;
-            color: #333;
-            text-align: center;
-        }
-        .pricing-card.featured {
-            transform: scale(1.05);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        .price-tag {
-            font-size: 3rem;
-            font-weight: 800;
-            color: var(--sbs-blue);
-        }
-        .price-tag span {
-            font-size: 1rem;
-            font-weight: 400;
-            color: #6c757d;
-        }
-        
-        /* FAQ Section */
-        .faq-section {
-            padding: 80px 0;
-            background: var(--sbs-light);
-        }
-        .accordion-button:not(.collapsed) {
-            background: linear-gradient(135deg, #e8f4fc 0%, #d1e9f6 100%);
-            color: var(--sbs-blue);
-        }
-        .accordion-button:focus {
-            box-shadow: none;
-            border-color: var(--sbs-blue);
-        }
-        
-        /* Footer CTA */
-        .footer-cta {
-            background: var(--sbs-blue);
-            color: white;
-            padding: 60px 0;
-            text-align: center;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .hero-title { font-size: 2.2rem; }
-            .timeline::before { left: 20px; }
-            .timeline-content { width: calc(100% - 50px); margin-left: 50px !important; }
-            .timeline-date { left: 20px; transform: translateX(-50%); }
-            .pricing-card.featured { transform: none; }
-        }
-    </style>
+    /* Enterprise Header */
+    .sbs-header {
+      background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+    }
+    .sbs-header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 70px;
+    }
+    .sbs-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .sbs-logo-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+    .sbs-logo-text {
+      display: flex;
+      flex-direction: column;
+    }
+    .sbs-logo-text strong {
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .sbs-logo-text span {
+      color: rgba(255,255,255,0.7);
+      font-size: 0.75rem;
+    }
+    .sbs-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sbs-nav-item {
+      color: rgba(255,255,255,0.9);
+      text-decoration: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .sbs-nav-item:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .sbs-nav-dropdown {
+      position: relative;
+    }
+    .sbs-nav-dropdown-btn {
+      color: rgba(255,255,255,0.9);
+      background: none;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .sbs-nav-dropdown-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .sbs-nav-dropdown-btn .chevron {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.2s;
+    }
+    .sbs-nav-dropdown.open .chevron {
+      transform: rotate(180deg);
+    }
+    .sbs-nav-dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      min-width: 280px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      padding: 12px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(10px);
+      transition: all 0.2s;
+    }
+    .sbs-nav-dropdown.open .sbs-nav-dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(8px);
+    }
+    .sbs-dropdown-section {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--gray-600);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 8px 12px 4px;
+    }
+    .sbs-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      color: var(--gray-900);
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      transition: all 0.15s;
+    }
+    .sbs-dropdown-item:hover {
+      background: var(--gray-100);
+    }
+    .sbs-dropdown-item .emoji {
+      font-size: 1.1rem;
+    }
+    .sbs-dropdown-divider {
+      height: 1px;
+      background: var(--gray-200);
+      margin: 8px 0;
+    }
+    .sbs-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sbs-btn-login {
+      color: rgba(255,255,255,0.9);
+      text-decoration: none;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .sbs-btn-login:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .sbs-btn-cta {
+      background: var(--sbs-yellow);
+      color: var(--sbs-blue);
+      text-decoration: none;
+      padding: 10px 24px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .sbs-btn-cta:hover {
+      background: #e5a600;
+      transform: translateY(-1px);
+    }
+    .sbs-burger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+    }
+    .sbs-burger span {
+      width: 24px;
+      height: 2px;
+      background: #fff;
+      border-radius: 2px;
+    }
+    
+    /* Hero Section */
+    .hero-section {
+      background: linear-gradient(135deg, #003856 0%, #00537d 100%);
+      color: white;
+      padding: 80px 24px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 0.5;
+    }
+    .hero-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-badge {
+      background: var(--sbs-yellow);
+      color: var(--sbs-blue);
+      padding: 0.5rem 1.5rem;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: inline-block;
+      margin-bottom: 1.5rem;
+    }
+    .hero-title {
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+    }
+    .hero-subtitle {
+      font-size: 1.2rem;
+      opacity: 0.9;
+      margin-bottom: 2rem;
+      max-width: 600px;
+    }
+    .btn-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      background: var(--sbs-yellow);
+      color: var(--sbs-blue);
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover {
+      background: #e5a600;
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.3);
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    /* Countdown */
+    .countdown-section {
+      background: #dc2626;
+      color: #fff;
+      padding: 30px 24px;
+      text-align: center;
+    }
+    .countdown-inner {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .countdown-title {
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+    .countdown-grid {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+    }
+    .countdown-item {
+      text-align: center;
+    }
+    .countdown-value {
+      font-size: 2.5rem;
+      font-weight: 800;
+    }
+    .countdown-label {
+      font-size: 0.8rem;
+      opacity: 0.9;
+      text-transform: uppercase;
+    }
+    
+    /* Section Styles */
+    .section {
+      padding: 80px 24px;
+    }
+    .section-gray {
+      background: var(--gray-50);
+    }
+    .section-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .section-header {
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto 48px;
+    }
+    .section-header h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .section-header p {
+      color: var(--gray-600);
+      font-size: 1.1rem;
+    }
+    
+    /* Feature Grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+    }
+    .feature-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      transition: all 0.3s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+    }
+    .feature-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--sbs-blue) 0%, #00507a 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+    .feature-card h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .feature-card p {
+      color: var(--gray-600);
+      line-height: 1.6;
+    }
+    
+    /* Format Grid */
+    .format-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .format-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .format-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+    .format-card h3 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .format-card p {
+      color: var(--gray-600);
+      font-size: 0.95rem;
+    }
+    .format-badge {
+      display: inline-block;
+      background: #10b981;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-top: 12px;
+    }
+    
+    /* Timeline */
+    .timeline {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .timeline-item {
+      display: flex;
+      gap: 24px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .timeline-item:last-child {
+      border-bottom: none;
+    }
+    .timeline-date {
+      flex-shrink: 0;
+      width: 120px;
+      font-weight: 700;
+      color: var(--sbs-blue);
+    }
+    .timeline-content h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .timeline-content p {
+      color: var(--gray-600);
+    }
+    
+    /* CTA Section */
+    .cta-section {
+      background: linear-gradient(135deg, #003856 0%, #00537d 100%);
+      color: #fff;
+      padding: 80px 24px;
+      text-align: center;
+    }
+    .cta-inner {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .cta-section h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .cta-section p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      margin-bottom: 32px;
+    }
+    
+    /* Footer */
+    .sbs-footer {
+      background: #001a2c;
+      color: rgba(255,255,255,0.7);
+      padding: 60px 24px 30px;
+    }
+    .sbs-footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .sbs-footer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+    .sbs-footer-col h4 {
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .sbs-footer-col a {
+      display: block;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 6px 0;
+      transition: color 0.2s;
+    }
+    .sbs-footer-col a:hover {
+      color: #fff;
+    }
+    .sbs-footer-bottom {
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.85rem;
+    }
+    
+    /* Responsive */
+    @media (max-width: 900px) {
+      .sbs-nav, .sbs-header-actions { display: none; }
+      .sbs-burger { display: flex; }
+      .hero-title { font-size: 2.2rem; }
+      .countdown-grid { gap: 16px; }
+      .countdown-value { font-size: 1.8rem; }
+    }
+  </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark" style="background: var(--sbs-blue);">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/">
-                <i class="bi bi-receipt me-2"></i>SBS Invoice
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="#features">Funktionen</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#timeline">Timeline</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#pricing">Preise</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
-                    <li class="nav-item ms-lg-3">
-                        <a class="btn btn-cta-primary" href="/demo">
-                            <i class="bi bi-play-circle me-1"></i>Demo testen
-                        </a>
-                    </li>
-                </ul>
-            </div>
+
+<!-- Enterprise Header -->
+<header class="sbs-header">
+  <div class="sbs-header-inner">
+    <a href="/sbshomepage/" class="sbs-logo-wrap">
+      <div class="sbs-logo-icon">🏢</div>
+      <div class="sbs-logo-text">
+        <strong>SBS Deutschland</strong>
+        <span>KI-Lösungen · Weinheim</span>
+      </div>
+    </a>
+    
+    <button class="sbs-burger" id="sbsBurger" aria-label="Menü öffnen">
+      <span></span><span></span><span></span>
+    </button>
+    
+    <nav class="sbs-nav" id="sbsNav">
+      <!-- Produkte Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          Produkte
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <div class="sbs-dropdown-section">KI-Plattformen</div>
+          <a href="/static/landing/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
+          <a href="/loesungen/vertragsanalyse/" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">Rechnungs-Features</div>
+          <a href="https://app.sbsdeutschland.com/copilot" class="sbs-dropdown-item"><span class="emoji">🤖</span> Finance Copilot</a>
+          <a href="https://app.sbsdeutschland.com/accounting" class="sbs-dropdown-item"><span class="emoji">📊</span> Auto-Kontierung</a>
+          <a href="https://app.sbsdeutschland.com/budget" class="sbs-dropdown-item"><span class="emoji">💰</span> Budget-Dashboard</a>
+          <a href="https://app.sbsdeutschland.com/zahlungen" class="sbs-dropdown-item"><span class="emoji">💳</span> Zahlungsmanagement</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">Vertrags-Features</div>
+          <a href="https://contract.sbsdeutschland.com/upload" class="sbs-dropdown-item"><span class="emoji">📄</span> Vertragsanalyse</a>
+          <a href="https://contract.sbsdeutschland.com/compare" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Vertragsvergleich</a>
+          <a href="https://contract.sbsdeutschland.com/library" class="sbs-dropdown-item"><span class="emoji">📚</span> Klausel-Bibliothek</a>
         </div>
+      </div>
+      
+      <!-- Lösungen Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          Lösungen
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <div class="sbs-dropdown-section">KI-Rechnungen</div>
+          <a href="/static/landing/loesungen-steuerberater.html" class="sbs-dropdown-item"><span class="emoji">📋</span> Für Steuerberater</a>
+          <a href="/static/landing/loesungen-finanzleitung.html" class="sbs-dropdown-item"><span class="emoji">💼</span> Für CFOs & Finanzleitung</a>
+          <a href="/static/landing/loesungen-handel-filialnetz.html" class="sbs-dropdown-item"><span class="emoji">🏪</span> Für Handel & Filialnetz</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">KI-Verträge</div>
+          <a href="/loesungen/vertragsanalyse/kanzleien.html" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Für Kanzleien & Notare</a>
+          <a href="/loesungen/vertragsanalyse/hr.html" class="sbs-dropdown-item"><span class="emoji">👔</span> Für HR-Abteilungen</a>
+          <a href="/loesungen/vertragsanalyse/einkauf.html" class="sbs-dropdown-item"><span class="emoji">🛒</span> Für Einkauf & Beschaffung</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">Consulting</div>
+          <a href="/sbshomepage/sap-consulting.html" class="sbs-dropdown-item"><span class="emoji">📊</span> SAP Consulting</a>
+          <a href="/sbshomepage/it-consulting.html" class="sbs-dropdown-item"><span class="emoji">💻</span> IT Consulting</a>
+          <a href="/sbshomepage/quality-risk-management.html" class="sbs-dropdown-item"><span class="emoji">🎯</span> Quality & Risk</a>
+        </div>
+      </div>
+      
+      <!-- Preise Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          💰 Preise
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <a href="/static/preise/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
+          <a href="/loesungen/vertragsanalyse/preise.html" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
+          <div class="sbs-dropdown-divider"></div>
+          <a href="/static/preise/#bundle" class="sbs-dropdown-item" style="color: #8b5cf6; font-weight: 600;"><span class="emoji">🎁</span> Bundle-Angebot (20% sparen)</a>
+        </div>
+      </div>
+      
+      <!-- Ressourcen Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          Ressourcen
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <a href="/static/landing/ressourcen.html" class="sbs-dropdown-item"><span class="emoji">📚</span> Dokumentation</a>
+          <a href="/static/landing/integrationen.html" class="sbs-dropdown-item"><span class="emoji">🔗</span> Integrationen</a>
+          <a href="/static/landing/security.html" class="sbs-dropdown-item"><span class="emoji">🔒</span> Sicherheit</a>
+          <div class="sbs-dropdown-divider"></div>
+          <a href="/static/landing/kunden.html" class="sbs-dropdown-item"><span class="emoji">⭐</span> Kunden & Referenzen</a>
+          <a href="/static/landing/support.html" class="sbs-dropdown-item"><span class="emoji">💬</span> Support</a>
+          <a href="/sbshomepage/kontakt.html" class="sbs-dropdown-item"><span class="emoji">✉️</span> Kontakt</a>
+        </div>
+      </div>
+      
+      <!-- Unternehmen -->
+      <a href="/sbshomepage/unternehmen.html" class="sbs-nav-item">🏢 Über uns</a>
     </nav>
+    
+    <div class="sbs-header-actions">
+      <a href="https://app.sbsdeutschland.com/login" class="sbs-btn-login">Login</a>
+      <a href="https://app.sbsdeutschland.com/demo" class="sbs-btn-cta">Kostenlos testen</a>
+    </div>
+  </div>
+</header>
 
-    <!-- Hero Section -->
-    <section class="hero-section">
-        <div class="container position-relative">
-            <div class="row align-items-center">
-                <div class="col-lg-7">
-                    <span class="hero-badge">
-                        <i class="bi bi-exclamation-triangle me-1"></i>PFLICHT AB 2025
-                    </span>
-                    <h1 class="hero-title">
-                        E-Rechnung 2025:<br>
-                        <span style="color: var(--sbs-yellow);">Sind Sie bereit?</span>
-                    </h1>
-                    <p class="hero-subtitle">
-                        Ab Januar 2025 müssen alle deutschen Unternehmen elektronische Rechnungen 
-                        empfangen können. Mit SBS Invoice automatisieren Sie XRechnung, ZUGFeRD 
-                        und alle EN16931-konformen Formate – powered by KI.
-                    </p>
-                    <div class="d-flex flex-wrap gap-3">
-                        <a href="/demo" class="btn btn-cta btn-cta-primary">
-                            <i class="bi bi-rocket-takeoff me-2"></i>Jetzt kostenlos starten
-                        </a>
-                        <a href="#features" class="btn btn-cta btn-cta-outline">
-                            <i class="bi bi-arrow-down me-2"></i>Mehr erfahren
-                        </a>
-                    </div>
-                    
-                    <!-- Trust Badges -->
-                    <div class="mt-4 pt-3">
-                        <span class="me-4 opacity-75"><i class="bi bi-shield-check me-1"></i>DSGVO-konform</span>
-                        <span class="me-4 opacity-75"><i class="bi bi-patch-check me-1"></i>GoBD-zertifiziert</span>
-                        <span class="opacity-75"><i class="bi bi-buildings me-1"></i>Made in Germany</span>
-                    </div>
-                </div>
-                <div class="col-lg-5 d-none d-lg-block text-center">
-                    <div style="background: rgba(255,255,255,0.1); border-radius: 20px; padding: 2rem;">
-                        <i class="bi bi-file-earmark-check" style="font-size: 8rem; color: var(--sbs-yellow);"></i>
-                        <div class="mt-3">
-                            <span class="badge bg-success fs-6 me-2">XRechnung ✓</span>
-                            <span class="badge bg-success fs-6">ZUGFeRD ✓</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="hero-inner">
+    <span class="hero-badge">⚡ E-RECHNUNGSPFLICHT 2025</span>
+    <h1 class="hero-title">Die E-Rechnung ist da.<br>Sind Sie bereit?</h1>
+    <p class="hero-subtitle">Seit dem 1. Januar 2025 gilt die E-Rechnungspflicht für B2B in Deutschland. Mit SBS Invoice verarbeiten Sie XRechnung, ZUGFeRD und alle EN16931-Formate automatisch.</p>
+    <div class="btn-row">
+      <a href="https://app.sbsdeutschland.com/register" class="btn-primary">Jetzt kostenlos starten →</a>
+      <a href="#formate" class="btn-secondary">Unterstützte Formate</a>
+    </div>
+  </div>
+</section>
+
+<!-- Countdown -->
+<section class="countdown-section">
+  <div class="countdown-inner">
+    <div class="countdown-title">🚨 Die E-Rechnungspflicht ist bereits in Kraft seit:</div>
+    <div class="countdown-grid">
+      <div class="countdown-item">
+        <div class="countdown-value" id="days">0</div>
+        <div class="countdown-label">Tagen</div>
+      </div>
+      <div class="countdown-item">
+        <div class="countdown-value" id="hours">0</div>
+        <div class="countdown-label">Stunden</div>
+      </div>
+      <div class="countdown-item">
+        <div class="countdown-value" id="minutes">0</div>
+        <div class="countdown-label">Minuten</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Was ist E-Rechnung -->
+<section class="section">
+  <div class="section-inner">
+    <div class="section-header">
+      <h2>Was bedeutet die E-Rechnungspflicht?</h2>
+      <p>Ab 2025 müssen alle B2B-Unternehmen in Deutschland elektronische Rechnungen empfangen und verarbeiten können.</p>
+    </div>
+    
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h3>Pflicht ab 01.01.2025</h3>
+        <p>Alle Unternehmen müssen E-Rechnungen empfangen können. Die Übergangsfristen für den Versand enden schrittweise bis 2028.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔄</div>
+        <h3>Strukturierte Formate</h3>
+        <p>XRechnung und ZUGFeRD sind die in Deutschland gängigen Formate. Beide basieren auf dem europäischen Standard EN16931.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚖️</div>
+        <h3>Gesetzliche Grundlage</h3>
+        <p>Das Wachstumschancengesetz verpflichtet alle B2B-Unternehmen zur elektronischen Rechnungsstellung.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Unterstützte Formate -->
+<section class="section section-gray" id="formate">
+  <div class="section-inner">
+    <div class="section-header">
+      <h2>Alle E-Rechnungsformate unterstützt</h2>
+      <p>SBS Invoice verarbeitet automatisch alle gängigen E-Rechnungsformate – ohne manuelle Konfiguration.</p>
+    </div>
+    
+    <div class="format-grid">
+      <div class="format-card">
+        <div class="format-icon">🇩🇪</div>
+        <h3>XRechnung</h3>
+        <p>Der deutsche Standard für Rechnungen an öffentliche Auftraggeber</p>
+        <span class="format-badge">✓ Vollständig unterstützt</span>
+      </div>
+      <div class="format-card">
+        <div class="format-icon">📄</div>
+        <h3>ZUGFeRD 2.x</h3>
+        <p>Hybrides Format: PDF mit eingebetteten XML-Daten</p>
+        <span class="format-badge">✓ Vollständig unterstützt</span>
+      </div>
+      <div class="format-card">
+        <div class="format-icon">🇪🇺</div>
+        <h3>EN16931</h3>
+        <p>Europäischer Standard für elektronische Rechnungen</p>
+        <span class="format-badge">✓ Vollständig unterstützt</span>
+      </div>
+      <div class="format-card">
+        <div class="format-icon">🌍</div>
+        <h3>Factur-X</h3>
+        <p>Französisches Pendant zu ZUGFeRD</p>
+        <span class="format-badge">✓ Vollständig unterstützt</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Timeline -->
+<section class="section">
+  <div class="section-inner">
+    <div class="section-header">
+      <h2>Zeitplan der E-Rechnungspflicht</h2>
+      <p>Die Einführung erfolgt in mehreren Stufen</p>
+    </div>
+    
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-date">01.01.2025</div>
+        <div class="timeline-content">
+          <h3>Empfangspflicht</h3>
+          <p>Alle Unternehmen müssen E-Rechnungen empfangen und verarbeiten können.</p>
         </div>
-    </section>
-
-    <!-- Countdown -->
-    <section class="countdown-section">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-auto">
-                    <div class="d-flex align-items-center">
-                        <span class="me-4 fw-bold"><i class="bi bi-alarm me-2"></i>E-Rechnungspflicht gilt seit:</span>
-                        <div class="countdown-item">
-                            <div class="countdown-number" id="days">—</div>
-                            <div class="countdown-label">Tage</div>
-                        </div>
-                        <div class="countdown-item">
-                            <div class="countdown-number" id="hours">—</div>
-                            <div class="countdown-label">Stunden</div>
-                        </div>
-                        <div class="countdown-item">
-                            <div class="countdown-number" id="minutes">—</div>
-                            <div class="countdown-label">Minuten</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-date">01.01.2027</div>
+        <div class="timeline-content">
+          <h3>Versandpflicht (größere Unternehmen)</h3>
+          <p>Unternehmen mit >800.000€ Vorjahresumsatz müssen E-Rechnungen versenden.</p>
         </div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="features-section" id="features">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="section-title">Alles für Ihre E-Rechnungen</h2>
-                <p class="section-subtitle">
-                    Von der automatischen Erkennung bis zum DATEV-Export – 
-                    SBS Invoice deckt den kompletten Workflow ab.
-                </p>
-            </div>
-            
-            <div class="row g-4">
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="bi bi-cpu"></i>
-                        </div>
-                        <h3 class="feature-title">KI-Extraktion</h3>
-                        <p class="text-muted">
-                            GPT-4 powered OCR erkennt automatisch alle Rechnungsdaten – 
-                            auch aus komplexen PDFs und Scans mit 98%+ Genauigkeit.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="bi bi-file-earmark-code"></i>
-                        </div>
-                        <h3 class="feature-title">XRechnung & ZUGFeRD</h3>
-                        <p class="text-muted">
-                            Native Unterstützung für alle E-Rechnungsformate. 
-                            Import, Validierung und Export nach EN16931-Standard.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="bi bi-check2-square"></i>
-                        </div>
-                        <h3 class="feature-title">Freigabe-Workflow</h3>
-                        <p class="text-muted">
-                            Mehrstufige Freigabeprozesse mit automatischer Zuweisung 
-                            nach Beträgen. 4-Augen-Prinzip für Compliance.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="bi bi-box-arrow-up-right"></i>
-                        </div>
-                        <h3 class="feature-title">DATEV Export</h3>
-                        <p class="text-muted">
-                            Ein-Klick-Export für DATEV Unternehmen Online und 
-                            Rechnungswesen. SKR03/SKR04 mit automatischer Kontierung.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="bi bi-shield-check"></i>
-                        </div>
-                        <h3 class="feature-title">GoBD-Archivierung</h3>
-                        <p class="text-muted">
-                            Revisionssichere Speicherung aller Belege. 
-                            Vollständiger Audit-Trail und Unveränderbarkeit.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="bi bi-graph-up-arrow"></i>
-                        </div>
-                        <h3 class="feature-title">Finance Copilot</h3>
-                        <p class="text-muted">
-                            KI-Assistent für Finanzanalysen. Fragen Sie nach 
-                            Ausgaben, Trends und erhalten Sie sofortige Insights.
-                        </p>
-                    </div>
-                </div>
-            </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-date">01.01.2028</div>
+        <div class="timeline-content">
+          <h3>Vollständige Pflicht</h3>
+          <p>Alle B2B-Unternehmen müssen E-Rechnungen versenden.</p>
         </div>
-    </section>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <!-- Compliance Formats -->
-    <section class="compliance-section">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="section-title">Unterstützte Formate</h2>
-                <p class="section-subtitle">
-                    Vollständige Kompatibilität mit allen relevanten E-Rechnungsstandards
-                </p>
-            </div>
-            
-            <div class="row g-4 justify-content-center">
-                <div class="col-6 col-md-4 col-lg-2">
-                    <div class="format-badge supported">
-                        <i class="bi bi-check-circle-fill fs-3 d-block mb-2"></i>
-                        <strong>XRechnung</strong>
-                        <div class="small text-muted">3.0</div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-4 col-lg-2">
-                    <div class="format-badge supported">
-                        <i class="bi bi-check-circle-fill fs-3 d-block mb-2"></i>
-                        <strong>ZUGFeRD</strong>
-                        <div class="small text-muted">2.1 / 2.2</div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-4 col-lg-2">
-                    <div class="format-badge supported">
-                        <i class="bi bi-check-circle-fill fs-3 d-block mb-2"></i>
-                        <strong>Factur-X</strong>
-                        <div class="small text-muted">1.0</div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-4 col-lg-2">
-                    <div class="format-badge supported">
-                        <i class="bi bi-check-circle-fill fs-3 d-block mb-2"></i>
-                        <strong>EN16931</strong>
-                        <div class="small text-muted">CII/UBL</div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-4 col-lg-2">
-                    <div class="format-badge supported">
-                        <i class="bi bi-check-circle-fill fs-3 d-block mb-2"></i>
-                        <strong>PDF</strong>
-                        <div class="small text-muted">+ OCR</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+<!-- CTA Section -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <h2>Jetzt E-Rechnung-ready werden</h2>
+    <p>Starten Sie kostenlos und verarbeiten Sie Ihre ersten E-Rechnungen in Minuten. Keine Kreditkarte erforderlich.</p>
+    <a href="https://app.sbsdeutschland.com/register" class="btn-primary">Kostenlos starten →</a>
+  </div>
+</section>
 
-    <!-- Timeline Section -->
-    <section class="timeline-section" id="timeline">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="section-title">E-Rechnungspflicht Timeline</h2>
-                <p class="section-subtitle">
-                    Die wichtigsten Meilensteine der deutschen E-Rechnungspflicht
-                </p>
-            </div>
-            
-            <div class="timeline">
-                <div class="timeline-item active">
-                    <span class="timeline-date">01.01.2025</span>
-                    <div class="timeline-content">
-                        <h5 class="fw-bold text-danger">Empfangspflicht</h5>
-                        <p class="mb-0 text-muted">
-                            Alle Unternehmen müssen E-Rechnungen empfangen und verarbeiten können. 
-                            <strong>Das gilt JETZT!</strong>
-                        </p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <span class="timeline-date">01.01.2027</span>
-                    <div class="timeline-content">
-                        <h5 class="fw-bold">Versandpflicht (>800k€)</h5>
-                        <p class="mb-0 text-muted">
-                            Unternehmen mit >800.000€ Vorjahresumsatz müssen E-Rechnungen versenden.
-                        </p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <span class="timeline-date">01.01.2028</span>
-                    <div class="timeline-content">
-                        <h5 class="fw-bold">Vollständige Pflicht</h5>
-                        <p class="mb-0 text-muted">
-                            Alle B2B-Rechnungen müssen elektronisch als E-Rechnung übermittelt werden.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+<!-- Footer -->
+<footer class="sbs-footer">
+  <div class="sbs-footer-inner">
+    <div class="sbs-footer-grid">
+      <div class="sbs-footer-col">
+        <h4>Produkte</h4>
+        <a href="/static/landing/">KI-Rechnungsverarbeitung</a>
+        <a href="https://contract.sbsdeutschland.com/">KI-Vertragsanalyse</a>
+        <a href="/e-rechnung-2025">E-Rechnung 2025</a>
+      </div>
+      <div class="sbs-footer-col">
+        <h4>Ressourcen</h4>
+        <a href="/static/landing/ressourcen.html">Dokumentation</a>
+        <a href="/static/landing/integrationen.html">Integrationen</a>
+        <a href="/static/landing/security.html">Sicherheit</a>
+      </div>
+      <div class="sbs-footer-col">
+        <h4>Unternehmen</h4>
+        <a href="/sbshomepage/unternehmen.html">Über uns</a>
+        <a href="/sbshomepage/kontakt.html">Kontakt</a>
+        <a href="/static/landing/support.html">Support</a>
+      </div>
+      <div class="sbs-footer-col">
+        <h4>Rechtliches</h4>
+        <a href="/sbshomepage/impressum.html">Impressum</a>
+        <a href="/sbshomepage/datenschutz.html">Datenschutz</a>
+        <a href="/sbshomepage/agb.html">AGB</a>
+      </div>
+    </div>
+    <div class="sbs-footer-bottom">
+      <span>© 2025 SBS Deutschland GmbH & Co. KG</span>
+      <span>Made with ❤️ in Weinheim</span>
+    </div>
+  </div>
+</footer>
 
-    <!-- Pricing Teaser -->
-    <section class="pricing-section" id="pricing">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="text-white" style="font-size: 2.5rem; font-weight: 700;">Transparent & Fair</h2>
-                <p class="text-white opacity-75" style="font-size: 1.1rem;">
-                    Keine versteckten Kosten. Monatlich kündbar.
-                </p>
-            </div>
-            
-            <div class="row g-4 justify-content-center">
-                <div class="col-md-6 col-lg-4">
-                    <div class="pricing-card">
-                        <h4 class="fw-bold mb-3">Starter</h4>
-                        <div class="price-tag mb-3">69€ <span>/Monat</span></div>
-                        <ul class="list-unstyled text-start mb-4">
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>50 Rechnungen/Monat</li>
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>KI-Extraktion</li>
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>XRechnung & ZUGFeRD</li>
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>DATEV Export</li>
-                            <li class="text-muted"><i class="bi bi-x me-2"></i>Freigabe-Workflow</li>
-                        </ul>
-                        <a href="/demo" class="btn btn-outline-primary w-100">Demo starten</a>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="pricing-card featured">
-                        <span class="badge bg-warning text-dark mb-2">BELIEBT</span>
-                        <h4 class="fw-bold mb-3">Professional</h4>
-                        <div class="price-tag mb-3">179€ <span>/Monat</span></div>
-                        <ul class="list-unstyled text-start mb-4">
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>200 Rechnungen/Monat</li>
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Alles aus Starter</li>
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Freigabe-Workflow</li>
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Finance Copilot</li>
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Priority Support</li>
-                        </ul>
-                        <a href="/demo" class="btn btn-primary w-100">Demo starten</a>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="pricing-card">
-                        <h4 class="fw-bold mb-3">Enterprise</h4>
-                        <div class="price-tag mb-3">449€+ <span>/Monat</span></div>
-                        <ul class="list-unstyled text-start mb-4">
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Unbegrenzte Rechnungen</li>
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Alles aus Professional</li>
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>API-Zugang</li>
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>SSO / SAML</li>
-                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Dedicated Support</li>
-                        </ul>
-                        <a href="/kontakt" class="btn btn-outline-primary w-100">Kontakt</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+<script>
+// Dropdown Toggle
+function toggleDropdown(btn) {
+  var wasOpen = btn.parentElement.classList.contains('open');
+  document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d) {
+    d.classList.remove('open');
+  });
+  if (!wasOpen) {
+    btn.parentElement.classList.add('open');
+  }
+  event.stopPropagation();
+}
 
-    <!-- FAQ Section -->
-    <section class="faq-section" id="faq">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="section-title">Häufige Fragen</h2>
-            </div>
-            
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="accordion" id="faqAccordion">
-                        <div class="accordion-item border-0 mb-3">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button rounded" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                                    Was ist die E-Rechnungspflicht 2025?
-                                </button>
-                            </h2>
-                            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body">
-                                    Ab dem 1. Januar 2025 müssen alle Unternehmen in Deutschland 
-                                    elektronische Rechnungen im strukturierten Format (XRechnung, ZUGFeRD) 
-                                    empfangen und verarbeiten können. Das betrifft alle B2B-Transaktionen.
-                                </div>
-                            </div>
-                        </div>
-                        <div class="accordion-item border-0 mb-3">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed rounded" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                                    Was ist der Unterschied zwischen XRechnung und ZUGFeRD?
-                                </button>
-                            </h2>
-                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body">
-                                    <strong>XRechnung</strong> ist ein reines XML-Format ohne visuelle Darstellung.<br>
-                                    <strong>ZUGFeRD</strong> kombiniert ein PDF für Menschen mit eingebetteten XML-Daten 
-                                    für Maschinen. Beide basieren auf dem EU-Standard EN16931.
-                                </div>
-                            </div>
-                        </div>
-                        <div class="accordion-item border-0 mb-3">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed rounded" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                                    Kann ich weiterhin PDF-Rechnungen verarbeiten?
-                                </button>
-                            </h2>
-                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body">
-                                    Ja! SBS Invoice verarbeitet sowohl E-Rechnungen (XRechnung, ZUGFeRD) als auch 
-                                    klassische PDFs. Unsere KI extrahiert automatisch alle relevanten Daten – 
-                                    unabhängig vom Format.
-                                </div>
-                            </div>
-                        </div>
-                        <div class="accordion-item border-0 mb-3">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed rounded" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
-                                    Wie funktioniert der DATEV-Export?
-                                </button>
-                            </h2>
-                            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body">
-                                    Mit einem Klick exportieren Sie alle freigegebenen Rechnungen im DATEV-Format 
-                                    (EXTF/CSV oder XML). Die Buchungssätze werden automatisch mit den richtigen 
-                                    Konten (SKR03/SKR04) und Steuerschlüsseln erstellt.
-                                </div>
-                            </div>
-                        </div>
-                        <div class="accordion-item border-0">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed rounded" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
-                                    Ist meine Daten sicher?
-                                </button>
-                            </h2>
-                            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body">
-                                    Absolut. Alle Daten werden auf deutschen Servern gespeichert (ISO 27001), 
-                                    verschlüsselt übertragen (TLS 1.3) und entsprechen der DSGVO. 
-                                    Die GoBD-konforme Archivierung garantiert Revisionssicherheit.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+// Close dropdowns on outside click
+document.addEventListener('click', function() {
+  document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d) {
+    d.classList.remove('open');
+  });
+});
 
-    <!-- Footer CTA -->
-    <section class="footer-cta">
-        <div class="container">
-            <h2 class="mb-3" style="font-size: 2rem;">Bereit für die E-Rechnung?</h2>
-            <p class="mb-4 opacity-75">Starten Sie jetzt kostenlos und erleben Sie die Zukunft der Rechnungsverarbeitung.</p>
-            <a href="/demo" class="btn btn-cta btn-cta-primary btn-lg">
-                <i class="bi bi-rocket-takeoff me-2"></i>Kostenlos testen
-            </a>
-        </div>
-    </section>
+// Countdown
+function updateCountdown() {
+  var pflichtStart = new Date('2025-01-01T00:00:00');
+  var now = new Date();
+  var diff = now - pflichtStart;
+  
+  if (diff > 0) {
+    var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    document.getElementById('days').textContent = days;
+    document.getElementById('hours').textContent = hours;
+    document.getElementById('minutes').textContent = minutes;
+  }
+}
 
-    <!-- Footer -->
-    <footer class="py-4" style="background: #001f33; color: rgba(255,255,255,0.7);">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <p class="mb-0">© 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <a href="/impressum" class="text-white-50 me-3">Impressum</a>
-                    <a href="/datenschutz" class="text-white-50 me-3">Datenschutz</a>
-                    <a href="/agb" class="text-white-50">AGB</a>
-                </div>
-            </div>
-        </div>
-    </footer>
+updateCountdown();
+setInterval(updateCountdown, 60000);
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Countdown (Zeit seit 01.01.2025)
-        function updateCountdown() {
-            const pflichtStart = new Date('2025-01-01T00:00:00');
-            const now = new Date();
-            const diff = now - pflichtStart;
-            
-            if (diff > 0) {
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                
-                document.getElementById('days').textContent = days;
-                document.getElementById('hours').textContent = hours;
-                document.getElementById('minutes').textContent = minutes;
-            }
-        }
-        
-        updateCountdown();
-        setInterval(updateCountdown, 60000);
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+  anchor.addEventListener('click', function(e) {
+    e.preventDefault();
+    document.querySelector(this.getAttribute('href')).scrollIntoView({
+      behavior: 'smooth'
+    });
+  });
+});
+</script>
 
-        // Smooth scroll
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
-                });
-            });
-        });
-    </script>
 </body>
 </html>
