@@ -1,887 +1,371 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
   <title>Finance Copilot · SBS KI-Rechnungsverarbeitung</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="icon" href="/static/favicon.ico" />
-  <link rel="stylesheet" href="/static/css/design-tokens.css" />
-  <link rel="stylesheet" href="/static/css/components.css" />
-  <link rel="stylesheet" href="/static/css/main.css" />
-  <link rel="stylesheet" href="/static/css/app-shell.css" />
-
-  <style>
-    /* Kompakter App-Hero */
-    .hero-compact {
-      background: linear-gradient(135deg, #003856 0%, #004d73 55%, #021019 100%);
-      color: white;
-      padding: 48px 24px 40px;
-    }
-    .hero-compact-inner {
-      max-width: 1180px;
-      margin: 0 auto;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 24px;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .hero-kicker {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      font-size: 0.75rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-    .hero-kicker-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: radial-gradient(circle, #22d3ee, #0ea5e9);
-      box-shadow: 0 0 12px rgba(56,189,248,0.8);
-    }
-    .hero-title {
-      font-size: 2.4rem;
-      margin: 16px 0 8px;
-    }
-    .hero-subtitle {
-      margin: 0;
-      max-width: 540px;
-      font-size: 1rem;
-      opacity: 0.9;
-    }
-    .hero-meta-row {
-      margin-top: 16px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      font-size: 0.8rem;
-      opacity: 0.9;
-    }
-    .hero-meta-pill {
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.55);
-      background: rgba(15,23,42,0.55);
-    }
-
-    /* Layout der Copilot-Seite */
-    .copilot-main {
-      padding: 32px 24px 60px;
-      background: #f3f4f6;
-    }
-    .copilot-layout {
-      max-width: 1180px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr);
-      gap: 24px;
-      align-items: flex-start;
-    }
-    @media (max-width: 960px) {
-      .copilot-layout {
-        grid-template-columns: minmax(0,1fr);
-      }
-    }
-
-    .copilot-card {
-      background: #ffffff;
-      border-radius: 18px;
-      box-shadow: 0 10px 30px rgba(15,23,42,0.08);
-      padding: 20px 20px 16px;
-    }
-    .copilot-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    .copilot-card-title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: #0f172a;
-    }
-    .copilot-card-subtitle {
-      font-size: 0.8rem;
-      color: #6b7280;
-      margin-top: 2px;
-    }
-
-    /* Chatbereich */
-    .copilot-chat-shell {
-      background:
-        radial-gradient(circle at top left, rgba(56,189,248,0.12), transparent 55%),
-        radial-gradient(circle at bottom right, rgba(248,113,22,0.12), transparent 55%),
-        #020617;
-      border-radius: 18px;
-      padding: 16px 16px 10px;
-      color: #e5e7eb;
-      border: 1px solid rgba(148,163,184,0.35);
-      box-shadow: 0 22px 60px rgba(15,23,42,0.75);
-    }
-    .copilot-chat-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-    .copilot-chat-title {
-      font-size: 0.95rem;
-      font-weight: 600;
-    }
-    .copilot-chat-status {
-      font-size: 0.75rem;
-      color: #9ca3af;
-      text-align: right;
-    }
-
-    .copilot-controls-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .copilot-select,
-    .copilot-tag-select {
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.6);
-      background: rgba(15,23,42,0.9);
-      color: #e5e7eb;
-      padding: 5px 10px;
-      font-size: 0.75rem;
-    }
-
-    .copilot-prompt-chips {
-      margin-bottom: 8px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .copilot-prompt-chip {
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.5);
-      background: rgba(15,23,42,0.85);
-      padding: 4px 9px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #e5e7eb;
-    }
-    .copilot-prompt-chip span {
-      opacity: 0.75;
-      font-size: 0.8em;
-    }
-    .copilot-prompt-chip:hover {
-      border-color: #38bdf8;
-      background: rgba(15,23,42,0.95);
-    }
-
-    .copilot-messages {
-      border-radius: 14px;
-      background: rgba(15,23,42,0.9);
-      border: 1px solid rgba(15,23,42,0.9);
-      padding: 10px 12px;
-      max-height: 340px;
-      overflow-y: auto;
-      font-size: 0.85rem;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .copilot-message {
-      display: flex;
-      gap: 8px;
-    }
-    .copilot-avatar {
-      width: 24px;
-      height: 24px;
-      border-radius: 999px;
-      display: grid;
-      place-items: center;
-      font-size: 0.8rem;
-      flex-shrink: 0;
-    }
-    .copilot-avatar-user {
-      background: rgba(148,163,184,0.25);
-    }
-    .copilot-avatar-ai {
-      background: radial-gradient(circle at 30% 0%, #f97316, #0f172a);
-      box-shadow: 0 0 14px rgba(248,113,22,0.7);
-    }
-    .copilot-bubble {
-      padding: 8px 10px;
-      border-radius: 10px;
-      max-width: 100%;
-      line-height: 1.4;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-    .copilot-bubble-user {
-      background: rgba(15,23,42,0.8);
-    }
-    .copilot-bubble-ai {
-      background: rgba(15,23,42,0.96);
-      border: 1px solid rgba(148,163,184,0.4);
-    }
-    .copilot-bubble-meta {
-      margin-top: 4px;
-      font-size: 0.72rem;
-      color: #9ca3af;
-    }
-    .copilot-message-tags {
-      margin-top: 4px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      font-size: 0.7rem;
-    }
-    .copilot-tag-pill {
-      padding: 2px 7px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.5);
-      background: rgba(15,23,42,0.9);
-    }
-    .copilot-typing {
-      font-size: 0.8rem;
-      color: #9ca3af;
-    }
-
-    .copilot-form-row {
-      margin-top: 8px;
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-    .copilot-input {
-      flex: 1;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.7);
-      background: rgba(15,23,42,0.95);
-      color: #e5e7eb;
-      padding: 8px 12px;
-      font-size: 0.8rem;
-    }
-    .copilot-input::placeholder {
-      color: #6b7280;
-    }
-    .copilot-send-btn {
-      border-radius: 999px;
-      border: none;
-      padding: 8px 14px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      background: linear-gradient(135deg,#22c55e,#14b8a6);
-      color: #f9fafb;
-      cursor: pointer;
-      box-shadow: 0 10px 24px rgba(5,150,105,0.5);
-    }
-    .copilot-send-btn:disabled {
-      opacity: 0.5;
-      cursor: default;
-      box-shadow: none;
-    }
-
-    .copilot-error {
-      margin-top: 6px;
-      font-size: 0.75rem;
-      color: #fecaca;
-    }
-
-    /* Seitenleiste mit KPIs */
-    .copilot-side-kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: 10px;
-      margin-top: 8px;
-    }
-    .copilot-side-kpi {
-      border-radius: 12px;
-      padding: 10px 12px;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-    }
-    .copilot-side-kpi-label {
-      font-size: 0.7rem;
-      color: #6b7280;
-      margin-bottom: 4px;
-    }
-    .copilot-side-kpi-value {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: #111827;
-    }
-    .copilot-side-kpi-foot {
-      font-size: 0.7rem;
-      color: #9ca3af;
-      margin-top: 2px;
-    }
-
-    .copilot-side-list {
-      margin-top: 10px;
-      border-radius: 12px;
-      padding: 10px 12px;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-    }
-    .copilot-side-list h4 {
-      margin: 0 0 6px;
-      font-size: 0.8rem;
-      color: #111827;
-    }
-    .copilot-side-list ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      font-size: 0.8rem;
-      color: #4b5563;
-    }
-    .copilot-side-list li {
-      padding: 4px 0;
-      display: flex;
-      justify-content: space-between;
-      gap: 6px;
-    }
-    .copilot-side-list span {
-      white-space: nowrap;
-    }
-
-    .copilot-footnote {
-      margin-top: 10px;
-      font-size: 0.7rem;
-      color: #6b7280;
-    }
-
-    @media (max-width: 720px) {
-      .hero-compact-inner {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-    }
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/css/design-tokens.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="stylesheet" href="/static/css/app-shell.css">
   
-/* --- Copilot: lange Fragen in Listen umbrechen, damit sie in der Box bleiben --- */
-li {
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-wrap: break-word;
-}
-
-
-/* --- Fix: Empfohlene Fragen sollen in der Box bleiben --- */
-.copilot-suggestions {
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.copilot-suggestions ul {
-  padding-left: 1.3rem;
-  margin: 12px 0 0 0;
-}
-
-.copilot-suggestions li {
-  margin-bottom: 6px;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  white-space: normal;       /* globales nowrap übersteuern */
-  overflow-wrap: anywhere;   /* lange Wörter umbrechen */
-  word-break: normal;
-}
-
-</style>
-<style>
-/* --- Fix: Empfohlene Fragen sollen sauber in der Box umbrechen --- */
-h2 + ul,
-h3 + ul,
-h4 + ul {
-  max-width: 100%;
-}
-
-h2 + ul li,
-h3 + ul li,
-h4 + ul li {
-  white-space: normal !important;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-</style>
+  <style>
+    /* Enterprise Copilot Design */
+    .copilot-main { padding: 32px 24px 60px; background: #f1f5f9; min-height: calc(100vh - 200px); }
+    .copilot-layout { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
+    @media (max-width: 960px) { .copilot-layout { grid-template-columns: 1fr; } }
+    
+    /* Chat Card */
+    .chat-card { background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,56,86,0.1); overflow: hidden; display: flex; flex-direction: column; height: 620px; }
+    .chat-header { background: linear-gradient(135deg, #003856, #004d73); color: white; padding: 20px 24px; display: flex; align-items: center; gap: 16px; }
+    .chat-header-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.15); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .chat-header-info h2 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+    .chat-header-info p { margin: 4px 0 0; font-size: 0.85rem; opacity: 0.85; }
+    .chat-header-controls { margin-left: auto; display: flex; gap: 8px; }
+    .chat-header-select { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; }
+    .chat-header-select option { background: #003856; color: white; }
+    
+    /* Messages Area */
+    .chat-messages { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; background: #f8fafc; }
+    .message { max-width: 85%; padding: 14px 18px; border-radius: 18px; line-height: 1.6; font-size: 0.95rem; }
+    .message-user { align-self: flex-end; background: #003856; color: white; border-bottom-right-radius: 6px; }
+    .message-assistant { align-self: flex-start; background: white; color: #1e293b; border: 1px solid #e2e8f0; border-bottom-left-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .message-meta { font-size: 0.75rem; color: #64748b; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0; }
+    .message-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .message-tag { font-size: 0.7rem; padding: 3px 8px; background: #f1f5f9; border-radius: 999px; color: #475569; }
+    
+    /* Typing Indicator */
+    .message-typing { display: flex; gap: 6px; padding: 16px 20px; }
+    .message-typing span { width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; animation: typing 1.4s infinite; }
+    .message-typing span:nth-child(2) { animation-delay: 0.2s; }
+    .message-typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-6px); opacity: 1; } }
+    
+    /* Input Area */
+    .chat-input-area { padding: 16px 20px; background: white; border-top: 1px solid #e2e8f0; }
+    .chat-input-wrapper { display: flex; gap: 12px; align-items: flex-end; }
+    .chat-input { flex: 1; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 14px; font-size: 0.95rem; resize: none; min-height: 50px; max-height: 120px; font-family: inherit; transition: border-color 0.2s; }
+    .chat-input:focus { outline: none; border-color: #003856; }
+    .chat-send-btn { width: 50px; height: 50px; border: none; background: linear-gradient(135deg, #003856, #004d73); color: white; border-radius: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, box-shadow 0.2s; }
+    .chat-send-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,56,86,0.3); }
+    .chat-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    /* Sidebar */
+    .sidebar-card { background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); overflow: hidden; }
+    .sidebar-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+    .sidebar-content { padding: 16px; }
+    
+    /* KPI Grid */
+    .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .kpi-item { background: #f8fafc; border-radius: 12px; padding: 14px; border: 1px solid #e2e8f0; }
+    .kpi-label { font-size: 0.75rem; color: #64748b; margin-bottom: 4px; }
+    .kpi-value { font-size: 1.1rem; font-weight: 700; color: #003856; }
+    .kpi-foot { font-size: 0.7rem; color: #94a3b8; margin-top: 2px; }
+    
+    /* Top Vendors List */
+    .vendor-list { margin-top: 12px; }
+    .vendor-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+    .vendor-item:last-child { border-bottom: none; }
+    .vendor-name { font-size: 0.85rem; color: #1e293b; font-weight: 500; }
+    .vendor-amount { font-size: 0.85rem; color: #003856; font-weight: 600; }
+    
+    /* Quick Actions */
+    .quick-actions { display: flex; flex-direction: column; gap: 8px; }
+    .quick-action { padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.85rem; color: #475569; cursor: pointer; text-align: left; transition: all 0.2s; display: flex; align-items: center; gap: 10px; }
+    .quick-action:hover { background: #003856; color: white; border-color: #003856; }
+    .quick-action-icon { font-size: 1.1rem; }
+    
+    /* Welcome Message */
+    .welcome-message { text-align: center; padding: 50px 30px; color: #64748b; }
+    .welcome-message h3 { color: #1e293b; margin-bottom: 12px; font-size: 1.3rem; }
+    .welcome-message p { max-width: 400px; margin: 0 auto 24px; line-height: 1.6; }
+    .welcome-suggestions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .welcome-suggestion { padding: 10px 16px; background: white; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
+    .welcome-suggestion:hover { background: #003856; color: white; border-color: #003856; }
+    
+    /* Hero Section */
+    .hero-compact { background: linear-gradient(135deg, #003856 0%, #004d73 55%, #021019 100%); color: white; padding: 32px 24px; }
+    .hero-compact .container { max-width: 1200px; margin: 0 auto; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: rgba(15,23,42,0.7); border: 1px solid rgba(148,163,184,0.6); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; }
+    .hero-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 12px rgba(34,211,238,0.6); }
+    .hero-compact h1 { font-size: 2rem; margin: 12px 0 8px; }
+    .hero-compact p { opacity: 0.9; max-width: 600px; }
+  </style>
 </head>
 <body>
 
-{% include 'partials/header.html' %}<section class="hero-compact">
-  <div class="hero-compact-inner">
-    <div>
-      <div class="hero-kicker">
-        <span class="hero-kicker-dot"></span>
-        <span>FINANCE COPILOT · CFO VIEW</span>
+{% include 'partials/header.html' %}
+
+<div class="hero-compact">
+  <div class="container">
+    <div class="hero-badge"><span class="dot"></span> FINANCE COPILOT</div>
+    <h1>💰 Finance Copilot</h1>
+    <p>Ihr KI-Assistent für Ausgabenanalyse, Cash-Flow-Fragen und CFO-Insights basierend auf Ihren verarbeiteten Rechnungen.</p>
+  </div>
+</div>
+
+<div class="copilot-main">
+  <div class="copilot-layout">
+    <!-- Chat Card -->
+    <div class="chat-card">
+      <div class="chat-header">
+        <div class="chat-header-icon">💰</div>
+        <div class="chat-header-info">
+          <h2>Finance Copilot</h2>
+          <p>Powered by GPT-4 · Finanzexperte</p>
+        </div>
+        <div class="chat-header-controls">
+          <select id="copilot-days" class="chat-header-select">
+            <option value="90">90 Tage</option>
+            <option value="180">6 Monate</option>
+            <option value="365" selected>12 Monate</option>
+            <option value="730">24 Monate</option>
+          </select>
+        </div>
       </div>
-      <h1 class="hero-title">Fragen an Ihre Zahlen. Antworten in CFO-Qualität.</h1>
-      <p class="hero-subtitle">
-        Der Finance Copilot verbindet Ihre verarbeiteten Belegdaten mit generativer KI –
-        für spontane Ad-hoc-Fragen, Board-Vorlagen und Deep-Dives in Ihre Ausgabenstruktur.
-      </p>
-      <div class="hero-meta-row">
-        <span class="hero-meta-pill">Nutzen: nur bereits verarbeitete Rechnungen</span>
-        <span class="hero-meta-pill">Fokus: Cash-Flow, Lieferanten, Fälligkeiten, Budget</span>
+      
+      <div class="chat-messages" id="chatMessages">
+        <div class="welcome-message" id="welcomeMessage">
+          <h3>👋 Willkommen beim Finance Copilot!</h3>
+          <p>Ich analysiere Ihre verarbeiteten Rechnungen und beantworte Fragen zu Ausgaben, Lieferanten und Cash-Flow.</p>
+          <div class="welcome-suggestions">
+            <div class="welcome-suggestion" onclick="askQuestion('Gib mir einen CFO-Überblick über unsere Ausgaben')">📊 CFO-Überblick</div>
+            <div class="welcome-suggestion" onclick="askQuestion('Welche Lieferanten verursachen die höchsten Kosten?')">🏭 Top Lieferanten</div>
+            <div class="welcome-suggestion" onclick="askQuestion('Zeig mir Auffälligkeiten bei Zahlungszielen und Skonto')">💳 Zahlungsziele</div>
+            <div class="welcome-suggestion" onclick="askQuestion('Wie haben sich unsere Ausgaben im Jahresvergleich entwickelt?')">📈 Jahrestrend</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="chat-input-area">
+        <div class="chat-input-wrapper">
+          <textarea class="chat-input" id="chatInput" placeholder="Fragen Sie etwas über Ihre Finanzdaten..." rows="1" onkeydown="handleKeyDown(event)"></textarea>
+          <button class="chat-send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <!-- KPIs -->
+      <div class="sidebar-card">
+        <div class="sidebar-header">📊 Finanz-Snapshot</div>
+        <div class="sidebar-content">
+          <div class="kpi-grid">
+            <div class="kpi-item">
+              <div class="kpi-label">Gesamtbetrag</div>
+              <div class="kpi-value" id="kpi-total">–</div>
+              <div class="kpi-foot">brutto</div>
+            </div>
+            <div class="kpi-item">
+              <div class="kpi-label">Rechnungen</div>
+              <div class="kpi-value" id="kpi-count">–</div>
+              <div class="kpi-foot">Anzahl</div>
+            </div>
+            <div class="kpi-item">
+              <div class="kpi-label">MwSt. gesamt</div>
+              <div class="kpi-value" id="kpi-vat">–</div>
+              <div class="kpi-foot">summiert</div>
+            </div>
+            <div class="kpi-item">
+              <div class="kpi-label">Ø pro Rechnung</div>
+              <div class="kpi-value" id="kpi-avg">–</div>
+              <div class="kpi-foot">Durchschnitt</div>
+            </div>
+          </div>
+          
+          <div class="vendor-list" id="vendorList">
+            <div style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">Laden...</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quick Actions -->
+      <div class="sidebar-card">
+        <div class="sidebar-header">⚡ Schnellanalysen</div>
+        <div class="sidebar-content">
+          <div class="quick-actions">
+            <button class="quick-action" onclick="askQuestion('Analysiere die Konzentration auf unsere Top-Lieferanten und zeige Risiken')">
+              <span class="quick-action-icon">🏭</span> Lieferanten-Konzentration
+            </button>
+            <button class="quick-action" onclick="askQuestion('Welche Skonti könnten wir besser nutzen?')">
+              <span class="quick-action-icon">💸</span> Skonto-Optimierung
+            </button>
+            <button class="quick-action" onclick="askQuestion('Zeig mir ungewöhnliche oder auffällige Rechnungen')">
+              <span class="quick-action-icon">⚠️</span> Anomalien erkennen
+            </button>
+            <button class="quick-action" onclick="askQuestion('Erstelle eine Zusammenfassung für das Board-Meeting')">
+              <span class="quick-action-icon">📋</span> Board-Summary
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-</section>
-
-<main class="copilot-main">
-  <div class="copilot-layout">
-
-    <!-- Chat-Seite -->
-    <section class="copilot-card">
-      <header class="copilot-card-header">
-        <div>
-          <div class="copilot-card-title">Finance Copilot</div>
-          <div class="copilot-card-subtitle">
-            Stellen Sie qualitative Fragen – der Copilot kombiniert Ihre Kennzahlen mit erklärenden Insights.
-          </div>
-        </div>
-      </header>
-
-      <div class="copilot-chat-shell">
-        <div class="copilot-chat-header">
-          <div class="copilot-chat-title">Unterhaltung</div>
-          <div class="copilot-chat-status" id="copilot-status">
-            Bereit. Datenstand basiert auf Ihren verarbeiteten Rechnungen.
-          </div>
-        </div>
-
-        <div class="copilot-controls-row">
-          <select id="copilot-days" class="copilot-select">
-            <option value="90">Zeitraum: letzte 90 Tage</option>
-            <option value="180">Letzte 6 Monate</option>
-            <option value="365" selected>Letzte 12 Monate</option>
-            <option value="730">Letzte 24 Monate</option>
-          </select>
-          <select id="copilot-focus" class="copilot-select">
-            <option value="">Fokus: automatisch</option>
-            <option value="cashflow">Cash-Flow & Liquidität</option>
-            <option value="suppliers">Lieferanten & Konzentration</option>
-            <option value="payment_terms">Zahlungsziele & Skonto</option>
-            <option value="budget">Budget-Abweichungen</option>
-          </select>
-        </div>
-
-        <div class="copilot-prompt-chips">
-          <button
-            type="button"
-            class="copilot-prompt-chip"
-            data-question="Gib mir einen kompakten CFO-Überblick über unsere Ausgaben der letzten 90 Tage – inkl. Top-Lieferanten, größten Kostenblöcken und auffälligen Trends."
-            data-days="90">
-            Kompakter CFO-Überblick <span>90 Tage</span>
-          </button>
-          <button
-            type="button"
-            class="copilot-prompt-chip"
-            data-question="Analysiere bitte die Konzentration unserer Ausgaben auf die Top-Lieferanten und nenne konkrete Prozentanteile und Risiken."
-            data-focus="suppliers">
-            Lieferanten-Konzentration
-          </button>
-          <button
-            type="button"
-            class="copilot-prompt-chip"
-            data-question="Zeig mir Auffälligkeiten bei Zahlungszielen, Skonto-Nutzung und überfälligen Rechnungen."
-            data-focus="payment_terms">
-            Zahlungsziele & Fälligkeiten
-          </button>
-          <button
-            type="button"
-            class="copilot-prompt-chip"
-            data-question="Stelle bitte die wichtigsten Kostenblöcke den Vorperioden gegenüber und markiere Ausreißer."
-            data-days="365">
-            Jahresvergleich & Ausreißer
-          </button>
-        </div>
-
-        <div id="copilot-messages" class="copilot-messages">
-          <div class="copilot-message">
-            <div class="copilot-avatar copilot-avatar-ai">AI</div>
-            <div class="copilot-bubble copilot-bubble-ai">
-              <div>
-                Willkommen! Ich kann Ihre verarbeiteten Rechnungsdaten entlang CFO-Fragestellungen
-                zusammenfassen – von „Where is the money going?“ bis hin zu Lieferantenrisiken
-                und Zahlungszielen.
-              </div>
-              <div class="copilot-bubble-meta">
-                Tipp: Starten Sie mit einem Zeitraum oben, z.&nbsp;B. „Letzte 12 Monate“, und
-                stellen Sie dann präzisere Fragen.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <form id="copilot-form" class="copilot-form-row">
-          <input
-            type="text"
-            id="copilot-input"
-            class="copilot-input"
-            placeholder="Frage an den Copilot – z.B. „Wie haben sich unsere Ausgaben nach Lieferanten in den letzten 6 Monaten entwickelt?“"
-            autocomplete="off"
-          />
-          <button type="submit" id="copilot-send-btn" class="copilot-send-btn" disabled>Senden</button>
-        </form>
-
-        <div id="copilot-error" class="copilot-error"></div>
-      </div>
-
-      <div class="copilot-footnote">
-        Der Copilot kombiniert Ihre aggregierten Kennzahlen (API: <code>/api/analytics/finance-snapshot</code>)
-        mit generativer Auswertung über <code>/api/copilot/finance/query</code>. Es werden
-        keine Rohbelege angezeigt, sondern nur Auswertungen.
-      </div>
-    </section>
-
-    <!-- Seitenleiste / Snapshot -->
-    <aside class="copilot-card">
-      <header class="copilot-card-header">
-        <div>
-          <div class="copilot-card-title">Aktueller Finanz-Snapshot</div>
-          <div class="copilot-card-subtitle">
-            Verdichtete Kennzahlen als Kontextbasis für den Copilot.
-          </div>
-        </div>
-      </header>
-
-      <div class="copilot-side-kpi-grid">
-        <div class="copilot-side-kpi">
-          <div class="copilot-side-kpi-label">Gesamtbetrag (brutto)</div>
-          <div class="copilot-side-kpi-value" id="side-total-gross">–</div>
-          <div class="copilot-side-kpi-foot">für gewählten Zeitraum</div>
-        </div>
-        <div class="copilot-side-kpi">
-          <div class="copilot-side-kpi-label">Rechnungen</div>
-          <div class="copilot-side-kpi-value" id="side-total-invoices">–</div>
-          <div class="copilot-side-kpi-foot">Anzahl Belege</div>
-        </div>
-        <div class="copilot-side-kpi">
-          <div class="copilot-side-kpi-label">MwSt. gesamt</div>
-          <div class="copilot-side-kpi-value" id="side-total-vat">–</div>
-          <div class="copilot-side-kpi-foot">summiert</div>
-        </div>
-        <div class="copilot-side-kpi">
-          <div class="copilot-side-kpi-label">Dubletten (heuristisch)</div>
-          <div class="copilot-side-kpi-value" id="side-duplicates">–</div>
-          <div class="copilot-side-kpi-foot">gleiche Nr. / Betrag</div>
-        </div>
-      </div>
-
-      <div class="copilot-side-list" style="margin-top: 14px;">
-        <h4>Top-Lieferanten nach Ausgaben</h4>
-        <ul id="side-top-vendors">
-          <li><span>–</span><span>–</span></li>
-        </ul>
-      </div>
-
-      <div class="copilot-side-list" style="margin-top: 10px;">
-        <h4>Empfohlene Fragen</h4>
-        <ul>
-          <li><span>•</span><span>„Wo liegen unsere größten Kostenblöcke im Zeitraum X?“</span></li>
-          <li><span>•</span><span>„Wie hoch ist die Abhängigkeit von den Top-3 Lieferanten?“</span></li>
-          <li><span>•</span><span>„Welche Ausgaben sind im Vergleich zum Vorjahr stark angestiegen?“</span></li>
-        </ul>
-      </div>
-    </aside>
-
-  </div>
-</main>
+</div>
 
 {% include 'partials/footer.html' %}
 
-<script src="/static/js/main.js"></script>
-
 <script>
-  // --- Helfer für Formatierung ---
-  function fmtCurrency(value) {
-    var number = value || 0;
-    try {
-      return new Intl.NumberFormat('de-DE', {
-        style: 'currency',
-        currency: 'EUR'
-      }).format(number);
-    } catch (e) {
-      return (Number(number).toFixed ? Number(number).toFixed(2) : number) + ' €';
+// Formatter
+function fmtCurrency(v) {
+  try { return new Intl.NumberFormat('de-DE', {style:'currency',currency:'EUR'}).format(v||0); }
+  catch(e) { return (v||0).toFixed(2) + ' €'; }
+}
+function fmtNumber(v) {
+  try { return new Intl.NumberFormat('de-DE').format(v||0); }
+  catch(e) { return String(v||0); }
+}
+
+let isLoading = false;
+let chatHistory = [];
+
+// Load Snapshot
+async function loadSnapshot() {
+  const days = document.getElementById('copilot-days').value || 365;
+  try {
+    const res = await fetch('/api/analytics/finance-snapshot?days=' + days);
+    const data = await res.json();
+    if (data && data.kpis) {
+      const k = data.kpis;
+      document.getElementById('kpi-total').textContent = fmtCurrency(k.total_gross);
+      document.getElementById('kpi-count').textContent = fmtNumber(k.total_invoices);
+      document.getElementById('kpi-vat').textContent = fmtCurrency(k.total_vat);
+      const avg = k.total_invoices > 0 ? k.total_gross / k.total_invoices : 0;
+      document.getElementById('kpi-avg').textContent = fmtCurrency(avg);
+      
+      // Top Vendors
+      const vendors = data.top_vendors || [];
+      const vendorList = document.getElementById('vendorList');
+      if (vendors.length > 0) {
+        vendorList.innerHTML = '<div style="font-size:0.8rem;font-weight:600;color:#1e293b;margin-bottom:8px;">Top Lieferanten</div>' +
+          vendors.slice(0,5).map(v => 
+            '<div class="vendor-item"><span class="vendor-name">' + (v.name||'Unbekannt') + '</span><span class="vendor-amount">' + fmtCurrency(v.total) + '</span></div>'
+          ).join('');
+      } else {
+        vendorList.innerHTML = '<div style="text-align:center;color:#64748b;font-size:0.85rem;padding:10px;">Keine Daten</div>';
+      }
     }
+  } catch(e) { console.error('Snapshot error', e); }
+}
+
+function handleKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function askQuestion(q) {
+  document.getElementById('chatInput').value = q;
+  sendMessage();
+}
+
+function addMessage(role, content, meta) {
+  const container = document.getElementById('chatMessages');
+  const welcome = document.getElementById('welcomeMessage');
+  if (welcome) welcome.remove();
+  
+  const div = document.createElement('div');
+  div.className = 'message message-' + role;
+  
+  let html = content.replace(/\n/g, '<br>');
+  if (meta) {
+    html += '<div class="message-meta">' + meta + '</div>';
   }
-  function fmtNumber(value) {
-    var number = value || 0;
-    try {
-      return new Intl.NumberFormat('de-DE').format(number);
-    } catch (e) {
-      return String(number);
-    }
-  }
+  div.innerHTML = html;
+  
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
 
-  // --- Snapshot für Seitenleiste laden ---
-  async function loadCopilotSnapshot(days) {
-    try {
-      var d = days || 365;
-      var resp = await fetch('/api/analytics/finance-snapshot?days=' + d);
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      var data = await resp.json();
-      if (!data || !data.kpis) return;
+function showTyping() {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'message message-assistant message-typing';
+  div.id = 'typingIndicator';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
 
-      var k = data.kpis;
-      var vendors = data.top_vendors || [];
+function hideTyping() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
 
-      var elGross = document.getElementById('side-total-gross');
-      var elInv   = document.getElementById('side-total-invoices');
-      var elVat   = document.getElementById('side-total-vat');
-      var elDup   = document.getElementById('side-duplicates');
-      var elTop   = document.getElementById('side-top-vendors');
-
-      if (elGross) elGross.textContent = fmtCurrency(k.total_gross);
-      if (elInv)   elInv.textContent   = fmtNumber(k.total_invoices);
-      if (elVat)   elVat.textContent   = fmtCurrency(k.total_vat);
-      if (elDup)   elDup.textContent   = fmtNumber(k.duplicates_count);
-
-      if (elTop) {
-        if (!vendors.length) {
-          elTop.innerHTML = '<li><span>–</span><span>Keine Daten im Zeitraum</span></li>';
-        } else {
-          elTop.innerHTML = vendors.slice(0,3).map(function(v, idx) {
-            var name = v.rechnungsaussteller || 'Unbekannt';
-            var amount = fmtCurrency(v.total_gross || 0);
-            return (
-              '<li><span>' + (idx+1) + '.</span><span style="flex:1;">' +
-              name +
-              '</span><span>' + amount + '</span></li>'
-            );
-          }).join('');
-        }
-      }
-    } catch (e) {
-      console.error('Snapshot error', e);
-    }
-  }
-
-  // --- Finance Copilot Logik (Vollbild) ---
-  (function() {
-    var form      = document.getElementById('copilot-form');
-    var input     = document.getElementById('copilot-input');
-    var daysSel   = document.getElementById('copilot-days');
-    var focusSel  = document.getElementById('copilot-focus');
-    var messages  = document.getElementById('copilot-messages');
-    var sendBtn   = document.getElementById('copilot-send-btn');
-    var statusBox = document.getElementById('copilot-status');
-    var errorBox  = document.getElementById('copilot-error');
-    var chips     = document.querySelectorAll('.copilot-prompt-chip');
-
-    if (!form || !input || !messages) return;
-
-    var isLoading = false;
-
-    function appendMessage(role, text, meta, tags) {
-      var msg = document.createElement('div');
-      msg.className = 'copilot-message';
-
-      var avatar = document.createElement('div');
-      avatar.className = 'copilot-avatar ' + (role === 'user'
-        ? 'copilot-avatar-user'
-        : 'copilot-avatar-ai');
-      avatar.textContent = role === 'user' ? 'DU' : 'AI';
-
-      var bubble = document.createElement('div');
-      bubble.className = 'copilot-bubble ' + (role === 'user'
-        ? 'copilot-bubble-user'
-        : 'copilot-bubble-ai');
-      bubble.textContent = text || '';
-
-      var metaEl = null;
-      if (meta) {
-        metaEl = document.createElement('div');
-        metaEl.className = 'copilot-bubble-meta';
-        metaEl.textContent = meta;
-      }
-
-      var tagsEl = null;
-      if (tags && tags.length) {
-        tagsEl = document.createElement('div');
-        tagsEl.className = 'copilot-message-tags';
-        tags.forEach(function(t) {
-          var pill = document.createElement('span');
-          pill.className = 'copilot-tag-pill';
-          pill.textContent = t;
-          tagsEl.appendChild(pill);
-        });
-      }
-
-      var right = document.createElement('div');
-      right.appendChild(bubble);
-      if (metaEl) right.appendChild(metaEl);
-      if (tagsEl) right.appendChild(tagsEl);
-
-      msg.appendChild(avatar);
-      msg.appendChild(right);
-
-      messages.appendChild(msg);
-      messages.scrollTop = messages.scrollHeight;
-    }
-
-    function setLoading(loading) {
-      isLoading = loading;
-      if (sendBtn) sendBtn.disabled = loading || !input.value.trim();
-      if (input) input.disabled = loading;
-      if (statusBox) {
-        statusBox.textContent = loading
-          ? 'Copilot analysiert Ihre Belegdaten …'
-          : 'Bereit. Datengrundlage: verarbeitete Rechnungen im gewählten Zeitraum.';
-      }
-    }
-
-    async function callCopilot(question, options) {
-      options = options || {};
-      var days  = options.days  || 365;
-      var focus = options.focus || '';
-
-      try {
-        errorBox.textContent = '';
-        setLoading(true);
-
-        appendMessage('user', question, null, [
-          'Zeitraum: ' + days + ' Tage',
-          focus ? ('Fokus: ' + focus) : 'Fokus: automatisch'
-        ]);
-
-        var body = {
-          question: question,
-          days: days
-        };
-        if (focus) {
-          body.focus = focus;
-        }
-
-        var resp = await fetch('/api/copilot/finance/query', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-
-        if (!resp.ok) {
-          throw new Error('HTTP ' + resp.status);
-        }
-        var data = await resp.json();
-        if (!data) {
-          throw new Error('Leere Antwort des Copilot-Endpunkts');
-        }
-
-        var answer = data.answer || 'Es liegt aktuell keine Antwort vor.';
-        var metaText = '';
-        var tags = [];
-
-        if (data.days || days) {
-          tags.push('Zeitraum: letzte ' + (data.days || days) + ' Tage');
-        }
-        if (data.focus || focus) {
-          tags.push('Fokus: ' + (data.focus || focus));
-        }
-
-        if (data.snapshot && data.snapshot.kpis) {
-          var k = data.snapshot.kpis;
-          metaText =
-            'Rechnungen: ' + fmtNumber(k.total_invoices || 0) +
-            ' · Brutto: ' + fmtCurrency(k.total_gross || 0) +
-            ' · MwSt.: ' + fmtCurrency(k.total_vat || 0);
-        }
-
-        appendMessage('assistant', answer, metaText, tags);
-
-        // Optionale neue Vorschläge rendern
-        // (falls Backend sie liefert – kompatibel mit deinem Analytics-Copilot)
-        if (Array.isArray(data.suggested_questions) && data.suggested_questions.length) {
-          // Wir hängen sie als kleine Zusatz-Botschaft an
-          var extra = 'Mögliche Folgefragen:\n- ' +
-            data.suggested_questions.join('\n- ');
-          appendMessage('assistant', extra, null, ['Folgefragen']);
-        }
-
-      } catch (e) {
-        console.error('Copilot error', e);
-        errorBox.textContent = 'Die Antwort konnte nicht geladen werden. Bitte erneut versuchen.';
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    form.addEventListener('submit', function(evt) {
-      evt.preventDefault();
-      if (!input || !input.value.trim() || isLoading) return;
-
-      var q = input.value.trim();
-      var days  = parseInt(daysSel && daysSel.value ? daysSel.value : '365', 10);
-      if (!days || isNaN(days)) days = 365;
-      var focus = focusSel && focusSel.value ? focusSel.value : '';
-
-      input.value = '';
-      callCopilot(q, { days: days, focus: focus });
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const btn = document.getElementById('sendBtn');
+  const message = input.value.trim();
+  if (!message || isLoading) return;
+  
+  const days = document.getElementById('copilot-days').value || 365;
+  
+  input.value = '';
+  input.disabled = true;
+  btn.disabled = true;
+  isLoading = true;
+  
+  addMessage('user', message);
+  chatHistory.push({role: 'user', content: message});
+  showTyping();
+  
+  try {
+    const res = await fetch('/api/copilot/finance/query', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ question: message, days: parseInt(days) })
     });
-
-    if (input) {
-      input.addEventListener('input', function() {
-        if (!sendBtn || isLoading) return;
-        sendBtn.disabled = !input.value.trim();
-      });
+    const data = await res.json();
+    hideTyping();
+    
+    if (data && data.answer) {
+      let meta = '';
+      if (data.snapshot && data.snapshot.kpis) {
+        const k = data.snapshot.kpis;
+        meta = 'Zeitraum: ' + (data.days || days) + ' Tage · ' +
+               fmtNumber(k.total_invoices) + ' Rechnungen · ' +
+               fmtCurrency(k.total_gross) + ' Brutto';
+      }
+      addMessage('assistant', data.answer, meta);
+      chatHistory.push({role: 'assistant', content: data.answer});
+      
+      // Show suggested questions
+      if (data.suggested_questions && data.suggested_questions.length > 0) {
+        const suggestions = data.suggested_questions.slice(0,3);
+        const suggestHtml = '<div style="margin-top:12px;"><strong>Mögliche Folgefragen:</strong><br>' +
+          suggestions.map(q => '• ' + q).join('<br>') + '</div>';
+        // Could add as follow-up message or inline
+      }
+    } else {
+      addMessage('assistant', 'Es liegt aktuell keine Antwort vor. Bitte versuchen Sie es erneut.');
     }
+  } catch(e) {
+    hideTyping();
+    addMessage('assistant', 'Verbindungsfehler. Bitte versuchen Sie es erneut.');
+    console.error('Copilot error', e);
+  }
+  
+  input.disabled = false;
+  btn.disabled = false;
+  isLoading = false;
+  input.focus();
+}
 
-    if (chips && chips.length) {
-      chips.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          var q = btn.getAttribute('data-question') || '';
-          var dAttr = btn.getAttribute('data-days');
-          var fAttr = btn.getAttribute('data-focus');
+// Input handling
+document.getElementById('chatInput').addEventListener('input', function() {
+  document.getElementById('sendBtn').disabled = !this.value.trim() || isLoading;
+});
 
-          var d = parseInt(dAttr || (daysSel && daysSel.value) || '365', 10);
-          if (!d || isNaN(d)) d = 365;
+// Days change
+document.getElementById('copilot-days').addEventListener('change', loadSnapshot);
 
-          if (fAttr && focusSel) {
-            focusSel.value = fAttr;
-          }
-
-          if (q) {
-            input.value = q;
-            if (sendBtn && !isLoading) sendBtn.disabled = false;
-            callCopilot(q, { days: d, focus: fAttr || (focusSel && focusSel.value) || '' });
-          }
-        });
-      });
-    }
-
-    // Initialer Snapshot (gleicher Zeitraum wie Dropdown)
-    var defaultDays = parseInt(daysSel && daysSel.value ? daysSel.value : '365', 10) || 365;
-    loadCopilotSnapshot(defaultDays);
-
-    if (daysSel) {
-      daysSel.addEventListener('change', function() {
-        var d = parseInt(daysSel.value || '365', 10) || 365;
-        loadCopilotSnapshot(d);
-      });
-    }
-  })();
-
-  // Account-Name im Header auffüllen (wie auf anderen Seiten)
-  document.addEventListener('DOMContentLoaded', function () {
-    fetch('/api/user')
-      .then(function(r) { return r.json(); })
-      .then(function(u) {
-        if (!u) return;
-        if (u.logged_in && u.name) {
-          var n = document.getElementById('accountName');
-          if (n) n.textContent = u.name;
-        }
-      })
-      .catch(function() {});
-  });
+// Init
+loadSnapshot();
 </script>
 
 <!-- SBS Chat Widget -->
