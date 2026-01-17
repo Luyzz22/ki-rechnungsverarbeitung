@@ -3137,7 +3137,12 @@ async def copilot_page(request: Request):
     redirect = require_login(request)
     if redirect:
         return redirect
-    return templates.TemplateResponse("copilot.html", {"request": request})
+    
+    user_info = get_user_info(request.session.get("user_id"))
+    return templates.TemplateResponse("copilot.html", {
+        "request": request,
+        "user": user_info
+    })
 
 
 @app.get("/account", response_class=HTMLResponse)
