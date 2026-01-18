@@ -1787,10 +1787,12 @@ async def demo_job(request: Request):
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
+    next_url = request.query_params.get("next", "/dashboard")
     """Login page"""
     return templates.TemplateResponse("login.html", {
         "request": request,
-        "error": None
+        "error": None,
+        "next": next_url
     })
 
 @app.post("/login")
@@ -1871,10 +1873,12 @@ async def login_submit(request: Request):
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
+    next_url = request.query_params.get("next", "/dashboard")
     """Register page"""
     return templates.TemplateResponse("register.html", {
         "request": request,
-        "error": None
+        "error": None,
+        "next": next_url
     })
 
 @app.post("/register")
@@ -3673,7 +3677,8 @@ async def password_reset_request_page(request: Request):
     """Zeigt Formular zum Anfordern eines Reset-Links."""
     return templates.TemplateResponse(
         "password_reset_request.html",
-        {"request": request, "error": None, "success": None},
+        {"request": request, "error": None,
+        "next": next_url, "success": None},
     )
 
 
@@ -3691,14 +3696,16 @@ async def password_reset_request_submit(request: Request, email: str = Form(...)
         logger.warning("🔐 Password reset requested for unknown email: %s", email)
         return templates.TemplateResponse(
             "password_reset_request.html",
-            {"request": request, "error": None, "success": generic_success},
+            {"request": request, "error": None,
+        "next": next_url, "success": generic_success},
         )
 
     try:
         send_password_reset_email(email, token)
         return templates.TemplateResponse(
             "password_reset_request.html",
-            {"request": request, "error": None, "success": generic_success},
+            {"request": request, "error": None,
+        "next": next_url, "success": generic_success},
         )
     except Exception as e:
         logger.exception("❌ Fehler beim Versenden der Reset-E-Mail: %s", e)
@@ -3824,35 +3831,11 @@ async def password_reset_confirm_submit(
             "token": token,
             "token_valid": False,
             "error": None,
+        "next": next_url,
             "success": success,
         },
     )
 
-
-@app.get("/logout")
-async def logout(request: Request):
-    """
-    Logout und Redirect auf die SBS Homepage.
-    SSO Cookie wird gelöscht für Cross-Domain Logout.
-    """
-    # Session leeren, falls vorhanden
-    try:
-        session = getattr(request, "session", None)
-        if isinstance(session, dict):
-            session.pop("user_id", None)
-            session.pop("user_name", None)
-            session.pop("user_email", None)
-    except AssertionError:
-        # Keine SessionMiddleware aktiv – nichts zu tun
-        pass
-
-    response = RedirectResponse(
-        url="https://sbsdeutschland.com/sbshomepage/",
-        status_code=303,
-    )
-    # SSO Cookie löschen für alle Subdomains
-    response.delete_cookie(COOKIE_NAME, domain=".sbsdeutschland.com", path="/")
-    return response
 
 @app.get("/jobs/{job_id}", response_class=HTMLResponse)
 async def demo_job_page(request: Request, job_id: str):
@@ -5233,10 +5216,10 @@ async def approvals_page(request: Request, status: str = None):
     manager = get_approval_manager()
     
     # Get queue
-    invoices, total = manager.get_approval_queue(status=status, limit=100)
+    invoices, total = manager.get_approval_queue(user_id=user_id, status=status, limit=100)
     
     # Get stats
-    stats = manager.get_approval_stats()
+    stats = manager.get_approval_stats(user_id=user_id)
     
     # Get rules for display
     rules = manager.get_all_rules()
@@ -5518,13 +5501,14 @@ async def datev_export_page(request: Request):
     conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, rechnungsnummer, datum, rechnungsaussteller, 
-               betrag_brutto, mwst_satz, waehrung, status
-        FROM invoices 
-        WHERE status = 'approved'
-        ORDER BY datum DESC
+        SELECT i.id, i.rechnungsnummer, i.datum, i.rechnungsaussteller, 
+               i.betrag_brutto, i.mwst_satz, i.waehrung, i.status
+        FROM invoices i
+        JOIN jobs j ON i.job_id = j.job_id
+        WHERE i.status = 'approved' AND j.user_id = ?
+        ORDER BY i.datum DESC
         LIMIT 100
-    """)
+    """, (user_id,))
     invoices = [dict(row) for row in cursor.fetchall()]
     conn.close()
     
@@ -5972,7 +5956,7 @@ async def api_offene_zahlungen(request: Request, limit: int = 50):
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
     
     service = get_zahlungs_service()
-    zahlungen = service.get_offene_zahlungen(limit=limit)
+    zahlungen = service.get_offene_zahlungen(user_id=user_id, limit=limit)
     
     return JSONResponse({
         "zahlungen": zahlungen,
@@ -5988,7 +5972,7 @@ async def api_skonto_chancen(request: Request):
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
     
     service = get_zahlungs_service()
-    chancen = service.get_skonto_chancen()
+    chancen = service.get_skonto_chancen(user_id=user_id)
     
     return JSONResponse({
         "skonto_chancen": chancen,
@@ -6072,20 +6056,23 @@ async def api_zahlungen_statistik(request: Request, monate: int = 6):
     conn = service._get_connection()
     cursor = conn.cursor()
     
-    # Skonto-Nutzung über Zeit
+    # Skonto-Nutzung über Zeit (nur für aktuellen User)
     cursor.execute("""
         SELECT 
-            strftime('%Y-%m', bezahlt_am) as monat,
+            strftime('%Y-%m', z.bezahlt_am) as monat,
             COUNT(*) as anzahl,
-            SUM(CASE WHEN bezahlt_am <= skonto_datum THEN skonto_betrag ELSE 0 END) as skonto_genutzt,
-            SUM(CASE WHEN bezahlt_am > skonto_datum AND skonto_betrag > 0 THEN skonto_betrag ELSE 0 END) as skonto_verpasst,
-            SUM(bezahlt_betrag) as gesamt_bezahlt
-        FROM zahlungsbedingungen
-        WHERE bezahlt_am IS NOT NULL
-          AND bezahlt_am >= date('now', '-' || ? || ' months')
+            SUM(CASE WHEN z.bezahlt_am <= z.skonto_datum THEN z.skonto_betrag ELSE 0 END) as skonto_genutzt,
+            SUM(CASE WHEN z.bezahlt_am > z.skonto_datum AND z.skonto_betrag > 0 THEN z.skonto_betrag ELSE 0 END) as skonto_verpasst,
+            SUM(z.bezahlt_betrag) as gesamt_bezahlt
+        FROM zahlungsbedingungen z
+        JOIN invoices i ON z.invoice_id = i.id
+        JOIN jobs j ON i.job_id = j.job_id
+        WHERE z.bezahlt_am IS NOT NULL
+          AND j.user_id = ?
+          AND z.bezahlt_am >= date('now', '-' || ? || ' months')
         GROUP BY monat
         ORDER BY monat
-    """, (monate,))
+    """, (user_id, monate))
     
     monatsdaten = [dict(row) for row in cursor.fetchall()]
     conn.close()

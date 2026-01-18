@@ -398,7 +398,7 @@ class ApprovalManager:
         params = []
         
         if user_id:
-            where_clauses.append("i.assigned_to = ?")
+            where_clauses.append("j.user_id = ?")
             params.append(user_id)
         
         if status:
@@ -410,7 +410,7 @@ class ApprovalManager:
         where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
         
         # Count
-        cursor.execute(f"SELECT COUNT(*) FROM invoices i WHERE {where_sql}", params)
+        cursor.execute(f"SELECT COUNT(*) FROM invoices i JOIN jobs j ON i.job_id = j.job_id WHERE {where_sql}", params)
         total = cursor.fetchone()[0]
         
         # Data
@@ -419,6 +419,7 @@ class ApprovalManager:
                    u_assigned.name as assigned_to_name,
                    u_approved.name as approved_by_name
             FROM invoices i
+            JOIN jobs j ON i.job_id = j.job_id
             LEFT JOIN users u_assigned ON i.assigned_to = u_assigned.id
             LEFT JOIN users u_approved ON i.approved_by = u_approved.id
             WHERE {where_sql}
@@ -448,30 +449,54 @@ class ApprovalManager:
         
         stats = {}
         
-        # Counts by status
-        cursor.execute("""
-            SELECT status, COUNT(*) as count, SUM(betrag_brutto) as total
-            FROM invoices
-            WHERE created_at >= ?
-            GROUP BY status
-        """, (since,))
+        # Counts by status (filtered by user)
+        if user_id:
+            cursor.execute("""
+                SELECT i.status, COUNT(*) as count, SUM(i.betrag_brutto) as total
+                FROM invoices i
+                JOIN jobs j ON i.job_id = j.job_id
+                WHERE i.created_at >= ? AND j.user_id = ?
+                GROUP BY i.status
+            """, (since, user_id))
+        else:
+            cursor.execute("""
+                SELECT status, COUNT(*) as count, SUM(betrag_brutto) as total
+                FROM invoices
+                WHERE created_at >= ?
+                GROUP BY status
+            """, (since,))
         
         stats['by_status'] = {row['status']: {'count': row['count'], 'total': row['total'] or 0} 
                              for row in cursor.fetchall()}
         
-        # Pending count
-        cursor.execute("""
-            SELECT COUNT(*) FROM invoices 
-            WHERE status IN ('pending', 'assigned', 'in_review')
-        """)
+        # Pending count (filtered by user)
+        if user_id:
+            cursor.execute("""
+                SELECT COUNT(*) FROM invoices i
+                JOIN jobs j ON i.job_id = j.job_id
+                WHERE i.status IN ('pending', 'assigned', 'in_review') AND j.user_id = ?
+            """, (user_id,))
+        else:
+            cursor.execute("""
+                SELECT COUNT(*) FROM invoices 
+                WHERE status IN ('pending', 'assigned', 'in_review')
+            """)
         stats['pending_count'] = cursor.fetchone()[0]
         
-        # Average approval time
-        cursor.execute("""
-            SELECT AVG(julianday(approved_at) - julianday(created_at)) as avg_days
-            FROM invoices
-            WHERE status = 'approved' AND approved_at IS NOT NULL AND created_at >= ?
-        """, (since,))
+        # Average approval time (filtered by user)
+        if user_id:
+            cursor.execute("""
+                SELECT AVG(julianday(i.approved_at) - julianday(i.created_at)) as avg_days
+                FROM invoices i
+                JOIN jobs j ON i.job_id = j.job_id
+                WHERE i.status = 'approved' AND i.approved_at IS NOT NULL AND i.created_at >= ? AND j.user_id = ?
+            """, (since, user_id))
+        else:
+            cursor.execute("""
+                SELECT AVG(julianday(approved_at) - julianday(created_at)) as avg_days
+                FROM invoices
+                WHERE status = 'approved' AND approved_at IS NOT NULL AND created_at >= ?
+            """, (since,))
         row = cursor.fetchone()
         stats['avg_approval_days'] = round(row['avg_days'] or 0, 1)
         
