@@ -635,7 +635,6 @@
         </div>
       </div>
       
-
       <!-- Notifications Section -->
       <div id="section-notifications" class="settings-section">
         <div class="settings-card">
@@ -647,10 +646,9 @@
             </div>
           </div>
           
-          <!-- E-Mail -->
           <div class="toggle-row">
             <div class="toggle-info">
-              <strong>📧 E-Mail Benachrichtigungen</strong>
+              <strong>E-Mail Benachrichtigungen</strong>
               <small>Erhalten Sie Updates zu Ihren Dokumenten per E-Mail</small>
             </div>
             <label class="toggle-switch">
@@ -659,72 +657,30 @@
             </label>
           </div>
           
-          <!-- Slack mit Webhook -->
-          <div class="toggle-row" style="flex-wrap: wrap;">
+          <div class="toggle-row">
             <div class="toggle-info">
-              <strong>💬 Slack Integration <span style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:white;padding:2px 8px;border-radius:6px;font-size:0.7rem;font-weight:600;margin-left:8px;">PRO+</span></strong>
+              <strong>Slack Integration</strong>
               <small>Benachrichtigungen an Ihren Slack Workspace senden</small>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" id="notifySlack" onchange="toggleSlackConfig(this.checked)">
+              <input type="checkbox" id="notifySlack" onchange="saveNotification('slack', this.checked)">
               <span class="toggle-slider"></span>
             </label>
-            
-            <!-- Slack Webhook Config -->
-            <div id="slackConfig" style="width:100%;margin-top:16px;display:none;padding:16px;background:#f8fafc;border-radius:12px;">
-              <label style="display:block;font-size:0.85rem;color:#475569;margin-bottom:8px;font-weight:500;">Webhook URL</label>
-              <div style="display:flex;gap:8px;">
-                <input type="text" id="slackWebhook" placeholder="https://hooks.slack.com/services/..." 
-                       style="flex:1;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.9rem;">
-                <button onclick="testSlackWebhook()" class="btn btn-secondary" id="testSlackBtn">🧪 Testen</button>
-                <button onclick="saveSlackWebhook()" class="btn btn-primary">💾 Speichern</button>
-              </div>
-              <p style="margin:8px 0 0;font-size:0.8rem;color:#64748b;">
-                <a href="https://api.slack.com/messaging/webhooks" target="_blank" style="color:#003856;">📖 Anleitung: Slack Webhook erstellen →</a>
-              </p>
-            </div>
           </div>
           
-          <!-- Wöchentlicher Report mit Config -->
-          <div class="toggle-row" style="flex-wrap: wrap;">
+          <div class="toggle-row">
             <div class="toggle-info">
-              <strong>📊 Wöchentlicher Report <span style="background:linear-gradient(135deg,#FFB900,#f59e0b);color:#1e293b;padding:2px 8px;border-radius:6px;font-size:0.7rem;font-weight:600;margin-left:8px;">ENTERPRISE</span></strong>
-              <small>Zusammenfassung Ihrer Aktivitäten per E-Mail</small>
+              <strong>Wöchentlicher Report</strong>
+              <small>Zusammenfassung Ihrer Aktivitäten jeden Montag</small>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" id="notifyWeekly" onchange="toggleWeeklyConfig(this.checked)">
+              <input type="checkbox" id="notifyWeekly" onchange="saveNotification('weekly', this.checked)">
               <span class="toggle-slider"></span>
             </label>
-            
-            <!-- Weekly Report Config -->
-            <div id="weeklyConfig" style="width:100%;margin-top:16px;display:none;padding:16px;background:#f8fafc;border-radius:12px;">
-              <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
-                <div>
-                  <label style="display:block;font-size:0.85rem;color:#475569;margin-bottom:6px;">Wochentag</label>
-                  <select id="weeklyDay" style="padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.9rem;">
-                    <option value="1">Montag</option>
-                    <option value="2">Dienstag</option>
-                    <option value="3">Mittwoch</option>
-                    <option value="4">Donnerstag</option>
-                    <option value="5">Freitag</option>
-                    <option value="6">Samstag</option>
-                    <option value="7">Sonntag</option>
-                  </select>
-                </div>
-                <div>
-                  <label style="display:block;font-size:0.85rem;color:#475569;margin-bottom:6px;">Uhrzeit</label>
-                  <input type="time" id="weeklyTime" value="07:00" style="padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.9rem;">
-                </div>
-                <button onclick="saveWeeklyReport()" class="btn btn-primary">💾 Speichern</button>
-                <button onclick="sendReportNow()" class="btn btn-secondary">📤 Jetzt senden</button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
       
-      <!-- API Section -->
-
       <!-- API Section -->
       <div id="section-api" class="settings-section">
         <div class="settings-card">
@@ -1011,18 +967,12 @@ function manage2FA() {
 // ═══════════════════════════════════════════════════════════════════════
 
 function loadNotifications() {
-  // Erweitert für Slack und Weekly Report
   fetch('/api/notifications/settings')
     .then(r => r.json())
     .then(function(data) {
       document.getElementById('notifyEmail').checked = data.email || false;
       document.getElementById('notifySlack').checked = data.slack || false;
-      if (data.slack && document.getElementById("slackConfig")) document.getElementById("slackConfig").style.display = "block";
-      if (data.slack_webhook_url && document.getElementById("slackWebhook")) document.getElementById("slackWebhook").value = data.slack_webhook_url;
       document.getElementById('notifyWeekly').checked = data.weekly || false;
-      if (data.weekly && document.getElementById("weeklyConfig")) document.getElementById("weeklyConfig").style.display = "block";
-      if (data.weekly_day && document.getElementById("weeklyDay")) document.getElementById("weeklyDay").value = data.weekly_day;
-      if (data.weekly_time && document.getElementById("weeklyTime")) document.getElementById("weeklyTime").value = data.weekly_time;
     })
     .catch(function() {});
 }
@@ -1040,84 +990,6 @@ function saveNotification(type, value) {
     }
   });
 }
-
-// Slack Funktionen
-function toggleSlackConfig(enabled) {
-  var config = document.getElementById("slackConfig");
-  if (config) config.style.display = enabled ? "block" : "none";
-  if (!enabled) saveSlackSettings(false, "");
-}
-
-function testSlackWebhook() {
-  var webhook = document.getElementById("slackWebhook").value.trim();
-  if (!webhook) { showToast("Bitte Webhook URL eingeben", "error"); return; }
-  if (!webhook.startsWith("https://hooks.slack.com/")) { showToast("Ungültige Webhook URL", "error"); return; }
-  var btn = document.getElementById("testSlackBtn");
-  btn.disabled = true; btn.textContent = "⏳ Teste...";
-  fetch("/api/settings/slack/test", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({webhook_url: webhook}) })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      btn.disabled = false; btn.textContent = "🧪 Testen";
-      if (data.success) showToast("Test-Nachricht an Slack gesendet! 🎉", "success");
-      else showToast(data.error || "Test fehlgeschlagen", "error");
-    }).catch(function() { btn.disabled = false; btn.textContent = "🧪 Testen"; });
-}
-
-function saveSlackWebhook() {
-  var webhook = document.getElementById("slackWebhook").value.trim();
-  var enabled = document.getElementById("notifySlack").checked;
-  saveSlackSettings(enabled, webhook);
-}
-
-function saveSlackSettings(enabled, webhook) {
-  fetch("/api/settings/slack", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({enabled: enabled, webhook_url: webhook}) })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.success) showToast("Slack-Einstellungen gespeichert!", "success");
-      else if (data.upgrade_required) { showToast(data.error, "warning"); document.getElementById("notifySlack").checked = false; document.getElementById("slackConfig").style.display = "none"; }
-      else showToast(data.error || "Fehler", "error");
-    });
-}
-
-// Weekly Report Funktionen
-function toggleWeeklyConfig(enabled) {
-  var config = document.getElementById("weeklyConfig");
-  if (config) config.style.display = enabled ? "block" : "none";
-  if (!enabled) saveWeeklySettings(false);
-}
-
-function saveWeeklyReport() {
-  var enabled = document.getElementById("notifyWeekly").checked;
-  var day = document.getElementById("weeklyDay").value;
-  var time = document.getElementById("weeklyTime").value;
-  saveWeeklySettings(enabled, day, time);
-}
-
-function saveWeeklySettings(enabled, day, time) {
-  fetch("/api/settings/weekly-report", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({enabled: enabled, day: day || 1, time: time || "07:00"}) })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.success) showToast("Wöchentlicher Report " + (enabled ? "aktiviert" : "deaktiviert") + "!", "success");
-      else if (data.upgrade_required) { showToast(data.error, "warning"); document.getElementById("notifyWeekly").checked = false; document.getElementById("weeklyConfig").style.display = "none"; }
-      else showToast(data.error || "Fehler", "error");
-    });
-}
-
-function sendReportNow() {
-  if (!confirm("Möchten Sie jetzt einen Report senden?")) return;
-  showToast("Report wird generiert...", "info");
-  fetch("/api/reports/send-now", { method: "POST" })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.success) {
-        var msg = "Report gesendet!";
-        if (data.results && data.results.email) msg += " ✉️";
-        if (data.results && data.results.slack) msg += " 💬";
-        showToast(msg, "success");
-      } else showToast(data.error || "Fehler", "error");
-    });
-}
-
 
 // ═══════════════════════════════════════════════════════════════════════
 // API KEYS

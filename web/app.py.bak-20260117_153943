@@ -4594,148 +4594,28 @@ async def get_2fa_status(request: Request):
         "backup_codes_remaining": len(user.get("totp_backup_codes", "").split(",")) if user and user.get("totp_backup_codes") else 0
     }
 
-
 @app.get("/api/notifications/settings", tags=["Settings"])
 async def get_notification_settings(request: Request):
-    """Holt Benachrichtigungseinstellungen aus DB"""
+    """Holt Benachrichtigungseinstellungen"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
-    user_email = request.session.get("user_email", "")
-    try:
-        conn = sqlite3.connect('invoices.db', check_same_thread=False)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        settings = cursor.execute("SELECT * FROM user_settings WHERE user_email = ?", (user_email,)).fetchone()
-        conn.close()
-        if settings:
-            return {"email": bool(settings["notification_email"]), "slack": bool(settings["notification_slack"]), "slack_webhook_url": settings["slack_webhook_url"] or "", "weekly": bool(settings["weekly_report_enabled"]), "weekly_day": settings["weekly_report_day"] or 1, "weekly_time": settings["weekly_report_time"] or "07:00"}
-    except Exception as e:
-        print(f"Error loading notification settings: {e}")
-    return {"email": True, "slack": False, "slack_webhook_url": "", "weekly": False, "weekly_day": 1, "weekly_time": "07:00"}
+    
+    # TODO: Aus DB laden - vorerst Defaults
+    return {
+        "email": True,
+        "slack": False,
+        "weekly": False
+    }
 
 @app.put("/api/notifications/settings", tags=["Settings"])
 async def update_notification_settings(request: Request):
     """Aktualisiert Benachrichtigungseinstellungen"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
-    user_email = request.session.get("user_email", "")
+    
     data = await request.json()
-    try:
-        conn = sqlite3.connect('invoices.db', check_same_thread=False)
-        cursor = conn.cursor()
-        existing = cursor.execute("SELECT user_email FROM user_settings WHERE user_email = ?", (user_email,)).fetchone()
-        if not existing:
-            cursor.execute("INSERT INTO user_settings (user_email) VALUES (?)", (user_email,))
-        if "email" in data:
-            cursor.execute("UPDATE user_settings SET notification_email = ? WHERE user_email = ?", (1 if data["email"] else 0, user_email))
-        if "slack" in data:
-            cursor.execute("UPDATE user_settings SET notification_slack = ? WHERE user_email = ?", (1 if data["slack"] else 0, user_email))
-        if "weekly" in data:
-            cursor.execute("UPDATE user_settings SET weekly_report_enabled = ? WHERE user_email = ?", (1 if data["weekly"] else 0, user_email))
-        conn.commit()
-        conn.close()
-        return {"success": True}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-@app.post("/api/settings/slack", tags=["Settings"])
-async def save_slack_settings(request: Request):
-    """Speichert Slack Webhook URL"""
-    if "user_id" not in request.session:
-        return JSONResponse({"error": "Not authenticated"}, status_code=401)
-    user_email = request.session.get("user_email", "")
-    data = await request.json()
-    enabled = data.get("enabled", False)
-    webhook_url = data.get("webhook_url", "").strip()
-    if enabled and webhook_url and not webhook_url.startswith("https://hooks.slack.com/"):
-        return {"success": False, "error": "Ungueltige Slack Webhook URL"}
-    try:
-        conn = sqlite3.connect('invoices.db', check_same_thread=False)
-        cursor = conn.cursor()
-        existing = cursor.execute("SELECT user_email FROM user_settings WHERE user_email = ?", (user_email,)).fetchone()
-        if not existing:
-            cursor.execute("INSERT INTO user_settings (user_email) VALUES (?)", (user_email,))
-        cursor.execute("UPDATE user_settings SET notification_slack = ?, slack_webhook_url = ? WHERE user_email = ?", (1 if enabled else 0, webhook_url if enabled else None, user_email))
-        conn.commit()
-        conn.close()
-        return {"success": True}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-@app.post("/api/settings/slack/test", tags=["Settings"])
-async def test_slack_webhook(request: Request):
-    """Testet Slack Webhook URL"""
-    if "user_id" not in request.session:
-        return JSONResponse({"error": "Not authenticated"}, status_code=401)
-    data = await request.json()
-    webhook_url = data.get("webhook_url", "").strip()
-    user_name = request.session.get("user_name", "User")
-    if not webhook_url or not webhook_url.startswith("https://hooks.slack.com/"):
-        return {"success": False, "error": "Ungueltige Webhook URL"}
-    try:
-        import requests
-        from datetime import datetime
-        test_message = {"text": "SBS Deutschland - Slack Test erfolgreich!", "blocks": [{"type": "header", "text": {"type": "plain_text", "text": "Slack Integration aktiv", "emoji": True}}, {"type": "section", "text": {"type": "mrkdwn", "text": "Die Verbindung zu *SBS Deutschland* wurde erfolgreich hergestellt. Benutzer: " + user_name}}]}
-        response = requests.post(webhook_url, json=test_message, timeout=10)
-        if response.status_code == 200:
-            return {"success": True, "message": "Test-Nachricht gesendet!"}
-        else:
-            return {"success": False, "error": f"Slack API Fehler: {response.status_code}"}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-@app.post("/api/settings/weekly-report", tags=["Settings"])
-async def save_weekly_report_settings(request: Request):
-    """Speichert Woechentlicher Report Einstellungen"""
-    if "user_id" not in request.session:
-        return JSONResponse({"error": "Not authenticated"}, status_code=401)
-    user_email = request.session.get("user_email", "")
-    data = await request.json()
-    enabled = data.get("enabled", False)
-    day = int(data.get("day", 1))
-    time_val = data.get("time", "07:00")
-    try:
-        conn = sqlite3.connect('invoices.db', check_same_thread=False)
-        cursor = conn.cursor()
-        existing = cursor.execute("SELECT user_email FROM user_settings WHERE user_email = ?", (user_email,)).fetchone()
-        if not existing:
-            cursor.execute("INSERT INTO user_settings (user_email) VALUES (?)", (user_email,))
-        cursor.execute("UPDATE user_settings SET weekly_report_enabled = ?, weekly_report_day = ?, weekly_report_time = ? WHERE user_email = ?", (1 if enabled else 0, day, time_val, user_email))
-        conn.commit()
-        conn.close()
-        return {"success": True}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-@app.post("/api/reports/send-now", tags=["Settings"])
-async def send_report_now(request: Request):
-    """Sendet sofort einen woechentlichen Report"""
-    if "user_id" not in request.session:
-        return JSONResponse({"error": "Not authenticated"}, status_code=401)
-    user_email = request.session.get("user_email", "")
-    results = {"email": False, "slack": False}
-    try:
-        conn = sqlite3.connect('invoices.db', check_same_thread=False)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        settings = cursor.execute("SELECT * FROM user_settings WHERE user_email = ?", (user_email,)).fetchone()
-        from datetime import datetime, timedelta
-        week_ago = (datetime.now() - timedelta(days=7)).isoformat()
-        stats = cursor.execute("SELECT COUNT(*) as count, COALESCE(SUM(betrag_brutto), 0) as total_brutto FROM invoices WHERE created_at >= ?", (week_ago,)).fetchone()
-        conn.close()
-        report_stats = {"total_invoices": stats["count"] or 0, "total_brutto": round(stats["total_brutto"] or 0, 2)}
-        if settings and settings["notification_slack"] and settings["slack_webhook_url"]:
-            try:
-                import requests
-                message = {"text": f"Woechentlicher Report - {report_stats['total_invoices']} Rechnungen, {report_stats['total_brutto']} EUR"}
-                resp = requests.post(settings["slack_webhook_url"], json=message, timeout=10)
-                results["slack"] = resp.status_code == 200
-            except:
-                pass
-        return {"success": True, "results": results, "stats": report_stats}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
+    # TODO: In DB speichern
+    return {"success": True}
 
 @app.put("/api/profile/company", tags=["Settings"])
 async def update_company_profile(request: Request):
