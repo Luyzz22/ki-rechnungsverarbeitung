@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>KI-Rechnungsverarbeitung · SBS Deutschland</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Automatische Rechnungsverarbeitung mit KI. DATEV-Export, XRechnung & ZUGFeRD Support.">
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+<style>
+/* ============================================
+   CSS VARIABLES - SBS Corporate Design
+   ============================================ */
+:root {
+  --sbs-blue: #003856;
+  --sbs-blue-dark: #002a42;
+  --sbs-blue-light: #00507a;
+  --sbs-yellow: #FFB900;
+  --sbs-yellow-hover: #e5a700;
+  --sbs-bg: #f1f5f9;
+  --sbs-text: #111827;
+  --sbs-muted: #64748b;
+  --sbs-border: #e2e8f0;
+  --sbs-card: #ffffff;
+  --sbs-success: #10b981;
+  --sbs-warning: #f59e0b;
+  --sbs-danger: #ef4444;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: var(--sbs-bg);
+  color: var(--sbs-text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.5;
+}
+
+/* ============================================
+   HERO - Kompakt wie Contract Copilot
+   ============================================ */
+.hero {
+  background: linear-gradient(135deg, var(--sbs-blue) 0%, var(--sbs-blue-dark) 100%);
+  color: white;
+  padding: 32px 24px;
+}
+
+.hero .container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.12);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.hero-badge .dot {
+  width: 8px;
+  height: 8px;
+  background: #22d3ee;
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(34,211,238,0.6);
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.hero h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 12px 0 8px;
+}
+
+.hero p {
+  opacity: 0.9;
+  font-size: 1rem;
+  max-width: 600px;
+}
+
+/* ============================================
+   MAIN LAYOUT - Zwei-Spalten wie Contract Copilot
+   ============================================ */
+.upload-main {
+  padding: 32px 24px 60px;
+  background: var(--sbs-bg);
+  min-height: calc(100vh - 200px);
+  flex: 1;
+}
+
+.upload-layout {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+}
+
+@media (max-width: 960px) {
+  .upload-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   UPLOAD CARD - Hauptbereich
+   ============================================ */
+.upload-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,56,86,0.08);
+  overflow: hidden;
+}
+
+.upload-card-header {
+  background: linear-gradient(135deg, var(--sbs-blue), var(--sbs-blue-light));
+  color: white;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.upload-card-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.upload-card-info h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.upload-card-info p {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.upload-card-body {
+  padding: 24px;
+}
+
+/* ============================================
+   DROPZONE - Modernisiert
+   ============================================ */
+.upload-dropzone {
+  border: 2px dashed var(--sbs-border);
+  border-radius: 16px;
+  padding: 40px 24px;
+  text-align: center;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.upload-dropzone:hover,
+.upload-dropzone.dragover {
+  border-color: var(--sbs-blue);
+  background: linear-gradient(180deg, rgba(0,56,86,0.04) 0%, #ffffff 100%);
+}
+
+.upload-dropzone.dragover {
+  transform: scale(1.01);
+  box-shadow: 0 8px 30px rgba(0,56,86,0.12);
+}
+
+.dropzone-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  background: linear-gradient(135deg, var(--sbs-blue) 0%, var(--sbs-blue-light) 100%);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: white;
+  box-shadow: 0 8px 24px rgba(0,56,86,0.25);
+}
+
+.dropzone-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--sbs-text);
+  margin-bottom: 8px;
+}
+
+.dropzone-subtitle {
+  font-size: 0.9rem;
+  color: var(--sbs-muted);
+  margin-bottom: 16px;
+}
+
+.dropzone-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--sbs-yellow);
+  color: var(--sbs-blue-dark);
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(255,185,0,0.3);
+}
+
+.dropzone-btn:hover {
+  background: var(--sbs-yellow-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255,185,0,0.4);
+}
+
+.dropzone-meta {
+  margin-top: 16px;
+  font-size: 0.75rem;
+  color: var(--sbs-muted);
+}
+
+.dropzone-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dropzone-meta span::before {
+  content: '•';
+  margin: 0 6px;
+}
+
+.dropzone-meta span:first-child::before {
+  display: none;
+}
+
+/* ============================================
+   FILE LIST & PROGRESS
+   ============================================ */
+.file-list-section {
+  margin-top: 24px;
+  display: none;
+}
+
+.file-list-section.active {
+  display: block;
+}
+
+.file-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.file-list-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--sbs-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-count-badge {
+  background: var(--sbs-blue);
+  color: white;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+
+.file-list {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid var(--sbs-border);
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.file-item:hover {
+  background: #f1f5f9;
+}
+
+.file-item-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-item-icon {
+  font-size: 1.5rem;
+}
+
+.file-item-name {
+  font-weight: 500;
+  color: var(--sbs-text);
+  font-size: 0.9rem;
+}
+
+.file-item-size {
+  font-size: 0.8rem;
+  color: var(--sbs-muted);
+}
+
+.file-item-remove {
+  background: var(--sbs-danger);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.file-item-remove:hover {
+  background: #dc2626;
+}
+
+.process-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, var(--sbs-blue) 0%, var(--sbs-blue-light) 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0,56,86,0.25);
+}
+
+.process-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,56,86,0.35);
+}
+
+.process-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Progress Box */
+.progress-section {
+  margin-top: 24px;
+  display: none;
+}
+
+.progress-section.active {
+  display: block;
+}
+
+.progress-card {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.progress-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.progress-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--sbs-text);
+  margin-bottom: 16px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: var(--sbs-border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--sbs-blue) 0%, var(--sbs-yellow) 100%);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.9rem;
+  color: var(--sbs-muted);
+}
+
+.progress-detail {
+  font-size: 0.8rem;
+  color: var(--sbs-muted);
+  margin-top: 8px;
+}
+
+/* ============================================
+   SIDEBAR - Feature Cards
+   ============================================ */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sidebar-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,56,86,0.06);
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--sbs-border);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--sbs-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-content {
+  padding: 16px 20px;
+}
+
+/* Feature List */
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.feature-item:hover {
+  background: #f8fafc;
+}
+
+.feature-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.feature-icon.blue { background: rgba(0,56,86,0.1); }
+.feature-icon.yellow { background: rgba(255,185,0,0.15); }
+.feature-icon.green { background: rgba(16,185,129,0.1); }
+.feature-icon.purple { background: rgba(139,92,246,0.1); }
+
+.feature-info h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--sbs-text);
+  margin-bottom: 2px;
+}
+
+.feature-info p {
+  font-size: 0.75rem;
+  color: var(--sbs-muted);
+  line-height: 1.4;
+}
+
+/* Format Pills */
+.format-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.format-pill {
+  padding: 6px 12px;
+  background: #f1f5f9;
+  border: 1px solid var(--sbs-border);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--sbs-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Stats Card */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--sbs-blue);
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--sbs-muted);
+  margin-top: 2px;
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-action {
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid var(--sbs-border);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: var(--sbs-muted);
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.quick-action:hover {
+  background: var(--sbs-blue);
+  color: white;
+  border-color: var(--sbs-blue);
+}
+
+/* ============================================
+   TOAST NOTIFICATIONS
+   ============================================ */
+#toastContainer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+.toast {
+  min-width: 300px;
+  max-width: 400px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  border-left: 4px solid;
+  animation: slideIn 0.3s ease-out;
+}
+
+.toast.success { border-color: var(--sbs-success); }
+.toast.error { border-color: var(--sbs-danger); }
+.toast.info { border-color: var(--sbs-blue); }
+.toast.warning { border-color: var(--sbs-warning); }
+
+.toast-icon { font-size: 1.5rem; flex-shrink: 0; }
+.toast-content { flex: 1; }
+.toast-title { font-weight: 600; color: var(--sbs-text); margin-bottom: 4px; }
+.toast-message { font-size: 0.9rem; color: var(--sbs-muted); }
+
+.toast-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--sbs-muted);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.toast-close:hover { background: #f3f4f6; color: var(--sbs-text); }
+
+@keyframes slideIn {
+  from { transform: translateX(400px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(400px); opacity: 0; }
+}
+
+/* Button Loading State */
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 960px) {
+  .sidebar {
+    order: -1;
+  }
+  
+  .upload-layout {
+    gap: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero h1 {
+    font-size: 1.5rem;
+  }
+  
+  .upload-card-body {
+    padding: 16px;
+  }
+  
+  .upload-dropzone {
+    padding: 24px 16px;
+  }
+  
+  .dropzone-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+<body>
+
+{% include 'partials/header.html' %}
+
+<!-- Hero Section - Kompakt -->
+<div class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      KI-RECHNUNGSVERARBEITUNG
+    </div>
+    <h1>📄 Rechnungen intelligent verarbeiten</h1>
+    <p>Laden Sie Ihre Rechnungen hoch – unsere KI extrahiert automatisch alle relevanten Daten für Ihren DATEV-Export.</p>
+  </div>
+</div>
+
+<!-- Main Content - Zwei-Spalten-Layout -->
+<main class="upload-main">
+  <div class="upload-layout">
+    
+    <!-- Hauptbereich: Upload Card -->
+    <div class="upload-card">
+      <div class="upload-card-header">
+        <div class="upload-card-icon">🤖</div>
+        <div class="upload-card-info">
+          <h2>Quantum AI Finance</h2>
+          <p>Enterprise-grade Rechnungsverarbeitung</p>
+        </div>
+      </div>
+      
+      <div class="upload-card-body">
+        <!-- Dropzone -->
+        <div id="upload-dropzone" class="upload-dropzone" aria-label="Rechnungen hochladen">
+          <div class="dropzone-icon">📤</div>
+          <div class="dropzone-title">Dateien hier ablegen</div>
+          <div class="dropzone-subtitle">oder klicken Sie zum Auswählen</div>
+          <button type="button" id="upload-browse-btn" class="dropzone-btn">
+            <span>📁</span> Dateien auswählen
+          </button>
+          <input id="upload-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.xml" multiple hidden>
+          <div class="dropzone-meta">
+            <span>PDF, PNG, JPG</span>
+            <span>XRechnung</span>
+            <span>ZUGFeRD</span>
+            <span>Max. 20MB</span>
+          </div>
+        </div>
+        
+        <!-- File List Section -->
+        <div id="fileListSection" class="file-list-section">
+          <div class="file-list-header">
+            <div class="file-list-title">
+              📋 Hochgeladene Dateien
+              <span id="fileCountBadge" class="file-count-badge">0</span>
+            </div>
+          </div>
+          <div id="fileList" class="file-list"></div>
+          <button id="processBtn" class="process-btn" disabled>
+            <span>⚡</span> Jetzt verarbeiten
+          </button>
+        </div>
+        
+        <!-- Progress Section -->
+        <div id="progressSection" class="progress-section">
+          <div class="progress-card">
+            <div class="progress-icon">🔄</div>
+            <div class="progress-title">KI analysiert Ihre Rechnungen …</div>
+            <div class="progress-bar">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <div id="progressText" class="progress-text">Initialisiere Verarbeitung …</div>
+            <div id="progressDetail" class="progress-detail">Dies kann einige Sekunden dauern</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar">
+      
+      <!-- Features Card -->
+      <div class="sidebar-card">
+        <div class="sidebar-header">✨ KI-Features</div>
+        <div class="sidebar-content">
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-icon blue">🎯</div>
+              <div class="feature-info">
+                <h4>Automatische Extraktion</h4>
+                <p>Beträge, Lieferanten, Zahlungsziele</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon yellow">📊</div>
+              <div class="feature-info">
+                <h4>DATEV-Export</h4>
+                <p>Direkt für Ihre Buchhaltung</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon green">🔍</div>
+              <div class="feature-info">
+                <h4>Anomalie-Erkennung</h4>
+                <p>Prüfung auf Unstimmigkeiten</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon purple">💰</div>
+              <div class="feature-info">
+                <h4>Skonto-Optimierung</h4>
+                <p>Fristen automatisch erkennen</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Supported Formats Card -->
+      <div class="sidebar-card">
+        <div class="sidebar-header">📁 Unterstützte Formate</div>
+        <div class="sidebar-content">
+          <div class="format-pills">
+            <span class="format-pill">📄 PDF</span>
+            <span class="format-pill">🖼️ PNG</span>
+            <span class="format-pill">🖼️ JPG</span>
+            <span class="format-pill">📋 XRechnung</span>
+            <span class="format-pill">📋 ZUGFeRD</span>
+            <span class="format-pill">📋 XML</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Stats Card -->
+      <div class="sidebar-card">
+        <div class="sidebar-header">📈 Performance</div>
+        <div class="sidebar-content">
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-value">99.2%</div>
+              <div class="stat-label">Genauigkeit</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">&lt;3s</div>
+              <div class="stat-label">Pro Rechnung</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">DSGVO</div>
+              <div class="stat-label">Konform</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">EU</div>
+              <div class="stat-label">Rechenzentrum</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quick Actions Card -->
+      <div class="sidebar-card">
+        <div class="sidebar-header">⚡ Schnellzugriff</div>
+        <div class="sidebar-content">
+          <div class="quick-actions">
+            <a href="/history" class="quick-action">📋 Rechnungsverlauf</a>
+            <a href="/copilot" class="quick-action">🤖 Finance Copilot</a>
+            <a href="/analytics" class="quick-action">📊 Analytics Dashboard</a>
+            <a href="/datev" class="quick-action">📁 DATEV Export</a>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</main>
+
+{% include 'partials/footer.html' %}
+
+<!-- Toast Container -->
+<div id="toastContainer"></div>
+
+<!-- JavaScript -->
+<script src="/static/js/main.js"></script>
+<script>
+// ============================================
+// TOAST SYSTEM
+// ============================================
+function showToast(message, type = 'info', duration = 4000) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+
+  const icons = {
+    success: '✅',
+    error: '❌',
+    info: 'ℹ️',
+    warning: '⚠️'
+  };
+
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type] || icons.info}</span>
+    <div class="toast-content">
+      <div class="toast-title">${type === 'success' ? 'Erfolg' : type === 'error' ? 'Fehler' : type === 'warning' ? 'Warnung' : 'Info'}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease-out forwards';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// ============================================
+// FILE UPLOAD LOGIC
+// ============================================
+const dropzone = document.getElementById('upload-dropzone');
+const fileInput = document.getElementById('upload-file-input');
+const browseBtn = document.getElementById('upload-browse-btn');
+const fileListSection = document.getElementById('fileListSection');
+const fileList = document.getElementById('fileList');
+const fileCountBadge = document.getElementById('fileCountBadge');
+const processBtn = document.getElementById('processBtn');
+const progressSection = document.getElementById('progressSection');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+const progressDetail = document.getElementById('progressDetail');
+
+let uploadedFiles = [];
+
+// Browse button click
+browseBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  fileInput.click();
+});
+
+// Dropzone click
+dropzone.addEventListener('click', () => {
+  fileInput.click();
+});
+
+// File input change
+fileInput.addEventListener('change', (e) => {
+  handleFiles(e.target.files);
+});
+
+// Drag and Drop
+dropzone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropzone.classList.add('dragover');
+});
+
+dropzone.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+});
+
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+// Handle files
+function handleFiles(files) {
+  const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'text/xml', 'application/xml'];
+  const maxSize = 20 * 1024 * 1024; // 20MB
+
+  Array.from(files).forEach(file => {
+    // Check type
+    const isValidType = validTypes.some(type => file.type.includes(type.split('/')[1])) || 
+                        file.name.endsWith('.xml');
+    
+    if (!isValidType) {
+      showToast(`${file.name}: Ungültiges Format`, 'error');
+      return;
+    }
+
+    // Check size
+    if (file.size > maxSize) {
+      showToast(`${file.name}: Datei zu groß (max. 20MB)`, 'error');
+      return;
+    }
+
+    // Check duplicate
+    if (uploadedFiles.some(f => f.name === file.name)) {
+      showToast(`${file.name}: Bereits hinzugefügt`, 'warning');
+      return;
+    }
+
+    uploadedFiles.push(file);
+    showToast(`${file.name} hinzugefügt`, 'success');
+  });
+
+  updateFileList();
+}
+
+// Update file list display
+function updateFileList() {
+  fileList.innerHTML = '';
+  
+  if (uploadedFiles.length === 0) {
+    fileListSection.classList.remove('active');
+    processBtn.disabled = true;
+    return;
+  }
+
+  fileListSection.classList.add('active');
+  processBtn.disabled = false;
+  fileCountBadge.textContent = uploadedFiles.length;
+
+  uploadedFiles.forEach((file, index) => {
+    const icon = file.type.includes('pdf') ? '📄' : 
+                 file.type.includes('image') ? '🖼️' : '📋';
+    
+    const size = (file.size / 1024).toFixed(1) + ' KB';
+    
+    const item = document.createElement('div');
+    item.className = 'file-item';
+    item.innerHTML = `
+      <div class="file-item-info">
+        <span class="file-item-icon">${icon}</span>
+        <div>
+          <div class="file-item-name">${file.name}</div>
+          <div class="file-item-size">${size}</div>
+        </div>
+      </div>
+      <button class="file-item-remove" onclick="removeFile(${index})">Entfernen</button>
+    `;
+    fileList.appendChild(item);
+  });
+}
+
+// Remove file
+function removeFile(index) {
+  const fileName = uploadedFiles[index].name;
+  uploadedFiles.splice(index, 1);
+  updateFileList();
+  showToast(`${fileName} entfernt`, 'info');
+}
+
+// Process files
+processBtn.addEventListener('click', async () => {
+  if (uploadedFiles.length === 0) return;
+
+  // Show progress
+  fileListSection.classList.remove('active');
+  progressSection.classList.add('active');
+  processBtn.disabled = true;
+
+  const formData = new FormData();
+  uploadedFiles.forEach(file => {
+    formData.append('files', file);
+  });
+
+  try {
+    progressText.textContent = 'Dateien werden hochgeladen...';
+    progressFill.style.width = '20%';
+
+    const response = await fetch('/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    progressFill.style.width = '50%';
+    progressText.textContent = 'KI verarbeitet Rechnungen...';
+
+    if (!response.ok) {
+      throw new Error('Upload fehlgeschlagen');
+    }
+
+    const result = await response.json();
+
+    progressFill.style.width = '100%';
+    progressText.textContent = 'Verarbeitung abgeschlossen!';
+    progressDetail.textContent = `${uploadedFiles.length} Rechnung(en) erfolgreich verarbeitet`;
+
+    showToast('Rechnungen erfolgreich verarbeitet!', 'success');
+
+    // Redirect after short delay
+    setTimeout(() => {
+      window.location.href = '/history';
+    }, 1500);
+
+  } catch (error) {
+    console.error('Error:', error);
+    showToast('Fehler bei der Verarbeitung: ' + error.message, 'error');
+    
+    // Reset UI
+    progressSection.classList.remove('active');
+    fileListSection.classList.add('active');
+    processBtn.disabled = false;
+    progressFill.style.width = '0%';
+  }
+});
+</script>
+
+</body>
+</html>
