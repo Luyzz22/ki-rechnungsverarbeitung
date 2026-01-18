@@ -158,7 +158,7 @@
     <div class="error-msg">{{ error }}</div>
     {% endif %}
     
-    <form method="POST" action="/register">
+    <form method="POST" action="/register?next={{ request.query_params.get('next', '/dashboard') }}" action="/register">
       <div class="form-group">
         <label>Name</label>
         <input type="text" name="name" class="form-input" placeholder="Max Mustermann">
@@ -211,7 +211,7 @@
     </form>
     
     <div class="auth-footer">
-      Bereits registriert? <a href="/login">Anmelden</a>
+      Bereits registriert? <a href="/login?next={{ request.query_params.get('next', '/dashboard') }}">Anmelden</a>
     </div>
   </div>
 </div>

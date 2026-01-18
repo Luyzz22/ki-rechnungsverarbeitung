@@ -170,6 +170,17 @@
       color: #fff;
     }
     
+    .action-btn.upgrade {
+      background: linear-gradient(135deg, #FFB900, #f59e0b);
+      color: #1e293b;
+      font-weight: 600;
+      border: none;
+    }
+    .action-btn.upgrade:hover {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      transform: translateY(-2px);
+    }
+
     .action-btn.secondary {
       background: #f1f5f9;
       color: #475569;
@@ -384,9 +395,14 @@
         </div>
         
         <div class="quick-actions">
+          {% if invoice_plan == 'Free' %}
+          <a href="/static/preise/" class="action-btn upgrade">🚀 Jetzt freischalten</a>
+          <a href="/" class="action-btn secondary">📤 Demo testen</a>
+          {% else %}
           <a href="/history" class="action-btn primary">📤 Rechnungen hochladen</a>
           <a href="/copilot" class="action-btn secondary">🤖 Copilot</a>
           <a href="/analytics" class="action-btn secondary">📊 Analytics</a>
+          {% endif %}
         </div>
       </div>
       
@@ -410,9 +426,14 @@
         </div>
         
         <div class="quick-actions">
+          {% if contract_plan == 'Free' %}
+          <a href="https://sbsdeutschland.com/loesungen/vertragsanalyse/preise.html" class="action-btn upgrade">🚀 Jetzt freischalten</a>
+          <a href="https://contract.sbsdeutschland.com/demo" class="action-btn secondary">📤 Demo testen</a>
+          {% else %}
           <a href="https://contract.sbsdeutschland.com/upload" class="action-btn primary contract">📤 Vertrag analysieren</a>
           <a href="https://contract.sbsdeutschland.com/copilot" class="action-btn secondary">🤖 Copilot</a>
           <a href="https://contract.sbsdeutschland.com/history" class="action-btn secondary">📁 Verlauf</a>
+          {% endif %}
         </div>
       </div>
     </div>

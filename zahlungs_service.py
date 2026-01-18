@@ -393,23 +393,38 @@ class ZahlungsService:
         conn.commit()
         conn.close()
     
-    def get_offene_zahlungen(self, limit: int = 100) -> List[Dict]:
+    def get_offene_zahlungen(self, user_id: int = None, limit: int = 100) -> List[Dict]:
         """Holt alle offenen Zahlungen mit Vorschlägen"""
         conn = self._get_connection()
         cursor = conn.cursor()
         
         # Hole Rechnungen mit Status 'approved' die noch nicht bezahlt sind
-        cursor.execute("""
-            SELECT i.*, z.faelligkeit as z_faelligkeit, z.skonto_prozent, z.skonto_tage,
-                   z.skonto_datum, z.skonto_betrag, z.zahlungsziel_tage, z.empfehlung,
-                   z.empfehlung_grund, z.geplantes_zahldatum, z.zahlungsstatus
-            FROM invoices i
-            LEFT JOIN zahlungsbedingungen z ON i.id = z.invoice_id
-            WHERE i.status = 'approved'
-              AND (z.zahlungsstatus IS NULL OR z.zahlungsstatus = 'offen')
-            ORDER BY COALESCE(z.faelligkeit, date(i.datum, '+30 days')) ASC
-            LIMIT ?
-        """, (limit,))
+        if user_id:
+            cursor.execute("""
+                SELECT i.*, z.faelligkeit as z_faelligkeit, z.skonto_prozent, z.skonto_tage,
+                       z.skonto_datum, z.skonto_betrag, z.zahlungsziel_tage, z.empfehlung,
+                       z.empfehlung_grund, z.geplantes_zahldatum, z.zahlungsstatus
+                FROM invoices i
+                JOIN jobs j ON i.job_id = j.job_id
+                LEFT JOIN zahlungsbedingungen z ON i.id = z.invoice_id
+                WHERE i.status = 'approved'
+                  AND j.user_id = ?
+                  AND (z.zahlungsstatus IS NULL OR z.zahlungsstatus = 'offen')
+                ORDER BY COALESCE(z.faelligkeit, date(i.datum, '+30 days')) ASC
+                LIMIT ?
+            """, (user_id, limit))
+        else:
+            cursor.execute("""
+                SELECT i.*, z.faelligkeit as z_faelligkeit, z.skonto_prozent, z.skonto_tage,
+                       z.skonto_datum, z.skonto_betrag, z.zahlungsziel_tage, z.empfehlung,
+                       z.empfehlung_grund, z.geplantes_zahldatum, z.zahlungsstatus
+                FROM invoices i
+                LEFT JOIN zahlungsbedingungen z ON i.id = z.invoice_id
+                WHERE i.status = 'approved'
+                  AND (z.zahlungsstatus IS NULL OR z.zahlungsstatus = 'offen')
+                ORDER BY COALESCE(z.faelligkeit, date(i.datum, '+30 days')) ASC
+                LIMIT ?
+            """, (limit,))
         
         rows = cursor.fetchall()
         conn.close()
@@ -511,6 +526,46 @@ class ZahlungsService:
         
         conn.commit()
         conn.close()
+
+
+    def get_skonto_chancen(self, user_id: int = None, limit: int = 20) -> List[Dict]:
+        """Holt Rechnungen mit nutzbarem Skonto"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        
+        if user_id:
+            cursor.execute("""
+                SELECT i.id, i.rechnungsnummer, i.rechnungsaussteller, i.betrag_brutto,
+                       z.skonto_prozent, z.skonto_tage, z.skonto_datum, z.skonto_betrag,
+                       z.faelligkeit
+                FROM invoices i
+                JOIN jobs j ON i.job_id = j.job_id
+                JOIN zahlungsbedingungen z ON i.id = z.invoice_id
+                WHERE i.status = 'approved'
+                  AND j.user_id = ?
+                  AND z.skonto_datum >= date('now')
+                  AND z.zahlungsstatus = 'offen'
+                ORDER BY z.skonto_datum ASC
+                LIMIT ?
+            """, (user_id, limit))
+        else:
+            cursor.execute("""
+                SELECT i.id, i.rechnungsnummer, i.rechnungsaussteller, i.betrag_brutto,
+                       z.skonto_prozent, z.skonto_tage, z.skonto_datum, z.skonto_betrag,
+                       z.faelligkeit
+                FROM invoices i
+                JOIN zahlungsbedingungen z ON i.id = z.invoice_id
+                WHERE i.status = 'approved'
+                  AND z.skonto_datum >= date('now')
+                  AND z.zahlungsstatus = 'offen'
+                ORDER BY z.skonto_datum ASC
+                LIMIT ?
+            """, (limit,))
+        
+        rows = cursor.fetchall()
+        conn.close()
+        
+        return [dict(row) for row in rows]
 
 
 # Singleton

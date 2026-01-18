@@ -1,4 +1,3 @@
-from enterprise_features import get_ai_financial_analysis
 """
 SBS Deutschland - Notification API Endpoints
 =============================================
@@ -498,9 +497,6 @@ def _send_weekly_email(user_email: str, user_name: str, stats: dict) -> bool:
 
 
 def _send_weekly_slack(webhook_url: str, user_name: str, stats: dict) -> bool:
-    # KI Analyse für Enterprise Report generieren
-    ai_comment = get_ai_financial_analysis(stats, user_name)
-
     """Sendet wöchentlichen Report an Slack"""
     import requests
     

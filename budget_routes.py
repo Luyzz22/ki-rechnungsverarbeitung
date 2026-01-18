@@ -320,10 +320,14 @@ async def sync_budget_from_kontierung():
 
 
 @router.get("/api/budget/offene-posten")
-async def get_offene_posten(kategorie_id: int = Query(default=None)):
+async def get_offene_posten(request: Request, kategorie_id: int = Query(default=None)):
     """
     Zeigt offene (unbezahlte) Rechnungen pro Budget-Kategorie
     """
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return {"offene_posten": [], "anzahl": 0, "error": "Not authenticated"}
+    
     conn = budget_service._get_connection()
     cursor = conn.cursor()
     
@@ -334,10 +338,12 @@ async def get_offene_posten(kategorie_id: int = Query(default=None)):
             bk.id as kategorie_id, bk.name as kategorie_name,
             kh.final_account
         FROM invoices i
+        JOIN jobs j ON i.job_id = j.job_id
         LEFT JOIN kontierung_historie kh 
             ON LOWER(i.rechnungsaussteller) LIKE '%' || LOWER(kh.lieferant_pattern) || '%'
         LEFT JOIN budget_kategorien bk ON 1=1
-        WHERE i.payment_status != 'paid' OR i.payment_status IS NULL
+        WHERE j.user_id = """ + str(user_id) + """
+          AND (i.payment_status != 'paid' OR i.payment_status IS NULL)
     """
     
     if kategorie_id:
