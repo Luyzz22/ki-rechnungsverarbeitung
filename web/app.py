@@ -911,6 +911,75 @@ def is_admin_user(user_id: int) -> bool:
 
 
 
+
+@app.get("/mbr/monthly.pptx")
+async def download_monthly_mbr(request: Request):
+    """
+    One-click Monthly Business Review (MBR) download.
+    - Auth-guarded via require_login (session).
+    - Returns editable PPTX (no image exports).
+    """
+    redirect = require_login(request)
+    if redirect:
+        return redirect
+
+    import io
+    import os
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    from fastapi.responses import StreamingResponse, JSONResponse
+
+    # Filename uses Berlin TZ, previous month window
+    tz = ZoneInfo("Europe/Berlin")
+    now = datetime.now(tz=tz)
+    year = now.year
+    month = now.month - 1
+    if month == 0:
+        month = 12
+        year -= 1
+    filename = f"MBR_{year}-{month:02d}.pptx"
+
+    # LLM API key (optional; generator also supports use_llm=False)
+    api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("MBR_LLM_API_KEY")
+
+    conn = None
+    try:
+        from mbr.generator import generate_presentation
+
+        conn = sqlite3.connect("invoices.db", check_same_thread=False)
+        pptx_bytes = generate_presentation(conn, api_key=api_key)
+
+        headers = {
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-store",
+        }
+        return StreamingResponse(
+            io.BytesIO(pptx_bytes),
+            media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            headers=headers,
+        )
+
+    except FileNotFoundError as e:
+        app_logger.error(f"MBR template missing: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": "MBR_TEMPLATE_MISSING", "message": str(e)},
+        )
+    except Exception as e:
+        app_logger.exception("MBR generation failed")
+        return JSONResponse(
+            status_code=500,
+            content={"error": "MBR_GENERATION_FAILED", "message": str(e)},
+        )
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:
+            pass
+
+
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def unified_dashboard(request: Request):
     """Unified Dashboard für Multi-Product User"""
