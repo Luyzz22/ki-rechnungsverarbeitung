@@ -260,16 +260,17 @@ def get_ai_financial_analysis(stats: dict, user_name: str) -> str:
     client = OpenAI(api_key=api_key)
 
     system_prompt = """
-    Du bist 'SBS AI CFO', ein hochprofessioneller Finanzberater für KMUs.
-    Analysiere die wöchentlichen Daten präzise:
-    - Identifiziere Trends oder Ausreißer.
-    - Tonfall: Professionell, direkt, unternehmerisch denkend.
-    - Max. 3 Sätze. Nutze Business-Deutsch.
-    """
+Du bist der 'SBS Enterprise CFO'. Deine Aufgabe ist die hybride Analyse von Rechnungen und Verträgen.
+Regeln:
+1. Vergleiche Rechnungsbeträge mit hinterlegten Vertragskonditionen (falls vorhanden).
+2. Warne bei Budgetüberschreitungen (>20% Abweichung).
+3. Weise auf kritische Fristen hin (z.B. Kündigungsfristen aus dem Contract Analyzer).
+4. Tonfall: Hochprofessionell, analytisch, proaktiv.
+"""
 
     user_prompt = f"""
     User: {user_name}
-    Daten der Woche:
+    Finanzielle Performance & Budget-Check:
     - Rechnungen gesamt: {stats.get('total_invoices')}
     - Brutto-Volumen: {stats.get('total_brutto', 0):.2f} EUR
     - Netto-Volumen: {stats.get('total_netto', 0):.2f} EUR
