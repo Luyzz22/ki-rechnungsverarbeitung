@@ -400,6 +400,9 @@ def _generate_and_send_weekly_report(user_email: str, user_name: str) -> dict:
 
 
 def _send_weekly_email(user_email: str, user_name: str, stats: dict) -> bool:
+    # KI Analyse für E-Mail generieren
+    ai_comment = get_ai_financial_analysis(stats, user_name)
+
     """Sendet wöchentlichen Report per E-Mail"""
     import os
     
@@ -417,6 +420,9 @@ def _send_weekly_email(user_email: str, user_name: str, stats: dict) -> bool:
     
     # HTML Email
     html_content = f"""
+<div style='background:#f8fafc; padding:20px; border-left:4px solid #003856; margin-bottom:20px;'>
+  <p style='font-style:italic; color:#1e293b; font-size:16px;'><strong>AI CFO Analyse:</strong><br> {ai_comment}</p>
+</div>
     <!DOCTYPE html>
     <html>
     <head>
