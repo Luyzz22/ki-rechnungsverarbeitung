@@ -9,6 +9,33 @@
   <link rel="stylesheet" href="/static/css/components.css" />
   <link rel="stylesheet" href="/static/css/app-shell.css" />
 
+async function sendCfoChat() {
+  const input = document.getElementById("cfo-chat-input");
+  const history = document.getElementById("chat-history");
+  const msg = input.value.trim();
+  if(!msg) return;
+  
+  history.innerHTML += "<div style=\"text-align:right; margin-bottom:8px;\"><span style=\"background:#003856; color:white; padding:6px 12px; border-radius:12px; display:inline-block; max-width:80%;\">"+msg+"</span></div>";
+  input.value = "";
+  history.scrollTop = history.scrollHeight;
+  
+  history.innerHTML += "<div style=\"text-align:left; margin-bottom:8px;\"><span style=\"background:#e2e8f0; color:#1e293b; padding:6px 12px; border-radius:12px; display:inline-block;\">⏳ Denke nach...</span></div>";
+  
+  try {
+    const res = await fetch("/api/ai/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({message: msg})
+    });
+    const data = await res.json();
+    history.lastChild.remove();
+    history.innerHTML += "<div style=\"text-align:left; margin-bottom:8px;\"><span style=\"background:#e2e8f0; color:#1e293b; padding:6px 12px; border-radius:12px; display:inline-block; max-width:80%;\">"+data.response+"</span></div>";
+  } catch(e) {
+    history.lastChild.remove();
+    history.innerHTML += "<div style=\"text-align:left; margin-bottom:8px;\"><span style=\"background:#fee2e2; color:#dc2626; padding:6px 12px; border-radius:12px; display:inline-block;\">Fehler beim Verbinden</span></div>";
+  }
+  history.scrollTop = history.scrollHeight;
+}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root { --sbs-blue: #003856; --sbs-yellow: #FFB900; }

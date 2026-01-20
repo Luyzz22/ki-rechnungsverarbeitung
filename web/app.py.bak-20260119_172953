@@ -6455,32 +6455,31 @@ async def get_ai_drilldown():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        # 1. Top Kostentreiber (echte invoices-Daten, gruppiert nach Lieferant)
+        # 1. Top Kostentreiber (Kategorien mit höchsten Ausgaben)
         cursor.execute("""
-            SELECT rechnungsaussteller as name, SUM(betrag_netto) as betrag 
-            FROM invoices
-            WHERE betrag_netto > 0
-            GROUP BY rechnungsaussteller 
+            SELECT k.name, sum(r.netto_betrag) as betrag 
+            FROM rechnungen r
+            JOIN budget_kategorien k ON r.kategorie_id = k.id
+            GROUP BY k.id 
             ORDER BY betrag DESC 
             LIMIT 3
         """)
         top_movers = [{"name": row['name'], "amount": row['betrag']} for row in cursor.fetchall()]
         
-        # 2. Letzte kritische Rechnungen mit ID für PDF-Link
+        # 2. Letzte kritische Rechnungen (> 500 EUR)
         cursor.execute("""
-            SELECT id, rechnungsaussteller as lieferant, betrag_netto as netto_betrag, 
-                   datum as rechnungs_datum, 'Ausgaben' as kategorie
-            FROM invoices
-            WHERE betrag_netto > 500
-            ORDER BY datum DESC 
+            SELECT r.lieferant, r.netto_betrag, r.rechnungs_datum, k.name as kategorie
+            FROM rechnungen r
+            LEFT JOIN budget_kategorien k ON r.kategorie_id = k.id
+            WHERE r.netto_betrag > 500
+            ORDER BY r.rechnungs_datum DESC 
             LIMIT 5
         """)
         recent_invoices = [{
-            "id": row['id'],
             "vendor": row['lieferant'], 
             "amount": row['netto_betrag'],
             "date": row['rechnungs_datum'],
-            "cat": row['kategorie'] or 'Nicht kategorisiert'
+            "cat": row['kategorie']
         } for row in cursor.fetchall()]
         
         conn.close()
@@ -6495,89 +6494,3 @@ async def get_ai_drilldown():
     except Exception as e:
         print(f"Drilldown Error: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)})
-
-
-# ============================================================
-# CFO-BOT CHAT - Interactive AI Assistant
-# ============================================================
-
-@app.post("/api/ai/chat")
-async def chat_with_cfo(request: Request):
-    """Interaktiver CFO-Chat mit Echtzeit-Datenbankzugriff"""
-    try:
-        data = await request.json()
-        user_msg = data.get('message', '')
-        
-        if not user_msg:
-            return JSONResponse({"response": "Bitte stellen Sie eine Frage."})
-        
-        # Datenbank-Kontext laden
-        db_path = '/var/www/invoice-app/invoices.db'
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        # Aktuelle Finanzdaten sammeln
-        cursor.execute("SELECT COUNT(*) as cnt, SUM(betrag_netto) as total FROM invoices")
-        row = cursor.fetchone()
-        total_invoices = row['cnt'] or 0
-        total_amount = row['total'] or 0
-        
-        # Top 5 Lieferanten
-        cursor.execute("""
-            SELECT rechnungsaussteller, SUM(betrag_netto) as summe, COUNT(*) as anzahl
-            FROM invoices 
-            GROUP BY rechnungsaussteller 
-            ORDER BY summe DESC 
-            LIMIT 5
-        """)
-        top_suppliers = [{"name": r['rechnungsaussteller'], "summe": r['summe'], "anzahl": r['anzahl']} for r in cursor.fetchall()]
-        
-        # Offene Rechnungen
-        cursor.execute("SELECT COUNT(*) as cnt, SUM(betrag_netto) as total FROM invoices WHERE payment_status != 'paid' OR payment_status IS NULL")
-        row = cursor.fetchone()
-        open_count = row['cnt'] or 0
-        open_amount = row['total'] or 0
-        
-        conn.close()
-        
-        # Kontext für KI
-        context = f"""
-AKTUELLE FINANZDATEN:
-- Gesamtrechnungen: {total_invoices}
-- Gesamtvolumen: {total_amount:,.2f} EUR
-- Offene Rechnungen: {open_count} ({open_amount:,.2f} EUR)
-
-TOP LIEFERANTEN:
-"""
-        for s in top_suppliers:
-            context += f"- {s['name']}: {s['summe']:,.2f} EUR ({s['anzahl']} Rechnungen)\n"
-        
-        # LLM Router versuchen
-        try:
-            sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-            from llm_router import LLMRouter
-            
-            system_prompt = f"""Du bist der SBS AI CFO - ein intelligenter Finanzassistent.
-Antworte kurz, präzise und professionell auf Deutsch.
-Nutze die folgenden Echtzeit-Daten für deine Analyse:
-
-{context}
-
-Beantworte die Frage des Users basierend auf diesen Daten."""
-
-            response = await LLMRouter.generate_response(
-                f"{system_prompt}\n\nUser-Frage: {user_msg}",
-                provider="openai",
-                model="gpt-4o"
-            )
-        except Exception as llm_error:
-            print(f"LLM Error: {llm_error}")
-            # Fallback ohne KI
-            response = f"📊 Basierend auf aktuellen Daten: {total_invoices} Rechnungen mit {total_amount:,.2f} EUR Gesamtvolumen. {open_count} Rechnungen sind noch offen."
-        
-        return JSONResponse({"response": response})
-        
-    except Exception as e:
-        print(f"Chat Error: {e}")
-        return JSONResponse({"response": f"Entschuldigung, ein Fehler ist aufgetreten: {str(e)}"})

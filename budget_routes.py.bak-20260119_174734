@@ -12,25 +12,6 @@ import glob
 
 from budget_service import BudgetService
 
-# User-Info Funktion
-def get_user_info(user_id):
-    """Holt User-Informationen aus der Datenbank"""
-    if not user_id:
-        return {"id": 0, "email": "", "name": "User", "is_admin": False}
-    try:
-        import sqlite3
-        conn = sqlite3.connect("invoices.db", check_same_thread=False)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, email, name, is_admin FROM users WHERE id = ?", (user_id,))
-        row = cursor.fetchone()
-        conn.close()
-        if row:
-            return {"id": row["id"], "email": row["email"], "name": row["name"] or "User", "is_admin": bool(row["is_admin"])}
-    except Exception:
-        pass
-    return {"id": user_id, "email": "", "name": "User", "is_admin": False}
-
 router = APIRouter(tags=["Budget"])
 templates = Jinja2Templates(directory="web/templates")
 budget_service = BudgetService()
@@ -63,12 +44,10 @@ async def budget_dashboard(request: Request, jahr: int = Query(default=None), mo
     trend_data = budget_service.get_trend_data(monate_zurueck=12)
     pie_data = budget_service.get_kategorie_verteilung(jahr, monat)
     
-    user_id = request.session.get("user_id")
-    user_info = get_user_info(user_id)
     return templates.TemplateResponse("budget.html", {
         "request": request, "jahr": jahr, "monat": monat,
         "monat_namen": MONAT_NAMEN, "summary": summary,
-        "trend_data": trend_data, "pie_data": pie_data, "user_info": user_info
+        "trend_data": trend_data, "pie_data": pie_data
     })
 
 @router.get("/budget/jahr", response_class=HTMLResponse)
