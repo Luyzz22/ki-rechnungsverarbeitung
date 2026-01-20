@@ -2,62 +2,321 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <title>Team · SBS KI-Rechnungsverarbeitung</title>
+  <title>Team & Rollen · SBS KI-Rechnungsverarbeitung</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/static/css/design-tokens.css">
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/design-tokens.css" />
+  <link rel="stylesheet" href="/static/css/components.css" />
+  <link rel="stylesheet" href="/static/css/app-shell.css" />
   <link rel="stylesheet" href="/static/css/main.css">
   <style>
-    .team-container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
-    .team-card { background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 24px; }
-    .member-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid #f1f5f9; }
-    .member-row:last-child { border: none; }
-    .member-info { display: flex; align-items: center; gap: 16px; }
-    .member-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #003856, #00507a); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; }
-    .btn-invite { background: linear-gradient(135deg, #FFB900, #e6a600); color: #003856; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+    .team-container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+    .team-hero { background: linear-gradient(135deg, #003856 0%, #00507a 100%); color: white; padding: 40px 24px; text-align: center; margin-bottom: 32px; border-radius: 16px; }
+    .team-hero h1 { margin: 0; font-size: 2rem; }
+    .team-hero p { margin: 8px 0 0; opacity: 0.9; }
+    
+    .team-grid { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+    @media (max-width: 900px) { .team-grid { grid-template-columns: 1fr; } }
+    
+    .team-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .team-card h3 { margin: 0 0 20px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+    
+    .member-row { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-radius: 12px; margin-bottom: 12px; background: #f8fafc; transition: all 0.2s; }
+    .member-row:hover { background: #f1f5f9; }
+    .member-info { display: flex; align-items: center; gap: 14px; }
+    .member-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: white; font-size: 0.9rem; }
+    .member-name { font-weight: 600; color: #1e293b; }
+    .member-email { font-size: 0.8rem; color: #64748b; }
+    .member-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    
+    .role-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+    .role-owner { background: #f3e8ff; color: #7c3aed; }
+    .role-admin { background: #fee2e2; color: #dc2626; }
+    .role-manager { background: #fef3c7; color: #d97706; }
+    .role-member { background: #dcfce7; color: #16a34a; }
+    .role-viewer { background: #dbeafe; color: #2563eb; }
+    
+    .role-select { padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; background: white; cursor: pointer; }
+    .role-select:focus { outline: none; border-color: #003856; }
+    
+    .btn-primary { background: linear-gradient(135deg, #003856, #00507a); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+    .btn-primary:hover { transform: translateY(-2px); }
+    .btn-secondary { background: #f1f5f9; color: #475569; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 500; cursor: pointer; }
+    .btn-danger { background: #fee2e2; color: #dc2626; border: none; padding: 8px 14px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; }
+    
+    .role-card { padding: 14px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid; }
+    .role-card h4 { margin: 0 0 4px; font-size: 0.95rem; }
+    .role-card p { margin: 0; font-size: 0.8rem; color: #64748b; }
+    .role-card.owner { background: #faf5ff; border-color: #7c3aed; }
+    .role-card.admin { background: #fef2f2; border-color: #dc2626; }
+    .role-card.manager { background: #fffbeb; border-color: #d97706; }
+    .role-card.member { background: #f0fdf4; border-color: #16a34a; }
+    .role-card.viewer { background: #eff6ff; border-color: #2563eb; }
+    
+    .invite-form { display: flex; gap: 10px; margin-top: 16px; }
+    .invite-form input { flex: 1; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; }
+    .invite-form input:focus { outline: none; border-color: #003856; }
+    
+    .stats-row { display: flex; gap: 16px; margin-bottom: 24px; }
+    .stat-box { flex: 1; background: #f8fafc; padding: 16px; border-radius: 12px; text-align: center; }
+    .stat-value { font-size: 1.5rem; font-weight: 700; color: #003856; }
+    .stat-label { font-size: 0.8rem; color: #64748b; }
+    
+    .empty-state { text-align: center; padding: 40px; color: #64748b; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1e293b; color: white; padding: 14px 24px; border-radius: 10px; display: none; z-index: 1000; }
+    .toast.success { background: #16a34a; }
+    .toast.error { background: #dc2626; }
   </style>
 </head>
 <body>
 {% include 'partials/header.html' %}
 
 <div class="team-container">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
-    <h1>👥 Team-Verwaltung</h1>
-    <button class="btn-invite" onclick="inviteUser()">+ Mitglied einladen</button>
+  <div class="team-hero">
+    <h1>👥 Team & Rollen</h1>
+    <p>Verwalten Sie Ihr Team und deren Berechtigungen</p>
   </div>
-  
-  <div class="team-card">
-    <h3 style="margin-bottom: 20px;">Mitglieder</h3>
-    
-    <div class="member-row">
-      <div class="member-info">
-        <div class="member-avatar">{{ user.name[0] if user else 'U' }}</div>
-        <div>
-          <strong>{{ user.name if user else 'User' }}</strong>
-          <br><small style="color: #64748b;">{{ user.email if user else '' }} · Admin</small>
-        </div>
-      </div>
-      <span style="color: #10b981;">👑 Owner</span>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-value" id="totalMembers">-</div>
+      <div class="stat-label">Team-Mitglieder</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="adminCount">-</div>
+      <div class="stat-label">Admins</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="activeToday">-</div>
+      <div class="stat-label">Heute aktiv</div>
     </div>
   </div>
-  
-  <div class="team-card" style="text-align: center; padding: 48px;">
-    <p style="color: #64748b; margin-bottom: 16px;">Team-Features sind in Ihrem aktuellen Plan verfügbar.</p>
-    <button class="btn-invite" onclick="inviteUser()">+ Erstes Mitglied einladen</button>
+
+  <div class="team-grid">
+    <!-- Linke Spalte: Team-Mitglieder -->
+    <div>
+      <div class="team-card">
+        <h3>🧑‍💼 Team-Mitglieder</h3>
+        <div id="membersList">
+          <div class="empty-state">Lade Team...</div>
+        </div>
+      </div>
+      
+      <div class="team-card" style="margin-top: 24px;">
+        <h3>✉️ Mitglied einladen</h3>
+        <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 12px;">Laden Sie neue Mitglieder per E-Mail ein.</p>
+        <div class="invite-form">
+          <input type="email" id="inviteEmail" placeholder="email@beispiel.de">
+          <select id="inviteRole" class="role-select">
+            <option value="member">Mitarbeiter</option>
+            <option value="manager">Manager</option>
+            <option value="viewer">Viewer</option>
+          </select>
+          <button class="btn-primary" onclick="inviteUser()">Einladen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rechte Spalte: Rollen-Übersicht -->
+    <div>
+      <div class="team-card">
+        <h3>🎭 Verfügbare Rollen</h3>
+        
+        <div class="role-card owner">
+          <h4>👑 Owner</h4>
+          <p>Vollzugriff inkl. Abrechnung & Kontolöschung</p>
+        </div>
+        
+        <div class="role-card admin">
+          <h4>🔐 Admin</h4>
+          <p>Alles außer Abrechnung. User-Verwaltung, Audit.</p>
+        </div>
+        
+        <div class="role-card manager">
+          <h4>📊 Manager</h4>
+          <p>Freigaben, Exporte, Reports, Budget-Ansicht</p>
+        </div>
+        
+        <div class="role-card member">
+          <h4>👤 Mitarbeiter</h4>
+          <p>Upload, Bearbeitung, Analytics (keine Freigaben)</p>
+        </div>
+        
+        <div class="role-card viewer">
+          <h4>👁️ Viewer</h4>
+          <p>Nur Lesezugriff auf Rechnungen & Analytics</p>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<script>
-function inviteUser() {
-  var email = prompt('E-Mail-Adresse des neuen Mitglieds:');
-  if (email) {
-    alert('Einladung an ' + email + ' wird versendet... (Demo)');
-  }
-}
-</script>
+<div class="toast" id="toast"></div>
 
 {% include 'partials/footer.html' %}
-<link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
-<script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
+
+<script>
+const roleColors = {
+  'owner': '#7c3aed', 'admin': '#dc2626', 'manager': '#d97706', 
+  'member': '#16a34a', 'viewer': '#2563eb', 'finance_manager': '#16a34a',
+  'accountant': '#d97706'
+};
+
+const roleLabels = {
+  'owner': '👑 Owner', 'admin': '🔐 Admin', 'manager': '📊 Manager',
+  'member': '👤 Mitarbeiter', 'viewer': '👁️ Viewer', 
+  'finance_manager': '💼 Finance Manager', 'accountant': '📒 Buchhalter'
+};
+
+async function loadTeam() {
+  try {
+    const res = await fetch('/api/team/members');
+    const data = await res.json();
+    
+    if (data.error) {
+      document.getElementById('membersList').innerHTML = `<div class="empty-state">${data.error}</div>`;
+      return;
+    }
+    
+    const members = data.members || [];
+    const roles = data.roles || [];
+    
+    // Stats
+    document.getElementById('totalMembers').textContent = members.length;
+    document.getElementById('adminCount').textContent = members.filter(m => 
+      (m.roles || []).some(r => ['admin', 'owner'].includes(r.name))
+    ).length;
+    document.getElementById('activeToday').textContent = data.active_today || 0;
+    
+    // Members List
+    if (members.length === 0) {
+      document.getElementById('membersList').innerHTML = '<div class="empty-state">Noch keine Team-Mitglieder</div>';
+      return;
+    }
+    
+    document.getElementById('membersList').innerHTML = members.map(m => {
+      const userRoles = m.roles || [];
+      const primaryRole = userRoles[0] || { name: 'member', display_name: 'Mitarbeiter' };
+      const avatarColor = roleColors[primaryRole.name] || '#64748b';
+      const initials = (m.name || m.email || 'U').substring(0, 2).toUpperCase();
+      
+      const roleOptions = roles.map(r => `
+        <option value="${r.id}" ${userRoles.some(ur => ur.id === r.id) ? 'selected' : ''}>
+          ${r.display_name}
+        </option>
+      `).join('');
+      
+      return `
+        <div class="member-row">
+          <div class="member-info">
+            <div class="member-avatar" style="background: ${avatarColor};">${initials}</div>
+            <div>
+              <div class="member-name">${m.name || 'Unbenannt'}</div>
+              <div class="member-email">${m.email}</div>
+              <div class="member-meta">
+                ${userRoles.map(r => `
+                  <span class="role-badge role-${r.name}">${roleLabels[r.name] || r.display_name}</span>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select class="role-select" onchange="changeRole(${m.id}, this.value)" ${m.is_current_user ? 'disabled title="Eigene Rolle kann nicht geändert werden"' : ''}>
+              ${roleOptions}
+            </select>
+            ${!m.is_current_user ? `<button class="btn-danger" onclick="removeUser(${m.id})">Entfernen</button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+  } catch (e) {
+    console.error(e);
+    document.getElementById('membersList').innerHTML = '<div class="empty-state">Fehler beim Laden</div>';
+  }
+}
+
+async function changeRole(userId, roleId) {
+  try {
+    const res = await fetch('/api/team/role', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, role_id: parseInt(roleId), action: 'set' })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      showToast('Rolle aktualisiert', 'success');
+      loadTeam();
+    } else {
+      showToast(data.error || 'Fehler', 'error');
+    }
+  } catch (e) {
+    showToast('Fehler: ' + e.message, 'error');
+  }
+}
+
+async function inviteUser() {
+  const email = document.getElementById('inviteEmail').value.trim();
+  const role = document.getElementById('inviteRole').value;
+  
+  if (!email) {
+    showToast('Bitte E-Mail eingeben', 'error');
+    return;
+  }
+  
+  try {
+    const res = await fetch('/api/team/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, role })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      showToast('Einladung versendet!', 'success');
+      document.getElementById('inviteEmail').value = '';
+      loadTeam();
+    } else {
+      showToast(data.error || 'Fehler', 'error');
+    }
+  } catch (e) {
+    showToast('Fehler: ' + e.message, 'error');
+  }
+}
+
+async function removeUser(userId) {
+  if (!confirm('User wirklich aus dem Team entfernen?')) return;
+  
+  try {
+    const res = await fetch('/api/team/remove', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      showToast('User entfernt', 'success');
+      loadTeam();
+    } else {
+      showToast(data.error || 'Fehler', 'error');
+    }
+  } catch (e) {
+    showToast('Fehler: ' + e.message, 'error');
+  }
+}
+
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast ' + type;
+  toast.style.display = 'block';
+  setTimeout(() => toast.style.display = 'none', 3000);
+}
+
+document.addEventListener('DOMContentLoaded', loadTeam);
+</script>
 <script src="/static/js/app-shell.js"></script>
 </body>
 </html>
