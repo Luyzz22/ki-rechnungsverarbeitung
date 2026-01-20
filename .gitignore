@@ -112,3 +112,9 @@ pytestdebug.log
 # Allow SBS logo to be tracked even though /web/static is ignored
 !web/static/sbs-logo-new.png
 .env
+
+# --- Enterprise hygiene: never commit backup artifacts ---
+web/*.bak-*
+web/templates/*.bak-*
+backups/*.db.gz
+*.bak-*
