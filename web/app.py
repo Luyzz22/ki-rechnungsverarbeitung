@@ -3267,7 +3267,12 @@ async def team_page(request: Request):
     redirect = require_login(request)
     if redirect:
         return redirect
-    return templates.TemplateResponse("team.html", {"request": request})
+    # RBAC: Nur Admins können Team verwalten
+    user_id = request.session.get("user_id")
+    if not is_admin_or_owner(user_id):
+        return RedirectResponse("/dashboard?error=no_permission", status_code=303)
+    user_info = get_user_info(user_id)
+    return templates.TemplateResponse("team.html", {"request": request, "user": user_info})
 
 @app.get("/audit-log", response_class=HTMLResponse)
 async def audit_log_page(request: Request):
@@ -4406,7 +4411,29 @@ async def get_team_members(request: Request):
     
     conn.close()
     
-    return {"members": members, "roles": roles}
+    # Parse Rollen-Strings zu Arrays
+    for m in members:
+        m['is_current_user'] = (m['id'] == user_id)
+        role_names = (m.get('roles') or '').split(',')
+        role_colors = (m.get('role_colors') or '').split(',')
+        role_ids = (m.get('role_ids') or '').split(',')
+        m['roles'] = []
+        for i, name in enumerate(role_names):
+            if name:
+                m['roles'].append({
+                    'id': int(role_ids[i]) if i < len(role_ids) and role_ids[i] else 0,
+                    'display_name': name,
+                    'name': name.lower().replace(' ', '_'),
+                    'color': role_colors[i] if i < len(role_colors) else '#64748b'
+                })
+    
+    # Heute aktive User zählen
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(DISTINCT user_id) FROM audit_log WHERE DATE(timestamp) = DATE('now')")
+    active_today = cursor.fetchone()[0]
+    conn.close()
+    
+    return {"members": members, "roles": roles, "active_today": active_today}
 
 
 @app.post("/api/team/role", tags=["Team"])
@@ -5022,15 +5049,7 @@ async def billing_page(request: Request):
     from starlette.responses import RedirectResponse
     return RedirectResponse(url='/settings#subscription', status_code=303)
 
-@app.get("/team", response_class=HTMLResponse)
-async def team_page(request: Request):
-    """Team-Verwaltung"""
-    if 'user_id' not in request.session:
-        from starlette.responses import RedirectResponse
-        return RedirectResponse(url='/login', status_code=303)
-    from database import get_user_by_id
-    user = get_user_by_id(request.session['user_id'])
-    return templates.TemplateResponse("team.html", {"request": request, "user": user})
+# Duplikat entfernt - Team-Route ist oben definiert
 
 @app.get("/export-historie", response_class=HTMLResponse)
 async def export_history_page(request: Request):
