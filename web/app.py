@@ -1149,6 +1149,10 @@ async def job_details_page_old(request: Request, job_id: str):
     plausibility_warnings = get_plausibility_warnings_for_job(job_id)
 
     # 7) Template rendern
+    # User-Info für Header
+    user_id = request.session.get("user_id")
+    user_info = get_user_info(user_id)
+    
     return templates.TemplateResponse(
         "job_details.html",
         {
@@ -1159,6 +1163,7 @@ async def job_details_page_old(request: Request, job_id: str):
             "aussteller_stats": aussteller_list,
             "plausibility_warnings": plausibility_warnings,
             "duplicates": duplicates,
+            "user": user_info,
         },
     )
 
@@ -3628,6 +3633,10 @@ async def job_details_page(request: Request, job_id: str):
     duplicates = get_duplicates_for_job(job_id)
     plausibility_warnings = get_plausibility_warnings_for_job(job_id)
 
+    # User-Info für Header
+    user_id = request.session.get("user_id")
+    user_info = get_user_info(user_id)
+    
     return templates.TemplateResponse(
         "job_details.html",
         {
@@ -3638,6 +3647,7 @@ async def job_details_page(request: Request, job_id: str):
             "aussteller_stats": aussteller_list,
             "plausibility_warnings": plausibility_warnings,
             "duplicates": duplicates,
+            "user": user_info,
         },
     )
 

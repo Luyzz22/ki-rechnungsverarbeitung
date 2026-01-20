@@ -1025,7 +1025,7 @@ processBtn.addEventListener('click', async () => {
     progressText.textContent = 'Dateien werden hochgeladen...';
     progressFill.style.width = '20%';
 
-    const response = await fetch('/upload', {
+    const response = await fetch('/api/upload', {
       method: 'POST',
       body: formData
     });
@@ -1038,16 +1038,29 @@ processBtn.addEventListener('click', async () => {
     }
 
     const result = await response.json();
+    const jobId = result.job_id;
+
+    progressFill.style.width = '60%';
+    progressText.textContent = 'Starte KI-Verarbeitung...';
+
+    // Starte die Verarbeitung
+    const processResponse = await fetch(`/api/process/${jobId}`, {
+      method: 'POST'
+    });
+
+    if (!processResponse.ok) {
+      throw new Error('Verarbeitung konnte nicht gestartet werden');
+    }
 
     progressFill.style.width = '100%';
-    progressText.textContent = 'Verarbeitung abgeschlossen!';
-    progressDetail.textContent = `${uploadedFiles.length} Rechnung(en) erfolgreich verarbeitet`;
+    progressText.textContent = 'Verarbeitung gestartet!';
+    progressDetail.textContent = `${uploadedFiles.length} Rechnung(en) werden verarbeitet...`;
 
-    showToast('Rechnungen erfolgreich verarbeitet!', 'success');
+    showToast('Verarbeitung gestartet!', 'success');
 
-    // Redirect after short delay
+    // Redirect zur Job-Seite
     setTimeout(() => {
-      window.location.href = '/history';
+      window.location.href = `/job/${jobId}`;
     }, 1500);
 
   } catch (error) {

@@ -68,16 +68,18 @@ async def budget_dashboard(request: Request, jahr: int = Query(default=None), mo
     return templates.TemplateResponse("budget.html", {
         "request": request, "jahr": jahr, "monat": monat,
         "monat_namen": MONAT_NAMEN, "summary": summary,
-        "trend_data": trend_data, "pie_data": pie_data, "user_info": user_info
+        "trend_data": trend_data, "pie_data": pie_data, "user": user_info
     })
 
 @router.get("/budget/jahr", response_class=HTMLResponse)
 async def budget_jahresansicht(request: Request, jahr: int = Query(default=None)):
+    user_id = request.session.get("user_id")
+    user_info = get_user_info(user_id)
     if jahr is None:
         jahr = datetime.now().year
     jahresbudget = budget_service.get_jahresbudget(jahr)
     return templates.TemplateResponse("budget_jahr.html", {
-        "request": request, "jahr": jahr, "monat_namen": MONAT_NAMEN, "jahresbudget": jahresbudget
+        "request": request, "jahr": jahr, "monat_namen": MONAT_NAMEN, "jahresbudget": jahresbudget, "user": user_info
     })
 
 @router.get("/api/budget/kategorien")
