@@ -117,6 +117,10 @@ from rate_limiter import check_rate_limit, get_client_ip
 from api_keys import validate_api_key, create_api_key, list_api_keys, revoke_api_key
 from audit import log_audit, AuditAction, get_audit_logs
 from audit import get_audit_stats
+from rbac import (
+    Permission, has_permission, is_admin_or_owner, 
+    get_user_permissions_for_template, ensure_default_role
+)
 from webhooks import create_webhook, get_webhooks, delete_webhook, trigger_webhooks, WebhookEvent
 from system_alerts import get_system_status, run_system_check
 
@@ -1200,6 +1204,10 @@ async def analytics_page(request: Request):
 
 @app.get("/admin", response_class=HTMLResponse, tags=["Admin"])
 async def admin_page(request: Request):
+    # RBAC: Nur Admins
+    user_id = request.session.get("user_id")
+    if not user_id or not is_admin_or_owner(user_id):
+        return RedirectResponse("/dashboard", status_code=303)
     """Admin Dashboard - nur für Admins"""
     admin_check = require_admin(request)
     if admin_check:
@@ -1259,6 +1267,10 @@ async def admin_page(request: Request):
 
 @app.get("/admin/users", response_class=HTMLResponse, tags=["Admin"])
 async def admin_users_page(request: Request):
+    # RBAC: User-Verwaltung nur für Admins
+    user_id = request.session.get("user_id")
+    if not user_id or not is_admin_or_owner(user_id):
+        return RedirectResponse("/dashboard", status_code=303)
     """User Management - nur für Admins"""
     admin_check = require_admin(request)
     if admin_check:
@@ -3259,6 +3271,10 @@ async def team_page(request: Request):
 
 @app.get("/audit-log", response_class=HTMLResponse)
 async def audit_log_page(request: Request):
+    # RBAC: Audit nur für Admins
+    user_id = request.session.get("user_id")
+    if not user_id or not is_admin_or_owner(user_id):
+        return RedirectResponse("/dashboard", status_code=303)
     """Audit-Log Seite - Protokoll aller Systemaktivitäten"""
     redirect = require_login(request)
     if redirect:
@@ -5364,6 +5380,12 @@ async def my_approvals_page(request: Request):
 @app.post("/api/approvals/{invoice_id}/approve", tags=["Approvals"])
 async def approve_invoice(invoice_id: int, request: Request, comment: str = Form(None)):
     """Rechnung freigeben"""
+    # RBAC: Freigabe-Berechtigung prüfen
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Nicht angemeldet"}, status_code=401)
+    if not has_permission(user_id, Permission.INVOICE_APPROVE) and not has_permission(user_id, "approve"):
+        return JSONResponse({"error": "Keine Freigabe-Berechtigung"}, status_code=403)
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
@@ -5474,6 +5496,12 @@ async def get_invoice_approval_history(invoice_id: int, request: Request):
 @app.post("/api/approvals/bulk-approve", tags=["Approvals"])
 async def bulk_approve_invoices(request: Request):
     """Mehrere Rechnungen auf einmal freigeben"""
+    # RBAC: Bulk-Freigabe-Berechtigung
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse({"error": "Nicht angemeldet"}, status_code=401)
+    if not has_permission(user_id, Permission.INVOICE_APPROVE):
+        return JSONResponse({"error": "Keine Freigabe-Berechtigung"}, status_code=403)
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
@@ -5590,6 +5618,10 @@ from datetime import date as date_type
 
 @app.get("/datev", response_class=HTMLResponse, tags=["DATEV"])
 async def datev_export_page(request: Request):
+    # RBAC: Export-Berechtigung prüfen
+    user_id = request.session.get("user_id")
+    if user_id and not has_permission(user_id, Permission.EXPORT_DATEV) and not has_permission(user_id, "export"):
+        return RedirectResponse("/dashboard?error=no_permission", status_code=303)
     """DATEV Export Konfiguration"""
     user_id = request.session.get("user_id")
     if not user_id:
