@@ -918,6 +918,7 @@ async def download_monthly_mbr(request: Request):
     One-click Monthly Business Review (MBR) download.
     - Auth-guarded via require_login (session).
     - Returns editable PPTX (no image exports).
+    - Deterministic fallback via env: MBR_USE_LLM=0
     """
     redirect = require_login(request)
     if redirect:
@@ -939,17 +940,15 @@ async def download_monthly_mbr(request: Request):
         year -= 1
     filename = f"MBR_{year}-{month:02d}.pptx"
 
-    # LLM API key (optional; generator also supports use_llm=False)
     api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("MBR_LLM_API_KEY")
+    use_llm = (os.environ.get("MBR_USE_LLM", "1").strip() != "0")
 
     conn = None
     try:
         from mbr.generator import generate_presentation
 
         conn = sqlite3.connect("invoices.db", check_same_thread=False)
-        use_llm = (os.environ.get("MBR_USE_LLM", "1").strip() != "0")
         pptx_bytes = generate_presentation(conn, api_key=api_key, use_llm=use_llm)
-
 
         headers = {
             "Content-Disposition": f'attachment; filename="{filename}"',
@@ -967,11 +966,11 @@ async def download_monthly_mbr(request: Request):
             status_code=500,
             content={"error": "MBR_TEMPLATE_MISSING", "message": str(e)},
         )
-    except Exception as e:
+    except Exception:
         app_logger.exception("MBR generation failed")
         return JSONResponse(
             status_code=500,
-            content={"error": "MBR_GENERATION_FAILED", "message": str(e)},
+            content={"error": "MBR_GENERATION_FAILED", "message": "Unexpected error"},
         )
     finally:
         try:
@@ -979,7 +978,6 @@ async def download_monthly_mbr(request: Request):
                 conn.close()
         except Exception:
             pass
-
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -6363,88 +6361,87 @@ async def sync_to_integration(request: Request):
     return JSONResponse(result)
 
 
-# --- SBS AI CFO INTELLIGENCE LAYER ---
+# --- SBS AI CFO INTELLIGENCE LAYER (REAL DATA) ---
 @app.get("/api/ai/dashboard-analysis")
 async def get_ai_dashboard_analysis():
+    """AI CFO Dashboard-Analyse mit ECHTEN Budget-Daten"""
+    from budget_service import BudgetService
+    from datetime import datetime
+    
     try:
-        # 1. Kontext sammeln
-        now = datetime.now().strftime("%d.%m.%Y")
+        # 1. Echte Daten aus BudgetService holen
+        budget_service = BudgetService()
+        now = datetime.now()
+        jahr = now.year
+        monat = now.month
+        now_str = now.strftime("%d.%m.%Y")
         
-        # 2. Prompt bauen
-        prompt = (
-            f"Du bist der AI CFO. Heute ist der {now}. "
-            "Erstelle eine ultrakurze Analyse (max 20 Wörter) für das Dashboard. "
-            "Szenario: Budget stabil, aber Marketingkosten leicht erhöht. "
-            "Ton: Professionell, warnend."
-        )
+        # Dashboard Summary mit echten Zahlen
+        summary = budget_service.get_dashboard_summary(jahr, monat)
+        alerts = budget_service.get_unread_alerts()
+        auswertungen = budget_service.get_monatsauswertung(jahr, monat)
         
-        # 3. KI fragen (mit Fallback, falls Router fehlt)
-        if 'LLMRouter' in globals() and LLMRouter:
-            analysis_text = await LLMRouter.generate_response(prompt, provider="openai", model="gpt-4o")
+        # 2. Analysiere die echten Daten
+        gesamt_budget = summary.get("gesamt_budget", 0)
+        gesamt_ausgaben = summary.get("gesamt_ausgaben", 0)
+        auslastung = summary.get("gesamt_auslastung", 0)
+        kritisch = summary.get("status_kritisch", 0)
+        warnung = summary.get("status_warnung", 0)
+        ok_count = summary.get("status_ok", 0)
+        
+        # Top-Ausgaben Kategorien
+        top_kategorien = sorted(auswertungen, key=lambda x: x.get("ist_ausgaben", 0), reverse=True)[:3]
+        
+        # Überschreitungen finden
+        ueberschreitungen = [a for a in auswertungen if a.get("ist_ausgaben", 0) > a.get("budget_soll", 0) and a.get("budget_soll", 0) > 0]
+        
+        # 3. Intelligente Analyse generieren (ohne KI-API, basierend auf echten Daten)
+        monat_namen = ["Januar", "Februar", "März", "April", "Mai", "Juni", 
+                       "Juli", "August", "September", "Oktober", "November", "Dezember"]
+        monat_name = monat_namen[monat - 1]
+        
+        # Status-Bewertung
+        if kritisch > 0:
+            status = "kritisch"
+            emoji = "🔴"
+        elif warnung > 0:
+            status = "Achtung"
+            emoji = "🟡"
+        elif auslastung > 80:
+            status = "angespannt"
+            emoji = "🟠"
+        elif auslastung > 50:
+            status = "im Plan"
+            emoji = "🟢"
         else:
-            # Fallback Simulation (falls LLMRouter Import fehlschlug)
-            analysis_text = f"Stand {now}: Budgetrahmen stabil. Marketing-Kosten überwachen (+8% zum Vormonat)."
-
-        if not analysis_text:
-            analysis_text = "System läuft stabil. Daten werden aktualisiert."
-            
-        return JSONResponse(content={"analysis": analysis_text})
+            status = "stabil"
+            emoji = "✅"
+        
+        # Nachricht zusammenbauen
+        if gesamt_budget == 0:
+            analysis = f"Stand {now_str}: Keine Budgets für {monat_name} {jahr} definiert. Budgets anlegen um Kostenkontrolle zu aktivieren."
+        elif kritisch > 0:
+            kat_namen = [u.get("kategorie_name", "Unbekannt") for u in ueberschreitungen[:2]]
+            analysis = f"{emoji} Stand {now_str}: {kritisch} Budget(s) überschritten! Betroffene Kategorien: {', '.join(kat_namen)}. Sofortige Prüfung empfohlen."
+        elif warnung > 0:
+            analysis = f"{emoji} Stand {now_str}: {warnung} Kategorie(n) nähern sich dem Limit ({auslastung:.0f}% Gesamtauslastung). Ausgaben beobachten."
+        elif gesamt_ausgaben == 0:
+            analysis = f"Stand {now_str}: Budget {gesamt_budget:,.0f} € für {monat_name} angelegt. Noch keine Ausgaben erfasst."
+        else:
+            verbleibend = gesamt_budget - gesamt_ausgaben
+            if top_kategorien and top_kategorien[0].get("ist_ausgaben", 0) > 0:
+                top_kat = top_kategorien[0].get("kategorie_name", "")
+                analysis = f"{emoji} Stand {now_str}: {auslastung:.0f}% Budgetauslastung ({gesamt_ausgaben:,.0f} € von {gesamt_budget:,.0f} €). Größter Posten: {top_kat}. Verbleibend: {verbleibend:,.0f} €."
+            else:
+                analysis = f"{emoji} Stand {now_str}: Budgetrahmen {status}. {auslastung:.0f}% ausgelastet, {verbleibend:,.0f} € verbleibend."
+        
+        return JSONResponse(content={"analysis": analysis})
         
     except Exception as e:
-        print(f"AI Error: {e}")
-        # Sicheres Fallback statt Crash
-        return JSONResponse(content={"analysis": "KI-System wird initialisiert..."})
-
-# --- SBS AI INTELLIGENCE LAYER (Hardened) ---
-@app.get("/api/ai/dashboard-analysis")
-async def get_ai_dashboard_analysis():
-    # 1. Router dynamisch laden (Pfad-unabhängig)
-    try:
-        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-        from llm_router import LLMRouter
-    except:
-        LLMRouter = None
-
-    try:
-        # 2. Datenbank direkt abfragen (Bypass)
-        db_path = '/var/www/invoice-app/invoices.db'
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        
-        # Sicherer Check: Gibt es die Tabelle?
-        try:
-            cursor.execute("SELECT count(*), sum(netto_betrag) FROM rechnungen")
-            row = cursor.fetchone()
-            cnt = row[0] if row else 0
-            total = row[1] if row and row[1] else 0.0
-        except:
-            cnt = 0
-            total = 0.0
-        conn.close()
-
-        # 3. Status-Text bauen
-        now_str = datetime.now().strftime("%d.%m.%Y")
-        fallback_msg = f"Status {now_str}: {cnt} Belege ({total:.2f} €). System läuft."
-
-        # 4. KI fragen (mit Timeout-Schutz)
-        final_msg = fallback_msg
-        if LLMRouter:
-            try:
-                # Wir geben der KI rohe Daten
-                prompt = f"Du bist CFO. Datum: {now_str}. Ausgaben: {total:.2f} EUR ({cnt} Rechnungen). Gib eine kurze, professionelle Einschätzung (1 Satz)."
-                ai_response = await LLMRouter.generate_response(prompt, provider="openai", model="gpt-4o")
-                if ai_response:
-                    final_msg = ai_response
-            except Exception as e:
-                print(f"AI Timeout: {e}")
-                pass # Fallback behalten
-
-        return JSONResponse(content={"analysis": final_msg})
-
-    except Exception as e:
-        # Super-GAU Fallback
-        print(f"Endpoint Error: {e}")
-        return JSONResponse(content={"analysis": "System-Diagnose läuft (DB-Verbindung wird geprüft)..."})
+        print(f"AI CFO Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(content={"analysis": f"Stand {datetime.now().strftime('%d.%m.%Y')}: System-Analyse wird geladen..."})
 
 # --- AI DRILL-DOWN ENDPOINT ---
 @app.get("/api/ai/drilldown")
