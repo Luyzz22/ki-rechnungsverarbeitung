@@ -293,6 +293,10 @@ async def upload_files(request: Request, files: List[UploadFile] = File(default=
         "total_amount": 0.0,
         "stats": {},
     }
+    
+    # Audit: Job erstellt
+    log_audit(AuditAction.JOB_CREATED, user_id=user_id, resource_type="job", resource_id=job_id, 
+              details=f'{{"files": {len(uploaded_files)}}}', ip_address=request.client.host)
 
     # 5) DEV-"Subscription"-Info (Frontend-kompatibel, aber ohne Limit)
     dev_limit = {
@@ -574,7 +578,7 @@ async def get_results(job_id: str):
 
 
 @app.get("/api/download/{job_id}/{format}", tags=["Export"])
-async def download_export(job_id: str, format: str):
+async def download_export(job_id: str, format: str, request: Request):
     """Download exported file"""
     from database import get_job
     
@@ -2041,6 +2045,12 @@ async def logout(request: Request):
     Logout und Redirect auf die SBS Homepage.
     SSO Cookie wird gelöscht für Cross-Domain Logout.
     """
+    # Audit: Logout protokollieren (vor Session-Löschung)
+    user_id = request.session.get("user_id") if hasattr(request, "session") else None
+    user_email = request.session.get("user_email") if hasattr(request, "session") else None
+    if user_id:
+        log_audit(AuditAction.LOGOUT, user_id=user_id, user_email=user_email, ip_address=request.client.host)
+    
     # Session leeren, falls vorhanden
     try:
         session = getattr(request, "session", None)
@@ -5620,6 +5630,12 @@ async def export_to_datev(request: Request):
     data = await request.json()
     
     invoice_ids = data.get('invoice_ids', [])
+    
+    # Audit: DATEV Export
+    log_audit(AuditAction.EXPORT_DATEV, user_id=user_id, resource_type="invoices", 
+              resource_id=",".join(map(str, invoice_ids[:10])), 
+              details=f'{{"count": {len(invoice_ids)}, "format": "{data.get("format", "csv")}"}}',
+              ip_address=request.client.host)
     export_format = data.get('format', 'csv')  # csv, xml, zip
     berater_nr = data.get('berater_nummer', '12345')
     mandanten_nr = data.get('mandanten_nummer', '00001')

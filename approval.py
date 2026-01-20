@@ -11,6 +11,7 @@ Features:
 - Email-Benachrichtigungen
 """
 
+from audit import log_audit, AuditAction
 import sqlite3
 import logging
 from datetime import datetime, timedelta
@@ -144,6 +145,13 @@ class ApprovalManager:
             (invoice_id, user_id, action, old_status, new_status, comment, ip_address, user_agent)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (invoice_id, user_id, action, old_status, new_status, comment, ip_address, user_agent))
+        
+        
+        # Zentrales Audit Log  
+        audit_action = AuditAction.INVOICE_UPDATED
+        log_audit(audit_action, user_id=user_id, resource_type="invoice", resource_id=str(invoice_id),
+                  details=f'{{"action": "{action}", "old_status": "{old_status}", "new_status": "{new_status}"}}',
+                  ip_address=ip_address)
         
         conn.commit()
         conn.close()
