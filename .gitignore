@@ -118,3 +118,4 @@ web/*.bak-*
 web/templates/*.bak-*
 backups/*.db.gz
 *.bak-*
+.codex/
