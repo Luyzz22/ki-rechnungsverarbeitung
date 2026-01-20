@@ -177,7 +177,7 @@ def aggregate_mbr_data(
         cur = conn.execute(
             f"""
             SELECT
-              COALESCE(NULLIF(TRIM({supplier_col}), ), Unbekannt) AS supplier,
+              COALESCE(NULLIF(TRIM({supplier_col}), ''), 'Unbekannt') AS supplier,
               COALESCE(SUM({net_col}), 0) AS amount_net
             FROM {invoice_table}
             WHERE DATE({date_col}) >= DATE(?) AND DATE({date_col}) < DATE(?)
