@@ -3,7 +3,7 @@
 
 <header class="app-global-header">
   <div class="app-global-header-left">
-    <button class="app-switcher-btn" id="appSwitcherBtn" aria-label="Apps">
+    <button class="app-switcher-btn" id="appSwitcherBtn" aria-label="Apps" onclick="document.getElementById('appSwitcherPanel').classList.toggle('open'); document.getElementById('appUserMenu').classList.remove('open'); event.stopPropagation();">
       <svg viewBox="0 0 24 24" fill="currentColor">
         <circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/>
         <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
@@ -31,7 +31,7 @@
         <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/>
       </svg>
     </a>
-    <button class="app-user-btn" id="appUserBtn">
+    <button class="app-user-btn" id="appUserBtn" onclick="document.getElementById('appUserMenu').classList.toggle('open'); document.getElementById('appSwitcherPanel').classList.remove('open'); event.stopPropagation();">
       <div class="app-user-avatar">{% if user and user.name %}{{ user.name[:2]|upper }}{% elif user and user.email %}{{ user.email[:2]|upper }}{% else %}U{% endif %}</div>
       <span class="app-user-name">{% if user and user.name %}{{ user.name }}{% elif user and user.email %}{{ user.email }}{% else %}User{% endif %}</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -73,6 +73,7 @@
   </div>
   <div class="app-user-menu-links">
     <a href="/profile" class="app-user-menu-link">⚙️ Profil & Einstellungen</a>
+    <a href="/team" class="app-user-menu-link">👥 Team & Rollen</a>
     <a href="/profile#subscription" class="app-user-menu-link">💳 Abonnement & Plan</a>
     <div class="app-user-menu-divider"></div>
     <a href="/logout" class="app-user-menu-link danger">🚪 Abmelden</a>

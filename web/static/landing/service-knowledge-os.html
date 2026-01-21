@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Knowledge OS · KI-Suche in technischen Handbüchern | SBS Deutschland</title>
+    <meta name="description" content="Service Knowledge OS - Intelligente Suche in technischen Handbüchern. RAG-System für den Maschinenbau. Wartungsanleitungen in Sekunden durchsuchen.">
+    <link rel="icon" href="/static/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════════════════════════════
+           SBS DEUTSCHLAND - DESIGN TOKENS
+           ═══════════════════════════════════════════════════════════════════ */
+        :root {
+            --sbs-primary: #003856;
+            --sbs-primary-light: #00507a;
+            --sbs-accent: #FFB900;
+            --sbs-accent-dark: #ff9500;
+            --sbs-cyan: #22d3ee;
+            --sbs-purple: #8b5cf6;
+            --sbs-text: #1f2937;
+            --sbs-text-muted: #6b7280;
+            --sbs-bg: #f8fafc;
+            --sbs-white: #ffffff;
+            --sbs-border: #e5e7eb;
+            --sbs-success: #22c55e;
+            --sbs-gradient-hero: linear-gradient(135deg, #003856 0%, #00507a 50%, #004d73 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--sbs-text);
+            background: var(--sbs-bg);
+            line-height: 1.6;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           HEADER - EXACT SBS STYLE
+           ═══════════════════════════════════════════════════════════════════ */
+        .sbs-header {
+            background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+        }
+
+        .sbs-header-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+
+        .sbs-logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .sbs-logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+
+        .sbs-logo-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sbs-logo-text strong {
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .sbs-logo-text span {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.75rem;
+        }
+
+        .sbs-header-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sbs-nav-item {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .sbs-nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .sbs-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sbs-btn-login {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .sbs-btn-login:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .sbs-btn-cta {
+            background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+            color: #003856;
+            text-decoration: none;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(255,185,0,0.3);
+        }
+
+        .sbs-btn-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255,185,0,0.4);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           HERO SECTION
+           ═══════════════════════════════════════════════════════════════════ */
+        .hero {
+            background: var(--sbs-gradient-hero);
+            padding: 100px 24px 120px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 100%;
+            background: radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.1) 0%, transparent 60%);
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 18px;
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 999px;
+            font-size: 0.8rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            border: 1px solid rgba(255,255,255,0.18);
+            color: #fff;
+            margin-bottom: 24px;
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #22d3ee;
+            box-shadow: 0 0 12px #22d3ee;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+        }
+
+        .hero h1 {
+            font-size: clamp(2.4rem, 5vw, 3.6rem);
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.1;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 .highlight {
+            background: linear-gradient(135deg, #22d3ee 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.15rem;
+            color: rgba(255,255,255,0.85);
+            max-width: 680px;
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+
+        .hero-cta-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 48px;
+        }
+
+        .hero-cta.primary {
+            background: #ffffff;
+            color: #003856;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s ease;
+            font-size: 1rem;
+        }
+
+        .hero-cta.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+
+        .hero-cta.secondary {
+            padding: 14px 24px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.4);
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            background: rgba(3,16,27,0.25);
+            transition: all 0.25s ease;
+            font-size: 1rem;
+        }
+
+        .hero-cta.secondary:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.7);
+        }
+
+        .hero-visual {
+            margin-top: 40px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .hero-screenshot {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 8px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .hero-screenshot img {
+            width: 100%;
+            border-radius: 12px;
+        }
+
+        .hero-screenshot-placeholder {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 12px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .screenshot-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .screenshot-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .screenshot-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .screenshot-dot.red { background: #ef4444; }
+        .screenshot-dot.yellow { background: #f59e0b; }
+        .screenshot-dot.green { background: #22c55e; }
+
+        .screenshot-title {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.85rem;
+        }
+
+        .screenshot-content {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 24px;
+            min-height: 300px;
+        }
+
+        .screenshot-sidebar {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .screenshot-main {
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .screenshot-chat {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3b82f6;
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           TRUST BAR
+           ═══════════════════════════════════════════════════════════════════ */
+        .trust-bar {
+            background: #fff;
+            border-bottom: 1px solid var(--sbs-border);
+            padding: 24px;
+        }
+
+        .trust-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            flex-wrap: wrap;
+        }
+
+        .trust-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--sbs-text-muted);
+        }
+
+        .trust-item strong {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--sbs-primary);
+        }
+
+        .trust-item span {
+            font-size: 0.9rem;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           FEATURES SECTION
+           ═══════════════════════════════════════════════════════════════════ */
+        .features {
+            padding: 100px 24px;
+            background: #fff;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 60px;
+        }
+
+        .section-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 56, 86, 0.08);
+            color: var(--sbs-primary);
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 16px;
+        }
+
+        .section-header h2 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 700;
+            color: var(--sbs-text);
+            margin-bottom: 16px;
+        }
+
+        .section-header p {
+            color: var(--sbs-text-muted);
+            font-size: 1.1rem;
+        }
+
+        .features-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--sbs-bg);
+            border: 1px solid var(--sbs-border);
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+            border-color: var(--sbs-primary);
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--sbs-primary) 0%, var(--sbs-primary-light) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--sbs-text);
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            color: var(--sbs-text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           HOW IT WORKS
+           ═══════════════════════════════════════════════════════════════════ */
+        .how-it-works {
+            padding: 100px 24px;
+            background: var(--sbs-bg);
+        }
+
+        .steps {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .step {
+            display: flex;
+            gap: 32px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--sbs-primary) 0%, var(--sbs-primary-light) 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .step-content h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--sbs-text);
+            margin-bottom: 8px;
+        }
+
+        .step-content p {
+            color: var(--sbs-text-muted);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           USE CASES
+           ═══════════════════════════════════════════════════════════════════ */
+        .use-cases {
+            padding: 100px 24px;
+            background: #fff;
+        }
+
+        .use-cases-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .use-case-card {
+            background: linear-gradient(135deg, var(--sbs-primary) 0%, var(--sbs-primary-light) 100%);
+            border-radius: 16px;
+            padding: 28px;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .use-case-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 56, 86, 0.3);
+        }
+
+        .use-case-icon {
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+
+        .use-case-card h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .use-case-card p {
+            font-size: 0.9rem;
+            opacity: 0.85;
+            line-height: 1.5;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           PRICING
+           ═══════════════════════════════════════════════════════════════════ */
+        .pricing {
+            padding: 100px 24px;
+            background: var(--sbs-bg);
+        }
+
+        .pricing-grid {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .pricing-card {
+            background: #fff;
+            border: 1px solid var(--sbs-border);
+            border-radius: 20px;
+            padding: 36px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-card.featured {
+            border: 2px solid var(--sbs-primary);
+            transform: scale(1.02);
+        }
+
+        .pricing-card:hover {
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+        }
+
+        .pricing-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+            color: var(--sbs-primary);
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--sbs-border);
+        }
+
+        .pricing-header h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--sbs-text);
+            margin-bottom: 8px;
+        }
+
+        .pricing-price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--sbs-primary);
+        }
+
+        .pricing-price span {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--sbs-text-muted);
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 32px;
+        }
+
+        .pricing-features li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            color: var(--sbs-text);
+            font-size: 0.95rem;
+        }
+
+        .pricing-features li::before {
+            content: '✓';
+            color: var(--sbs-success);
+            font-weight: 700;
+        }
+
+        .pricing-cta {
+            display: block;
+            text-align: center;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.25s ease;
+        }
+
+        .pricing-cta.primary {
+            background: linear-gradient(135deg, var(--sbs-primary) 0%, var(--sbs-primary-light) 100%);
+            color: #fff;
+        }
+
+        .pricing-cta.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 56, 86, 0.3);
+        }
+
+        .pricing-cta.secondary {
+            background: var(--sbs-bg);
+            color: var(--sbs-primary);
+            border: 1px solid var(--sbs-border);
+        }
+
+        .pricing-cta.secondary:hover {
+            background: var(--sbs-primary);
+            color: #fff;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           CTA SECTION
+           ═══════════════════════════════════════════════════════════════════ */
+        .cta-section {
+            padding: 100px 24px;
+            background: var(--sbs-gradient-hero);
+            text-align: center;
+        }
+
+        .cta-content {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .cta-section h2 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 16px;
+        }
+
+        .cta-section p {
+            color: rgba(255,255,255,0.85);
+            font-size: 1.1rem;
+            margin-bottom: 32px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           FOOTER
+           ═══════════════════════════════════════════════════════════════════ */
+        .footer {
+            background: #0f172a;
+            color: rgba(255,255,255,0.7);
+            padding: 60px 24px 30px;
+        }
+
+        .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-col h4 {
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .footer-col a {
+            display: block;
+            color: rgba(255,255,255,0.6);
+            text-decoration: none;
+            padding: 6px 0;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .footer-col a:hover {
+            color: #fff;
+            padding-left: 4px;
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .footer-bottom p {
+            font-size: 0.85rem;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .footer-links a {
+            color: rgba(255,255,255,0.6);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .footer-links a:hover {
+            color: #fff;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           RESPONSIVE
+           ═══════════════════════════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            .sbs-header-nav {
+                display: none;
+            }
+
+            .hero {
+                padding: 60px 24px 80px;
+            }
+
+            .screenshot-content {
+                grid-template-columns: 1fr;
+            }
+
+            .screenshot-sidebar {
+                display: none;
+            }
+
+            .step {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .trust-inner {
+                gap: 24px;
+            }
+
+            .pricing-card.featured {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="sbs-header">
+        <div class="sbs-header-inner">
+            <a href="https://sbsdeutschland.com" class="sbs-logo-wrap">
+                <div class="sbs-logo-icon">🏢</div>
+                <div class="sbs-logo-text">
+                    <strong>SBS Deutschland</strong>
+                    <span>KI-Lösungen · Weinheim</span>
+                </div>
+            </a>
+
+            <nav class="sbs-header-nav">
+                <a href="#features" class="sbs-nav-item">Features</a>
+                <a href="#how-it-works" class="sbs-nav-item">So funktioniert's</a>
+                <a href="#use-cases" class="sbs-nav-item">Anwendungsfälle</a>
+                <a href="#pricing" class="sbs-nav-item">Preise</a>
+            </nav>
+
+            <div class="sbs-header-actions">
+                <a href="https://knowledge-sbsdeutschland.streamlit.app" class="sbs-btn-login">Login</a>
+                <a href="https://knowledge-sbsdeutschland.streamlit.app" class="sbs-btn-cta">Jetzt testen →</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="pulse"></span>
+                Service Knowledge OS · RAG-System
+            </div>
+            <h1>Technische Handbücher<br><span class="highlight">in Sekunden</span> durchsuchen.</h1>
+            <p class="hero-subtitle">
+                Laden Sie Wartungshandbücher hoch und stellen Sie natürlichsprachliche Fragen. 
+                Unser KI-System findet die relevanten Informationen – mit präzisen Quellenangaben.
+            </p>
+            <div class="hero-cta-group">
+                <a href="https://knowledge-sbsdeutschland.streamlit.app" class="hero-cta primary">
+                    Kostenlos ausprobieren →
+                </a>
+                <a href="#how-it-works" class="hero-cta secondary">
+                    So funktioniert's
+                </a>
+            </div>
+
+            <div class="hero-visual">
+                <div class="hero-screenshot">
+                    <div class="hero-screenshot-placeholder">
+                        <div class="screenshot-header">
+                            <div class="screenshot-dots">
+                                <div class="screenshot-dot red"></div>
+                                <div class="screenshot-dot yellow"></div>
+                                <div class="screenshot-dot green"></div>
+                            </div>
+                            <span class="screenshot-title">Service Knowledge OS</span>
+                        </div>
+                        <div class="screenshot-content">
+                            <div class="screenshot-sidebar">
+                                <div style="color: rgba(255,255,255,0.5); font-size: 0.75rem; margin-bottom: 12px;">📄 DOKUMENTE</div>
+                                <div style="color: rgba(255,255,255,0.7); font-size: 0.85rem; padding: 8px; background: rgba(59,130,246,0.2); border-radius: 6px; margin-bottom: 8px;">Wartungshandbuch HP-500.pdf</div>
+                                <div style="color: rgba(255,255,255,0.7); font-size: 0.85rem; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">Hydraulikpumpe_Manual.pdf</div>
+                            </div>
+                            <div class="screenshot-main">
+                                <div style="color: rgba(255,255,255,0.5); font-size: 0.75rem;">TECHNISCHE ANFRAGE</div>
+                                <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; color: rgba(255,255,255,0.8);">
+                                    Wie hoch ist das Anzugsdrehmoment für die M12 Schraube?
+                                </div>
+                                <div class="screenshot-chat">
+                                    <strong>🤖 Antwort:</strong> Das Anzugsdrehmoment für die M12 Schraube beträgt <strong>110 Nm</strong>.<br><br>
+                                    <span style="font-size: 0.8rem; opacity: 0.7;">📚 Quelle: Wartungshandbuch HP-500.pdf (Seite 3)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TRUST BAR -->
+    <div class="trust-bar">
+        <div class="trust-inner">
+            <div class="trust-item">
+                <strong>🔧</strong>
+                <span>Für den Maschinenbau</span>
+            </div>
+            <div class="trust-item">
+                <strong>🇩🇪</strong>
+                <span>Deutsche Server</span>
+            </div>
+            <div class="trust-item">
+                <strong>GPT-4o</strong>
+                <span>Powered by OpenAI</span>
+            </div>
+            <div class="trust-item">
+                <strong>100%</strong>
+                <span>Quellenangaben</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- FEATURES -->
+    <section class="features" id="features">
+        <div class="section-header">
+            <span class="section-badge">🚀 Features</span>
+            <h2>Alles was Servicetechniker brauchen</h2>
+            <p>Entwickelt für Teams, die schnell die richtigen technischen Informationen finden müssen.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📄</div>
+                <h3>Multi-PDF Support</h3>
+                <p>Laden Sie mehrere Handbücher gleichzeitig hoch und durchsuchen Sie alle auf einmal. Vergleichen Sie Informationen über Dokumente hinweg.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3>Intelligente Tabellenextraktion</h3>
+                <p>LlamaParse erkennt und extrahiert Tabellen mit Drehmomentangaben, Spezifikationen und Wartungsintervallen präzise.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📚</div>
+                <h3>Quellenangaben mit Seitenzahl</h3>
+                <p>Jede Antwort enthält die exakte Quelle mit Dateiname und Seitenzahl. Verifizieren Sie jede Information im Original.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <h3>Halluzinations-Schutz</h3>
+                <p>Das System antwortet nur basierend auf Ihren Dokumenten. Keine erfundenen Informationen, nur verifizierbare Fakten.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔐</div>
+                <h3>Enterprise Login</h3>
+                <p>Rollenbasierte Zugriffskontrolle mit Admin- und Benutzer-Rollen. Sicher für den Unternehmenseinsatz.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🇩🇪</div>
+                <h3>Deutsche Oberfläche</h3>
+                <p>Komplett deutschsprachig – vom Interface bis zu den KI-Antworten. Optimiert für den deutschen Maschinenbau.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="section-header">
+            <span class="section-badge">📋 Anleitung</span>
+            <h2>In 3 Schritten zur Antwort</h2>
+            <p>So einfach funktioniert das Service Knowledge OS.</p>
+        </div>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>PDF hochladen</h3>
+                    <p>Laden Sie Ihre technischen Handbücher, Wartungsanleitungen oder Spezifikationen als PDF hoch. Mehrere Dokumente gleichzeitig sind möglich.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>KI analysiert das Dokument</h3>
+                    <p>LlamaParse extrahiert Texte und Tabellen. GPT-4o erstellt Embeddings und speichert alles in einer Vektordatenbank für schnelle Suche.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Fragen stellen & Antworten erhalten</h3>
+                    <p>Stellen Sie Ihre technischen Fragen in natürlicher Sprache. Das System findet die relevanten Stellen und gibt präzise Antworten mit Quellenangabe.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- USE CASES -->
+    <section class="use-cases" id="use-cases">
+        <div class="section-header">
+            <span class="section-badge">💼 Anwendungsfälle</span>
+            <h2>Perfekt für diese Branchen</h2>
+            <p>Überall dort, wo technische Dokumentation schnell gefunden werden muss.</p>
+        </div>
+
+        <div class="use-cases-grid">
+            <div class="use-case-card">
+                <div class="use-case-icon">🏭</div>
+                <h3>Maschinenbau</h3>
+                <p>Wartungsanleitungen, Drehmomente, Spezifikationen – sofort auffindbar für Ihre Techniker.</p>
+            </div>
+            <div class="use-case-card">
+                <div class="use-case-icon">🔧</div>
+                <h3>Service & Wartung</h3>
+                <p>Außendiensttechniker finden Ersatzteile, Intervalle und Anleitungen direkt vor Ort.</p>
+            </div>
+            <div class="use-case-card">
+                <div class="use-case-icon">🏗️</div>
+                <h3>Anlagenbau</h3>
+                <p>Komplexe technische Dokumentationen für Großanlagen durchsuchbar machen.</p>
+            </div>
+            <div class="use-case-card">
+                <div class="use-case-icon">🚗</div>
+                <h3>Automotive</h3>
+                <p>Werkstatt-Handbücher, Reparaturanleitungen und Diagnosedaten schnell finden.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING -->
+    <section class="pricing" id="pricing">
+        <div class="section-header">
+            <span class="section-badge">💰 Preise</span>
+            <h2>Transparent & fair</h2>
+            <p>Wählen Sie das passende Paket für Ihr Team.</p>
+        </div>
+
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <h3>Starter</h3>
+                    <div class="pricing-price">€49 <span>/ Monat</span></div>
+                </div>
+                <ul class="pricing-features">
+                    <li>Bis zu 10 PDFs</li>
+                    <li>500 Anfragen / Monat</li>
+                    <li>1 Benutzer</li>
+                    <li>E-Mail Support</li>
+                    <li>Deutsche Server</li>
+                </ul>
+                <a href="https://knowledge-sbsdeutschland.streamlit.app" class="pricing-cta secondary">Starten</a>
+            </div>
+
+            <div class="pricing-card featured">
+                <div class="pricing-badge">Beliebt</div>
+                <div class="pricing-header">
+                    <h3>Professional</h3>
+                    <div class="pricing-price">€149 <span>/ Monat</span></div>
+                </div>
+                <ul class="pricing-features">
+                    <li>Unbegrenzte PDFs</li>
+                    <li>2.000 Anfragen / Monat</li>
+                    <li>5 Benutzer</li>
+                    <li>Prioritäts-Support</li>
+                    <li>SSO Integration</li>
+                    <li>API Zugang</li>
+                </ul>
+                <a href="https://knowledge-sbsdeutschland.streamlit.app" class="pricing-cta primary">Kostenlos testen</a>
+            </div>
+
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <h3>Enterprise</h3>
+                    <div class="pricing-price">Individuell</div>
+                </div>
+                <ul class="pricing-features">
+                    <li>Unbegrenzt alles</li>
+                    <li>Unbegrenzte Benutzer</li>
+                    <li>Dedizierte Instanz</li>
+                    <li>On-Premise Option</li>
+                    <li>SLA & 24/7 Support</li>
+                    <li>Custom Integration</li>
+                </ul>
+                <a href="mailto:info@sbsdeutschland.com" class="pricing-cta secondary">Kontakt</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <div class="cta-content">
+            <h2>Bereit, Ihre Dokumentation zu revolutionieren?</h2>
+            <p>Starten Sie jetzt kostenlos und erleben Sie, wie einfach technische Suche sein kann.</p>
+            <div class="cta-buttons">
+                <a href="https://knowledge-sbsdeutschland.streamlit.app" class="hero-cta primary">
+                    Jetzt kostenlos testen →
+                </a>
+                <a href="mailto:info@sbsdeutschland.com" class="hero-cta secondary">
+                    Demo anfragen
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-col">
+                <h4>Produkt</h4>
+                <a href="#features">Features</a>
+                <a href="#pricing">Preise</a>
+                <a href="#how-it-works">So funktioniert's</a>
+                <a href="https://knowledge-sbsdeutschland.streamlit.app">Login</a>
+            </div>
+            <div class="footer-col">
+                <h4>Unternehmen</h4>
+                <a href="https://sbsdeutschland.com/sbshomepage/unternehmen.html">Über uns</a>
+                <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
+                <a href="https://sbsdeutschland.com">SBS Deutschland</a>
+            </div>
+            <div class="footer-col">
+                <h4>Weitere Produkte</h4>
+                <a href="https://sbsdeutschland.com/static/landing/">KI-Rechnungsverarbeitung</a>
+                <a href="https://sbsdeutschland.com/loesungen/vertragsanalyse/">KI-Vertragsanalyse</a>
+                <a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html">SAP Consulting</a>
+            </div>
+            <div class="footer-col">
+                <h4>Rechtliches</h4>
+                <a href="https://sbsdeutschland.com/static/impressum.html">Impressum</a>
+                <a href="https://sbsdeutschland.com/static/datenschutz.html">Datenschutz</a>
+                <a href="https://sbsdeutschland.com/static/agb.html">AGB</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2025 SBS Deutschland GmbH · Weinheim</p>
+            <div class="footer-links">
+                <a href="https://github.com/Luyzz22/sbs-service-knowledge-os">GitHub</a>
+                <a href="mailto:info@sbsdeutschland.com">info@sbsdeutschland.com</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
