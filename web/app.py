@@ -30,6 +30,7 @@ from pathlib import Path
 
 # Add parent directory to path to import existing modules
 from budget_routes import router as budget_router
+from web.routes_oauth import router as oauth_router
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException, BackgroundTasks
@@ -171,6 +172,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 # Mount static files
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 app.include_router(budget_router)
+app.include_router(oauth_router)
 @app.get("/landing")
 async def landing_page():
     """Landing Page für Marketing"""
@@ -3305,7 +3307,8 @@ async def accounting_page(request: Request):
     jobs = [{"job_id": r[0], "filename": r[1] or "Upload", "invoice_count": r[2], "created_at": r[3]} for r in cursor.fetchall()]
     conn.close()
     
-    return templates.TemplateResponse("accounting.html", {"request": request, "jobs": jobs})
+    user_info = get_user_info(request.session.get("user_id"))
+    return templates.TemplateResponse("accounting.html", {"request": request, "jobs": jobs, "user": user_info})
 
 @app.post("/api/duplicate/{detection_id}/review")
 async def review_duplicate(detection_id: int, request: Request):
