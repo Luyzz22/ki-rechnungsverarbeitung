@@ -13,7 +13,6 @@ from .types import MBRNarrative
 
 
 def format_eur(x: float) -> str:
-    # simple EU formatting, no locale dependency
     s = f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     return f"{s} €"
 
@@ -55,6 +54,25 @@ def _set_bullets(shape, bullets: list[str]) -> None:
         p.level = 0
 
 
+def _replace_placeholder_with_bullets(slide, placeholder_text: str, bullets: list[str]) -> None:
+    """Find a shape containing placeholder_text and replace with bullet list."""
+    for shape in slide.shapes:
+        if not getattr(shape, "has_text_frame", False):
+            continue
+        if placeholder_text in (shape.text or ""):
+            tf = shape.text_frame
+            tf.clear()
+            if bullets:
+                tf.text = "• " + bullets[0]
+                for b in bullets[1:]:
+                    p = tf.add_paragraph()
+                    p.text = "• " + b
+                    p.level = 0
+            else:
+                tf.text = "Keine Daten verfügbar."
+            return
+
+
 def _add_table_top_suppliers(slide, placeholder_shape, suppliers: list[tuple[str, float]]) -> None:
     left, top, width, height = placeholder_shape.left, placeholder_shape.top, placeholder_shape.width, placeholder_shape.height
     _remove_shape(placeholder_shape)
@@ -73,10 +91,6 @@ def _add_table_top_suppliers(slide, placeholder_shape, suppliers: list[tuple[str
 
 
 def _add_budget_chart(slide, placeholder_shape, categories: list[tuple[str, float, float]]) -> None:
-    """
-    Creates an editable PowerPoint chart (no image).
-    categories: [(category_name, actual_net, budget), ...]
-    """
     left, top, width, height = placeholder_shape.left, placeholder_shape.top, placeholder_shape.width, placeholder_shape.height
     _remove_shape(placeholder_shape)
 
@@ -99,7 +113,7 @@ def render_presentation_from_template(
 ) -> bytes:
     prs = Presentation(template_path)
 
-    # Basic token map for any slide text
+    # Basic token map
     token_map = {
         "{{MBR_MONTH}}": narrative.month_label,
         "{{COVERAGE_NOTE}}": data.coverage_note,
@@ -109,12 +123,11 @@ def render_presentation_from_template(
         "{{CLOSING_STATEMENT}}": narrative.closing_statement,
     }
 
-    # Slide-wide replacement
+    # Slide-wide token replacement
     for slide in prs.slides:
         _replace_tokens_in_text(slide, token_map)
 
-    # Optional: bullets placeholders (if present in template)
-    # You can place text boxes containing these tokens on the slide.
+    # Bullet placeholders
     bullet_slots = [
         ("{{EXEC_SUMMARY_BULLETS}}", narrative.executive_summary.bullets),
         ("{{KPI_COMMENTARY_BULLETS}}", narrative.kpi_commentary.bullets),
@@ -125,23 +138,40 @@ def render_presentation_from_template(
         for token, bullets in bullet_slots:
             shp = _find_shape_with_token(slide, token)
             if shp:
-                # remove token text then set bullets
                 shp.text = shp.text.replace(token, "").strip()
                 _set_bullets(shp, bullets)
 
-    # Optional: Top suppliers table placeholder
+    # Top suppliers table
     for slide in prs.slides:
         shp = _find_shape_with_token(slide, "{{TOP_SUPPLIERS_TABLE}}")
         if shp:
             suppliers = [(s.supplier, s.amount_net) for s in data.top_suppliers]
             _add_table_top_suppliers(slide, shp, suppliers)
 
-    # Optional: Budget chart placeholder (top 8 categories by actual)
+    # Budget chart
     for slide in prs.slides:
         shp = _find_shape_with_token(slide, "{{BUDGET_CHART}}")
         if shp:
             cats = [(c.category_name, float(c.actual_net), float(c.budget)) for c in data.categories[:8]]
             _add_budget_chart(slide, shp, cats)
+
+    # ============================================================
+    # RISIKEN & MASSNAHMEN (Enterprise Feature)
+    # ============================================================
+    for slide in prs.slides:
+        # Find and replace risk placeholder
+        _replace_placeholder_with_bullets(
+            slide, 
+            "Risikoanalyse wird durch KI generiert",
+            narrative.risks if narrative.risks else ["Keine signifikanten Risiken identifiziert."]
+        )
+        
+        # Find and replace actions placeholder
+        _replace_placeholder_with_bullets(
+            slide,
+            "Maßnahmen werden durch KI generiert", 
+            narrative.actions if narrative.actions else ["Fortführung des aktuellen Kurses empfohlen."]
+        )
 
     bio = BytesIO()
     prs.save(bio)

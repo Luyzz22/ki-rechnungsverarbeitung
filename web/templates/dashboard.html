@@ -395,18 +395,15 @@
         </div>
         
         <div class="quick-actions">
-<!-- MBR_DOWNLOAD_BUTTON: do not remove -->
-<a href="/mbr/monthly.pptx" class="btn btn-primary" id="mbr-download-btn" style="margin-left:12px;" rel="nofollow">
-  MBR herunterladen (PPTX)
-</a>
-
           {% if invoice_plan == 'Free' %}
           <a href="/static/preise/" class="action-btn upgrade">🚀 Jetzt freischalten</a>
           <a href="/" class="action-btn secondary">📤 Demo testen</a>
           {% else %}
-          <a href="/history" class="action-btn primary">📤 Rechnungen hochladen</a>
+          <a href="/" class="action-btn primary">📤 Rechnungen hochladen</a>
           <a href="/copilot" class="action-btn secondary">🤖 Copilot</a>
           <a href="/analytics" class="action-btn secondary">📊 Analytics</a>
+          <!-- MBR_DOWNLOAD_BUTTON: do not remove -->
+          <a href="/mbr" class="action-btn secondary" id="mbr-download-btn">📑 MBR</a>
           {% endif %}
         </div>
       </div>

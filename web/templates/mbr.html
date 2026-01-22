@@ -1,0 +1,319 @@
+{% extends "base_app.html" %}
+
+{% block title %}Monthly Business Review{% endblock %}
+
+{% block styles %}
+<style>
+  .mbr-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: var(--space-6);
+  }
+  
+  .mbr-header {
+    background: linear-gradient(135deg, #003856 0%, #004d7a 100%);
+    color: white;
+    padding: var(--space-8);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-6);
+  }
+  
+  .mbr-header h1 {
+    font-size: 1.8rem;
+    margin: 0 0 8px 0;
+    color: white !important;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .mbr-header p {
+    color: rgba(255,255,255,0.9) !important;
+    margin: 0;
+    font-size: 1rem;
+  }
+  
+  .mbr-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: var(--space-4);
+  }
+  
+  .mbr-card h2 {
+    font-size: 1.1rem;
+    margin: 0 0 20px 0;
+    color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  
+  .month-item {
+    background: #f8f9fa;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .month-item:hover {
+    border-color: #003856;
+    background: rgba(0, 56, 86, 0.05);
+  }
+  
+  .month-item.selected {
+    border-color: #003856;
+    background: rgba(0, 56, 86, 0.1);
+  }
+  
+  .month-item .month-name {
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 1rem;
+  }
+  
+  .month-item .invoice-count {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-top: 4px;
+  }
+  
+  .export-section {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  
+  .export-btn.primary {
+    background: #003856;
+    color: white;
+  }
+  
+  .export-btn.primary:hover {
+    background: #004d7a;
+  }
+  
+  .export-btn.secondary {
+    background: white;
+    color: #1a1a1a;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .export-btn.secondary:hover {
+    background: #f8f9fa;
+    border-color: #003856;
+  }
+  
+  .no-data {
+    text-align: center;
+    padding: 48px;
+    color: #64748b;
+  }
+  
+  .no-data svg {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+  
+  .no-data h3 {
+    color: #1a1a1a;
+    margin: 0 0 8px 0;
+  }
+  
+  .no-data p {
+    margin: 0 0 24px 0;
+  }
+  
+  .feature-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 16px;
+  }
+  
+  .feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .feature-item .icon {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+  
+  .feature-item .text h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    color: #1a1a1a;
+  }
+  
+  .feature-item .text p {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin: 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mbr-container">
+  <div class="mbr-header">
+    <h1>📊 Monthly Business Review</h1>
+    <p>Automatisch generierte Finanzberichte mit KI-Insights</p>
+  </div>
+  
+  <!-- Monat auswählen -->
+  <div class="mbr-card">
+    <h2>📅 Zeitraum auswählen</h2>
+    
+    {% if available_months %}
+    <div class="month-grid" id="monthGrid">
+      {% for m in available_months %}
+      <div class="month-item {% if loop.first %}selected{% endif %}" 
+           data-year="{{ m.year }}" 
+           data-month="{{ m.month }}"
+           onclick="selectMonth(this)">
+        <div class="month-name">
+          {% set month_names = ['', 'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] %}
+          {{ month_names[m.month|int] }} {{ m.year }}
+        </div>
+        <div class="invoice-count">{{ m.invoice_count }} Rechnungen</div>
+      </div>
+      {% endfor %}
+    </div>
+    
+    <div class="export-section">
+      <a href="#" class="export-btn primary" id="downloadPptx" onclick="downloadMBR('pptx'); return false;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        PowerPoint herunterladen
+      </a>
+      <a href="#" class="export-btn secondary" id="downloadPdf" onclick="downloadMBR('pdf'); return false;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        PDF herunterladen
+      </a>
+    </div>
+    
+    {% else %}
+    <div class="no-data">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      <h3>Noch keine Rechnungsdaten</h3>
+      <p>Laden Sie Rechnungen hoch, um MBR-Reports zu generieren.</p>
+      <a href="/" class="export-btn primary">
+        📤 Rechnungen hochladen
+      </a>
+    </div>
+    {% endif %}
+  </div>
+  
+  <!-- Features -->
+  <div class="mbr-card">
+    <h2>✨ Enthaltene Analysen</h2>
+    <div class="feature-list">
+      <div class="feature-item">
+        <div class="icon">📈</div>
+        <div class="text">
+          <h4>Executive Summary</h4>
+          <p>KI-generierte Zusammenfassung</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="icon">🏢</div>
+        <div class="text">
+          <h4>Top Lieferanten</h4>
+          <p>Ausgaben nach Lieferant</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="icon">💰</div>
+        <div class="text">
+          <h4>Budget-Analyse</h4>
+          <p>Soll-Ist Vergleich</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="icon">⚠️</div>
+        <div class="text">
+          <h4>Risiken & Maßnahmen</h4>
+          <p>Handlungsempfehlungen</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let selectedYear = null;
+let selectedMonth = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+  const firstMonth = document.querySelector('.month-item.selected');
+  if (firstMonth) {
+    selectedYear = firstMonth.dataset.year;
+    selectedMonth = firstMonth.dataset.month;
+  }
+});
+
+function selectMonth(el) {
+  document.querySelectorAll('.month-item').forEach(item => {
+    item.classList.remove('selected');
+  });
+  el.classList.add('selected');
+  selectedYear = el.dataset.year;
+  selectedMonth = el.dataset.month;
+}
+
+function downloadMBR(format) {
+  if (!selectedYear || !selectedMonth) {
+    alert('Bitte wählen Sie einen Monat aus.');
+    return;
+  }
+  
+  if (format === 'pptx') {
+    window.location.href = '/mbr/monthly.pptx?year=' + selectedYear + '&month=' + selectedMonth;
+  } else if (format === 'pdf') {
+    alert('PDF-Export wird in Kürze verfügbar sein.');
+  }
+}
+</script>
+{% endblock %}
