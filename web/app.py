@@ -923,12 +923,13 @@ def is_admin_user(user_id: int) -> bool:
 
 
 @app.get("/mbr/monthly.pptx")
-async def download_monthly_mbr(request: Request):
+async def download_monthly_mbr(request: Request, year: int = None, month: int = None):
     """
-    One-click Monthly Business Review (MBR) download.
-    - Auth-guarded via require_login (session).
-    - Returns editable PPTX (no image exports).
-    - Deterministic fallback via env: MBR_USE_LLM=0
+    Enterprise Monthly Business Review (MBR) download.
+    - Auth-guarded via session
+    - User-isolated data (Enterprise feature)
+    - Optional custom date range via query params
+    - Returns editable PPTX
     """
     redirect = require_login(request)
     if redirect:
@@ -940,15 +941,24 @@ async def download_monthly_mbr(request: Request):
     from zoneinfo import ZoneInfo
     from fastapi.responses import StreamingResponse, JSONResponse
 
-    # Filename uses Berlin TZ, previous month window
+    user_id = request.session.get("user_id")
+    
+    # Determine filename based on requested or default month
     tz = ZoneInfo("Europe/Berlin")
     now = datetime.now(tz=tz)
-    year = now.year
-    month = now.month - 1
-    if month == 0:
-        month = 12
-        year -= 1
-    filename = f"MBR_{year}-{month:02d}.pptx"
+    
+    if year and month:
+        # Custom date range requested
+        file_year, file_month = year, month
+    else:
+        # Default: previous month
+        file_year = now.year
+        file_month = now.month - 1
+        if file_month == 0:
+            file_month = 12
+            file_year -= 1
+    
+    filename = f"MBR_{file_year}-{file_month:02d}.pptx"
 
     api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("MBR_LLM_API_KEY")
     use_llm = (os.environ.get("MBR_USE_LLM", "1").strip() != "0")
@@ -958,7 +968,14 @@ async def download_monthly_mbr(request: Request):
         from mbr.generator import generate_presentation
 
         conn = sqlite3.connect("invoices.db", check_same_thread=False)
-        pptx_bytes = generate_presentation(conn, api_key=api_key, use_llm=use_llm)
+        pptx_bytes = generate_presentation(
+            conn, 
+            api_key=api_key, 
+            use_llm=use_llm,
+            user_id=user_id,
+            year=year,
+            month=month
+        )
 
         headers = {
             "Content-Disposition": f'attachment; filename="{filename}"',
@@ -6658,3 +6675,42 @@ Beantworte die Frage des Users basierend auf diesen Daten."""
     except Exception as e:
         print(f"Chat Error: {e}")
         return JSONResponse({"response": f"Entschuldigung, ein Fehler ist aufgetreten: {str(e)}"})
+
+
+# ============================================================
+# MBR ENTERPRISE PAGE
+# ============================================================
+@app.get("/mbr", response_class=HTMLResponse)
+async def mbr_page(request: Request):
+    """Enterprise MBR Dashboard with date selection."""
+    redirect = require_login(request)
+    if redirect:
+        return redirect
+    
+    user_id = request.session.get("user_id")
+    user_info = get_user_info(user_id)
+    
+    # Get available months with data for this user
+    conn = sqlite3.connect("invoices.db", check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    try:
+        cursor = conn.execute("""
+            SELECT DISTINCT 
+                strftime('%Y', rechnungs_datum) as year,
+                strftime('%m', rechnungs_datum) as month,
+                COUNT(*) as invoice_count
+            FROM rechnungen 
+            WHERE user_id = ? AND rechnungs_datum IS NOT NULL
+            GROUP BY year, month
+            ORDER BY year DESC, month DESC
+            LIMIT 24
+        """, (user_id,))
+        available_months = [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
+    
+    return templates.TemplateResponse("mbr.html", {
+        "request": request,
+        "user": user_info,
+        "available_months": available_months,
+    })

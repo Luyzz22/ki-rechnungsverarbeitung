@@ -6,9 +6,9 @@ from datetime import date, datetime, timedelta
 from typing import Any, Optional
 
 try:
-    from zoneinfo import ZoneInfo  # py3.9+
-except Exception:  # pragma: no cover
-    ZoneInfo = None  # type: ignore
+    from zoneinfo import ZoneInfo
+except Exception:
+    ZoneInfo = None
 
 
 @dataclass(frozen=True)
@@ -46,6 +46,8 @@ class MBRData:
     invoice_count: int
     top_suppliers: list[SupplierRow]
     categories: list[CategoryRow]
+    user_id: Optional[int] = None
+    user_name: Optional[str] = None
 
 
 def _month_label_de(y: int, m: int) -> str:
@@ -76,6 +78,23 @@ def previous_month_window(tz: str = "Europe/Berlin") -> MonthWindow:
     )
 
 
+def custom_month_window(year: int, month: int) -> MonthWindow:
+    """Create a window for a specific month."""
+    start = date(year, month, 1)
+    if month == 12:
+        end_excl = date(year + 1, 1, 1)
+    else:
+        end_excl = date(year, month + 1, 1)
+    
+    return MonthWindow(
+        start=start,
+        end_exclusive=end_excl,
+        label_de=_month_label_de(year, month),
+        year=year,
+        month=month,
+    )
+
+
 def _connect_if_needed(db_connection: Any) -> tuple[sqlite3.Connection, bool]:
     if isinstance(db_connection, sqlite3.Connection):
         return db_connection, False
@@ -98,12 +117,17 @@ def aggregate_mbr_data(
     window: Optional[MonthWindow] = None,
     tz: str = "Europe/Berlin",
     fallback_to_latest_month_if_empty: bool = True,
+    user_id: Optional[int] = None,
 ) -> MBRData:
     """
-    Aggregation source-of-truth (based on invoices.db schema):
-      - rechnungen: lieferant, rechnungs_datum, netto_betrag, brutto_betrag, kategorie_id
-      - budgets: kategorie_id, monat, jahr, betrag
-      - budget_kategorien: id, name, aktiv
+    Enterprise MBR Aggregation with user isolation.
+    
+    Args:
+        db_connection: sqlite3.Connection OR path to sqlite db
+        window: Optional MonthWindow, defaults to previous month
+        tz: Timezone for date calculations
+        fallback_to_latest_month_if_empty: Fall back to latest month with data
+        user_id: Filter data by user_id (Enterprise feature)
     """
     conn, should_close = _connect_if_needed(db_connection)
     try:
@@ -117,18 +141,36 @@ def aggregate_mbr_data(
         supplier_col = "lieferant"
         category_col = "kategorie_id"
 
-        # month coverage check
+        # Build user filter
+        user_filter = ""
+        user_params: list = []
+        if user_id is not None:
+            user_filter = " AND user_id = ?"
+            user_params = [user_id]
+
+        # Get user name
+        user_name = None
+        if user_id:
+            cur = conn.execute("SELECT name, email FROM users WHERE id = ?", (user_id,))
+            row = cur.fetchone()
+            if row:
+                user_name = row["name"] or row["email"]
+
+        # Month coverage check
         cur = conn.execute(
-            f"SELECT COUNT(*) AS n FROM {invoice_table} WHERE DATE({date_col}) >= DATE(?) AND DATE({date_col}) < DATE(?);",
-            (win.start.isoformat(), win.end_exclusive.isoformat()),
+            f"SELECT COUNT(*) AS n FROM {invoice_table} WHERE DATE({date_col}) >= DATE(?) AND DATE({date_col}) < DATE(?){user_filter};",
+            [win.start.isoformat(), win.end_exclusive.isoformat()] + user_params,
         )
         n = int(cur.fetchone()["n"])
         coverage_note = f"Datenbasis: {invoice_table} für {win.label_de}."
         data_source = "invoices.db:rechnungen"
 
-        # fallback to latest month with data (enterprise-safe)
+        # Fallback to latest month with data
         if n == 0 and fallback_to_latest_month_if_empty:
-            cur = conn.execute(f"SELECT MAX(DATE({date_col})) AS d FROM {invoice_table};")
+            cur = conn.execute(
+                f"SELECT MAX(DATE({date_col})) AS d FROM {invoice_table} WHERE 1=1{user_filter};",
+                user_params,
+            )
             max_d = cur.fetchone()["d"]
             if max_d:
                 d = date.fromisoformat(str(max_d)[:10])
@@ -147,16 +189,15 @@ def aggregate_mbr_data(
                 )
 
                 cur = conn.execute(
-                    f"SELECT COUNT(*) AS n FROM {invoice_table} WHERE DATE({date_col}) >= DATE(?) AND DATE({date_col}) < DATE(?);",
-                    (win.start.isoformat(), win.end_exclusive.isoformat()),
+                    f"SELECT COUNT(*) AS n FROM {invoice_table} WHERE DATE({date_col}) >= DATE(?) AND DATE({date_col}) < DATE(?){user_filter};",
+                    [win.start.isoformat(), win.end_exclusive.isoformat()] + user_params,
                 )
                 n = int(cur.fetchone()["n"])
                 coverage_note = (
-                    f"Keine Rechnungsdaten im Zielmonat; Fallback auf letzten Monat mit Daten: {win.label_de} "
-                    f"(Quelle: {invoice_table})."
+                    f"Keine Rechnungsdaten im Zielmonat; Fallback auf letzten Monat mit Daten: {win.label_de}."
                 )
 
-        # totals
+        # Totals
         cur = conn.execute(
             f"""
             SELECT
@@ -164,35 +205,35 @@ def aggregate_mbr_data(
               COALESCE(SUM({gross_col}), 0) AS total_gross,
               COUNT(*) AS cnt
             FROM {invoice_table}
-            WHERE DATE({date_col}) >= DATE(?) AND DATE({date_col}) < DATE(?);
+            WHERE DATE({date_col}) >= DATE(?) AND DATE({date_col}) < DATE(?){user_filter};
             """,
-            (win.start.isoformat(), win.end_exclusive.isoformat()),
+            [win.start.isoformat(), win.end_exclusive.isoformat()] + user_params,
         )
         row = cur.fetchone()
         total_net = _safe_float(row["total_net"])
         total_gross = _safe_float(row["total_gross"])
         invoice_count = int(row["cnt"])
 
-        # top suppliers
+        # Top suppliers
         cur = conn.execute(
             f"""
             SELECT
               COALESCE(NULLIF(TRIM({supplier_col}), ''), 'Unbekannt') AS supplier,
               COALESCE(SUM({net_col}), 0) AS amount_net
             FROM {invoice_table}
-            WHERE DATE({date_col}) >= DATE(?) AND DATE({date_col}) < DATE(?)
+            WHERE DATE({date_col}) >= DATE(?) AND DATE({date_col}) < DATE(?){user_filter}
             GROUP BY supplier
             ORDER BY amount_net DESC
             LIMIT 5;
             """,
-            (win.start.isoformat(), win.end_exclusive.isoformat()),
+            [win.start.isoformat(), win.end_exclusive.isoformat()] + user_params,
         )
         top_suppliers = [
             SupplierRow(supplier=str(r["supplier"]), amount_net=_safe_float(r["amount_net"]))
             for r in cur.fetchall()
         ]
 
-        # budgets by category
+        # Budgets by category (budgets are global, not user-specific for now)
         cur = conn.execute(
             """
             SELECT
@@ -209,21 +250,21 @@ def aggregate_mbr_data(
         )
         budgets = {int(r["category_id"]): (str(r["category_name"]), _safe_float(r["budget"])) for r in cur.fetchall()}
 
-        # actuals by category
+        # Actuals by category (filtered by user)
         cur = conn.execute(
             f"""
             SELECT
               COALESCE({category_col}, -1) AS category_id,
               COALESCE(SUM({net_col}), 0) AS actual_net
             FROM {invoice_table}
-            WHERE DATE({date_col}) >= DATE(?) AND DATE({date_col}) < DATE(?)
+            WHERE DATE({date_col}) >= DATE(?) AND DATE({date_col}) < DATE(?){user_filter}
             GROUP BY category_id;
             """,
-            (win.start.isoformat(), win.end_exclusive.isoformat()),
+            [win.start.isoformat(), win.end_exclusive.isoformat()] + user_params,
         )
         actuals = {int(r["category_id"]): _safe_float(r["actual_net"]) for r in cur.fetchall()}
 
-        # merge
+        # Merge categories
         category_rows: list[CategoryRow] = []
         seen: set[int] = set()
 
@@ -250,6 +291,8 @@ def aggregate_mbr_data(
             invoice_count=invoice_count,
             top_suppliers=top_suppliers,
             categories=category_rows,
+            user_id=user_id,
+            user_name=user_name,
         )
     finally:
         if should_close:

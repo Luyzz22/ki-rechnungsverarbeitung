@@ -4,7 +4,7 @@ import os
 import sqlite3
 from typing import Any, Optional
 
-from .data import aggregate_mbr_data, previous_month_window
+from .data import aggregate_mbr_data, previous_month_window, custom_month_window
 from .llm import generate_narrative_via_llm
 from .pptx_renderer import render_presentation_from_template
 
@@ -18,25 +18,25 @@ def generate_presentation(
     model: str = DEFAULT_MODEL,
     use_llm: bool = True,
     api_key: Optional[str] = None,
+    user_id: Optional[int] = None,
+    year: Optional[int] = None,
+    month: Optional[int] = None,
 ) -> bytes:
     """
-    One-click MBR generator.
+    Enterprise MBR Generator with user isolation and custom date ranges.
 
-    Input:
-      - db_connection: sqlite3.Connection OR path to sqlite db
-    Output:
-      - pptx bytes (ready for FastAPI StreamingResponse)
+    Args:
+        db_connection: sqlite3.Connection OR path to sqlite db
+        template_path: Path to PPTX template
+        model: LLM model for narrative generation
+        use_llm: Enable/disable LLM narrative
+        api_key: OpenAI API key
+        user_id: Filter data by user (Enterprise feature)
+        year: Optional specific year (defaults to previous month)
+        month: Optional specific month (defaults to previous month)
 
-    Behavior:
-      - Aggregates previous month (Berlin TZ).
-      - If empty month, falls back to latest month with data (coverage_note).
-      - LLM produces strict schema narrative (Structured Outputs) unless use_llm=False.
-      - Renders into PPTX template with placeholder tokens.
-
-    Template requirement:
-      Provide pptx_templates/mbr_template.pptx (enterprise-designed master).
-      Place placeholders like:
-        {{MBR_MONTH}}, {{TOTAL_NET}}, {{TOP_SUPPLIERS_TABLE}}, {{BUDGET_CHART}}, ...
+    Returns:
+        PPTX bytes ready for download
     """
     if not os.path.exists(template_path):
         raise FileNotFoundError(
@@ -44,11 +44,16 @@ def generate_presentation(
             "Provide a branded PPTX template and set MBR_TEMPLATE_PATH if needed."
         )
 
-    data = aggregate_mbr_data(db_connection)
+    # Custom or default window
+    window = None
+    if year and month:
+        window = custom_month_window(year, month)
+
+    data = aggregate_mbr_data(db_connection, window=window, user_id=user_id)
+    
     if use_llm:
         narrative = generate_narrative_via_llm(data, model=model, api_key=api_key)
     else:
-        # deterministic fallback (no API call) for smoke tests
         from .types import MBRNarrative, SlideNarrative
         narrative = MBRNarrative(
             month_label=data.window.label_de,
