@@ -1,0 +1,196 @@
+"""
+SBS Invoice-App - Nexus Gateway API Integration
+Erstellt automatisch via install_nexus_api.sh
+"""
+import os
+import base64
+import tempfile
+import logging
+from typing import Optional
+from fastapi import APIRouter, HTTPException, Header
+from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/api/nexus", tags=["Nexus Gateway Integration"])
+
+NEXUS_API_KEY = os.getenv("NEXUS_API_KEY", "sbs_nexus_secret_2026")
+
+
+class InvoiceProcessRequest(BaseModel):
+    content: str
+    filename: Optional[str] = None
+    encoding: Optional[str] = "text"
+    vendor_hint: Optional[str] = None
+
+
+class InvoiceProcessResponse(BaseModel):
+    success: bool
+    provider: str
+    model: str
+    data: dict
+    message: Optional[str] = None
+
+
+class DocumentClassifyRequest(BaseModel):
+    content: str
+    filename: Optional[str] = None
+    encoding: Optional[str] = "text"
+
+
+class DocumentClassifyResponse(BaseModel):
+    success: bool
+    category: str
+    confidence: float
+    details: Optional[dict] = None
+
+
+def verify_api_key(x_api_key: str = Header(None)):
+    if not x_api_key or x_api_key != NEXUS_API_KEY:
+        raise HTTPException(status_code=401, detail="Ungültiger API-Key")
+    return True
+
+
+def extract_text_from_content(content: str, encoding: str, filename: str = None) -> str:
+    if encoding == "text":
+        return content
+    
+    elif encoding == "base64":
+        try:
+            pdf_bytes = base64.b64decode(content)
+            suffix = ".pdf" if not filename else f".{filename.split('.')[-1]}"
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                tmp.write(pdf_bytes)
+                tmp_path = tmp.name
+            
+            try:
+                from invoice_core import extract_text_from_pdf
+                text = extract_text_from_pdf(tmp_path)
+            except ImportError:
+                import fitz
+                doc = fitz.open(tmp_path)
+                text = ""
+                for page in doc:
+                    text += page.get_text()
+                doc.close()
+            
+            os.unlink(tmp_path)
+            return text
+            
+        except Exception as e:
+            logger.error(f"Dekodierungsfehler: {e}")
+            raise HTTPException(status_code=400, detail=f"Dekodierungsfehler: {str(e)}")
+    
+    else:
+        raise HTTPException(status_code=400, detail=f"Unbekanntes Encoding: {encoding}")
+
+
+@router.post("/process-invoice", response_model=InvoiceProcessResponse)
+async def process_invoice(request: InvoiceProcessRequest, x_api_key: str = Header(None)):
+    verify_api_key(x_api_key)
+    
+    try:
+        text = extract_text_from_content(request.content, request.encoding, request.filename)
+        
+        if not text or len(text.strip()) < 30:
+            raise HTTPException(status_code=400, detail="Zu wenig Text extrahiert")
+        
+        logger.info(f"Processing invoice: {len(text)} chars")
+        
+        try:
+            from llm_router import extract_invoice_data, pick_provider_model
+        except ImportError:
+            raise HTTPException(status_code=500, detail="LLM Router nicht verfügbar")
+        
+        complexity = min(100, len(text) // 50)
+        provider, model = pick_provider_model(complexity)
+        
+        logger.info(f"Selected: {provider}/{model}")
+        
+        result = extract_invoice_data(text, provider, model)
+        
+        if not result:
+            raise HTTPException(status_code=422, detail="Extraktion fehlgeschlagen")
+        
+        return InvoiceProcessResponse(
+            success=True,
+            provider=provider,
+            model=model,
+            data=result,
+            message=f"Verarbeitet mit {provider.upper()}"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Fehler: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/classify-document", response_model=DocumentClassifyResponse)
+async def classify_document(request: DocumentClassifyRequest, x_api_key: str = Header(None)):
+    verify_api_key(x_api_key)
+    
+    try:
+        text = extract_text_from_content(request.content, request.encoding, request.filename)
+        
+        if not text or len(text.strip()) < 20:
+            raise HTTPException(status_code=400, detail="Zu wenig Text")
+        
+        text_lower = text.lower()
+        scores = {"rechnung": 0, "vertrag": 0, "angebot": 0, "sonstiges": 0}
+        
+        for kw in ["rechnung", "invoice", "netto", "brutto", "mwst", "iban"]:
+            if kw in text_lower:
+                scores["rechnung"] += 1
+        
+        for kw in ["vertrag", "vereinbarung", "kündigung", "§", "laufzeit"]:
+            if kw in text_lower:
+                scores["vertrag"] += 1
+        
+        for kw in ["angebot", "kostenvoranschlag", "gültig bis"]:
+            if kw in text_lower:
+                scores["angebot"] += 1
+        
+        max_score = max(scores.values())
+        if max_score == 0:
+            category = "sonstiges"
+            confidence = 0.3
+        else:
+            category = max(scores, key=scores.get)
+            total = sum(scores.values())
+            confidence = round(scores[category] / total, 2) if total > 0 else 0.5
+        
+        return DocumentClassifyResponse(
+            success=True,
+            category=category,
+            confidence=confidence,
+            details={"scores": scores}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Fehler: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/health")
+async def health_check():
+    status = {"status": "healthy", "service": "sbs-invoice-api", "version": "1.0.0"}
+    
+    try:
+        from llm_router import openai_client, anthropic_client
+        status["ai"] = {"openai": "available", "anthropic": "available", "mode": "hybrid"}
+    except ImportError as e:
+        status["ai"] = {"error": str(e), "mode": "unavailable"}
+    
+    return status
+
+
+@router.get("/info")
+async def api_info():
+    return {
+        "api": "SBS Nexus Gateway Integration",
+        "version": "1.0.0",
+        "ai_models": {"primary": "GPT-4o", "fallback": "Claude Sonnet 4.5"}
+    }

@@ -13,14 +13,6 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from database import create_password_reset_token, verify_reset_token, reset_password
 # FIXED (was broken): from database import create_password_reset_token, verify_reset_token, reset_password\nfrom fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi import FastAPI, Request, Form
-# Nexus Gateway Integration
-import sys
-sys.path.insert(0, "/var/www/invoice-app")
-try:
-    from api_nexus import router as nexus_router
-    NEXUS_AVAILABLE = True
-except ImportError:
-    NEXUS_AVAILABLE = False
 #!/usr/bin/env python3
 from dotenv import load_dotenv
 import os
@@ -42,14 +34,6 @@ from web.routes_oauth import router as oauth_router
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException, BackgroundTasks
-# Nexus Gateway Integration
-import sys
-sys.path.insert(0, "/var/www/invoice-app")
-try:
-    from api_nexus import router as nexus_router
-    NEXUS_AVAILABLE = True
-except ImportError:
-    NEXUS_AVAILABLE = False
 from fastapi.responses import FileResponse, RedirectResponse
 import logging
 from sendgrid import SendGridAPIClient
@@ -95,14 +79,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 templates = Jinja2Templates(directory="web/templates")
 from fastapi import Request
-# Nexus Gateway Integration
-import sys
-sys.path.insert(0, "/var/www/invoice-app")
-try:
-    from api_nexus import router as nexus_router
-    NEXUS_AVAILABLE = True
-except ImportError:
-    NEXUS_AVAILABLE = False
 import shutil
 from typing import List
 import uuid
@@ -4017,14 +3993,6 @@ async def demo_job_page(request: Request, job_id: str):
 # Analytics API – Finance Snapshot
 # --------------------------------------------------------------------
 from fastapi import Query
-# Nexus Gateway Integration
-import sys
-sys.path.insert(0, "/var/www/invoice-app")
-try:
-    from api_nexus import router as nexus_router
-    NEXUS_AVAILABLE = True
-except ImportError:
-    NEXUS_AVAILABLE = False
 
 @app.get("/api/analytics/finance-snapshot")
 async def api_finance_snapshot(request: Request, days: int = 90):
@@ -6746,15 +6714,3 @@ async def mbr_page(request: Request):
         "user": user_info,
         "available_months": available_months,
     })
-
-# ══════════════════════════════════════════════════════════════════════════════
-# NEXUS GATEWAY INTEGRATION
-# ══════════════════════════════════════════════════════════════════════════════
-import sys
-sys.path.insert(0, "/var/www/invoice-app")
-try:
-    from api_nexus import router as nexus_router
-    app.include_router(nexus_router)
-    print("✅ Nexus Gateway API aktiviert: /api/nexus/*")
-except ImportError as e:
-    print(f"⚠️ Nexus Gateway nicht verfügbar: {e}")
