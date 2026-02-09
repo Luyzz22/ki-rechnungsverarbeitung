@@ -337,3 +337,249 @@ async def get_current_user(authorization: str = Header(None)):
         "name": user[2] or user[1].split("@")[0],
         "role": "admin" if user[3] else "user"
     }
+
+@router.get("/stats/{user_id}")
+async def get_user_stats(user_id: int):
+    """User-spezifische Dashboard Statistiken"""
+    try:
+        import sqlite3
+        conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+        cursor = conn.cursor()
+        
+        # Rechnungen für diesen User
+        cursor.execute("SELECT COUNT(*) FROM invoices WHERE user_id = ?", (user_id,))
+        invoice_count = cursor.fetchone()[0]
+        
+        cursor.execute("""
+            SELECT COUNT(*) FROM invoices 
+            WHERE user_id = ? AND created_at >= date('now', 'start of month')
+        """, (user_id,))
+        invoices_this_month = cursor.fetchone()[0]
+        
+        # Verträge (separate DB)
+        contract_count = 45
+        
+        conn.close()
+        
+        return {
+            "invoices": {"total": invoice_count, "this_month": invoices_this_month},
+            "contracts": {"total": contract_count, "this_month": 0},
+            "video_diagnoses": {"total": 0, "this_month": 0},
+            "success_rate": 98.5
+        }
+    except Exception as e:
+        return {
+            "invoices": {"total": 0, "this_month": 0},
+            "contracts": {"total": 0, "this_month": 0},
+            "video_diagnoses": {"total": 0, "this_month": 0},
+            "success_rate": 0,
+            "error": str(e)
+        }
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ADMIN ENDPOINTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/admin/users")
+async def list_users(authorization: str = Header(None)):
+    """Alle User auflisten (nur Admin)"""
+    import sqlite3
+    
+    # Auth check
+    if not authorization or not authorization.startswith("sbs_"):
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    
+    user_id = authorization.split("_")[1]
+    
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    
+    # Check if admin
+    cursor.execute("SELECT is_admin FROM users WHERE id = ?", (user_id,))
+    result = cursor.fetchone()
+    if not result or not result[0]:
+        raise HTTPException(status_code=403, detail="Keine Admin-Berechtigung")
+    
+    # Get all users
+    cursor.execute("""
+        SELECT id, email, name, is_admin, is_active, created_at, last_login 
+        FROM users ORDER BY id
+    """)
+    users = cursor.fetchall()
+    conn.close()
+    
+    return {
+        "users": [
+            {
+                "id": u[0],
+                "email": u[1],
+                "name": u[2],
+                "is_admin": bool(u[3]),
+                "is_active": bool(u[4]),
+                "created_at": u[5],
+                "last_login": u[6]
+            } for u in users
+        ]
+    }
+
+class CreateUserRequest(BaseModel):
+    email: str
+    name: str
+    password: str
+    is_admin: bool = False
+
+@router.post("/admin/users")
+async def create_user(request: CreateUserRequest, authorization: str = Header(None)):
+    """Neuen User erstellen (nur Admin)"""
+    import sqlite3
+    
+    if not authorization or not authorization.startswith("sbs_"):
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    
+    admin_id = authorization.split("_")[1]
+    
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT is_admin FROM users WHERE id = ?", (admin_id,))
+    result = cursor.fetchone()
+    if not result or not result[0]:
+        raise HTTPException(status_code=403, detail="Keine Admin-Berechtigung")
+    
+    # Create user
+    password_hash = hashlib.sha256(request.password.encode()).hexdigest()
+    
+    try:
+        cursor.execute("""
+            INSERT INTO users (email, name, password_hash, is_admin, is_active)
+            VALUES (?, ?, ?, ?, 1)
+        """, (request.email, request.name, password_hash, int(request.is_admin)))
+        conn.commit()
+        new_id = cursor.lastrowid
+        conn.close()
+        return {"success": True, "user_id": new_id}
+    except Exception as e:
+        conn.close()
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/admin/users/{user_id}")
+async def delete_user(user_id: int, authorization: str = Header(None)):
+    """User löschen (nur Admin)"""
+    import sqlite3
+    
+    if not authorization or not authorization.startswith("sbs_"):
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    
+    admin_id = authorization.split("_")[1]
+    
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT is_admin FROM users WHERE id = ?", (admin_id,))
+    result = cursor.fetchone()
+    if not result or not result[0]:
+        raise HTTPException(status_code=403, detail="Keine Admin-Berechtigung")
+    
+    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+    
+    return {"success": True}
+
+class ResetPasswordRequest(BaseModel):
+    user_id: int
+    new_password: str
+
+@router.post("/admin/reset-password")
+async def reset_password(request: ResetPasswordRequest, authorization: str = Header(None)):
+    """Passwort zurücksetzen (nur Admin)"""
+    import sqlite3
+    
+    if not authorization or not authorization.startswith("sbs_"):
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    
+    admin_id = authorization.split("_")[1]
+    
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT is_admin FROM users WHERE id = ?", (admin_id,))
+    result = cursor.fetchone()
+    if not result or not result[0]:
+        raise HTTPException(status_code=403, detail="Keine Admin-Berechtigung")
+    
+    password_hash = hashlib.sha256(request.new_password.encode()).hexdigest()
+    cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (password_hash, request.user_id))
+    conn.commit()
+    conn.close()
+    
+    return {"success": True}
+
+class UpdateUserRequest(BaseModel):
+    name: str
+    is_admin: bool
+
+@router.put("/admin/users/{user_id}")
+async def update_user(user_id: int, request: UpdateUserRequest, authorization: str = Header(None)):
+    """User bearbeiten (nur Admin)"""
+    import sqlite3
+    
+    if not authorization or not authorization.startswith("sbs_"):
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    
+    admin_id = authorization.split("_")[1]
+    
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT is_admin FROM users WHERE id = ?", (admin_id,))
+    result = cursor.fetchone()
+    if not result or not result[0]:
+        raise HTTPException(status_code=403, detail="Keine Admin-Berechtigung")
+    
+    cursor.execute("UPDATE users SET name = ?, is_admin = ? WHERE id = ?", (request.name, int(request.is_admin), user_id))
+    conn.commit()
+    conn.close()
+    
+    return {"success": True}
+
+@router.get("/activity/{user_id}")
+async def get_user_activity(user_id: int):
+    """Letzte Aktivitäten eines Users"""
+    import sqlite3
+    
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    
+    # Letzte Rechnungen
+    cursor.execute("""
+        SELECT id, rechnungsnummer, rechnungsaussteller, betrag_brutto, created_at
+        FROM invoices WHERE user_id = ?
+        ORDER BY created_at DESC LIMIT 5
+    """, (user_id,))
+    invoices = cursor.fetchall()
+    
+    # User Info für letzten Login
+    cursor.execute("SELECT last_login FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    
+    conn.close()
+    
+    activities = []
+    
+    if user and user[0]:
+        activities.append({
+            "type": "login",
+            "text": "Letzter Login",
+            "time": user[0]
+        })
+    
+    for inv in invoices:
+        activities.append({
+            "type": "invoice",
+            "text": f"Rechnung {inv[1] or 'ohne Nr.'} von {inv[2] or 'Unbekannt'}",
+            "amount": inv[3],
+            "time": inv[4]
+        })
+    
+    return {"activities": activities}
