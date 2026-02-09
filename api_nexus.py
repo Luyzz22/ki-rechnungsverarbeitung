@@ -264,3 +264,76 @@ async def get_stats():
         }
     except Exception as e:
         return {"error": str(e)}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# AUTH ENDPOINTS
+# ══════════════════════════════════════════════════════════════════════════════
+import hashlib
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+@router.post("/auth/login")
+async def login(request: LoginRequest):
+    """User Login für Dashboard"""
+    import sqlite3
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT id, email, name, password_hash, is_admin 
+        FROM users WHERE email = ?
+    """, (request.email,))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Ungültige Anmeldedaten")
+    
+    user_id, email, name, password_hash, is_admin = user
+    
+    # Password check (SHA256)
+    input_hash = hashlib.sha256(request.password.encode()).hexdigest()
+    if input_hash != password_hash:
+        raise HTTPException(status_code=401, detail="Ungültige Anmeldedaten")
+    
+    return {
+        "success": True,
+        "user": {
+            "id": user_id,
+            "email": email,
+            "name": name or email.split("@")[0],
+            "role": "admin" if is_admin else "user"
+        },
+        "token": f"sbs_{user_id}_{hashlib.md5(email.encode()).hexdigest()[:8]}"
+    }
+
+@router.get("/auth/me")
+async def get_current_user(authorization: str = Header(None)):
+    """Aktuellen User abrufen"""
+    if not authorization or not authorization.startswith("sbs_"):
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    
+    parts = authorization.split("_")
+    if len(parts) < 2:
+        raise HTTPException(status_code=401, detail="Ungültiger Token")
+    
+    user_id = parts[1]
+    
+    import sqlite3
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, email, name, is_admin FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="User nicht gefunden")
+    
+    return {
+        "id": user[0],
+        "email": user[1],
+        "name": user[2] or user[1].split("@")[0],
+        "role": "admin" if user[3] else "user"
+    }
