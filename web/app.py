@@ -2646,7 +2646,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://sbsdeutschland.com", "https://app.sbsdeutschland.com", "https://sbsnexus.de", "https://www.sbsnexus.de"],
+    allow_origins=["https://sbsdeutschland.com", "https://app.sbsdeutschland.com", "https://sbsnexus.de", "https://www.sbsnexus.de", "http://localhost:3000", "http://localhost:3001"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],

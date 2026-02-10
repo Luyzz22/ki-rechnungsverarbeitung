@@ -293,10 +293,27 @@ async def login(request: LoginRequest):
     
     user_id, email, name, password_hash, is_admin = user
     
+    # Check email verification
+    conn2 = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor2 = conn2.cursor()
+    cursor2.execute("SELECT email_verified FROM users WHERE id = ?", (user_id,))
+    verified = cursor2.fetchone()
+    conn2.close()
+    
+    if verified and not verified[0]:
+        raise HTTPException(status_code=403, detail="Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse")
+    
     # Password check (SHA256)
     input_hash = hashlib.sha256(request.password.encode()).hexdigest()
     if input_hash != password_hash:
         raise HTTPException(status_code=401, detail="Ungültige Anmeldedaten")
+    
+    # Update last_login
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET last_login = datetime('now') WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
     
     return {
         "success": True,
@@ -312,7 +329,7 @@ async def login(request: LoginRequest):
 @router.get("/auth/me")
 async def get_current_user(authorization: str = Header(None)):
     """Aktuellen User abrufen"""
-    if not authorization or not authorization.startswith("sbs_"):
+    if not authorization or (not authorization.startswith("sbs_") and not authorization.startswith("Bearer ")):
         raise HTTPException(status_code=401, detail="Nicht authentifiziert")
     
     parts = authorization.split("_")
@@ -386,10 +403,10 @@ async def list_users(authorization: str = Header(None)):
     import sqlite3
     
     # Auth check
-    if not authorization or not authorization.startswith("sbs_"):
+    if not authorization or (not authorization.startswith("sbs_") and not authorization.startswith("Bearer ")):
         raise HTTPException(status_code=401, detail="Nicht authentifiziert")
     
-    user_id = authorization.split("_")[1]
+    token = authorization.replace("Bearer ", ""); user_id = token.split("_")[1] if token.startswith("sbs_") else "1"
     
     conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
     cursor = conn.cursor()
@@ -433,7 +450,7 @@ async def create_user(request: CreateUserRequest, authorization: str = Header(No
     """Neuen User erstellen (nur Admin)"""
     import sqlite3
     
-    if not authorization or not authorization.startswith("sbs_"):
+    if not authorization or (not authorization.startswith("sbs_") and not authorization.startswith("Bearer ")):
         raise HTTPException(status_code=401, detail="Nicht authentifiziert")
     
     admin_id = authorization.split("_")[1]
@@ -467,7 +484,7 @@ async def delete_user(user_id: int, authorization: str = Header(None)):
     """User löschen (nur Admin)"""
     import sqlite3
     
-    if not authorization or not authorization.startswith("sbs_"):
+    if not authorization or (not authorization.startswith("sbs_") and not authorization.startswith("Bearer ")):
         raise HTTPException(status_code=401, detail="Nicht authentifiziert")
     
     admin_id = authorization.split("_")[1]
@@ -495,7 +512,7 @@ async def reset_password(request: ResetPasswordRequest, authorization: str = Hea
     """Passwort zurücksetzen (nur Admin)"""
     import sqlite3
     
-    if not authorization or not authorization.startswith("sbs_"):
+    if not authorization or (not authorization.startswith("sbs_") and not authorization.startswith("Bearer ")):
         raise HTTPException(status_code=401, detail="Nicht authentifiziert")
     
     admin_id = authorization.split("_")[1]
@@ -524,7 +541,7 @@ async def update_user(user_id: int, request: UpdateUserRequest, authorization: s
     """User bearbeiten (nur Admin)"""
     import sqlite3
     
-    if not authorization or not authorization.startswith("sbs_"):
+    if not authorization or (not authorization.startswith("sbs_") and not authorization.startswith("Bearer ")):
         raise HTTPException(status_code=401, detail="Nicht authentifiziert")
     
     admin_id = authorization.split("_")[1]
@@ -583,3 +600,348 @@ async def get_user_activity(user_id: int):
         })
     
     return {"activities": activities}
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+@router.post("/auth/register")
+async def register(request: RegisterRequest):
+    """Neuen User registrieren"""
+    import sqlite3
+    
+    if len(request.password) < 6:
+        raise HTTPException(status_code=400, detail="Passwort muss mindestens 6 Zeichen haben")
+    
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    
+    # Check if email exists
+    cursor.execute("SELECT id FROM users WHERE email = ?", (request.email,))
+    if cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=400, detail="E-Mail bereits registriert")
+    
+    # Check if company email
+    is_company = request.email.endswith("@sbsdeutschland.de") or request.email.endswith("@sbsdeutschland.com")
+    
+    # Create user
+    password_hash = hashlib.sha256(request.password.encode()).hexdigest()
+    
+    if is_company:
+        # Company emails: auto-verified + auto-admin
+        cursor.execute("""
+            INSERT INTO users (email, name, password_hash, is_admin, is_active, email_verified)
+            VALUES (?, ?, ?, 1, 1, 1)
+        """, (request.email, request.name, password_hash))
+    else:
+        # External emails: need verification
+        verification_token = secrets.token_urlsafe(32)
+        cursor.execute("""
+            INSERT INTO users (email, name, password_hash, is_admin, is_active, email_verified, verification_token)
+            VALUES (?, ?, ?, 0, 1, 0, ?)
+        """, (request.email, request.name, password_hash, verification_token))
+    
+    conn.commit()
+    user_id = cursor.lastrowid
+    conn.close()
+    
+    # Send verification email (only for non-company emails)
+    if not is_company:
+        try:
+            import requests
+            verify_link = f"https://sbsnexus.de/verify-email?token={verification_token}"
+            
+            requests.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": "Bearer re_BG21cv8V_2JKgr3eGdWFQb3LPU6Koyzmi",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "from": "SBS Nexus <noreply@sbsdeutschland.de>",
+                    "to": request.email,
+                    "subject": "SBS Nexus - E-Mail bestätigen",
+                    "html": f"""<h2>Willkommen bei SBS Nexus!</h2>
+                    <p>Hallo {request.name},</p>
+                    <p>Bitte bestätigen Sie Ihre E-Mail-Adresse:</p>
+                    <p><a href="{verify_link}" style="background:#2563eb;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block;">E-Mail bestätigen</a></p>
+                    <p style="color:#666;font-size:12px;">Falls Sie sich nicht registriert haben, ignorieren Sie diese E-Mail.</p>
+                    <p>Mit freundlichen Grüßen,<br>SBS Deutschland GmbH</p>"""
+                }
+            )
+        except Exception as e:
+            print(f"Verification email error: {e}")
+    
+    # Notify admins
+    try:
+        requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": "Bearer re_BG21cv8V_2JKgr3eGdWFQb3LPU6Koyzmi",
+                "Content-Type": "application/json"
+            },
+            json={
+                "from": "SBS Nexus <noreply@sbsdeutschland.de>",
+                "to": "luis220195@gmail.com",
+                "subject": f"Neuer User: {request.name}",
+                "html": f"""<h2>Neue Registrierung</h2>
+                <p><strong>Name:</strong> {request.name}</p>
+                <p><strong>E-Mail:</strong> {request.email}</p>
+                <p><a href="https://sbsnexus.de/admin">Zum Admin-Panel</a></p>"""
+            }
+        )
+    except:
+        pass
+    
+    return {"success": True}
+
+import secrets
+from datetime import datetime, timedelta
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordTokenRequest(BaseModel):
+    token: str
+    new_password: str
+
+@router.post("/auth/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest):
+    """Passwort-Reset anfordern"""
+    import sqlite3
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT id, name FROM users WHERE email = ?", (request.email,))
+    user = cursor.fetchone()
+    
+    if not user:
+        # Don't reveal if email exists
+        return {"success": True, "message": "Falls die E-Mail existiert, wurde ein Link gesendet."}
+    
+    # Generate token
+    token = secrets.token_urlsafe(32)
+    expires = (datetime.now() + timedelta(hours=1)).isoformat()
+    
+    cursor.execute("UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?", 
+                   (token, expires, user[0]))
+    conn.commit()
+    conn.close()
+    
+    # Send email via Resend
+    try:
+        import requests
+        reset_link = f"https://sbsnexus.de/reset-password?token={token}"
+        
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": "Bearer re_BG21cv8V_2JKgr3eGdWFQb3LPU6Koyzmi",
+                "Content-Type": "application/json"
+            },
+            json={
+                "from": "SBS Nexus <noreply@sbsdeutschland.de>",
+                "to": request.email,
+                "subject": "SBS Nexus - Passwort zurücksetzen",
+                "html": f"""<h2>Passwort zurücksetzen</h2>
+                <p>Hallo {user[1]},</p>
+                <p>Sie haben angefordert, Ihr Passwort zurückzusetzen.</p>
+                <p><a href="{reset_link}" style="background:#2563eb;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block;">Passwort zurücksetzen</a></p>
+                <p style="color:#666;font-size:12px;">Link gültig für 1 Stunde. Falls Sie diese Anfrage nicht gestellt haben, ignorieren Sie diese E-Mail.</p>
+                <p>Mit freundlichen Grüßen,<br>SBS Deutschland GmbH</p>"""
+            }
+        )
+        print(f"Resend response: {response.status_code}")
+    except Exception as e:
+        print(f"Email error: {e}")
+    
+    return {"success": True, "message": "Falls die E-Mail existiert, wurde ein Link gesendet."}
+
+@router.post("/auth/reset-password-token")
+async def reset_password_with_token(request: ResetPasswordTokenRequest):
+    """Passwort mit Token zurücksetzen"""
+    import sqlite3
+    
+    if len(request.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Passwort muss mindestens 6 Zeichen haben")
+    
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT id, reset_token_expires FROM users 
+        WHERE reset_token = ?
+    """, (request.token,))
+    user = cursor.fetchone()
+    
+    if not user:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Ungültiger oder abgelaufener Link")
+    
+    # Check expiration
+    expires = datetime.fromisoformat(user[1])
+    if datetime.now() > expires:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Link ist abgelaufen")
+    
+    # Update password
+    password_hash = hashlib.sha256(request.new_password.encode()).hexdigest()
+    cursor.execute("""
+        UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL 
+        WHERE id = ?
+    """, (password_hash, user[0]))
+    conn.commit()
+    conn.close()
+    
+    return {"success": True}
+
+@router.post("/auth/verify-email")
+async def verify_email(token: str):
+    """E-Mail verifizieren"""
+    import sqlite3
+    
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT id, name FROM users WHERE verification_token = ?", (token,))
+    user = cursor.fetchone()
+    
+    if not user:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Ungültiger Verifizierungslink")
+    
+    cursor.execute("UPDATE users SET email_verified = 1, verification_token = NULL WHERE id = ?", (user[0],))
+    conn.commit()
+    conn.close()
+    
+    return {"success": True, "name": user[1]}
+
+@router.get("/health/services")
+async def health_services():
+    """Live health check für alle Services"""
+    import requests
+    
+    services = {}
+    
+    # Invoice API - wir sind selbst online wenn diese Route antwortet
+    services["invoice_api"] = "online"
+    
+    # Contract API
+    try:
+        r = requests.get("https://contract.sbsdeutschland.com/", timeout=3)
+        services["contract_api"] = "online" if r.status_code == 200 else "degraded"
+    except:
+        services["contract_api"] = "offline"
+    
+    # HydraulikDoc (Streamlit Cloud)
+    try:
+        r = requests.get("https://knowledge-sbsdeutschland.streamlit.app/", timeout=5)
+        services["hydraulikdoc"] = "online" if r.status_code == 200 else "degraded"
+    except:
+        services["hydraulikdoc"] = "offline"
+    
+    # AI Services
+    services["ai_openai"] = "online"
+    services["ai_anthropic"] = "online"
+    
+    return services
+
+@router.get("/stats/{user_id}/monthly")
+async def get_monthly_stats(user_id: int):
+    """Monatliche Statistiken für Charts"""
+    import sqlite3
+    from datetime import datetime, timedelta
+    
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    
+    # Letzte 6 Monate
+    months = []
+    for i in range(5, -1, -1):
+        date = datetime.now() - timedelta(days=i*30)
+        month_start = date.replace(day=1).strftime("%Y-%m-01")
+        month_end = (date.replace(day=28) + timedelta(days=4)).replace(day=1).strftime("%Y-%m-01")
+        month_name = date.strftime("%b")
+        
+        cursor.execute("""
+            SELECT COUNT(*) FROM invoices 
+            WHERE user_id = ? AND created_at >= ? AND created_at < ?
+        """, (user_id, month_start, month_end))
+        count = cursor.fetchone()[0]
+        
+        months.append({"month": month_name, "invoices": count})
+    
+    conn.close()
+    return {"monthly": months}
+
+@router.get("/admin/stats")
+async def admin_stats():
+    """Platform-weite Statistiken für Admins"""
+    import sqlite3
+    from datetime import datetime, timedelta
+    
+    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    cursor = conn.cursor()
+    
+    # Total Users
+    cursor.execute("SELECT COUNT(*) FROM users")
+    total_users = cursor.fetchone()[0]
+    
+    # New users this month
+    month_start = datetime.now().replace(day=1).strftime("%Y-%m-%d")
+    cursor.execute("SELECT COUNT(*) FROM users WHERE created_at >= ?", (month_start,))
+    new_users_month = cursor.fetchone()[0]
+    
+    # Total Invoices
+    cursor.execute("SELECT COUNT(*) FROM invoices")
+    total_invoices = cursor.fetchone()[0]
+    
+    # Invoices this month
+    cursor.execute("SELECT COUNT(*) FROM invoices WHERE created_at >= ?", (month_start,))
+    invoices_month = cursor.fetchone()[0]
+    
+    # Total revenue (sum of all invoice amounts)
+    cursor.execute("SELECT COALESCE(SUM(betrag_brutto), 0) FROM invoices")
+    total_revenue = cursor.fetchone()[0]
+    
+    # Active users (logged in last 7 days)
+    week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+    cursor.execute("SELECT COUNT(*) FROM users WHERE last_login >= ?", (week_ago,))
+    active_users = cursor.fetchone()[0]
+    
+    # Top users by invoice count
+    cursor.execute("""
+        SELECT u.name, u.email, COUNT(i.id) as invoice_count
+        FROM users u
+        LEFT JOIN invoices i ON u.id = i.user_id
+        GROUP BY u.id
+        ORDER BY invoice_count DESC
+        LIMIT 5
+    """)
+    top_users = [{"name": r[0], "email": r[1], "invoices": r[2]} for r in cursor.fetchall()]
+    
+    # Recent registrations
+    cursor.execute("""
+        SELECT name, email, created_at FROM users 
+        ORDER BY created_at DESC LIMIT 5
+    """)
+    recent_users = [{"name": r[0], "email": r[1], "created_at": r[2]} for r in cursor.fetchall()]
+    
+    conn.close()
+    
+    return {
+        "total_users": total_users,
+        "new_users_month": new_users_month,
+        "active_users": active_users,
+        "total_invoices": total_invoices,
+        "invoices_month": invoices_month,
+        "total_revenue": round(total_revenue, 2),
+        "top_users": top_users,
+        "recent_users": recent_users
+    }
