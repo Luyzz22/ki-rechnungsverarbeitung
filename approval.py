@@ -156,6 +156,24 @@ class ApprovalManager:
         conn.commit()
         conn.close()
         
+        # Webhook für Approval Events
+        try:
+            from api_nexus import fire_webhook_event
+            if new_status == "approved":
+                fire_webhook_event("invoice.approved", {
+                    "invoice_id": invoice_id,
+                    "approved_by": user_id,
+                    "comment": comment
+                })
+            elif new_status == "rejected":
+                fire_webhook_event("invoice.rejected", {
+                    "invoice_id": invoice_id,
+                    "rejected_by": user_id,
+                    "comment": comment
+                })
+        except:
+            pass
+        
         logger.info(f"Invoice {invoice_id} status changed: {old_status} -> {new_status} by user {user_id}")
         return True
     
