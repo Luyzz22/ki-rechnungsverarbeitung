@@ -1,9 +1,19 @@
 from fastapi import FastAPI, responses
+from fastapi.middleware.cors import CORSMiddleware
 from budget_routes import router as budget_router
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 app = FastAPI()
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:3001", "https://sbsnexus.de", "https://www.sbsnexus.de"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "web" / "static"
