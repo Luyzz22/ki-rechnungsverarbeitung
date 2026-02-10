@@ -497,9 +497,24 @@ async def delete_user(user_id: int, authorization: str = Header(None)):
     if not result or not result[0]:
         raise HTTPException(status_code=403, detail="Keine Admin-Berechtigung")
     
+    # Hole User-Info vor Löschung
+    cursor.execute("SELECT email, name FROM users WHERE id = ?", (user_id,))
+    user_info = cursor.fetchone()
+    
     cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
     conn.commit()
     conn.close()
+    
+    # Webhook für Admin-Aktion
+    try:
+        fire_webhook_event("admin.user_deleted", {
+            "deleted_user_id": user_id,
+            "deleted_user_email": user_info[0] if user_info else "unknown",
+            "deleted_user_name": user_info[1] if user_info else "unknown",
+            "deleted_by_admin_id": admin_id
+        })
+    except:
+        pass
     
     return {"success": True}
 
@@ -526,9 +541,24 @@ async def reset_password(request: ResetPasswordRequest, authorization: str = Hea
         raise HTTPException(status_code=403, detail="Keine Admin-Berechtigung")
     
     password_hash = hashlib.sha256(request.new_password.encode()).hexdigest()
+    
+    # Hole User-Info
+    cursor.execute("SELECT email, name FROM users WHERE id = ?", (request.user_id,))
+    user_info = cursor.fetchone()
+    
     cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (password_hash, request.user_id))
     conn.commit()
     conn.close()
+    
+    # Webhook für Admin-Aktion
+    try:
+        fire_webhook_event("admin.password_reset", {
+            "user_id": request.user_id,
+            "user_email": user_info[0] if user_info else "unknown",
+            "reset_by_admin_id": admin_id
+        })
+    except:
+        pass
     
     return {"success": True}
 
