@@ -77,6 +77,21 @@ def init_database():
     ''')
     
     conn.commit()
+
+    # Webhook für neue Rechnungen
+    try:
+        from api_nexus import fire_webhook_event
+        for invoice in results:
+            fire_webhook_event("invoice.created", {
+                "invoice_number": invoice.get("rechnungsnummer", ""),
+                "supplier": invoice.get("rechnungsaussteller", ""),
+                "amount": invoice.get("betrag_brutto", 0),
+                "date": invoice.get("datum", ""),
+                "job_id": job_id
+            })
+    except:
+        pass
+
     # Cache invalidieren nach neuen Invoices
     invalidate_cache("statistics")
     invalidate_cache("monthly_summary")

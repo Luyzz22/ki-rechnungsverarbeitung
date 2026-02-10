@@ -945,3 +945,504 @@ async def admin_stats():
         "top_users": top_users,
         "recent_users": recent_users
     }
+
+# ============ NOTIFICATIONS ============
+
+@router.get("/notifications/{user_id}")
+async def get_notifications(user_id: int, authorization: str = Header(None)):
+    """User Notifications abrufen"""
+    import sqlite3
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    
+    # Ensure notifications table exists
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            message TEXT,
+            link TEXT,
+            is_read INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    
+    # Get notifications
+    cursor.execute('''
+        SELECT id, type, title, message, link, is_read, created_at 
+        FROM notifications 
+        WHERE user_id = ? 
+        ORDER BY created_at DESC 
+        LIMIT 20
+    ''', (user_id,))
+    
+    rows = cursor.fetchall()
+    notifications = []
+    unread_count = 0
+    
+    for row in rows:
+        if row[5] == 0:
+            unread_count += 1
+        notifications.append({
+            "id": row[0],
+            "type": row[1],
+            "title": row[2],
+            "message": row[3],
+            "link": row[4],
+            "is_read": bool(row[5]),
+            "created_at": row[6]
+        })
+    
+    conn.close()
+    return {"notifications": notifications, "unread_count": unread_count}
+
+
+@router.post("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: int, authorization: str = Header(None)):
+    """Notification als gelesen markieren"""
+    import sqlite3
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE notifications SET is_read = 1 WHERE id = ?', (notification_id,))
+    conn.commit()
+    conn.close()
+    
+    return {"success": True}
+
+
+@router.post("/notifications/{user_id}/read-all")
+async def mark_all_read(user_id: int, authorization: str = Header(None)):
+    """Alle Notifications als gelesen markieren"""
+    import sqlite3
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE notifications SET is_read = 1 WHERE user_id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+    
+    return {"success": True}
+
+
+@router.post("/notifications/create")
+async def create_notification(data: dict, authorization: str = Header(None)):
+    """Notification erstellen (für System/Admin)"""
+    import sqlite3
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO notifications (user_id, type, title, message, link)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (data.get('user_id'), data.get('type', 'info'), data.get('title'), data.get('message'), data.get('link')))
+    
+    conn.commit()
+    notification_id = cursor.lastrowid
+    conn.close()
+    
+    return {"success": True, "id": notification_id}
+
+# ============ AUTO NOTIFICATIONS ============
+
+def create_system_notification(user_id: int, type: str, title: str, message: str = None, link: str = None):
+    """Helper: Erstellt System-Notification"""
+    import sqlite3
+    try:
+        conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO notifications (user_id, type, title, message, link)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (user_id, type, title, message, link))
+        conn.commit()
+        conn.close()
+    except:
+        pass
+
+
+@router.post("/notifications/admin/broadcast")
+async def broadcast_notification(data: dict, authorization: str = Header(None)):
+    """Admin: Nachricht an alle User senden"""
+    import sqlite3
+    
+    # Auth check
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    
+    # Get all active users
+    cursor.execute('SELECT id FROM users WHERE is_active = 1')
+    users = cursor.fetchall()
+    
+    count = 0
+    for user in users:
+        cursor.execute('''
+            INSERT INTO notifications (user_id, type, title, message, link)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (user[0], data.get('type', 'info'), data.get('title'), data.get('message'), data.get('link')))
+        count += 1
+    
+    conn.commit()
+    conn.close()
+    
+    return {"success": True, "sent_to": count}
+
+# ============ AUTO NOTIFICATION TRIGGERS ============
+
+def notify_new_invoice(user_id: int, invoice_number: str, amount: float):
+    """Notification bei neuer Rechnung"""
+    create_system_notification(
+        user_id=user_id,
+        type="success",
+        title=f"Rechnung {invoice_number} verarbeitet",
+        message=f"Betrag: {amount:.2f}€ - Bereit für DATEV-Export",
+        link="/history"
+    )
+
+def notify_new_user_to_admins(new_user_name: str, new_user_email: str):
+    """Benachrichtigt alle Admins über neue Registrierung"""
+    import sqlite3
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM users WHERE is_admin = 1')
+    admins = cursor.fetchall()
+    conn.close()
+    
+    for admin in admins:
+        create_system_notification(
+            user_id=admin[0],
+            type="info",
+            title="Neuer User registriert",
+            message=f"{new_user_name} ({new_user_email})",
+            link="/admin"
+        )
+
+def notify_invoice_approved(user_id: int, invoice_number: str, approved_by: str):
+    """Notification bei Rechnungsfreigabe"""
+    create_system_notification(
+        user_id=user_id,
+        type="success",
+        title=f"Rechnung {invoice_number} freigegeben",
+        message=f"Freigegeben von {approved_by}",
+        link="/history"
+    )
+
+def notify_contract_expiring(user_id: int, contract_name: str, days_left: int):
+    """Notification bei auslaufendem Vertrag"""
+    create_system_notification(
+        user_id=user_id,
+        type="warning",
+        title=f"Vertrag läuft in {days_left} Tagen aus",
+        message=contract_name,
+        link="/contracts"
+    )
+
+# ============ AUDIT LOGS ============
+
+def log_audit(user_id: int, user_email: str, action: str, resource_type: str = None, resource_id: str = None, details: str = None, ip: str = None):
+    """Audit Log Eintrag erstellen"""
+    import sqlite3
+    try:
+        conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO audit_logs (user_id, user_email, action, resource_type, resource_id, details, ip_address)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, user_email, action, resource_type, resource_id, details, ip))
+        conn.commit()
+        conn.close()
+    except:
+        pass
+
+
+@router.get("/admin/audit-logs")
+async def get_audit_logs(authorization: str = Header(None), limit: int = 100, offset: int = 0):
+    """Audit Logs abrufen (nur Admin)"""
+    import sqlite3
+    
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    
+    token = authorization.replace("Bearer ", "")
+    user_id = token.split("_")[1] if token.startswith("sbs_") else None
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    
+    # Check admin
+    cursor.execute('SELECT is_admin FROM users WHERE id = ?', (user_id,))
+    user = cursor.fetchone()
+    if not user or not user[0]:
+        conn.close()
+        raise HTTPException(status_code=403, detail="Keine Admin-Berechtigung")
+    
+    # Get logs
+    cursor.execute('''
+        SELECT id, user_id, user_email, action, resource_type, resource_id, details, ip_address, created_at
+        FROM audit_logs
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
+    ''', (limit, offset))
+    
+    rows = cursor.fetchall()
+    
+    # Get total count
+    cursor.execute('SELECT COUNT(*) FROM audit_logs')
+    total = cursor.fetchone()[0]
+    
+    conn.close()
+    
+    logs = []
+    for row in rows:
+        logs.append({
+            "id": row[0],
+            "user_id": row[1],
+            "user_email": row[2],
+            "action": row[3],
+            "resource_type": row[4],
+            "resource_id": row[5],
+            "details": row[6],
+            "ip_address": row[7],
+            "created_at": row[8]
+        })
+    
+    return {"logs": logs, "total": total, "limit": limit, "offset": offset}
+
+
+@router.get("/admin/audit-logs/export")
+async def export_audit_logs(authorization: str = Header(None), days: int = 30):
+    """Audit Logs als CSV exportieren"""
+    import sqlite3
+    from datetime import datetime, timedelta
+    
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    
+    token = authorization.replace("Bearer ", "")
+    user_id = token.split("_")[1] if token.startswith("sbs_") else None
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    
+    # Check admin
+    cursor.execute('SELECT is_admin FROM users WHERE id = ?', (user_id,))
+    user = cursor.fetchone()
+    if not user or not user[0]:
+        conn.close()
+        raise HTTPException(status_code=403, detail="Keine Admin-Berechtigung")
+    
+    since = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+    
+    cursor.execute('''
+        SELECT id, user_id, user_email, action, resource_type, resource_id, details, ip_address, created_at
+        FROM audit_logs
+        WHERE created_at >= ?
+        ORDER BY created_at DESC
+    ''', (since,))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    # Build CSV
+    csv_lines = ["ID,User ID,Email,Action,Resource Type,Resource ID,Details,IP,Timestamp"]
+    for row in rows:
+        csv_lines.append(f'{row[0]},{row[1]},{row[2]},{row[3]},{row[4] or ""},{row[5] or ""},{row[6] or ""},{row[7] or ""},{row[8]}')
+    
+    return {"csv": "\n".join(csv_lines), "count": len(rows), "days": days}
+
+# ============ EMAIL NOTIFICATIONS ============
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+def send_notification_email(to_email: str, subject: str, message: str):
+    """Sendet Notification per E-Mail via Resend"""
+    import requests
+    
+    try:
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": "Bearer re_123456789",  # Replace with env var
+                "Content-Type": "application/json"
+            },
+            json={
+                "from": "SBS Nexus <noreply@sbsdeutschland.com>",
+                "to": to_email,
+                "subject": subject,
+                "html": f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background: linear-gradient(135deg, #0891b2, #3b82f6); padding: 20px; text-align: center;">
+                        <h1 style="color: white; margin: 0;">🏢 SBS Nexus</h1>
+                    </div>
+                    <div style="padding: 30px; background: #f8fafc;">
+                        <p style="color: #334155; font-size: 16px; line-height: 1.6;">{message}</p>
+                        <a href="https://sbsnexus.de/dashboard" style="display: inline-block; background: #0891b2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px;">Zum Dashboard →</a>
+                    </div>
+                    <div style="padding: 20px; text-align: center; color: #64748b; font-size: 12px;">
+                        © 2026 SBS Deutschland GmbH
+                    </div>
+                </div>
+                """
+            }
+        )
+        return response.status_code == 200
+    except:
+        return False
+
+
+def notify_user_with_email(user_id: int, type: str, title: str, message: str, link: str = None):
+    """Erstellt Notification UND sendet E-Mail"""
+    import sqlite3
+    
+    # Create in-app notification
+    create_system_notification(user_id, type, title, message, link)
+    
+    # Get user email
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT email FROM users WHERE id = ?', (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if user:
+        send_notification_email(user[0], f"SBS Nexus: {title}", message)
+
+# ============ WEBHOOKS ============
+
+import requests
+from typing import Optional
+
+def trigger_webhook(webhook_url: str, event: str, data: dict):
+    """Sendet Event an externe Webhook-URL"""
+    try:
+        payload = {
+            "event": event,
+            "timestamp": datetime.now().isoformat(),
+            "data": data
+        }
+        response = requests.post(webhook_url, json=payload, timeout=5)
+        return response.status_code == 200
+    except:
+        return False
+
+
+@router.get("/admin/webhooks")
+async def list_webhooks(authorization: str = Header(None)):
+    """Alle Webhooks auflisten"""
+    import sqlite3
+    
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS webhooks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            url TEXT NOT NULL,
+            events TEXT NOT NULL,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    
+    cursor.execute('SELECT id, name, url, events, is_active, created_at FROM webhooks ORDER BY created_at DESC')
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return {"webhooks": [{"id": r[0], "name": r[1], "url": r[2], "events": r[3].split(","), "is_active": bool(r[4]), "created_at": r[5]} for r in rows]}
+
+
+@router.post("/admin/webhooks")
+async def create_webhook(data: dict, authorization: str = Header(None)):
+    """Neuen Webhook erstellen"""
+    import sqlite3
+    
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO webhooks (name, url, events) VALUES (?, ?, ?)
+    ''', (data.get('name'), data.get('url'), ",".join(data.get('events', []))))
+    
+    conn.commit()
+    webhook_id = cursor.lastrowid
+    conn.close()
+    
+    return {"success": True, "id": webhook_id}
+
+
+@router.delete("/admin/webhooks/{webhook_id}")
+async def delete_webhook(webhook_id: int, authorization: str = Header(None)):
+    """Webhook löschen"""
+    import sqlite3
+    
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM webhooks WHERE id = ?', (webhook_id,))
+    conn.commit()
+    conn.close()
+    
+    return {"success": True}
+
+
+@router.post("/admin/webhooks/{webhook_id}/test")
+async def test_webhook(webhook_id: int, authorization: str = Header(None)):
+    """Webhook testen"""
+    import sqlite3
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT url FROM webhooks WHERE id = ?', (webhook_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Webhook nicht gefunden")
+    
+    success = trigger_webhook(row[0], "test", {"message": "Test von SBS Nexus"})
+    return {"success": success}
+
+
+def fire_webhook_event(event: str, data: dict):
+    """Feuert Event an alle aktiven Webhooks die dieses Event abonniert haben"""
+    import sqlite3
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT url, events FROM webhooks WHERE is_active = 1')
+    webhooks = cursor.fetchall()
+    conn.close()
+    
+    for webhook in webhooks:
+        events = webhook[1].split(",")
+        if event in events or "all" in events:
+            trigger_webhook(webhook[0], event, data)
+
+
+# Event Types:
+# - invoice.created
+# - invoice.approved  
+# - contract.created
+# - contract.expiring
+# - user.registered
+# - user.login
