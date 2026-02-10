@@ -1967,6 +1967,18 @@ async def login_submit(request: Request):
     if not user:
         logger.info("LOGIN_DEBUG: ungültige Credentials")
         log_audit(AuditAction.LOGIN_FAILED, user_email=email, ip_address=request.client.host)
+        
+        # Webhook für fehlgeschlagenen Login (Security Alert)
+        try:
+            from api_nexus import fire_webhook_event
+            fire_webhook_event("security.login_failed", {
+                "email": email,
+                "ip": request.client.host,
+                "reason": "invalid_credentials"
+            })
+        except:
+            pass
+        
         return templates.TemplateResponse(
             "login.html",
             {
