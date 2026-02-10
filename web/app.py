@@ -2003,6 +2003,18 @@ async def login_submit(request: Request):
     logger.info(f"LOGIN_DEBUG: redirect -> {next_url}")
     log_audit(AuditAction.LOGIN, user_id=user["id"], user_email=email, ip_address=request.client.host)
     
+    # Webhook für Login
+    try:
+        from api_nexus import fire_webhook_event
+        fire_webhook_event("user.login", {
+            "user_id": user["id"],
+            "email": email,
+            "name": user.get("name", ""),
+            "ip": request.client.host
+        })
+    except:
+        pass
+    
     # SSO Cookie für Cross-Subdomain Auth setzen
     response = RedirectResponse(url=next_url, status_code=303)
     sso_token = create_sso_token(
