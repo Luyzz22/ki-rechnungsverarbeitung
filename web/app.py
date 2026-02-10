@@ -2085,6 +2085,18 @@ async def register_submit(request: Request):
     # Create user
     user_id = create_user(email, password, name, company)
     
+    # Webhook für neue Registrierung
+    try:
+        from api_nexus import fire_webhook_event
+        fire_webhook_event("user.registered", {
+            "user_id": user_id,
+            "name": name,
+            "email": email,
+            "company": company
+        })
+    except:
+        pass
+    
     # Auto-login
     request.session['user_id'] = user_id
     request.session['user_name'] = name or email.split('@')[0]
