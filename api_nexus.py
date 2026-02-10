@@ -1456,17 +1456,43 @@ async def test_webhook(webhook_id: int, authorization: str = Header(None)):
 def fire_webhook_event(event: str, data: dict):
     """Feuert Event an alle aktiven Webhooks die dieses Event abonniert haben"""
     import sqlite3
+    import time
     
     conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT url, events FROM webhooks WHERE is_active = 1')
+    cursor.execute('SELECT id, url, events FROM webhooks WHERE is_active = 1')
     webhooks = cursor.fetchall()
     conn.close()
     
     for webhook in webhooks:
-        events = webhook[1].split(",")
+        webhook_id = webhook[0]
+        events = webhook[2].split(",")
         if event in events or "all" in events:
-            trigger_webhook(webhook[0], event, data)
+            start_time = time.time()
+            try:
+                response = trigger_webhook(webhook[1], event, data)
+                response_time = int((time.time() - start_time) * 1000)
+                log_webhook_call(webhook_id, event, "success", 200, response_time, None, data)
+            except Exception as e:
+                response_time = int((time.time() - start_time) * 1000)
+                log_webhook_call(webhook_id, event, "failed", 0, response_time, str(e), data)
+
+
+def log_webhook_call(webhook_id: int, event: str, status: str, response_code: int, response_time_ms: int, error_message: str, payload: dict):
+    """Loggt Webhook-Aufrufe für Statistiken"""
+    import sqlite3
+    import json
+    try:
+        conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO webhook_logs (webhook_id, event, status, response_code, response_time_ms, error_message, payload)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (webhook_id, event, status, response_code, response_time_ms, error_message, json.dumps(payload)))
+        conn.commit()
+        conn.close()
+    except:
+        pass
 
 
 # Event Types:
@@ -1476,3 +1502,63 @@ def fire_webhook_event(event: str, data: dict):
 # - contract.expiring
 # - user.registered
 # - user.login
+
+
+@router.get("/admin/webhook-stats")
+async def get_webhook_stats(authorization: str = Header(None)):
+    """Webhook Statistiken für Admin Dashboard"""
+    import sqlite3
+    
+    if not authorization or not authorization.startswith("sbs_"):
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    
+    admin_id = authorization.split("_")[1]
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    # Admin check
+    cursor.execute("SELECT is_admin FROM users WHERE id = ?", (admin_id,))
+    result = cursor.fetchone()
+    if not result or not result[0]:
+        raise HTTPException(status_code=403, detail="Keine Admin-Berechtigung")
+    
+    # Gesamtstatistik
+    cursor.execute("""
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as success,
+            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+            AVG(response_time_ms) as avg_response_time
+        FROM webhook_logs
+        WHERE created_at > datetime('now', '-7 days')
+    """)
+    stats = dict(cursor.fetchone())
+    
+    # Events nach Typ
+    cursor.execute("""
+        SELECT event, COUNT(*) as count
+        FROM webhook_logs
+        WHERE created_at > datetime('now', '-7 days')
+        GROUP BY event
+        ORDER BY count DESC
+    """)
+    by_event = [dict(row) for row in cursor.fetchall()]
+    
+    # Letzte 20 Aufrufe
+    cursor.execute("""
+        SELECT event, status, response_code, response_time_ms, created_at
+        FROM webhook_logs
+        ORDER BY created_at DESC
+        LIMIT 20
+    """)
+    recent = [dict(row) for row in cursor.fetchall()]
+    
+    conn.close()
+    
+    return {
+        "stats": stats,
+        "by_event": by_event,
+        "recent": recent
+    }
