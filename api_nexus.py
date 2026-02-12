@@ -6,8 +6,10 @@ import os
 import base64
 import tempfile
 import logging
+import sqlite3
+import json
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Request
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -44,10 +46,10 @@ class DocumentClassifyResponse(BaseModel):
     details: Optional[dict] = None
 
 
-def verify_api_key(x_api_key: str = Header(None)):
-    if not x_api_key or x_api_key != NEXUS_API_KEY:
+def verify_api_key(authorization: str = Header(None)):
+    if not authorization or authorization != NEXUS_API_KEY:
         raise HTTPException(status_code=401, detail="Ungültiger API-Key")
-    return True
+    return {"id": 16, "email": "ki@sbsdeutschland.de", "is_admin": True}  # Default admin user for NEXUS_API_KEY
 
 
 def extract_text_from_content(content: str, encoding: str, filename: str = None) -> str:
@@ -1561,4 +1563,267 @@ async def get_webhook_stats(authorization: str = Header(None)):
         "stats": stats,
         "by_event": by_event,
         "recent": recent
+    }
+
+
+# ============================================================================
+# SMART MAINTENANCE ALERT API - Enterprise Feature
+# ============================================================================
+
+from smart_maintenance import (
+    process_maintenance_request_v2,
+    save_maintenance_request,
+    search_invoices_by_part,
+    search_contracts_by_part,
+    init_maintenance_db
+)
+
+# Ensure DB is initialized
+init_maintenance_db()
+
+
+@router.post("/maintenance/analyze")
+async def analyze_maintenance_request(
+    request: Request,
+    authorization: str = Header(None)
+):
+    """
+    Smart Maintenance Alert - Hauptendpoint
+    
+    Techniker lädt Bild hoch → System liefert komplette Handlungsempfehlung
+    
+    Body (JSON):
+    - image_base64: Base64-kodiertes Bild (required)
+    - technician_notes: Notizen vom Techniker (optional)
+    - location: Standort/Maschine (optional)
+    - machine_id: Maschinen-ID (optional)
+    - urgency: low|normal|high|critical (default: normal)
+    - use_hydraulikdoc: true|false (default: true)
+    
+    Returns komplettes Maintenance-Alert Objekt mit:
+    - Teilerkennung (KI-basiert)
+    - Rechnungshistorie
+    - Vertragsinfo/Garantiestatus
+    - Handlungsempfehlung
+    - Kostenprognose
+    """
+    user = verify_api_key(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    try:
+        body = await request.json()
+    except:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    
+    image_base64 = body.get("image_base64")
+    if not image_base64:
+        raise HTTPException(status_code=400, detail="image_base64 is required")
+    
+    # Process request
+    result = await process_maintenance_request_v2(
+        image_base64=image_base64,
+        technician_notes=body.get("technician_notes", ""),
+        user_id=user["id"],
+        location=body.get("location", ""),
+        urgency=body.get("urgency", "normal"),
+        machine_id=body.get("machine_id"),
+        use_hydraulikdoc=body.get("use_hydraulikdoc", True)
+    )
+    
+    # Save to database
+    db_id = save_maintenance_request(result, user["id"])
+    result["db_id"] = db_id
+    
+    # Trigger webhook
+    fire_webhook_event("maintenance.created", {
+        "request_id": result["request_id"],
+        "part_name": result.get("part_recognition", {}).get("part_name", "Unbekannt"),
+        "recommendation": result.get("recommendation", {}).get("action", "unknown"),
+        "urgency": result.get("urgency"),
+        "location": result.get("location")
+    })
+    
+    return result
+
+
+@router.get("/maintenance/requests")
+async def list_maintenance_requests(
+    authorization: str = Header(None),
+    status: str = None,
+    limit: int = 50
+):
+    """
+    Liste aller Maintenance Requests des Users
+    
+    Query params:
+    - status: Filter by status (pending, completed, error)
+    - limit: Max results (default 50)
+    """
+    user = verify_api_key(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    query = "SELECT * FROM maintenance_requests WHERE user_id = ?"
+    params = [user["id"]]
+    
+    if status:
+        query += " AND status = ?"
+        params.append(status)
+    
+    query += " ORDER BY created_at DESC LIMIT ?"
+    params.append(limit)
+    
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    requests = []
+    for row in rows:
+        req = dict(row)
+        # Parse JSON fields
+        if req.get("part_info_json"):
+            req["part_info"] = json.loads(req["part_info_json"])
+            del req["part_info_json"]
+        if req.get("recommendation_json"):
+            req["recommendation"] = json.loads(req["recommendation_json"])
+            del req["recommendation_json"]
+        requests.append(req)
+    
+    return {"requests": requests, "count": len(requests)}
+
+
+@router.get("/maintenance/requests/{request_id}")
+async def get_maintenance_request(
+    request_id: str,
+    authorization: str = Header(None)
+):
+    """
+    Einzelnen Maintenance Request abrufen
+    """
+    user = verify_api_key(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute(
+        "SELECT * FROM maintenance_requests WHERE request_id = ? AND user_id = ?",
+        (request_id, user["id"])
+    )
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    result = dict(row)
+    if result.get("part_info_json"):
+        result["part_info"] = json.loads(result["part_info_json"])
+        del result["part_info_json"]
+    if result.get("recommendation_json"):
+        result["recommendation"] = json.loads(result["recommendation_json"])
+        del result["recommendation_json"]
+    
+    return result
+
+
+@router.post("/maintenance/search-parts")
+async def search_parts_history(
+    request: Request,
+    authorization: str = Header(None)
+):
+    """
+    Suche in Rechnungen/Verträgen nach Teilen
+    
+    Body:
+    - search_terms: Liste von Suchbegriffen
+    - include_invoices: true/false
+    - include_contracts: true/false
+    """
+    user = verify_api_key(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    try:
+        body = await request.json()
+    except:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    
+    search_terms = body.get("search_terms", [])
+    if not search_terms:
+        raise HTTPException(status_code=400, detail="search_terms required")
+    
+    result = {
+        "search_terms": search_terms,
+        "invoices": [],
+        "contracts": []
+    }
+    
+    if body.get("include_invoices", True):
+        result["invoices"] = search_invoices_by_part(search_terms, user["id"])
+    
+    if body.get("include_contracts", True):
+        result["contracts"] = search_contracts_by_part(search_terms, user["id"])
+    
+    return result
+
+
+@router.get("/maintenance/stats")
+async def get_maintenance_stats(authorization: str = Header(None)):
+    """
+    Statistiken zu Maintenance Requests
+    """
+    user = verify_api_key(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    cursor = conn.cursor()
+    
+    # Total requests
+    cursor.execute(
+        "SELECT COUNT(*) FROM maintenance_requests WHERE user_id = ?",
+        (user["id"],)
+    )
+    total = cursor.fetchone()[0]
+    
+    # By status
+    cursor.execute("""
+        SELECT status, COUNT(*) as count 
+        FROM maintenance_requests 
+        WHERE user_id = ?
+        GROUP BY status
+    """, (user["id"],))
+    by_status = {row[0]: row[1] for row in cursor.fetchall()}
+    
+    # By urgency
+    cursor.execute("""
+        SELECT urgency, COUNT(*) as count 
+        FROM maintenance_requests 
+        WHERE user_id = ?
+        GROUP BY urgency
+    """, (user["id"],))
+    by_urgency = {row[0]: row[1] for row in cursor.fetchall()}
+    
+    # This month
+    cursor.execute("""
+        SELECT COUNT(*) FROM maintenance_requests 
+        WHERE user_id = ? AND created_at >= date('now', 'start of month')
+    """, (user["id"],))
+    this_month = cursor.fetchone()[0]
+    
+    conn.close()
+    
+    return {
+        "total_requests": total,
+        "this_month": this_month,
+        "by_status": by_status,
+        "by_urgency": by_urgency
     }
