@@ -10,8 +10,10 @@
   <link rel="stylesheet" href="/static/css/components.css" />
   <link rel="stylesheet" href="/static/css/main.css" />
   <link rel="stylesheet" href="/static/css/flyout-menu.css" />
+  <link rel="stylesheet" href="/static/css/sbs-2026.css" />
 </head>
-<body>
+<body class="has-fixed-header">
+<div id="header-slot"></div>
 
 <!-- SBS Deutschland - Unified Marketing Header (App-Style) v2 -->
 <style>
@@ -549,5 +551,7 @@ document.addEventListener('DOMContentLoaded', checkAuthStatus);
 </script>
 <link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
 <script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
+<div id="footer-slot"></div>
+<script>(function(){function l(id,p){fetch(p).then(function(r){return r.text()}).then(function(h){document.getElementById(id).innerHTML=h;document.getElementById(id).querySelectorAll("script").forEach(function(s){var n=document.createElement("script");n.textContent=s.textContent;document.body.appendChild(n)})})}l("header-slot","/static/includes/header-2026.html");l("footer-slot","/static/includes/footer-2026.html")})()</script>
 </body>
 </html>

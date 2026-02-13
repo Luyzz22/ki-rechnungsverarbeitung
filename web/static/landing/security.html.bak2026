@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Sicherheit & Compliance | SBS Deutschland</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Enterprise-Grade Sicherheit. DSGVO-konform, ISO 27001 Standards, Hosting in Deutschland. Ihre Daten sind bei uns sicher.">
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/css/design-tokens.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <style>
+    :root {
+      --sbs-blue: #003856;
+      --sbs-yellow: #FFB900;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-600: #4b5563;
+      --gray-900: #111827;
+      --green-500: #10b981;
+      --green-100: #d1fae5;
+    }
+    
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--gray-900); }
+    
+    /* Hero Section */
+    .page-hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+      padding: 120px 24px 100px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .page-hero-content {
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .page-hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16,185,129,0.15);
+      border: 1px solid rgba(16,185,129,0.3);
+      padding: 8px 16px;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #34d399;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 24px;
+    }
+    .page-hero h1 {
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.1;
+      margin: 0 0 24px;
+    }
+    .page-hero p {
+      font-size: 1.25rem;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.6;
+      margin: 0 auto 32px;
+      max-width: 700px;
+    }
+    
+    /* Trust Badges */
+    .trust-badges {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+      margin-top: 48px;
+    }
+    .trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 12px 20px;
+      border-radius: 12px;
+    }
+    .trust-badge-icon {
+      font-size: 1.5rem;
+    }
+    .trust-badge-text {
+      text-align: left;
+    }
+    .trust-badge-text strong {
+      display: block;
+      color: #fff;
+      font-size: 0.9rem;
+    }
+    .trust-badge-text span {
+      color: rgba(255,255,255,0.5);
+      font-size: 0.75rem;
+    }
+    
+    /* Section Styles */
+    .section {
+      padding: 100px 24px;
+    }
+    .section-dark {
+      background: var(--gray-50);
+    }
+    .section-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .section-header {
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto 60px;
+    }
+    .section-header h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin: 0 0 16px;
+    }
+    .section-header p {
+      font-size: 1.1rem;
+      color: var(--gray-600);
+      line-height: 1.7;
+      margin: 0;
+    }
+    
+    /* Security Grid */
+    .security-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .security-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .security-grid { grid-template-columns: 1fr; }
+    }
+    
+    .security-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 32px;
+      border: 1px solid var(--gray-200);
+      transition: all 0.3s;
+    }
+    .security-card:hover {
+      border-color: var(--green-500);
+      box-shadow: 0 20px 40px rgba(16,185,129,0.1);
+      transform: translateY(-4px);
+    }
+    .security-card-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: var(--green-100);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+    .security-card h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0 0 12px;
+      color: var(--gray-900);
+    }
+    .security-card p {
+      color: var(--gray-600);
+      line-height: 1.6;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+    
+    /* Compliance Section */
+    .compliance-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+    @media (max-width: 900px) {
+      .compliance-row { grid-template-columns: 1fr; }
+    }
+    .compliance-text h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin: 0 0 20px;
+    }
+    .compliance-text > p {
+      color: var(--gray-600);
+      font-size: 1.1rem;
+      line-height: 1.7;
+      margin: 0 0 32px;
+    }
+    
+    .compliance-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .compliance-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .compliance-list li:last-child {
+      border-bottom: none;
+    }
+    .compliance-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--green-100);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .compliance-list h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 4px;
+    }
+    .compliance-list p {
+      font-size: 0.9rem;
+      color: var(--gray-600);
+      margin: 0;
+      line-height: 1.5;
+    }
+    
+    .compliance-visual {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border-radius: 24px;
+      padding: 48px;
+      text-align: center;
+    }
+    .compliance-visual-icon {
+      font-size: 4rem;
+      margin-bottom: 24px;
+    }
+    .compliance-visual h3 {
+      color: #fff;
+      font-size: 1.5rem;
+      margin: 0 0 12px;
+    }
+    .compliance-visual p {
+      color: rgba(255,255,255,0.6);
+      margin: 0;
+    }
+    .cert-badges {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 32px;
+    }
+    .cert-badge {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 12px 20px;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    
+    /* Infrastructure Section */
+    .infra-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .infra-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .infra-card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+    }
+    .infra-card-icon {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+    }
+    .infra-card h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+    .infra-card p {
+      font-size: 0.85rem;
+      color: var(--gray-600);
+      margin: 0;
+      line-height: 1.5;
+    }
+    
+    /* Stats Section */
+    .stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 64px;
+      flex-wrap: wrap;
+      padding: 60px 24px;
+      background: var(--sbs-blue);
+    }
+    .stat-item {
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+    }
+    .stat-label {
+      color: rgba(255,255,255,0.7);
+      font-size: 0.9rem;
+      margin-top: 8px;
+    }
+    
+    /* CTA Section */
+    .cta-section {
+      background: linear-gradient(135deg, var(--sbs-blue) 0%, #00507a 100%);
+      padding: 80px 24px;
+      text-align: center;
+    }
+    .cta-section h2 {
+      font-size: 2.2rem;
+      color: #fff;
+      margin: 0 0 16px;
+    }
+    .cta-section p {
+      color: rgba(255,255,255,0.8);
+      font-size: 1.1rem;
+      margin: 0 0 32px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      background: var(--sbs-yellow);
+      color: var(--sbs-blue);
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      box-shadow: 0 4px 14px rgba(255,185,0,0.4);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,185,0,0.5); }
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.3);
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.2); }
+    
+    /* Footer */
+    .footer {
+      background: #111827;
+      color: rgba(255,255,255,0.7);
+      padding: 60px 24px 30px;
+    }
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+    }
+    @media (max-width: 768px) {
+      .footer-inner { grid-template-columns: 1fr 1fr; }
+    }
+    .footer-brand h3 {
+      color: #fff;
+      font-size: 1.2rem;
+      margin: 0 0 12px;
+    }
+    .footer-brand p {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin: 0;
+    }
+    .footer-col h4 {
+      color: #fff;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 16px;
+    }
+    .footer-col a {
+      display: block;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 6px 0;
+      transition: color 0.2s;
+    }
+    .footer-col a:hover { color: #fff; }
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 40px auto 0;
+      padding-top: 30px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.85rem;
+    }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { color: rgba(255,255,255,0.5); text-decoration: none; }
+    .footer-links a:hover { color: #fff; }
+  </style>
+</head>
+<body>
+<!-- SBS Deutschland - Unified Marketing Header (App-Style) v2 -->
+<style>
+  .sbs-header {
+    background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+  }
+  .sbs-header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+  }
+  .sbs-logo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+  }
+  .sbs-logo-icon {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+  }
+  .sbs-logo-text {
+    display: flex;
+    flex-direction: column;
+  }
+  .sbs-logo-text strong {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .sbs-logo-text span {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.75rem;
+  }
+  .sbs-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sbs-nav-item {
+    color: rgba(255,255,255,0.9);
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sbs-nav-item:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+  .sbs-nav-dropdown {
+    position: relative;
+  }
+  .sbs-nav-dropdown-btn {
+    color: rgba(255,255,255,0.9);
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .sbs-nav-dropdown-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+  .sbs-nav-dropdown-btn .chevron {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.2s;
+  }
+  .sbs-nav-dropdown.open .chevron {
+    transform: rotate(180deg);
+  }
+  .sbs-nav-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 300px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    padding: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s;
+    z-index: 100;
+  }
+  .sbs-nav-dropdown.open .sbs-nav-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  .sbs-dropdown-section {
+    color: #6b7280;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 12px 4px;
+    margin-top: 4px;
+  }
+  .sbs-dropdown-section:first-child {
+    margin-top: 0;
+  }
+  .sbs-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+  }
+  .sbs-dropdown-item:hover {
+    background: #f3f4f6;
+    color: #003856;
+  }
+  .sbs-dropdown-item .emoji {
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+  }
+  .sbs-dropdown-divider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 8px 0;
+  }
+  .sbs-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sbs-btn-login {
+    color: rgba(255,255,255,0.9);
+    text-decoration: none;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .sbs-btn-login:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+  .sbs-btn-cta {
+    background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+    color: #003856;
+    text-decoration: none;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(255,185,0,0.3);
+  }
+  .sbs-btn-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255,185,0,0.4);
+  }
+  .sbs-burger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+  }
+  .sbs-burger span {
+    width: 24px;
+    height: 2px;
+    background: #fff;
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
+  @media (max-width: 1024px) {
+    .sbs-nav { display: none; }
+    .sbs-burger { display: flex; }
+    .sbs-nav.open {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      top: 70px;
+      left: 0;
+      right: 0;
+      background: #003856;
+      padding: 20px;
+      gap: 0;
+    }
+    .sbs-nav-dropdown-menu {
+      position: static;
+      box-shadow: none;
+      background: rgba(255,255,255,0.05);
+      margin-top: 8px;
+    }
+    .sbs-dropdown-item {
+      color: rgba(255,255,255,0.9);
+    }
+    .sbs-dropdown-item:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .sbs-dropdown-section {
+      color: rgba(255,255,255,0.5);
+    }
+  }
+</style>
+
+<header class="sbs-header">
+  <div class="sbs-header-inner">
+    <a href="/sbshomepage/" class="sbs-logo-wrap">
+      <div class="sbs-logo-icon">🏢</div>
+      <div class="sbs-logo-text">
+        <strong>SBS Deutschland</strong>
+        <span>KI-Lösungen · Weinheim</span>
+      </div>
+    </a>
+    
+    <button class="sbs-burger" id="sbsBurger" aria-label="Menü öffnen">
+      <span></span><span></span><span></span>
+    </button>
+    
+    <nav class="sbs-nav" id="sbsNav">
+      <!-- Produkte Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          Produkte
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <div class="sbs-dropdown-section">KI-Plattformen</div>
+          <a href="/static/landing/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
+          <a href="/loesungen/vertragsanalyse/" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">Rechnungs-Features</div>
+          <a href="https://app.sbsdeutschland.com/copilot" class="sbs-dropdown-item"><span class="emoji">🤖</span> Finance Copilot</a>
+          <a href="https://app.sbsdeutschland.com/accounting" class="sbs-dropdown-item"><span class="emoji">📊</span> Auto-Kontierung</a>
+          <a href="https://app.sbsdeutschland.com/budget" class="sbs-dropdown-item"><span class="emoji">💰</span> Budget-Dashboard</a>
+          <a href="https://app.sbsdeutschland.com/zahlungen" class="sbs-dropdown-item"><span class="emoji">💳</span> Zahlungsmanagement</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">Vertrags-Features</div>
+          <a href="https://contract.sbsdeutschland.com/upload" class="sbs-dropdown-item"><span class="emoji">📄</span> Vertragsanalyse</a>
+          <a href="https://contract.sbsdeutschland.com/compare" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Vertragsvergleich</a>
+          <a href="https://contract.sbsdeutschland.com/library" class="sbs-dropdown-item"><span class="emoji">📚</span> Klausel-Bibliothek</a>
+        </div>
+      </div>
+      
+      <!-- Lösungen Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          Lösungen
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <div class="sbs-dropdown-section">KI-Rechnungen</div>
+          <a href="/static/landing/loesungen-steuerberater.html" class="sbs-dropdown-item"><span class="emoji">📋</span> Für Steuerberater</a>
+          <a href="/static/landing/loesungen-finanzleitung.html" class="sbs-dropdown-item"><span class="emoji">💼</span> Für CFOs & Finanzleitung</a>
+          <a href="/static/landing/loesungen-handel-filialnetz.html" class="sbs-dropdown-item"><span class="emoji">🏪</span> Für Handel & Filialnetz</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">KI-Verträge</div>
+          <a href="/loesungen/vertragsanalyse/kanzleien.html" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Für Kanzleien & Notare</a>
+          <a href="/loesungen/vertragsanalyse/hr.html" class="sbs-dropdown-item"><span class="emoji">👔</span> Für HR-Abteilungen</a>
+          <a href="/loesungen/vertragsanalyse/einkauf.html" class="sbs-dropdown-item"><span class="emoji">🛒</span> Für Einkauf & Beschaffung</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">Consulting</div>
+          <a href="/sbshomepage/sap-consulting.html" class="sbs-dropdown-item"><span class="emoji">📊</span> SAP Consulting</a>
+          <a href="/sbshomepage/it-consulting.html" class="sbs-dropdown-item"><span class="emoji">💻</span> IT Consulting</a>
+          <a href="/sbshomepage/quality-risk-management.html" class="sbs-dropdown-item"><span class="emoji">🎯</span> Quality & Risk</a>
+        </div>
+      </div>
+      
+      <!-- Preise Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          💰 Preise
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <a href="/static/preise/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
+          <a href="/loesungen/vertragsanalyse/preise.html" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
+          <div class="sbs-dropdown-divider"></div>
+          <a href="/static/preise/#bundle" class="sbs-dropdown-item" style="color: #8b5cf6; font-weight: 600;"><span class="emoji">🎁</span> Bundle-Angebot (20% sparen)</a>
+        </div>
+      </div>
+      
+      <!-- Ressourcen Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          Ressourcen
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <a href="/static/landing/ressourcen.html" class="sbs-dropdown-item"><span class="emoji">📚</span> Dokumentation</a>
+          <a href="/static/landing/integrationen.html" class="sbs-dropdown-item"><span class="emoji">🔗</span> Integrationen</a>
+          <a href="/static/landing/security.html" class="sbs-dropdown-item"><span class="emoji">🔒</span> Sicherheit</a>
+          <div class="sbs-dropdown-divider"></div>
+          <a href="/static/landing/kunden.html" class="sbs-dropdown-item"><span class="emoji">⭐</span> Kunden & Referenzen</a>
+          <a href="/static/landing/support.html" class="sbs-dropdown-item"><span class="emoji">💬</span> Support</a>
+          <div class="sbs-dropdown-divider"></div>
+          <a href="https://app.sbsdeutschland.com/e-rechnung-2025" class="sbs-dropdown-item" style="color: #dc2626; font-weight: 600;"><span class="emoji">⚡</span> E-Rechnung 2025</a>
+          <a href="/sbshomepage/kontakt.html" class="sbs-dropdown-item"><span class="emoji">✉️</span> Kontakt</a>
+        </div>
+      </div>
+      
+      <!-- Unternehmen -->
+      <a href="/sbshomepage/unternehmen.html" class="sbs-nav-item">🏢 Über uns</a>
+    </nav>
+    
+    <div class="sbs-header-actions">
+      <a href="https://app.sbsdeutschland.com/login" class="sbs-btn-login">Login</a>
+      <a href="https://app.sbsdeutschland.com/demo" class="sbs-btn-cta">Kostenlos testen</a>
+    </div>
+  </div>
+</header>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Burger Menu
+  var burger = document.getElementById('sbsBurger');
+  var nav = document.getElementById('sbsNav');
+  if (burger && nav) {
+    burger.addEventListener('click', function() {
+      nav.classList.toggle('open');
+    });
+  }
+  
+  // Close dropdowns on outside click
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.sbs-nav-dropdown')) {
+      document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d) {
+        d.classList.remove('open');
+      });
+    }
+  });
+});
+</script>
+
+<!-- Hero Section -->
+<section class="page-hero">
+  <div class="page-hero-content">
+    <div class="page-hero-badge">🔒 Enterprise Security</div>
+    <h1>Ihre Daten.<br>Maximal geschützt.</h1>
+    <p>
+      Enterprise-Grade Sicherheit nach höchsten Standards. DSGVO-konform, 
+      ISO 27001 orientiert, gehostet in Deutschland.
+    </p>
+    
+    <div class="trust-badges">
+      <div class="trust-badge">
+        <div class="trust-badge-icon">🇩🇪</div>
+        <div class="trust-badge-text">
+          <strong>Hosting in Deutschland</strong>
+          <span>Frankfurt am Main</span>
+        </div>
+      </div>
+      <div class="trust-badge">
+        <div class="trust-badge-icon">🔐</div>
+        <div class="trust-badge-text">
+          <strong>AES-256 Verschlüsselung</strong>
+          <span>End-to-End</span>
+        </div>
+      </div>
+      <div class="trust-badge">
+        <div class="trust-badge-icon">✅</div>
+        <div class="trust-badge-text">
+          <strong>DSGVO-konform</strong>
+          <span>Vollständig compliant</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Core Security -->
+<section class="section">
+  <div class="section-inner">
+    <div class="section-header">
+      <h2>Sicherheit auf allen Ebenen</h2>
+      <p>Von der Infrastruktur bis zur Anwendung – jede Schicht ist auf maximalen Schutz ausgelegt.</p>
+    </div>
+    
+    <div class="security-grid">
+      <div class="security-card">
+        <div class="security-card-icon">🔐</div>
+        <h3>Verschlüsselung</h3>
+        <p>AES-256 Verschlüsselung für alle Daten – sowohl bei der Übertragung (TLS 1.3) als auch bei der Speicherung (at rest).</p>
+      </div>
+      
+      <div class="security-card">
+        <div class="security-card-icon">🔑</div>
+        <h3>Zugangskontrolle</h3>
+        <p>Rollenbasierte Zugriffskontrolle (RBAC), Multi-Faktor-Authentifizierung und Single Sign-On (SSO) Support.</p>
+      </div>
+      
+      <div class="security-card">
+        <div class="security-card-icon">📝</div>
+        <h3>Audit-Logging</h3>
+        <p>Lückenlose Protokollierung aller Zugriffe und Änderungen. Exportierbar für Ihre Compliance-Anforderungen.</p>
+      </div>
+      
+      <div class="security-card">
+        <div class="security-card-icon">🛡️</div>
+        <h3>Netzwerksicherheit</h3>
+        <p>Web Application Firewall, DDoS-Schutz und regelmäßige Penetrationstests durch unabhängige Experten.</p>
+      </div>
+      
+      <div class="security-card">
+        <div class="security-card-icon">💾</div>
+        <h3>Backup & Recovery</h3>
+        <p>Tägliche automatisierte Backups mit geografischer Redundanz. Recovery Point Objective (RPO) unter 24 Stunden.</p>
+      </div>
+      
+      <div class="security-card">
+        <div class="security-card-icon">🔍</div>
+        <h3>Monitoring</h3>
+        <p>24/7 Überwachung aller Systeme. Automatische Alerts bei ungewöhnlichen Aktivitäten oder Sicherheitsvorfällen.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-row">
+  <div class="stat-item">
+    <div class="stat-value">99.9%</div>
+    <div class="stat-label">Uptime SLA</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-value">0</div>
+    <div class="stat-label">Sicherheitsvorfälle</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-value">256-bit</div>
+    <div class="stat-label">Verschlüsselung</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-value">24/7</div>
+    <div class="stat-label">Monitoring</div>
+  </div>
+</section>
+
+<!-- Compliance Section -->
+<section class="section section-dark">
+  <div class="section-inner">
+    <div class="compliance-row">
+      <div class="compliance-text">
+        <h2>Compliance & Zertifizierungen</h2>
+        <p>
+          Wir erfüllen die strengsten Anforderungen an Datenschutz und Informationssicherheit – 
+          damit Sie sich auf Ihr Geschäft konzentrieren können.
+        </p>
+        
+        <ul class="compliance-list">
+          <li>
+            <div class="compliance-icon">🇪🇺</div>
+            <div>
+              <h4>DSGVO-konform</h4>
+              <p>Vollständige Einhaltung der EU-Datenschutz-Grundverordnung mit dokumentierten Prozessen.</p>
+            </div>
+          </li>
+          <li>
+            <div class="compliance-icon">📋</div>
+            <div>
+              <h4>GoBD-konform</h4>
+              <p>Revisionssichere Archivierung und Protokollierung nach deutschen Buchführungsstandards.</p>
+            </div>
+          </li>
+          <li>
+            <div class="compliance-icon">🔒</div>
+            <div>
+              <h4>ISO 27001 orientiert</h4>
+              <p>Informationssicherheits-Management nach internationalen Standards.</p>
+            </div>
+          </li>
+          <li>
+            <div class="compliance-icon">📄</div>
+            <div>
+              <h4>AVV bereit</h4>
+              <p>Standardisierter Auftragsverarbeitungsvertrag für alle Enterprise-Kunden.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+      
+      <div class="compliance-visual">
+        <div class="compliance-visual-icon">🛡️</div>
+        <h3>Enterprise-Grade Security</h3>
+        <p>Vertrauen Sie auf deutsche Qualität und Sicherheit</p>
+        <div class="cert-badges">
+          <div class="cert-badge">DSGVO</div>
+          <div class="cert-badge">GoBD</div>
+          <div class="cert-badge">ISO 27001</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Infrastructure Section -->
+<section class="section">
+  <div class="section-inner">
+    <div class="section-header">
+      <h2>Infrastruktur</h2>
+      <p>Moderne Cloud-Infrastruktur mit höchsten Sicherheitsstandards.</p>
+    </div>
+    
+    <div class="infra-grid">
+      <div class="infra-card">
+        <div class="infra-card-icon">🏢</div>
+        <h4>Deutsches Rechenzentrum</h4>
+        <p>Tier-3+ Rechenzentrum in Frankfurt am Main mit ISO 27001 Zertifizierung.</p>
+      </div>
+      
+      <div class="infra-card">
+        <div class="infra-card-icon">🔄</div>
+        <h4>Redundanz</h4>
+        <p>Geografisch verteilte Backups und automatisches Failover für maximale Verfügbarkeit.</p>
+      </div>
+      
+      <div class="infra-card">
+        <div class="infra-card-icon">⚡</div>
+        <h4>Performance</h4>
+        <p>CDN und Load Balancing für schnelle Antwortzeiten weltweit.</p>
+      </div>
+      
+      <div class="infra-card">
+        <div class="infra-card-icon">🌱</div>
+        <h4>Nachhaltigkeit</h4>
+        <p>100% erneuerbare Energie für unsere Infrastruktur.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Enterprise Features -->
+<section class="section section-dark">
+  <div class="section-inner">
+    <div class="section-header">
+      <h2>Enterprise-Features</h2>
+      <p>Zusätzliche Sicherheitsfunktionen für Großunternehmen und regulierte Branchen.</p>
+    </div>
+    
+    <div class="security-grid">
+      <div class="security-card">
+        <div class="security-card-icon">🏠</div>
+        <h3>Dedizierte Instanz</h3>
+        <p>Eigene, isolierte Infrastruktur für maximale Datentrennung und Performance.</p>
+      </div>
+      
+      <div class="security-card">
+        <div class="security-card-icon">🔗</div>
+        <h3>SSO Integration</h3>
+        <p>SAML 2.0 und OpenID Connect für nahtlose Integration in Ihr Identity Management.</p>
+      </div>
+      
+      <div class="security-card">
+        <div class="security-card-icon">📊</div>
+        <h3>Custom Audit Reports</h3>
+        <p>Individuelle Compliance-Reports für Ihre internen und externen Audits.</p>
+      </div>
+      
+      <div class="security-card">
+        <div class="security-card-icon">🔐</div>
+        <h3>IP Whitelisting</h3>
+        <p>Beschränken Sie den Zugriff auf definierte IP-Bereiche Ihres Unternehmensnetzwerks.</p>
+      </div>
+      
+      <div class="security-card">
+        <div class="security-card-icon">⏰</div>
+        <h3>Data Retention Policies</h3>
+        <p>Konfigurierbare Aufbewahrungsfristen und automatische Löschung nach Ihren Vorgaben.</p>
+      </div>
+      
+      <div class="security-card">
+        <div class="security-card-icon">🤝</div>
+        <h3>Security Review</h3>
+        <p>Unterstützung bei Ihren Security-Fragebögen und Vendor-Assessments.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+  <h2>Fragen zur Sicherheit?</h2>
+  <p>Unser Security-Team beantwortet Ihre Fragen und unterstützt Sie bei Compliance-Anforderungen.</p>
+  <div class="cta-buttons">
+    <a href="/sbshomepage/kontakt.html" class="btn-primary">Security-Gespräch vereinbaren →</a>
+    <a href="mailto:security@sbsdeutschland.com" class="btn-secondary">security@sbsdeutschland.com</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <h3>🏢 SBS Deutschland</h3>
+      <p>Enterprise KI-Lösungen für Rechnungsverarbeitung und Vertragsanalyse. Made in Germany.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Produkte</h4>
+      <a href="/static/landing/">KI-Rechnungen</a>
+      <a href="/loesungen/vertragsanalyse/">KI-Verträge</a>
+      <a href="/static/preise/">Preise</a>
+    </div>
+    <div class="footer-col">
+      <h4>Unternehmen</h4>
+      <a href="/sbshomepage/unternehmen.html">Über uns</a>
+      <a href="/sbshomepage/kontakt.html">Kontakt</a>
+      <a href="/static/landing/kunden.html">Kunden</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="/static/landing/datenschutz.html">Datenschutz</a>
+      <a href="/static/landing/impressum.html">Impressum</a>
+      <a href="/static/landing/agb.html">AGB</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 SBS Deutschland GmbH & Co. KG</span>
+    <div class="footer-links">
+      <a href="/static/landing/integrationen.html">Integrationen</a>
+      <a href="/static/landing/support.html">Support</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
+</body>
+</html>

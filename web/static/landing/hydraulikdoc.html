@@ -1284,33 +1284,11 @@
             }
         }
     </style>
+  <link rel="stylesheet" href="/static/css/sbs-2026.css" />
 </head>
-<body>
+<body class="has-fixed-header">
     <!-- HEADER -->
-    <header class="header">
-        <div class="header-inner">
-            <a href="/" class="logo">
-                <div class="logo-icon">🔧</div>
-                <div class="logo-text">
-                    <strong>HydraulikDoc AI</strong>
-                    <span>by SBS Deutschland</span>
-                </div>
-            </a>
-
-            <nav class="nav">
-                <a href="#problem" class="nav-link">Das Problem</a>
-                <a href="#solution" class="nav-link">Lösung</a>
-                <a href="#how-it-works" class="nav-link">So funktioniert's</a>
-                <a href="#pricing" class="nav-link">Preise</a>
-                <a href="#faq" class="nav-link">FAQ</a>
-            </nav>
-
-            <div class="header-actions">
-                <a href="https://knowledge-sbsdeutschland.streamlit.app" class="btn-login">Login</a>
-                <a href="https://knowledge-sbsdeutschland.streamlit.app" class="btn-cta">Kostenlos testen →</a>
-            </div>
-        </div>
-    </header>
+    <div id="header-slot"></div>
 
     <!-- HERO -->
     <section class="hero">
@@ -1755,52 +1733,7 @@
     </section>
 
     <!-- FOOTER -->
-    <footer class="footer">
-        <div class="footer-inner">
-            <div class="footer-brand">
-                <a href="/" class="logo">
-                    <div class="logo-icon">🔧</div>
-                    <div class="logo-text">
-                        <strong>HydraulikDoc AI</strong>
-                        <span>by SBS Deutschland</span>
-                    </div>
-                </a>
-                <p>
-                    Die KI-Lösung für technische Dokumentation in der Hydraulik-Branche. 
-                    Entwickelt in Weinheim, gehostet in Deutschland.
-                </p>
-            </div>
-
-            <div class="footer-col">
-                <h4>Produkt</h4>
-                <a href="#solution">Features</a>
-                <a href="#pricing">Preise</a>
-                <a href="#how-it-works">So funktioniert's</a>
-                <a href="#faq">FAQ</a>
-            </div>
-
-            <div class="footer-col">
-                <h4>Unternehmen</h4>
-                <a href="https://sbsdeutschland.com/sbshomepage/unternehmen.html">Über SBS Deutschland</a>
-                <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html">Kontakt</a>
-                <a href="https://sbsdeutschland.com">Weitere Produkte</a>
-            </div>
-
-            <div class="footer-col">
-                <h4>Rechtliches</h4>
-                <a href="https://sbsdeutschland.com/static/impressum.html">Impressum</a>
-                <a href="https://sbsdeutschland.com/static/datenschutz.html">Datenschutz</a>
-                <a href="https://sbsdeutschland.com/static/agb.html">AGB</a>
-            </div>
-        </div>
-
-        <div class="footer-bottom">
-            <p>© 2025 SBS Deutschland GmbH · Weinheim · Alle Rechte vorbehalten</p>
-            <div class="footer-links">
-                <a href="mailto:info@sbsdeutschland.com">info@sbsdeutschland.com</a>
-                <a href="https://www.linkedin.com/company/sbs-deutschland">LinkedIn</a>
-            </div>
-        </div>
-    </footer>
+    <div id="footer-slot"></div>
+<script>(function(){function l(id,p){fetch(p).then(function(r){return r.text()}).then(function(h){document.getElementById(id).innerHTML=h;document.getElementById(id).querySelectorAll("script").forEach(function(s){var n=document.createElement("script");n.textContent=s.textContent;document.body.appendChild(n)})})}l("header-slot","/static/includes/header-2026.html");l("footer-slot","/static/includes/footer-2026.html")})()</script>
 </body>
 </html>

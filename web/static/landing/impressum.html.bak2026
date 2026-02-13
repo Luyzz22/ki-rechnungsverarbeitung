@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Impressum · SBS Deutschland</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Impressum der SBS Deutschland GmbH & Co. KG aus Weinheim." />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/design-tokens.css" />
+  <link rel="stylesheet" href="/static/css/components.css" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/flyout-menu.css" />
+</head>
+<body>
+<!-- SBS Deutschland - Unified Marketing Header (App-Style) v2 -->
+<style>
+  .sbs-header {
+    background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+  }
+  .sbs-header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+  }
+  .sbs-logo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+  }
+  .sbs-logo-icon {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+  }
+  .sbs-logo-text {
+    display: flex;
+    flex-direction: column;
+  }
+  .sbs-logo-text strong {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .sbs-logo-text span {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.75rem;
+  }
+  .sbs-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sbs-nav-item {
+    color: rgba(255,255,255,0.9);
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sbs-nav-item:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+  .sbs-nav-dropdown {
+    position: relative;
+  }
+  .sbs-nav-dropdown-btn {
+    color: rgba(255,255,255,0.9);
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .sbs-nav-dropdown-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+  .sbs-nav-dropdown-btn .chevron {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.2s;
+  }
+  .sbs-nav-dropdown.open .chevron {
+    transform: rotate(180deg);
+  }
+  .sbs-nav-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 300px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    padding: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s;
+    z-index: 100;
+  }
+  .sbs-nav-dropdown.open .sbs-nav-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  .sbs-dropdown-section {
+    color: #6b7280;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 12px 4px;
+    margin-top: 4px;
+  }
+  .sbs-dropdown-section:first-child {
+    margin-top: 0;
+  }
+  .sbs-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+  }
+  .sbs-dropdown-item:hover {
+    background: #f3f4f6;
+    color: #003856;
+  }
+  .sbs-dropdown-item .emoji {
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+  }
+  .sbs-dropdown-divider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 8px 0;
+  }
+  .sbs-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sbs-btn-login {
+    color: rgba(255,255,255,0.9);
+    text-decoration: none;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .sbs-btn-login:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+  .sbs-btn-cta {
+    background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+    color: #003856;
+    text-decoration: none;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(255,185,0,0.3);
+  }
+  .sbs-btn-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255,185,0,0.4);
+  }
+  .sbs-burger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+  }
+  .sbs-burger span {
+    width: 24px;
+    height: 2px;
+    background: #fff;
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
+  @media (max-width: 1024px) {
+    .sbs-nav { display: none; }
+    .sbs-burger { display: flex; }
+    .sbs-nav.open {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      top: 70px;
+      left: 0;
+      right: 0;
+      background: #003856;
+      padding: 20px;
+      gap: 0;
+    }
+    .sbs-nav-dropdown-menu {
+      position: static;
+      box-shadow: none;
+      background: rgba(255,255,255,0.05);
+      margin-top: 8px;
+    }
+    .sbs-dropdown-item {
+      color: rgba(255,255,255,0.9);
+    }
+    .sbs-dropdown-item:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .sbs-dropdown-section {
+      color: rgba(255,255,255,0.5);
+    }
+  }
+</style>
+
+<header class="sbs-header">
+  <div class="sbs-header-inner">
+    <a href="/sbshomepage/" class="sbs-logo-wrap">
+      <div class="sbs-logo-icon">🏢</div>
+      <div class="sbs-logo-text">
+        <strong>SBS Deutschland</strong>
+        <span>KI-Lösungen · Weinheim</span>
+      </div>
+    </a>
+    
+    <button class="sbs-burger" id="sbsBurger" aria-label="Menü öffnen">
+      <span></span><span></span><span></span>
+    </button>
+    
+    <nav class="sbs-nav" id="sbsNav">
+      <!-- Produkte Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          Produkte
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <div class="sbs-dropdown-section">KI-Plattformen</div>
+          <a href="/static/landing/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
+          <a href="/loesungen/vertragsanalyse/" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">Rechnungs-Features</div>
+          <a href="https://app.sbsdeutschland.com/copilot" class="sbs-dropdown-item"><span class="emoji">🤖</span> Finance Copilot</a>
+          <a href="https://app.sbsdeutschland.com/accounting" class="sbs-dropdown-item"><span class="emoji">📊</span> Auto-Kontierung</a>
+          <a href="https://app.sbsdeutschland.com/budget" class="sbs-dropdown-item"><span class="emoji">💰</span> Budget-Dashboard</a>
+          <a href="https://app.sbsdeutschland.com/zahlungen" class="sbs-dropdown-item"><span class="emoji">💳</span> Zahlungsmanagement</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">Vertrags-Features</div>
+          <a href="https://contract.sbsdeutschland.com/upload" class="sbs-dropdown-item"><span class="emoji">📄</span> Vertragsanalyse</a>
+          <a href="https://contract.sbsdeutschland.com/compare" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Vertragsvergleich</a>
+          <a href="https://contract.sbsdeutschland.com/library" class="sbs-dropdown-item"><span class="emoji">📚</span> Klausel-Bibliothek</a>
+        </div>
+      </div>
+      
+      <!-- Lösungen Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          Lösungen
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <div class="sbs-dropdown-section">KI-Rechnungen</div>
+          <a href="/static/landing/loesungen-steuerberater.html" class="sbs-dropdown-item"><span class="emoji">📋</span> Für Steuerberater</a>
+          <a href="/static/landing/loesungen-finanzleitung.html" class="sbs-dropdown-item"><span class="emoji">💼</span> Für CFOs & Finanzleitung</a>
+          <a href="/static/landing/loesungen-handel-filialnetz.html" class="sbs-dropdown-item"><span class="emoji">🏪</span> Für Handel & Filialnetz</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">KI-Verträge</div>
+          <a href="/loesungen/vertragsanalyse/kanzleien.html" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Für Kanzleien & Notare</a>
+          <a href="/loesungen/vertragsanalyse/hr.html" class="sbs-dropdown-item"><span class="emoji">👔</span> Für HR-Abteilungen</a>
+          <a href="/loesungen/vertragsanalyse/einkauf.html" class="sbs-dropdown-item"><span class="emoji">🛒</span> Für Einkauf & Beschaffung</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">Consulting</div>
+          <a href="/sbshomepage/sap-consulting.html" class="sbs-dropdown-item"><span class="emoji">📊</span> SAP Consulting</a>
+          <a href="/sbshomepage/it-consulting.html" class="sbs-dropdown-item"><span class="emoji">💻</span> IT Consulting</a>
+          <a href="/sbshomepage/quality-risk-management.html" class="sbs-dropdown-item"><span class="emoji">🎯</span> Quality & Risk</a>
+        </div>
+      </div>
+      
+      <!-- Preise Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          💰 Preise
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <a href="/static/preise/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
+          <a href="/loesungen/vertragsanalyse/preise.html" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
+          <div class="sbs-dropdown-divider"></div>
+          <a href="/static/preise/#bundle" class="sbs-dropdown-item" style="color: #8b5cf6; font-weight: 600;"><span class="emoji">🎁</span> Bundle-Angebot (20% sparen)</a>
+        </div>
+      </div>
+      
+      <!-- Ressourcen Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          Ressourcen
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <a href="/static/landing/ressourcen.html" class="sbs-dropdown-item"><span class="emoji">📚</span> Dokumentation</a>
+          <a href="/static/landing/integrationen.html" class="sbs-dropdown-item"><span class="emoji">🔗</span> Integrationen</a>
+          <a href="/static/landing/security.html" class="sbs-dropdown-item"><span class="emoji">🔒</span> Sicherheit</a>
+          <div class="sbs-dropdown-divider"></div>
+          <a href="/static/landing/kunden.html" class="sbs-dropdown-item"><span class="emoji">⭐</span> Kunden & Referenzen</a>
+          <a href="/static/landing/support.html" class="sbs-dropdown-item"><span class="emoji">💬</span> Support</a>
+          <div class="sbs-dropdown-divider"></div>
+          <a href="https://app.sbsdeutschland.com/e-rechnung-2025" class="sbs-dropdown-item" style="color: #dc2626; font-weight: 600;"><span class="emoji">⚡</span> E-Rechnung 2025</a>
+          <a href="/sbshomepage/kontakt.html" class="sbs-dropdown-item"><span class="emoji">✉️</span> Kontakt</a>
+        </div>
+      </div>
+      
+      <!-- Unternehmen -->
+      <a href="/sbshomepage/unternehmen.html" class="sbs-nav-item">🏢 Über uns</a>
+    </nav>
+    
+    <div class="sbs-header-actions">
+      <a href="https://app.sbsdeutschland.com/login" class="sbs-btn-login">Login</a>
+      <a href="https://app.sbsdeutschland.com/demo" class="sbs-btn-cta">Kostenlos testen</a>
+    </div>
+  </div>
+</header>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Burger Menu
+  var burger = document.getElementById('sbsBurger');
+  var nav = document.getElementById('sbsNav');
+  if (burger && nav) {
+    burger.addEventListener('click', function() {
+      nav.classList.toggle('open');
+    });
+  }
+  
+  // Close dropdowns on outside click
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.sbs-nav-dropdown')) {
+      document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d) {
+        d.classList.remove('open');
+      });
+    }
+  });
+});
+</script>
+
+
+
+
+
+<section class="hero" style="padding: 40px 24px;">
+  <div class="hero-content">
+    <h1>Impressum</h1>
+    <p class="hero-subtitle">Angaben gemäß § 5 TMG</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container" style="max-width: 800px;">
+    
+    <div class="legal-content">
+      <h2>Anbieter</h2>
+      <p>
+        <strong>SBS Deutschland GmbH &amp; Co. KG</strong><br>
+        In der Dell 19<br>
+        69469 Weinheim<br>
+        Deutschland
+      </p>
+
+      <h2>Kontakt</h2>
+      <p>
+        Telefon: +49 (0) 6201 24469<br>
+        E-Mail: <a href="mailto:info@sbsdeutschland.com">info@sbsdeutschland.com</a><br>
+        Internet: <a href="https://www.sbsdeutschland.com">www.sbsdeutschland.com</a>
+      </p>
+
+      <h2>Registereintrag</h2>
+      <p>
+        Eintragung im Handelsregister<br>
+        Registergericht: Amtsgericht Mannheim<br>
+        Registernummer: HRA 706204
+      </p>
+
+      <h2>Umsatzsteuer-ID</h2>
+      <p>
+        Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG:<br>
+        DE345927327
+      </p>
+
+      <h2>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>
+      <p>
+        Luis Schenk<br>
+        In der Dell 19<br>
+        69469 Weinheim<br>
+        Deutschland
+      </p>
+
+      <h2>Haftungsausschluss</h2>
+      
+      <h3>Haftung für Inhalte</h3>
+      <p>
+        Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen.
+      </p>
+      <p>
+        Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt. Eine diesbezügliche Haftung ist jedoch erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung möglich. Bei Bekanntwerden von entsprechenden Rechtsverletzungen werden wir diese Inhalte umgehend entfernen.
+      </p>
+
+      <h3>Haftung für Links</h3>
+      <p>
+        Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht erkennbar.
+      </p>
+      <p>
+        Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.
+      </p>
+
+      <h3>Urheberrecht</h3>
+      <p>
+        Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers. Downloads und Kopien dieser Seite sind nur für den privaten, nicht kommerziellen Gebrauch gestattet.
+      </p>
+      <p>
+        Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden die Urheberrechte Dritter beachtet. Insbesondere werden Inhalte Dritter als solche gekennzeichnet. Sollten Sie trotzdem auf eine Urheberrechtsverletzung aufmerksam werden, bitten wir um einen entsprechenden Hinweis. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.
+      </p>
+
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">
+        Enterprise KI-Lösungen für den deutschen Mittelstand. Entwickelt und betrieben in Deutschland.
+      </p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+    </div>
+    <div>
+      <h4>Produkt</h4>
+      <ul>
+        <li><a href="/static/landing/">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="/loesungen/vertragsanalyse/">KI-Vertragsanalyse</a></li>
+        <li><a href="https://app.sbsdeutschland.com/demo/copilot">Finance Copilot</a></li>
+        <li><a href="/static/preise/">Preise & Pakete</a></li>
+        <li><a href="/static/landing/integrationen.html">Integrationen</a></li>
+        <li><a href="/static/landing/security.html">Sicherheit</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/static/landing/support.html">Support</a></li>
+        <li><a href="/static/landing/kunden.html">Kunden</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
+  </div>
+</footer>
+
+
+<script>
+async function checkAuthStatus() {
+  const guestEl = document.getElementById('authGuest');
+  const userEl = document.getElementById('authUser');
+  const nameEl = document.getElementById('accountName');
+  const emailEl = document.getElementById('accountEmail');
+  try {
+    const res = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
+    const user = await res.json();
+    if (user && user.logged_in) {
+      if (guestEl) guestEl.style.display = 'none';
+      if (userEl) userEl.style.display = 'block';
+      if (nameEl) nameEl.textContent = user.name || 'Account';
+      if (emailEl) emailEl.textContent = user.email || '';
+    } else {
+      if (guestEl) guestEl.style.display = 'flex';
+      if (userEl) userEl.style.display = 'none';
+    }
+  } catch(e) {
+    if (guestEl) guestEl.style.display = 'flex';
+    if (userEl) userEl.style.display = 'none';
+  }
+}
+document.addEventListener('DOMContentLoaded', checkAuthStatus);
+</script>
+<script src="/static/js/main.js"></script>
+<link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
+<script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
+</body>
+</html>

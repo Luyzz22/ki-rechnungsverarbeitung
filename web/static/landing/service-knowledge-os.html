@@ -852,8 +852,10 @@
             }
         }
     </style>
+  <link rel="stylesheet" href="/static/css/sbs-2026.css" />
 </head>
-<body>
+<body class="has-fixed-header">
+<div id="header-slot"></div>
     <!-- HEADER -->
     <header class="sbs-header">
         <div class="sbs-header-inner">
@@ -1175,5 +1177,7 @@
             </div>
         </div>
     </footer>
+<div id="footer-slot"></div>
+<script>(function(){function l(id,p){fetch(p).then(function(r){return r.text()}).then(function(h){document.getElementById(id).innerHTML=h;document.getElementById(id).querySelectorAll("script").forEach(function(s){var n=document.createElement("script");n.textContent=s.textContent;document.body.appendChild(n)})})}l("header-slot","/static/includes/header-2026.html");l("footer-slot","/static/includes/footer-2026.html")})()</script>
 </body>
 </html>

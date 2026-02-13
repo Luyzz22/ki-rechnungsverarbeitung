@@ -1,1062 +1,339 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
-  <title>Integrationen & APIs | SBS Deutschland</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Nahtlose Integration in Ihre bestehende IT-Landschaft. DATEV, SAP, REST-API, Webhooks und mehr.">
-  <link rel="icon" href="/static/favicon.ico">
-  <link rel="stylesheet" href="/static/css/design-tokens.css">
-  <link rel="stylesheet" href="/static/css/components.css">
+  <meta charset="utf-8" />
+  <title>Integrationen · SBS Deutschland – DATEV, SAP, n8n &amp; 500+ Tools</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="SBS Deutschland integriert nahtlos mit DATEV, SAP, n8n, Slack, Microsoft 365 und 500+ weiteren Tools. REST API, Webhooks und fertige Workflow-Templates." />
+  <meta name="robots" content="index, follow" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/design-tokens.css" />
+  <link rel="stylesheet" href="/static/css/components.css" />
+  <link rel="stylesheet" href="/static/css/sbs-2026.css" />
   <style>
-    :root {
-      --sbs-blue: #003856;
-      --sbs-yellow: #FFB900;
-      --gray-50: #f9fafb;
-      --gray-100: #f3f4f6;
-      --gray-200: #e5e7eb;
-      --gray-600: #4b5563;
-      --gray-900: #111827;
-    }
-    
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--gray-900); }
-    
-    /* Hero Section */
-    .page-hero {
-      background: linear-gradient(135deg, var(--sbs-blue) 0%, #00507a 50%, #006d9e 100%);
-      padding: 120px 24px 100px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .page-hero::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-      opacity: 0.5;
-    }
-    .page-hero-content {
-      max-width: 900px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 1;
-    }
-    .page-hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.2);
-      padding: 8px 16px;
-      border-radius: 100px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: rgba(255,255,255,0.9);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 24px;
-    }
-    .page-hero h1 {
-      font-size: clamp(2.5rem, 5vw, 3.5rem);
-      font-weight: 700;
-      color: #fff;
-      line-height: 1.1;
-      margin: 0 0 24px;
-    }
-    .page-hero p {
-      font-size: 1.25rem;
-      color: rgba(255,255,255,0.8);
-      line-height: 1.6;
-      margin: 0 auto 32px;
-      max-width: 700px;
-    }
-    .hero-cta-row {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .btn-primary {
-      background: var(--sbs-yellow);
-      color: var(--sbs-blue);
-      padding: 14px 28px;
-      border-radius: 8px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.2s;
-      box-shadow: 0 4px 14px rgba(255,185,0,0.4);
-    }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,185,0,0.5); }
-    .btn-secondary {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-      padding: 14px 28px;
-      border-radius: 8px;
-      font-weight: 600;
-      text-decoration: none;
-      border: 1px solid rgba(255,255,255,0.3);
-      transition: all 0.2s;
-    }
-    .btn-secondary:hover { background: rgba(255,255,255,0.2); }
-    
-    /* Logos Bar */
-    .logos-bar {
-      background: #fff;
-      border-bottom: 1px solid var(--gray-200);
-      padding: 40px 24px;
-    }
-    .logos-bar-inner {
-      max-width: 1000px;
-      margin: 0 auto;
-      text-align: center;
-    }
-    .logos-bar p {
-      color: var(--gray-600);
-      font-size: 0.85rem;
-      margin: 0 0 24px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      font-weight: 500;
-    }
-    .logos-row {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 48px;
-      flex-wrap: wrap;
-    }
-    .logo-item {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--gray-600);
-      opacity: 0.6;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    /* Section Styles */
-    .section {
-      padding: 100px 24px;
-    }
-    .section-dark {
-      background: var(--gray-50);
-    }
-    .section-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    .section-header {
-      text-align: center;
-      max-width: 700px;
-      margin: 0 auto 60px;
-    }
-    .section-header h2 {
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: var(--gray-900);
-      margin: 0 0 16px;
-    }
-    .section-header p {
-      font-size: 1.1rem;
-      color: var(--gray-600);
-      line-height: 1.7;
-      margin: 0;
-    }
-    
-    /* Bento Grid */
-    .bento-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-    }
-    @media (max-width: 900px) {
-      .bento-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 600px) {
-      .bento-grid { grid-template-columns: 1fr; }
-    }
-    .bento-card {
-      background: #fff;
-      border-radius: 20px;
-      padding: 32px;
-      border: 1px solid var(--gray-200);
-      transition: all 0.3s;
-      position: relative;
-      overflow: hidden;
-    }
-    .bento-card:hover {
-      border-color: var(--sbs-blue);
-      box-shadow: 0 20px 40px rgba(0,56,86,0.1);
-      transform: translateY(-4px);
-    }
-    .bento-card.featured {
-      grid-column: span 2;
-      background: linear-gradient(135deg, var(--sbs-blue) 0%, #00507a 100%);
-      color: #fff;
-      border: none;
-    }
-    .bento-card.featured h3 { color: #fff; }
-    .bento-card.featured p { color: rgba(255,255,255,0.8); }
-    .bento-card.featured .card-icon { background: rgba(255,255,255,0.15); color: #fff; }
-    
-    .card-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      margin-bottom: 20px;
-    }
-    .bento-card h3 {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: var(--gray-900);
-      margin: 0 0 12px;
-    }
-    .bento-card > p {
-      color: var(--gray-600);
-      line-height: 1.6;
-      margin: 0 0 20px;
-    }
-    
-    /* Checkmark List */
-    .check-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .check-list li {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 8px 0;
-      font-size: 0.95rem;
-      color: var(--gray-600);
-    }
-    .bento-card.featured .check-list li { color: rgba(255,255,255,0.85); }
-    .check-list li::before {
-      content: '✓';
-      flex-shrink: 0;
-      width: 20px;
-      height: 20px;
-      background: #10b981;
-      color: #fff;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7rem;
-      font-weight: 700;
-      margin-top: 2px;
-    }
-    
-    .card-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--sbs-blue);
-      font-weight: 600;
-      text-decoration: none;
-      font-size: 0.95rem;
-      margin-top: 16px;
-    }
-    .card-link:hover { text-decoration: underline; }
-    .bento-card.featured .card-link { color: var(--sbs-yellow); }
-    
+    :root { --amber: #FF8C00; --amber-light: #FFB900; --blue: #003856; --blue-light: #00507a; --green: #10B981; --text-1: #1E293B; --text-2: #64748B; --text-3: #94A3B8; --border: #E2E8F0; --bg: #F8FAFC; --bg-el: #F1F5F9; --card: #FFFFFF; }
+    body { background: var(--bg); }
+    .ig { max-width: 1060px; margin: 0 auto; padding: 48px 24px 80px; }
+
+    /* Hero */
+    .ig-hero { text-align: center; margin-bottom: 52px; }
+    .ig-hero h1 { font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 800; letter-spacing: -0.03em; color: var(--text-1); margin-bottom: 10px; }
+    .ig-hero .sub { font-size: 1.05rem; color: var(--text-2); max-width: 640px; margin: 0 auto; line-height: 1.65; }
+
+    /* Section */
+    .ig h2 { font-size: 1.4rem; font-weight: 700; color: var(--text-1); margin: 56px 0 8px; padding-bottom: 8px; border-bottom: 2px solid var(--amber); }
+    .ig .section-sub { font-size: 0.92rem; color: var(--text-2); margin-bottom: 24px; line-height: 1.6; }
+
+    /* Main Integrations */
+    .ig-main { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 48px; }
+    .ig-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; position: relative; overflow: hidden; }
+    .ig-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .ig-card.native::before { background: var(--green); }
+    .ig-card.compatible::before { background: var(--amber); }
+    .ig-card.planned::before { background: var(--text-3); }
+    .ig-card .card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .ig-card .card-icon { font-size: 2rem; }
+    .ig-card .card-title { font-size: 1.1rem; font-weight: 700; color: var(--text-1); }
+    .ig-card .card-cat { font-size: 0.75rem; color: var(--text-3); display: block; }
+    .ig-card .card-status { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; margin-bottom: 12px; }
+    .ig-card .card-status.native { background: #DCFCE7; color: #166534; }
+    .ig-card .card-status.compatible { background: #FEF3C7; color: #92400E; }
+    .ig-card .card-status.planned { background: var(--bg-el); color: var(--text-3); }
+    .ig-card p { font-size: 0.87rem; color: var(--text-2); line-height: 1.6; margin-bottom: 14px; }
+    .ig-card .feat { list-style: none; padding: 0; margin: 0; }
+    .ig-card .feat li { font-size: 0.82rem; color: var(--text-2); padding: 3px 0 3px 20px; position: relative; }
+    .ig-card .feat li::before { content: '✓'; position: absolute; left: 0; color: var(--green); font-weight: 700; font-size: 0.8rem; }
+
+    /* Additional Grid */
+    .ig-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .ig-tile { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; transition: box-shadow 0.2s; }
+    .ig-tile:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+    .ig-tile .t-icon { font-size: 1.6rem; margin-bottom: 6px; display: block; }
+    .ig-tile .t-name { font-size: 0.85rem; font-weight: 600; color: var(--text-1); display: block; }
+    .ig-tile .t-cat { font-size: 0.72rem; color: var(--text-3); }
+    .ig-tile .t-badge { font-size: 0.65rem; font-weight: 600; color: var(--amber); margin-top: 4px; display: inline-block; }
+
     /* API Section */
-    .api-showcase {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 60px;
-      align-items: center;
+    .ig-api { background: linear-gradient(135deg, var(--blue), #001f33); border-radius: 18px; padding: 36px; color: #fff; margin: 40px 0; }
+    .ig-api h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
+    .ig-api .sub { color: rgba(255,255,255,0.65); font-size: 0.88rem; margin-bottom: 24px; }
+    .ig-api-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .ig-api-feat { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 18px; text-align: center; }
+    .ig-api-feat .icon { font-size: 1.5rem; margin-bottom: 6px; display: block; }
+    .ig-api-feat .title { font-size: 0.88rem; font-weight: 600; color: #fff; display: block; }
+    .ig-api-feat .desc { font-size: 0.78rem; color: rgba(255,255,255,0.6); margin-top: 4px; }
+    .ig-code { background: #0D1117; border-radius: 12px; padding: 20px; overflow-x: auto; }
+    .ig-code pre { margin: 0; font-size: 0.82rem; line-height: 1.7; color: #E6EDF3; font-family: 'SF Mono', 'Fira Code', monospace; }
+    .ig-code .comment { color: #8B949E; }
+    .ig-code .key { color: #79C0FF; }
+    .ig-code .str { color: #A5D6FF; }
+    .ig-code .val { color: #FFA657; }
+
+    /* Workflow Templates */
+    .ig-wf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .ig-wf { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; align-items: flex-start; gap: 12px; }
+    .ig-wf .wf-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
+    .ig-wf .wf-name { font-size: 0.9rem; font-weight: 600; color: var(--text-1); }
+    .ig-wf .wf-desc { font-size: 0.82rem; color: var(--text-2); margin-top: 2px; }
+
+    /* Datenfluss */
+    .ig-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 28px 0 40px; position: relative; }
+    .ig-flow::before { content: ''; position: absolute; top: 50%; left: 10%; right: 10%; height: 2px; background: var(--border); z-index: 0; }
+    .ig-flow-step { text-align: center; position: relative; z-index: 1; }
+    .ig-flow-step .step-circle { width: 56px; height: 56px; border-radius: 50%; background: var(--card); border: 2px solid var(--amber); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 1.4rem; }
+    .ig-flow-step .step-label { font-size: 0.82rem; font-weight: 600; color: var(--text-1); }
+    .ig-flow-step .step-desc { font-size: 0.75rem; color: var(--text-3); }
+
+    /* CTA */
+    .ig-cta { background: var(--bg-el); border: 1px solid var(--border); border-radius: 18px; padding: 40px; text-align: center; margin-top: 40px; }
+    .ig-cta h2 { border: none; margin: 0 0 8px; padding: 0; }
+    .ig-cta p { color: var(--text-2); font-size: 0.92rem; margin-bottom: 20px; }
+    .ig-cta .cta-row { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .ig-cta .cta-row a { padding: 12px 28px; border-radius: 10px; font-size: 0.92rem; font-weight: 600; text-decoration: none; }
+    .btn-amber { background: linear-gradient(135deg, var(--amber), var(--amber-light)); color: #fff; }
+    .btn-outline { background: transparent; border: 2px solid var(--blue); color: var(--blue); }
+    .btn-outline:hover { background: var(--blue); color: #fff; }
+
+    @media (max-width: 860px) {
+      .ig-main { grid-template-columns: 1fr; }
+      .ig-api-grid { grid-template-columns: 1fr 1fr; }
+      .ig-wf-grid { grid-template-columns: 1fr; }
+      .ig-flow { grid-template-columns: 1fr 1fr; gap: 16px; }
+      .ig-flow::before { display: none; }
     }
-    @media (max-width: 900px) {
-      .api-showcase { grid-template-columns: 1fr; }
+    @media (max-width: 480px) {
+      .ig { padding: 36px 16px 60px; }
+      .ig-api { padding: 24px 18px; }
+      .ig-api-grid { grid-template-columns: 1fr; }
+      .ig-flow { grid-template-columns: 1fr; }
     }
-    .api-text h2 {
-      font-size: 2.2rem;
-      font-weight: 700;
-      margin: 0 0 20px;
-    }
-    .api-text > p {
-      color: var(--gray-600);
-      font-size: 1.1rem;
-      line-height: 1.7;
-      margin: 0 0 32px;
-    }
-    .api-features {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .api-feature {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .api-feature-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      background: var(--gray-100);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.3rem;
-      flex-shrink: 0;
-    }
-    .api-feature-text h4 {
-      font-size: 1rem;
-      font-weight: 600;
-      margin: 0 0 4px;
-    }
-    .api-feature-text p {
-      font-size: 0.9rem;
-      color: var(--gray-600);
-      margin: 0;
-    }
-    
-    .code-block {
-      background: #1e293b;
-      border-radius: 16px;
-      padding: 24px;
-      overflow-x: auto;
-    }
-    .code-block pre {
-      margin: 0;
-      color: #e2e8f0;
-      font-family: 'SF Mono', Monaco, monospace;
-      font-size: 0.85rem;
-      line-height: 1.6;
-    }
-    .code-block .comment { color: #64748b; }
-    .code-block .key { color: #7dd3fc; }
-    .code-block .string { color: #86efac; }
-    .code-block .number { color: #fcd34d; }
-    
-    /* CTA Section */
-    .cta-section {
-      background: linear-gradient(135deg, var(--sbs-blue) 0%, #00507a 100%);
-      padding: 80px 24px;
-      text-align: center;
-    }
-    .cta-section h2 {
-      font-size: 2.2rem;
-      color: #fff;
-      margin: 0 0 16px;
-    }
-    .cta-section p {
-      color: rgba(255,255,255,0.8);
-      font-size: 1.1rem;
-      margin: 0 0 32px;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    
-    /* Footer */
-    .footer {
-      background: #111827;
-      color: rgba(255,255,255,0.7);
-      padding: 60px 24px 30px;
-    }
-    .footer-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
-      gap: 48px;
-    }
-    @media (max-width: 768px) {
-      .footer-inner { grid-template-columns: 1fr 1fr; }
-    }
-    .footer-brand h3 {
-      color: #fff;
-      font-size: 1.2rem;
-      margin: 0 0 12px;
-    }
-    .footer-brand p {
-      font-size: 0.9rem;
-      line-height: 1.6;
-      margin: 0;
-    }
-    .footer-col h4 {
-      color: #fff;
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin: 0 0 16px;
-    }
-    .footer-col a {
-      display: block;
-      color: rgba(255,255,255,0.6);
-      text-decoration: none;
-      font-size: 0.9rem;
-      padding: 6px 0;
-      transition: color 0.2s;
-    }
-    .footer-col a:hover { color: #fff; }
-    .footer-bottom {
-      max-width: 1200px;
-      margin: 40px auto 0;
-      padding-top: 30px;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-      font-size: 0.85rem;
-    }
-    .footer-links { display: flex; gap: 24px; }
-    .footer-links a { color: rgba(255,255,255,0.5); text-decoration: none; }
-    .footer-links a:hover { color: #fff; }
   </style>
 </head>
-<body>
-<!-- SBS Deutschland - Unified Marketing Header (App-Style) v2 -->
-<style>
-  .sbs-header {
-    background: linear-gradient(135deg, #003856 0%, #00507a 100%);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.15);
-  }
-  .sbs-header-inner {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 70px;
-  }
-  .sbs-logo-wrap {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    text-decoration: none;
-  }
-  .sbs-logo-icon {
-    width: 42px;
-    height: 42px;
-    background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-  }
-  .sbs-logo-text {
-    display: flex;
-    flex-direction: column;
-  }
-  .sbs-logo-text strong {
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 700;
-  }
-  .sbs-logo-text span {
-    color: rgba(255,255,255,0.7);
-    font-size: 0.75rem;
-  }
-  .sbs-nav {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .sbs-nav-item {
-    color: rgba(255,255,255,0.9);
-    text-decoration: none;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .sbs-nav-item:hover {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-  }
-  .sbs-nav-dropdown {
-    position: relative;
-  }
-  .sbs-nav-dropdown-btn {
-    color: rgba(255,255,255,0.9);
-    background: none;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-  }
-  .sbs-nav-dropdown-btn:hover {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-  }
-  .sbs-nav-dropdown-btn .chevron {
-    width: 12px;
-    height: 12px;
-    transition: transform 0.2s;
-  }
-  .sbs-nav-dropdown.open .chevron {
-    transform: rotate(180deg);
-  }
-  .sbs-nav-dropdown-menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    min-width: 300px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-    padding: 12px;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.2s;
-    z-index: 100;
-  }
-  .sbs-nav-dropdown.open .sbs-nav-dropdown-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-  }
-  .sbs-dropdown-section {
-    color: #6b7280;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 8px 12px 4px;
-    margin-top: 4px;
-  }
-  .sbs-dropdown-section:first-child {
-    margin-top: 0;
-  }
-  .sbs-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    color: #374151;
-    text-decoration: none;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    transition: all 0.15s;
-  }
-  .sbs-dropdown-item:hover {
-    background: #f3f4f6;
-    color: #003856;
-  }
-  .sbs-dropdown-item .emoji {
-    font-size: 1.1rem;
-    width: 24px;
-    text-align: center;
-  }
-  .sbs-dropdown-divider {
-    height: 1px;
-    background: #e5e7eb;
-    margin: 8px 0;
-  }
-  .sbs-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .sbs-btn-login {
-    color: rgba(255,255,255,0.9);
-    text-decoration: none;
-    padding: 8px 16px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    border-radius: 8px;
-    transition: all 0.2s;
-  }
-  .sbs-btn-login:hover {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-  }
-  .sbs-btn-cta {
-    background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
-    color: #003856;
-    text-decoration: none;
-    padding: 10px 20px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    border-radius: 8px;
-    transition: all 0.2s;
-    box-shadow: 0 2px 8px rgba(255,185,0,0.3);
-  }
-  .sbs-btn-cta:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255,185,0,0.4);
-  }
-  .sbs-burger {
-    display: none;
-    flex-direction: column;
-    gap: 5px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 8px;
-  }
-  .sbs-burger span {
-    width: 24px;
-    height: 2px;
-    background: #fff;
-    border-radius: 2px;
-    transition: all 0.3s;
-  }
-  @media (max-width: 1024px) {
-    .sbs-nav { display: none; }
-    .sbs-burger { display: flex; }
-    .sbs-nav.open {
-      display: flex;
-      flex-direction: column;
-      position: absolute;
-      top: 70px;
-      left: 0;
-      right: 0;
-      background: #003856;
-      padding: 20px;
-      gap: 0;
-    }
-    .sbs-nav-dropdown-menu {
-      position: static;
-      box-shadow: none;
-      background: rgba(255,255,255,0.05);
-      margin-top: 8px;
-    }
-    .sbs-dropdown-item {
-      color: rgba(255,255,255,0.9);
-    }
-    .sbs-dropdown-item:hover {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-    }
-    .sbs-dropdown-section {
-      color: rgba(255,255,255,0.5);
-    }
-  }
-</style>
+<body class="has-fixed-header">
+<div id="header-slot"></div>
+<div class="ig">
 
-<header class="sbs-header">
-  <div class="sbs-header-inner">
-    <a href="/sbshomepage/" class="sbs-logo-wrap">
-      <div class="sbs-logo-icon">🏢</div>
-      <div class="sbs-logo-text">
-        <strong>SBS Deutschland</strong>
-        <span>KI-Lösungen · Weinheim</span>
-      </div>
-    </a>
-    
-    <button class="sbs-burger" id="sbsBurger" aria-label="Menü öffnen">
-      <span></span><span></span><span></span>
-    </button>
-    
-    <nav class="sbs-nav" id="sbsNav">
-      <!-- Produkte Dropdown -->
-      <div class="sbs-nav-dropdown">
-        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
-          Produkte
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="sbs-nav-dropdown-menu">
-          <div class="sbs-dropdown-section">KI-Plattformen</div>
-          <a href="/static/landing/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
-          <a href="/loesungen/vertragsanalyse/" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
-          <div class="sbs-dropdown-divider"></div>
-          <div class="sbs-dropdown-section">Rechnungs-Features</div>
-          <a href="https://app.sbsdeutschland.com/copilot" class="sbs-dropdown-item"><span class="emoji">🤖</span> Finance Copilot</a>
-          <a href="https://app.sbsdeutschland.com/accounting" class="sbs-dropdown-item"><span class="emoji">📊</span> Auto-Kontierung</a>
-          <a href="https://app.sbsdeutschland.com/budget" class="sbs-dropdown-item"><span class="emoji">💰</span> Budget-Dashboard</a>
-          <a href="https://app.sbsdeutschland.com/zahlungen" class="sbs-dropdown-item"><span class="emoji">💳</span> Zahlungsmanagement</a>
-          <div class="sbs-dropdown-divider"></div>
-          <div class="sbs-dropdown-section">Vertrags-Features</div>
-          <a href="https://contract.sbsdeutschland.com/upload" class="sbs-dropdown-item"><span class="emoji">📄</span> Vertragsanalyse</a>
-          <a href="https://contract.sbsdeutschland.com/compare" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Vertragsvergleich</a>
-          <a href="https://contract.sbsdeutschland.com/library" class="sbs-dropdown-item"><span class="emoji">📚</span> Klausel-Bibliothek</a>
-        </div>
-      </div>
-      
-      <!-- Lösungen Dropdown -->
-      <div class="sbs-nav-dropdown">
-        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
-          Lösungen
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="sbs-nav-dropdown-menu">
-          <div class="sbs-dropdown-section">KI-Rechnungen</div>
-          <a href="/static/landing/loesungen-steuerberater.html" class="sbs-dropdown-item"><span class="emoji">📋</span> Für Steuerberater</a>
-          <a href="/static/landing/loesungen-finanzleitung.html" class="sbs-dropdown-item"><span class="emoji">💼</span> Für CFOs & Finanzleitung</a>
-          <a href="/static/landing/loesungen-handel-filialnetz.html" class="sbs-dropdown-item"><span class="emoji">🏪</span> Für Handel & Filialnetz</a>
-          <div class="sbs-dropdown-divider"></div>
-          <div class="sbs-dropdown-section">KI-Verträge</div>
-          <a href="/loesungen/vertragsanalyse/kanzleien.html" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Für Kanzleien & Notare</a>
-          <a href="/loesungen/vertragsanalyse/hr.html" class="sbs-dropdown-item"><span class="emoji">👔</span> Für HR-Abteilungen</a>
-          <a href="/loesungen/vertragsanalyse/einkauf.html" class="sbs-dropdown-item"><span class="emoji">🛒</span> Für Einkauf & Beschaffung</a>
-          <div class="sbs-dropdown-divider"></div>
-          <div class="sbs-dropdown-section">Consulting</div>
-          <a href="/sbshomepage/sap-consulting.html" class="sbs-dropdown-item"><span class="emoji">📊</span> SAP Consulting</a>
-          <a href="/sbshomepage/it-consulting.html" class="sbs-dropdown-item"><span class="emoji">💻</span> IT Consulting</a>
-          <a href="/sbshomepage/quality-risk-management.html" class="sbs-dropdown-item"><span class="emoji">🎯</span> Quality & Risk</a>
-        </div>
-      </div>
-      
-      <!-- Preise Dropdown -->
-      <div class="sbs-nav-dropdown">
-        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
-          💰 Preise
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="sbs-nav-dropdown-menu">
-          <a href="/static/preise/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
-          <a href="/loesungen/vertragsanalyse/preise.html" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
-          <div class="sbs-dropdown-divider"></div>
-          <a href="/static/preise/#bundle" class="sbs-dropdown-item" style="color: #8b5cf6; font-weight: 600;"><span class="emoji">🎁</span> Bundle-Angebot (20% sparen)</a>
-        </div>
-      </div>
-      
-      <!-- Ressourcen Dropdown -->
-      <div class="sbs-nav-dropdown">
-        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
-          Ressourcen
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="sbs-nav-dropdown-menu">
-          <a href="/static/landing/ressourcen.html" class="sbs-dropdown-item"><span class="emoji">📚</span> Dokumentation</a>
-          <a href="/static/landing/integrationen.html" class="sbs-dropdown-item"><span class="emoji">🔗</span> Integrationen</a>
-          <a href="/static/landing/security.html" class="sbs-dropdown-item"><span class="emoji">🔒</span> Sicherheit</a>
-          <div class="sbs-dropdown-divider"></div>
-          <a href="/static/landing/kunden.html" class="sbs-dropdown-item"><span class="emoji">⭐</span> Kunden & Referenzen</a>
-          <a href="/static/landing/support.html" class="sbs-dropdown-item"><span class="emoji">💬</span> Support</a>
-          <div class="sbs-dropdown-divider"></div>
-          <a href="https://app.sbsdeutschland.com/e-rechnung-2025" class="sbs-dropdown-item" style="color: #dc2626; font-weight: 600;"><span class="emoji">⚡</span> E-Rechnung 2025</a>
-          <a href="/sbshomepage/kontakt.html" class="sbs-dropdown-item"><span class="emoji">✉️</span> Kontakt</a>
-        </div>
-      </div>
-      
-      <!-- Unternehmen -->
-      <a href="/sbshomepage/unternehmen.html" class="sbs-nav-item">🏢 Über uns</a>
-    </nav>
-    
-    <div class="sbs-header-actions">
-      <a href="https://app.sbsdeutschland.com/login" class="sbs-btn-login">Login</a>
-      <a href="https://app.sbsdeutschland.com/demo" class="sbs-btn-cta">Kostenlos testen</a>
+  <!-- HERO -->
+  <div class="ig-hero">
+    <h1>Integriert in Ihre Systemlandschaft</h1>
+    <p class="sub">SBS Deutschland verbindet sich nahtlos mit DATEV, SAP, Microsoft 365 und 500+ weiteren Tools. Native Integrationen, REST API und fertige n8n-Workflow-Templates.</p>
+  </div>
+
+  <!-- DATENFLUSS -->
+  <div class="ig-flow">
+    <div class="ig-flow-step">
+      <div class="step-circle">📥</div>
+      <div class="step-label">Eingang</div>
+      <div class="step-desc">E-Mail, Upload, API</div>
+    </div>
+    <div class="ig-flow-step">
+      <div class="step-circle">🤖</div>
+      <div class="step-label">KI-Analyse</div>
+      <div class="step-desc">GPT-4o, Gemini 1.5 Pro</div>
+    </div>
+    <div class="ig-flow-step">
+      <div class="step-circle">⚡</div>
+      <div class="step-label">Automation</div>
+      <div class="step-desc">n8n, Webhooks, Slack</div>
+    </div>
+    <div class="ig-flow-step">
+      <div class="step-circle">📤</div>
+      <div class="step-label">Export</div>
+      <div class="step-desc">DATEV, SAP, Excel</div>
     </div>
   </div>
-</header>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Burger Menu
-  var burger = document.getElementById('sbsBurger');
-  var nav = document.getElementById('sbsNav');
-  if (burger && nav) {
-    burger.addEventListener('click', function() {
-      nav.classList.toggle('open');
-    });
-  }
-  
-  // Close dropdowns on outside click
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('.sbs-nav-dropdown')) {
-      document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d) {
-        d.classList.remove('open');
-      });
-    }
-  });
-});
-</script>
+  <!-- NATIVE INTEGRATIONS -->
+  <h2>Kern-Integrationen</h2>
+  <p class="section-sub">Diese Integrationen sind tief in die Plattform eingebaut und erfordern keine zusätzliche Konfiguration.</p>
 
-<!-- Hero Section -->
-<section class="page-hero">
-  <div class="page-hero-content">
-    <div class="page-hero-badge">🔗 Integrationen & APIs</div>
-    <h1>Verbinden Sie alles.<br>Automatisieren Sie alles.</h1>
-    <p>
-      Nahtlose Integration in Ihre bestehende IT-Landschaft. Von DATEV über SAP bis zur 
-      individuellen REST-API – SBS passt sich Ihren Prozessen an.
-    </p>
-    <div class="hero-cta-row">
-      <a href="/sbshomepage/kontakt.html" class="btn-primary">Integrationsgespräch vereinbaren →</a>
-      <a href="https://docs.sbsdeutschland.com/api" class="btn-secondary">API-Dokumentation</a>
+  <div class="ig-main">
+
+    <div class="ig-card native">
+      <div class="card-head">
+        <span class="card-icon">🟢</span>
+        <div>
+          <span class="card-title">DATEV</span>
+          <span class="card-cat">Buchhaltung &amp; Steuer</span>
+        </div>
+      </div>
+      <span class="card-status native">Nativ integriert</span>
+      <p>Native DATEV-Integration für Buchungsexport mit deutscher Steuerlogik. SKR03 und SKR04 Kontenpläne. ML-Buchungsvorschläge lernen pro Mandant.</p>
+      <ul class="feat">
+        <li>DATEV-Format Export (CSV + XML)</li>
+        <li>Automatische Kontierung (SKR03/04)</li>
+        <li>ML-Buchungsvorschläge</li>
+        <li>Steuercode-Mapping (7% / 19%)</li>
+        <li>Belegbildübertragung</li>
+      </ul>
     </div>
+
+    <div class="ig-card compatible">
+      <div class="card-head">
+        <span class="card-icon">🔷</span>
+        <div>
+          <span class="card-title">SAP S/4HANA</span>
+          <span class="card-cat">ERP</span>
+        </div>
+      </div>
+      <span class="card-status compatible">Kompatibel (Enterprise)</span>
+      <p>Integration mit SAP S/4HANA für Bestellungen, Buchungen und Stammdaten. Verfügbar im Enterprise-Plan mit individuellem Connector.</p>
+      <ul class="feat">
+        <li>Purchase Order Export</li>
+        <li>Vendor Master Data Sync</li>
+        <li>FI/CO Buchungsbelege</li>
+        <li>Material Management</li>
+        <li>Custom Connector-Entwicklung</li>
+      </ul>
+    </div>
+
+    <div class="ig-card native">
+      <div class="card-head">
+        <span class="card-icon">⚡</span>
+        <div>
+          <span class="card-title">n8n Workflows</span>
+          <span class="card-cat">Automation</span>
+        </div>
+      </div>
+      <span class="card-status native">Nativ integriert</span>
+      <p>Self-hosted Workflow-Engine für komplexe Automatisierungen. Fertige Templates für typische Mittelstands-Prozesse. 500+ Konnektoren. DSGVO-konform.</p>
+      <ul class="feat">
+        <li>500+ Konnektoren</li>
+        <li>Self-hosted (DSGVO-konform)</li>
+        <li>Custom Workflows</li>
+        <li>Webhook Triggers</li>
+        <li>Fertige Workflow-Templates</li>
+      </ul>
+    </div>
+
   </div>
-</section>
 
-<!-- Logos Bar -->
-<section class="logos-bar">
-  <div class="logos-bar-inner">
-    <p>Integriert mit führenden Systemen</p>
-    <div class="logos-row">
-      <div class="logo-item">💼 DATEV</div>
-      <div class="logo-item">🏢 SAP</div>
-      <div class="logo-item">📧 Microsoft 365</div>
-      <div class="logo-item">📊 Excel/CSV</div>
-      <div class="logo-item">🔌 REST-API</div>
-    </div>
+  <!-- WEITERE INTEGRATIONEN -->
+  <h2>Weitere Integrationen</h2>
+  <p class="section-sub">Über n8n und unsere REST API verbinden wir SBS mit Ihrem gesamten Tech-Stack:</p>
+
+  <div class="ig-grid">
+    <div class="ig-tile"><span class="t-icon">💬</span><span class="t-name">Slack</span><span class="t-cat">Kommunikation</span></div>
+    <div class="ig-tile"><span class="t-icon">📧</span><span class="t-name">Microsoft 365</span><span class="t-cat">Produktivität</span></div>
+    <div class="ig-tile"><span class="t-icon">📬</span><span class="t-name">Google Workspace</span><span class="t-cat">Produktivität</span></div>
+    <div class="ig-tile"><span class="t-icon">📁</span><span class="t-name">SharePoint</span><span class="t-cat">Dokumentation</span></div>
+    <div class="ig-tile"><span class="t-icon">📊</span><span class="t-name">LexOffice</span><span class="t-cat">Buchhaltung</span></div>
+    <div class="ig-tile"><span class="t-icon">📈</span><span class="t-name">sevDesk</span><span class="t-cat">Buchhaltung</span></div>
+    <div class="ig-tile"><span class="t-icon">📦</span><span class="t-name">Dropbox</span><span class="t-cat">Storage</span></div>
+    <div class="ig-tile"><span class="t-icon">🎯</span><span class="t-name">HubSpot</span><span class="t-cat">CRM</span></div>
+    <div class="ig-tile"><span class="t-icon">📋</span><span class="t-name">Jira</span><span class="t-cat">Projektmanagement</span></div>
+    <div class="ig-tile"><span class="t-icon">📝</span><span class="t-name">Confluence</span><span class="t-cat">Dokumentation</span></div>
+    <div class="ig-tile"><span class="t-icon">👥</span><span class="t-name">Personio</span><span class="t-cat">HR</span><span class="t-badge">Geplant</span></div>
+    <div class="ig-tile"><span class="t-icon">☁️</span><span class="t-name">Salesforce</span><span class="t-cat">CRM</span><span class="t-badge">Geplant</span></div>
   </div>
-</section>
+  <p style="font-size:0.82rem;color:var(--text-3);text-align:center;margin-bottom:20px;">Ihre Integration fehlt? <a href="mailto:info@sbsdeutschland.com" style="color:var(--amber);">Kontaktieren Sie uns</a></p>
 
-<!-- Standard Integrations -->
-<section class="section">
-  <div class="section-inner">
-    <div class="section-header">
-      <h2>Standard-Integrationen</h2>
-      <p>Sofort einsatzbereit, ohne aufwändige Konfiguration. Unsere Standard-Integrationen decken die wichtigsten Anwendungsfälle ab.</p>
+  <!-- WORKFLOW TEMPLATES -->
+  <h2>Fertige Workflow-Templates</h2>
+  <p class="section-sub">Starten Sie mit vorgefertigten n8n-Workflows für typische Mittelstands-Prozesse — sofort einsatzbereit.</p>
+
+  <div class="ig-wf-grid">
+    <div class="ig-wf">
+      <span class="wf-icon">📨</span>
+      <div>
+        <div class="wf-name">E-Mail Inbox Monitor</div>
+        <div class="wf-desc">Rechnungen aus E-Mail-Anhängen automatisch extrahieren und verarbeiten.</div>
+      </div>
     </div>
-    
-    <div class="bento-grid">
-      <div class="bento-card featured">
-        <div class="card-icon">💼</div>
-        <h3>DATEV-Export</h3>
-        <p>Vollständige DATEV-Integration für Steuerberater und Unternehmen. Export mit allen relevanten Buchungsdaten.</p>
-        <ul class="check-list">
-          <li>Automatische Kontierung nach SKR03/SKR04</li>
-          <li>Steuerschlüssel & Mandantentrennung</li>
-          <li>GoBD-konforme Protokollierung</li>
-          <li>Batch-Export für mehrere Zeiträume</li>
-        </ul>
-        <a href="https://app.sbsdeutschland.com/datev" class="card-link">DATEV-Export testen →</a>
+    <div class="ig-wf">
+      <span class="wf-icon">📁</span>
+      <div>
+        <div class="wf-name">SharePoint → DATEV</div>
+        <div class="wf-desc">Dokumente aus SharePoint verarbeiten und direkt an DATEV übergeben.</div>
       </div>
-      
-      <div class="bento-card">
-        <div class="card-icon">📧</div>
-        <h3>E-Mail-Integration</h3>
-        <p>Automatische Verarbeitung eingehender Rechnungen aus Ihrem Postfach.</p>
-        <ul class="check-list">
-          <li>Microsoft 365 & Gmail</li>
-          <li>Automatische Dublettenprüfung</li>
-          <li>Multi-Postfach Support</li>
-        </ul>
-        <a href="https://app.sbsdeutschland.com/email-config" class="card-link">E-Mail konfigurieren →</a>
+    </div>
+    <div class="ig-wf">
+      <span class="wf-icon">⏰</span>
+      <div>
+        <div class="wf-name">Vertrags-Fristenalarm</div>
+        <div class="wf-desc">Slack-Benachrichtigung 90, 60 und 30 Tage vor Vertragsende.</div>
       </div>
-      
-      <div class="bento-card">
-        <div class="card-icon">📊</div>
-        <h3>Excel & CSV Export</h3>
-        <p>Flexible Datenexporte für Controlling, BI-Tools und individuelle Auswertungen.</p>
-        <ul class="check-list">
-          <li>Power BI & Tableau kompatibel</li>
-          <li>Individuelle Spaltenlayouts</li>
-          <li>Automatisierte Exports</li>
-        </ul>
-        <a href="https://app.sbsdeutschland.com/history" class="card-link">Exporte ansehen →</a>
+    </div>
+    <div class="ig-wf">
+      <span class="wf-icon">🛒</span>
+      <div>
+        <div class="wf-name">SAP Bestellvorschlag</div>
+        <div class="wf-desc">Aus HydraulikDoc-Anfrage automatisch SAP Purchase Order erstellen.</div>
       </div>
-      
-      <div class="bento-card">
-        <div class="card-icon">💳</div>
-        <h3>SEPA-XML Export</h3>
-        <p>Bankfertige Zahlungsdateien direkt aus verarbeiteten Rechnungen generieren.</p>
-        <ul class="check-list">
-          <li>SEPA Credit Transfer (SCT)</li>
-          <li>Skonto-optimierte Zahlungen</li>
-          <li>Multi-Bank-fähig</li>
-        </ul>
-        <a href="https://app.sbsdeutschland.com/zahlungen" class="card-link">Zahlungen verwalten →</a>
+    </div>
+    <div class="ig-wf">
+      <span class="wf-icon">🔔</span>
+      <div>
+        <div class="wf-name">Skonto-Alert</div>
+        <div class="wf-desc">Tägliche Slack-Benachrichtigung über auslaufende Skontofristen.</div>
       </div>
-      
-      <div class="bento-card">
-        <div class="card-icon">📄</div>
-        <h3>XRechnung & ZUGFeRD</h3>
-        <p>Vollständige Unterstützung der deutschen E-Rechnungs-Standards.</p>
-        <ul class="check-list">
-          <li>XRechnung 2.0 & 3.0</li>
-          <li>ZUGFeRD 2.1 Profil</li>
-          <li>Validierung & Extraktion</li>
-        </ul>
-      </div>
-      
-      <div class="bento-card">
-        <div class="card-icon">🔗</div>
-        <h3>Lexoffice & sevDesk</h3>
-        <p>Direkte Anbindung an beliebte Cloud-Buchhaltungslösungen.</p>
-        <ul class="check-list">
-          <li>Automatischer Datenabgleich</li>
-          <li>Belege & Kontierung sync</li>
-          <li>Echtzeit-Updates</li>
-        </ul>
-        <a href="https://app.sbsdeutschland.com/integrations" class="card-link">Integration verbinden →</a>
+    </div>
+    <div class="ig-wf">
+      <span class="wf-icon">🔧</span>
+      <div>
+        <div class="wf-name">Smart Maintenance Alert</div>
+        <div class="wf-desc">Defektes Teil fotografieren → automatische Identifikation, Garantieprüfung und Bestellempfehlung.</div>
       </div>
     </div>
   </div>
-</section>
 
-<!-- SAP Section -->
-<section class="section section-dark">
-  <div class="section-inner">
-    <div class="section-header">
-      <h2>Enterprise & SAP</h2>
-      <p>Für Großunternehmen mit komplexen ERP-Landschaften bieten wir maßgeschneiderte Integrationen.</p>
-    </div>
-    
-    <div class="bento-grid">
-      <div class="bento-card">
-        <div class="card-icon">🧩</div>
-        <h3>SAP-Anbindung</h3>
-        <p>Native SAP-Integration durch unser erfahrenes Consulting-Team.</p>
-        <ul class="check-list">
-          <li>FI/CO & MM Module</li>
-          <li>IDoc & RFC Schnittstellen</li>
-          <li>SAP S/4HANA ready</li>
-        </ul>
-        <a href="/sbshomepage/sap-consulting.html" class="card-link">SAP Consulting →</a>
+  <!-- REST API -->
+  <div class="ig-api">
+    <h3>REST API für Entwickler</h3>
+    <div class="sub">Vollständige REST API für alle Module. OAuth 2.0 / API-Key Authentifizierung. Webhooks für Echtzeit-Events.</div>
+
+    <div class="ig-api-grid">
+      <div class="ig-api-feat">
+        <span class="icon">🔐</span>
+        <span class="title">OAuth 2.0 &amp; API Keys</span>
+        <div class="desc">Sichere Authentifizierung</div>
       </div>
-      
-      <div class="bento-card">
-        <div class="card-icon">🏢</div>
-        <h3>Individuelle ERP-Integration</h3>
-        <p>Anbindung an Microsoft Dynamics, Oracle, Sage und weitere Systeme.</p>
-        <ul class="check-list">
-          <li>Technische Spezifikation</li>
-          <li>Testumgebung inkl.</li>
-          <li>SLA & Support</li>
-        </ul>
-        <a href="/sbshomepage/it-consulting.html" class="card-link">IT Consulting →</a>
+      <div class="ig-api-feat">
+        <span class="icon">📡</span>
+        <span class="title">REST API</span>
+        <div class="desc">Alle Module per API</div>
       </div>
-      
-      <div class="bento-card">
-        <div class="card-icon">🔄</div>
-        <h3>Webhooks & Events</h3>
-        <p>Echtzeit-Benachrichtigungen für Ihre Systeme bei wichtigen Ereignissen.</p>
-        <ul class="check-list">
-          <li>Rechnung verarbeitet</li>
-          <li>Freigabe erteilt</li>
-          <li>Zahlung fällig</li>
-        </ul>
+      <div class="ig-api-feat">
+        <span class="icon">🪝</span>
+        <span class="title">Webhooks</span>
+        <div class="desc">Real-time Events (8 Typen)</div>
+      </div>
+      <div class="ig-api-feat">
+        <span class="icon">📦</span>
+        <span class="title">Batch Processing</span>
+        <div class="desc">Massenverarbeitung per API</div>
       </div>
     </div>
-  </div>
-</section>
 
-<!-- API Section -->
-<section class="section">
-  <div class="section-inner">
-    <div class="api-showcase">
-      <div class="api-text">
-        <h2>Moderne REST-API</h2>
-        <p>
-          Vollständige Kontrolle über alle Funktionen. Unsere API ist dokumentiert, 
-          versioniert und für Entwickler optimiert.
-        </p>
-        <div class="api-features">
-          <div class="api-feature">
-            <div class="api-feature-icon">📤</div>
-            <div class="api-feature-text">
-              <h4>Upload & Processing</h4>
-              <p>Rechnungen programmatisch hochladen und verarbeiten</p>
-            </div>
-          </div>
-          <div class="api-feature">
-            <div class="api-feature-icon">🔍</div>
-            <div class="api-feature-text">
-              <h4>Query & Filter</h4>
-              <p>Ergebnisse abrufen, filtern und durchsuchen</p>
-            </div>
-          </div>
-          <div class="api-feature">
-            <div class="api-feature-icon">🔔</div>
-            <div class="api-feature-text">
-              <h4>Webhooks</h4>
-              <p>Echtzeit-Events für Ihre Anwendungen</p>
-            </div>
-          </div>
-          <div class="api-feature">
-            <div class="api-feature-icon">🔐</div>
-            <div class="api-feature-text">
-              <h4>OAuth 2.0</h4>
-              <p>Sichere Authentifizierung nach Standard</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="code-block">
-        <pre><span class="comment">// Rechnung hochladen und verarbeiten</span>
-<span class="key">POST</span> /api/v1/invoices
+    <div class="ig-code"><pre><span class="comment"># Rechnung per API verarbeiten</span>
+curl -X POST https://api.sbsdeutschland.com/v1/invoices \
+  -H <span class="str">"Authorization: Bearer YOUR_API_KEY"</span> \
+  -H <span class="str">"Content-Type: multipart/form-data"</span> \
+  -F <span class="str">"file=@invoice.pdf"</span> \
+  -F <span class="str">"auto_export=datev"</span>
 
+<span class="comment"># Response</span>
 {
-  <span class="key">"file"</span>: <span class="string">"base64_encoded_pdf..."</span>,
-  <span class="key">"options"</span>: {
-    <span class="key">"auto_kontierung"</span>: <span class="number">true</span>,
-    <span class="key">"extract_payment"</span>: <span class="number">true</span>
-  }
-}
+  <span class="key">"id"</span>: <span class="str">"inv_abc123"</span>,
+  <span class="key">"status"</span>: <span class="str">"processed"</span>,
+  <span class="key">"vendor"</span>: <span class="str">"Bosch Rexroth AG"</span>,
+  <span class="key">"amount"</span>: <span class="val">4250.00</span>,
+  <span class="key">"datev_export"</span>: <span class="str">"ready"</span>
+}</pre></div>
+  </div>
 
-<span class="comment">// Response</span>
-{
-  <span class="key">"id"</span>: <span class="string">"inv_2025_001234"</span>,
-  <span class="key">"status"</span>: <span class="string">"processed"</span>,
-  <span class="key">"betrag"</span>: <span class="number">1890.50</span>,
-  <span class="key">"skr03_konto"</span>: <span class="string">"4960"</span>,
-  <span class="key">"confidence"</span>: <span class="number">0.97</span>
-}</pre>
-      </div>
+  <!-- CTA -->
+  <div class="ig-cta">
+    <h2>Integration besprechen?</h2>
+    <p>Wir zeigen Ihnen, wie SBS in Ihre bestehende Systemlandschaft passt — DATEV, SAP, Microsoft 365 oder individuelle Anbindung.</p>
+    <div class="cta-row">
+      <a href="https://calendly.com/ki-sbsdeutschland/sbs-nexus-30-minuten-discovery-call" class="btn-amber" target="_blank" rel="noopener">Integration besprechen →</a>
+      <a href="/static/landing/preise.html" class="btn-outline">Preise ansehen</a>
     </div>
   </div>
-</section>
 
-<!-- CTA Section -->
-<section class="cta-section">
-  <h2>Bereit für die Integration?</h2>
-  <p>Sprechen Sie mit unserem Team über Ihre spezifischen Anforderungen und Systemlandschaft.</p>
-  <div class="hero-cta-row">
-    <a href="/sbshomepage/kontakt.html" class="btn-primary">Beratungsgespräch vereinbaren →</a>
-    <a href="https://app.sbsdeutschland.com/demo" class="btn-secondary">Kostenlos testen</a>
-  </div>
-</section>
-
-<!-- Footer -->
-<footer class="footer">
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <h3>🏢 SBS Deutschland</h3>
-      <p>Enterprise KI-Lösungen für Rechnungsverarbeitung und Vertragsanalyse. Made in Germany.</p>
-    </div>
-    <div class="footer-col">
-      <h4>Produkte</h4>
-      <a href="/static/landing/">KI-Rechnungen</a>
-      <a href="/loesungen/vertragsanalyse/">KI-Verträge</a>
-      <a href="/static/preise/">Preise</a>
-    </div>
-    <div class="footer-col">
-      <h4>Unternehmen</h4>
-      <a href="/sbshomepage/unternehmen.html">Über uns</a>
-      <a href="/sbshomepage/kontakt.html">Kontakt</a>
-      <a href="/static/landing/kunden.html">Kunden</a>
-    </div>
-    <div class="footer-col">
-      <h4>Legal</h4>
-      <a href="/static/landing/datenschutz.html">Datenschutz</a>
-      <a href="/static/landing/impressum.html">Impressum</a>
-      <a href="/static/landing/agb.html">AGB</a>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <span>© 2026 SBS Deutschland GmbH & Co. KG</span>
-    <div class="footer-links">
-      <a href="/static/landing/security.html">Sicherheit</a>
-      <a href="/static/landing/support.html">Support</a>
-    </div>
-  </div>
-</footer>
-
-<script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
+</div>
+<div id="footer-slot"></div>
+<script>(function(){function l(id,p){fetch(p).then(function(r){return r.text()}).then(function(h){document.getElementById(id).innerHTML=h;document.getElementById(id).querySelectorAll("script").forEach(function(s){var n=document.createElement("script");n.textContent=s.textContent;document.body.appendChild(n)})})}l("header-slot","/static/includes/header-2026.html");l("footer-slot","/static/includes/footer-2026.html")})()</script>
 </body>
 </html>

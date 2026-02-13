@@ -2,553 +2,292 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>Support &amp; Hilfe · SBS</title>
+  <title>Support · SBS Deutschland – Hilfe &amp; Kontakt</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="Support und Hilfe für SBS-Kunden: Kontakt, häufige Fragen und Links zur KI-Rechnungsverarbeitung." />
+  <meta name="description" content="SBS Deutschland Support: Persönliche Betreuung aus Weinheim. E-Mail, Telefon und Video-Calls. Onboarding, FAQ und Dokumentation für alle Module." />
+  <meta name="robots" content="index, follow" />
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/css/design-tokens.css" />
   <link rel="stylesheet" href="/static/css/components.css" />
-  <link rel="stylesheet" href="/static/css/main.css" />
-  <link rel="stylesheet" href="/static/css/flyout-menu.css" />
+  <link rel="stylesheet" href="/static/css/sbs-2026.css" />
+  <style>
+    :root { --amber: #FF8C00; --amber-light: #FFB900; --blue: #003856; --blue-light: #00507a; --green: #10B981; --red: #EF4444; --text-1: #1E293B; --text-2: #64748B; --text-3: #94A3B8; --border: #E2E8F0; --bg: #F8FAFC; --bg-el: #F1F5F9; --card: #FFFFFF; }
+    body { background: var(--bg); }
+    .sp { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+
+    /* Hero */
+    .sp-hero { text-align: center; margin-bottom: 48px; }
+    .sp-hero h1 { font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 800; letter-spacing: -0.03em; color: var(--text-1); margin-bottom: 10px; }
+    .sp-hero .sub { font-size: 1.05rem; color: var(--text-2); max-width: 600px; margin: 0 auto; line-height: 1.65; }
+
+    /* Section */
+    .sp h2 { font-size: 1.3rem; font-weight: 700; color: var(--text-1); margin: 48px 0 8px; padding-bottom: 8px; border-bottom: 2px solid var(--amber); }
+    .sp .section-sub { font-size: 0.92rem; color: var(--text-2); margin-bottom: 20px; line-height: 1.6; }
+
+    /* Contact Cards */
+    .sp-contact { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+    .sp-cc { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: center; }
+    .sp-cc .icon { font-size: 1.8rem; margin-bottom: 10px; display: block; }
+    .sp-cc .title { font-size: 1rem; font-weight: 600; color: var(--text-1); margin-bottom: 6px; }
+    .sp-cc .detail { font-size: 0.88rem; color: var(--text-2); line-height: 1.5; }
+    .sp-cc a { color: var(--blue); text-decoration: none; font-weight: 500; }
+    .sp-cc a:hover { text-decoration: underline; }
+    .sp-cc .hours { font-size: 0.78rem; color: var(--text-3); margin-top: 8px; display: block; }
+
+    /* Support Tiers */
+    .sp-tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+    .sp-tier { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+    .sp-tier .tier-name { font-size: 1rem; font-weight: 700; color: var(--text-1); margin-bottom: 4px; }
+    .sp-tier .tier-plan { font-size: 0.78rem; color: var(--amber); font-weight: 600; margin-bottom: 12px; display: block; }
+    .sp-tier .tier-list { list-style: none; padding: 0; margin: 0; }
+    .sp-tier .tier-list li { font-size: 0.85rem; color: var(--text-2); padding: 4px 0 4px 20px; position: relative; }
+    .sp-tier .tier-list li::before { content: '✓'; position: absolute; left: 0; color: var(--green); font-weight: 700; font-size: 0.8rem; }
+
+    /* Onboarding Steps */
+    .sp-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 24px 0 40px; }
+    .sp-step { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; text-align: center; position: relative; }
+    .sp-step .step-num { width: 32px; height: 32px; background: var(--amber); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 0.85rem; font-weight: 700; }
+    .sp-step .step-title { font-size: 0.92rem; font-weight: 600; color: var(--text-1); margin-bottom: 4px; }
+    .sp-step .step-desc { font-size: 0.8rem; color: var(--text-2); line-height: 1.5; }
+
+    /* FAQ */
+    .sp-faq-item { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; overflow: hidden; background: var(--card); }
+    .sp-faq-q { padding: 14px 18px; font-size: 0.92rem; font-weight: 600; color: var(--text-1); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .sp-faq-q:hover { background: var(--bg-el); }
+    .sp-faq-q .arrow { transition: transform 0.3s; font-size: 0.8rem; color: var(--text-3); }
+    .sp-faq-item.open .arrow { transform: rotate(180deg); }
+    .sp-faq-a { padding: 0 18px 14px; font-size: 0.88rem; color: var(--text-2); line-height: 1.7; display: none; }
+    .sp-faq-item.open .sp-faq-a { display: block; }
+    .sp-faq-a a { color: var(--blue); }
+
+    /* Status */
+    .sp-status { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+    .sp-status .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--green); flex-shrink: 0; animation: pulse-dot 2s infinite; }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .sp-status .status-text { font-size: 0.92rem; font-weight: 600; color: var(--text-1); }
+    .sp-status .status-detail { font-size: 0.82rem; color: var(--text-2); }
+
+    /* Quick Links */
+    .sp-links { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 40px; }
+    .sp-link { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; align-items: center; gap: 12px; text-decoration: none; transition: box-shadow 0.2s; }
+    .sp-link:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+    .sp-link .link-icon { font-size: 1.4rem; }
+    .sp-link .link-text { font-size: 0.9rem; font-weight: 600; color: var(--text-1); }
+    .sp-link .link-desc { font-size: 0.78rem; color: var(--text-2); }
+
+    /* CTA */
+    .sp-cta { background: linear-gradient(135deg, var(--blue), #001f33); border-radius: 18px; padding: 36px; text-align: center; color: #fff; margin-top: 32px; }
+    .sp-cta h2 { color: #fff; border: none; margin: 0 0 8px; padding: 0; }
+    .sp-cta p { color: rgba(255,255,255,0.7); font-size: 0.92rem; margin-bottom: 20px; }
+    .sp-cta a { display: inline-block; padding: 12px 28px; border-radius: 10px; font-size: 0.92rem; font-weight: 600; text-decoration: none; background: linear-gradient(135deg, var(--amber), var(--amber-light)); color: #fff; }
+
+    @media (max-width: 760px) {
+      .sp-contact, .sp-tiers { grid-template-columns: 1fr; }
+      .sp-steps { grid-template-columns: 1fr 1fr; }
+      .sp-links { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .sp { padding: 36px 16px 60px; }
+      .sp-steps { grid-template-columns: 1fr; }
+      .sp-cta { padding: 28px 18px; }
+    }
+  </style>
 </head>
-<body>
+<body class="has-fixed-header">
+<div id="header-slot"></div>
+<div class="sp">
 
-<!-- SBS Deutschland - Unified Marketing Header (App-Style) v2 -->
-<style>
-  .sbs-header {
-    background: linear-gradient(135deg, #003856 0%, #00507a 100%);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.15);
-  }
-  .sbs-header-inner {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 70px;
-  }
-  .sbs-logo-wrap {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    text-decoration: none;
-  }
-  .sbs-logo-icon {
-    width: 42px;
-    height: 42px;
-    background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-  }
-  .sbs-logo-text {
-    display: flex;
-    flex-direction: column;
-  }
-  .sbs-logo-text strong {
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 700;
-  }
-  .sbs-logo-text span {
-    color: rgba(255,255,255,0.7);
-    font-size: 0.75rem;
-  }
-  .sbs-nav {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .sbs-nav-item {
-    color: rgba(255,255,255,0.9);
-    text-decoration: none;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .sbs-nav-item:hover {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-  }
-  .sbs-nav-dropdown {
-    position: relative;
-  }
-  .sbs-nav-dropdown-btn {
-    color: rgba(255,255,255,0.9);
-    background: none;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-  }
-  .sbs-nav-dropdown-btn:hover {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-  }
-  .sbs-nav-dropdown-btn .chevron {
-    width: 12px;
-    height: 12px;
-    transition: transform 0.2s;
-  }
-  .sbs-nav-dropdown.open .chevron {
-    transform: rotate(180deg);
-  }
-  .sbs-nav-dropdown-menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    min-width: 300px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-    padding: 12px;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.2s;
-    z-index: 100;
-  }
-  .sbs-nav-dropdown.open .sbs-nav-dropdown-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-  }
-  .sbs-dropdown-section {
-    color: #6b7280;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 8px 12px 4px;
-    margin-top: 4px;
-  }
-  .sbs-dropdown-section:first-child {
-    margin-top: 0;
-  }
-  .sbs-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    color: #374151;
-    text-decoration: none;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    transition: all 0.15s;
-  }
-  .sbs-dropdown-item:hover {
-    background: #f3f4f6;
-    color: #003856;
-  }
-  .sbs-dropdown-item .emoji {
-    font-size: 1.1rem;
-    width: 24px;
-    text-align: center;
-  }
-  .sbs-dropdown-divider {
-    height: 1px;
-    background: #e5e7eb;
-    margin: 8px 0;
-  }
-  .sbs-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .sbs-btn-login {
-    color: rgba(255,255,255,0.9);
-    text-decoration: none;
-    padding: 8px 16px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    border-radius: 8px;
-    transition: all 0.2s;
-  }
-  .sbs-btn-login:hover {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-  }
-  .sbs-btn-cta {
-    background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
-    color: #003856;
-    text-decoration: none;
-    padding: 10px 20px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    border-radius: 8px;
-    transition: all 0.2s;
-    box-shadow: 0 2px 8px rgba(255,185,0,0.3);
-  }
-  .sbs-btn-cta:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255,185,0,0.4);
-  }
-  .sbs-burger {
-    display: none;
-    flex-direction: column;
-    gap: 5px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 8px;
-  }
-  .sbs-burger span {
-    width: 24px;
-    height: 2px;
-    background: #fff;
-    border-radius: 2px;
-    transition: all 0.3s;
-  }
-  @media (max-width: 1024px) {
-    .sbs-nav { display: none; }
-    .sbs-burger { display: flex; }
-    .sbs-nav.open {
-      display: flex;
-      flex-direction: column;
-      position: absolute;
-      top: 70px;
-      left: 0;
-      right: 0;
-      background: #003856;
-      padding: 20px;
-      gap: 0;
-    }
-    .sbs-nav-dropdown-menu {
-      position: static;
-      box-shadow: none;
-      background: rgba(255,255,255,0.05);
-      margin-top: 8px;
-    }
-    .sbs-dropdown-item {
-      color: rgba(255,255,255,0.9);
-    }
-    .sbs-dropdown-item:hover {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-    }
-    .sbs-dropdown-section {
-      color: rgba(255,255,255,0.5);
-    }
-  }
-</style>
+  <!-- HERO -->
+  <div class="sp-hero">
+    <h1>Wie können wir helfen?</h1>
+    <p class="sub">Persönlicher Support aus Weinheim. Kein Callcenter, sondern echte Experten, die Ihr Geschäft verstehen.</p>
+  </div>
 
-<header class="sbs-header">
-  <div class="sbs-header-inner">
-    <a href="/sbshomepage/" class="sbs-logo-wrap">
-      <div class="sbs-logo-icon">🏢</div>
-      <div class="sbs-logo-text">
-        <strong>SBS Deutschland</strong>
-        <span>KI-Lösungen · Weinheim</span>
+  <!-- SYSTEM STATUS -->
+  <div class="sp-status">
+    <div class="dot"></div>
+    <div>
+      <div class="status-text">Alle Systeme operativ</div>
+      <div class="status-detail">KI-Rechnungsverarbeitung · KI-Vertragsanalyse · HydraulikDoc AI · API</div>
+    </div>
+  </div>
+
+  <!-- KONTAKT -->
+  <h2>Kontakt</h2>
+
+  <div class="sp-contact">
+    <div class="sp-cc">
+      <span class="icon">✉️</span>
+      <div class="title">E-Mail</div>
+      <div class="detail"><a href="mailto:support@sbsdeutschland.com">support@sbsdeutschland.com</a></div>
+      <span class="hours">Antwort innerhalb 24h (Free) · 4h (Pro) · 1h (Enterprise)</span>
+    </div>
+    <div class="sp-cc">
+      <span class="icon">📞</span>
+      <div class="title">Telefon</div>
+      <div class="detail"><a href="tel:+4962018460100">+49 6201 846 0100</a></div>
+      <span class="hours">Mo–Fr 9:00–18:00 Uhr (Enterprise)</span>
+    </div>
+    <div class="sp-cc">
+      <span class="icon">📅</span>
+      <div class="title">Video-Call</div>
+      <div class="detail"><a href="https://calendly.com/ki-sbsdeutschland/sbs-nexus-30-minuten-discovery-call" target="_blank" rel="noopener">Termin buchen</a></div>
+      <span class="hours">30 Min. kostenlos · Calendly</span>
+    </div>
+  </div>
+
+  <!-- SUPPORT TIERS -->
+  <h2>Support-Level</h2>
+  <p class="section-sub">Je nach Plan erhalten Sie unterschiedliche Support-Leistungen:</p>
+
+  <div class="sp-tiers">
+    <div class="sp-tier">
+      <div class="tier-name">Standard Support</div>
+      <span class="tier-plan">Free Plan</span>
+      <ul class="tier-list">
+        <li>E-Mail-Support</li>
+        <li>Antwort innerhalb 24h</li>
+        <li>Wissensdatenbank-Zugang</li>
+        <li>Community-Forum</li>
+      </ul>
+    </div>
+    <div class="sp-tier">
+      <div class="tier-name">Priority Support</div>
+      <span class="tier-plan">Professional Plan</span>
+      <ul class="tier-list">
+        <li>Priority E-Mail (4h Antwort)</li>
+        <li>Guided Setup &amp; Onboarding</li>
+        <li>Screen-Sharing bei Problemen</li>
+        <li>Monatliche Check-in Calls</li>
+        <li>DATEV-Import Unterstützung</li>
+      </ul>
+    </div>
+    <div class="sp-tier">
+      <div class="tier-name">Enterprise Support</div>
+      <span class="tier-plan">Enterprise Plan</span>
+      <ul class="tier-list">
+        <li>Dedicated Success Manager</li>
+        <li>Telefon-Support (Mo–Fr 9–18)</li>
+        <li>1h Reaktionszeit</li>
+        <li>10h Onboarding &amp; Consulting</li>
+        <li>Quarterly Business Reviews</li>
+        <li>Vor-Ort Workshops (Rhein-Neckar)</li>
+        <li>SLA mit 99,9 % Uptime</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ONBOARDING -->
+  <h2>Onboarding in 4 Schritten</h2>
+  <p class="section-sub">Vom ersten Login bis zum produktiven Einsatz — wir begleiten Sie:</p>
+
+  <div class="sp-steps">
+    <div class="sp-step">
+      <div class="step-num">1</div>
+      <div class="step-title">Account &amp; Setup</div>
+      <div class="step-desc">Registrierung, Team einladen, Rollen konfigurieren</div>
+    </div>
+    <div class="sp-step">
+      <div class="step-num">2</div>
+      <div class="step-title">Konfiguration</div>
+      <div class="step-desc">DATEV-Kontenplan, Lieferanten, Buchungsregeln</div>
+    </div>
+    <div class="sp-step">
+      <div class="step-num">3</div>
+      <div class="step-title">Test &amp; Training</div>
+      <div class="step-desc">Erste Rechnungen verarbeiten, KI-Vorschläge prüfen</div>
+    </div>
+    <div class="sp-step">
+      <div class="step-num">4</div>
+      <div class="step-title">Go-Live</div>
+      <div class="step-desc">Produktivbetrieb, DATEV-Export, laufende Optimierung</div>
+    </div>
+  </div>
+
+  <!-- QUICK LINKS -->
+  <h2>Schnellzugriff</h2>
+
+  <div class="sp-links">
+    <a href="/static/landing/security.html" class="sp-link">
+      <span class="link-icon">🔒</span>
+      <div>
+        <div class="link-text">Trust Center / Sicherheit</div>
+        <div class="link-desc">DSGVO, TOM, Architektur, Compliance</div>
       </div>
     </a>
-    
-    <button class="sbs-burger" id="sbsBurger" aria-label="Menü öffnen">
-      <span></span><span></span><span></span>
-    </button>
-    
-    <nav class="sbs-nav" id="sbsNav">
-      <!-- Produkte Dropdown -->
-      <div class="sbs-nav-dropdown">
-        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
-          Produkte
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="sbs-nav-dropdown-menu">
-          <div class="sbs-dropdown-section">KI-Plattformen</div>
-          <a href="/static/landing/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
-          <a href="/loesungen/vertragsanalyse/" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
-          <div class="sbs-dropdown-divider"></div>
-          <div class="sbs-dropdown-section">Rechnungs-Features</div>
-          <a href="https://app.sbsdeutschland.com/copilot" class="sbs-dropdown-item"><span class="emoji">🤖</span> Finance Copilot</a>
-          <a href="https://app.sbsdeutschland.com/accounting" class="sbs-dropdown-item"><span class="emoji">📊</span> Auto-Kontierung</a>
-          <a href="https://app.sbsdeutschland.com/budget" class="sbs-dropdown-item"><span class="emoji">💰</span> Budget-Dashboard</a>
-          <a href="https://app.sbsdeutschland.com/zahlungen" class="sbs-dropdown-item"><span class="emoji">💳</span> Zahlungsmanagement</a>
-          <div class="sbs-dropdown-divider"></div>
-          <div class="sbs-dropdown-section">Vertrags-Features</div>
-          <a href="https://contract.sbsdeutschland.com/upload" class="sbs-dropdown-item"><span class="emoji">📄</span> Vertragsanalyse</a>
-          <a href="https://contract.sbsdeutschland.com/compare" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Vertragsvergleich</a>
-          <a href="https://contract.sbsdeutschland.com/library" class="sbs-dropdown-item"><span class="emoji">📚</span> Klausel-Bibliothek</a>
-        </div>
+    <a href="/static/landing/integrationen.html" class="sp-link">
+      <span class="link-icon">🔗</span>
+      <div>
+        <div class="link-text">Integrationen</div>
+        <div class="link-desc">DATEV, SAP, n8n, API-Dokumentation</div>
       </div>
-      
-      <!-- Lösungen Dropdown -->
-      <div class="sbs-nav-dropdown">
-        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
-          Lösungen
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="sbs-nav-dropdown-menu">
-          <div class="sbs-dropdown-section">KI-Rechnungen</div>
-          <a href="/static/landing/loesungen-steuerberater.html" class="sbs-dropdown-item"><span class="emoji">📋</span> Für Steuerberater</a>
-          <a href="/static/landing/loesungen-finanzleitung.html" class="sbs-dropdown-item"><span class="emoji">💼</span> Für CFOs & Finanzleitung</a>
-          <a href="/static/landing/loesungen-handel-filialnetz.html" class="sbs-dropdown-item"><span class="emoji">🏪</span> Für Handel & Filialnetz</a>
-          <div class="sbs-dropdown-divider"></div>
-          <div class="sbs-dropdown-section">KI-Verträge</div>
-          <a href="/loesungen/vertragsanalyse/kanzleien.html" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Für Kanzleien & Notare</a>
-          <a href="/loesungen/vertragsanalyse/hr.html" class="sbs-dropdown-item"><span class="emoji">👔</span> Für HR-Abteilungen</a>
-          <a href="/loesungen/vertragsanalyse/einkauf.html" class="sbs-dropdown-item"><span class="emoji">🛒</span> Für Einkauf & Beschaffung</a>
-          <div class="sbs-dropdown-divider"></div>
-          <div class="sbs-dropdown-section">Consulting</div>
-          <a href="/sbshomepage/sap-consulting.html" class="sbs-dropdown-item"><span class="emoji">📊</span> SAP Consulting</a>
-          <a href="/sbshomepage/it-consulting.html" class="sbs-dropdown-item"><span class="emoji">💻</span> IT Consulting</a>
-          <a href="/sbshomepage/quality-risk-management.html" class="sbs-dropdown-item"><span class="emoji">🎯</span> Quality & Risk</a>
-        </div>
+    </a>
+    <a href="/static/landing/preise.html" class="sp-link">
+      <span class="link-icon">💰</span>
+      <div>
+        <div class="link-text">Preise &amp; Pakete</div>
+        <div class="link-desc">Free, Professional, Enterprise</div>
       </div>
-      
-      <!-- Preise Dropdown -->
-      <div class="sbs-nav-dropdown">
-        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
-          💰 Preise
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="sbs-nav-dropdown-menu">
-          <a href="/static/preise/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
-          <a href="/loesungen/vertragsanalyse/preise.html" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
-          <div class="sbs-dropdown-divider"></div>
-          <a href="/static/preise/#bundle" class="sbs-dropdown-item" style="color: #8b5cf6; font-weight: 600;"><span class="emoji">🎁</span> Bundle-Angebot (20% sparen)</a>
-        </div>
+    </a>
+    <a href="/static/landing/datenschutz.html" class="sp-link">
+      <span class="link-icon">📋</span>
+      <div>
+        <div class="link-text">Datenschutzerklärung</div>
+        <div class="link-desc">DSGVO, BDSG, EU AI Act</div>
       </div>
-      
-      <!-- Ressourcen Dropdown -->
-      <div class="sbs-nav-dropdown">
-        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
-          Ressourcen
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="sbs-nav-dropdown-menu">
-          <a href="/static/landing/ressourcen.html" class="sbs-dropdown-item"><span class="emoji">📚</span> Dokumentation</a>
-          <a href="/static/landing/integrationen.html" class="sbs-dropdown-item"><span class="emoji">🔗</span> Integrationen</a>
-          <a href="/static/landing/security.html" class="sbs-dropdown-item"><span class="emoji">🔒</span> Sicherheit</a>
-          <div class="sbs-dropdown-divider"></div>
-          <a href="/static/landing/kunden.html" class="sbs-dropdown-item"><span class="emoji">⭐</span> Kunden & Referenzen</a>
-          <a href="/static/landing/support.html" class="sbs-dropdown-item"><span class="emoji">💬</span> Support</a>
-          <div class="sbs-dropdown-divider"></div>
-          <a href="https://app.sbsdeutschland.com/e-rechnung-2025" class="sbs-dropdown-item" style="color: #dc2626; font-weight: 600;"><span class="emoji">⚡</span> E-Rechnung 2025</a>
-          <a href="/sbshomepage/kontakt.html" class="sbs-dropdown-item"><span class="emoji">✉️</span> Kontakt</a>
-        </div>
-      </div>
-      
-      <!-- Unternehmen -->
-      <a href="/sbshomepage/unternehmen.html" class="sbs-nav-item">🏢 Über uns</a>
-    </nav>
-    
-    <div class="sbs-header-actions">
-      <a href="https://app.sbsdeutschland.com/login" class="sbs-btn-login">Login</a>
-      <a href="https://app.sbsdeutschland.com/demo" class="sbs-btn-cta">Kostenlos testen</a>
-    </div>
-  </div>
-</header>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Burger Menu
-  var burger = document.getElementById('sbsBurger');
-  var nav = document.getElementById('sbsNav');
-  if (burger && nav) {
-    burger.addEventListener('click', function() {
-      nav.classList.toggle('open');
-    });
-  }
-  
-  // Close dropdowns on outside click
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('.sbs-nav-dropdown')) {
-      document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d) {
-        d.classList.remove('open');
-      });
-    }
-  });
-});
-</script>
-
-
-
-
-<section class="hero">
-  <div class="hero-content">
-    <div class="hero-badge">SUPPORT · HILFE</div>
-    <h1>Support, der Sie ernst nimmt.</h1>
-    <p class="hero-subtitle">
-      Kurze Wege, direkte Ansprechpartner und klare Antworten – für Fachbereich, IT und Kanzlei.
-    </p>
-    <a href="/sbshomepage/kontakt.html" class="hero-cta">
-      Support-Anfrage stellen →
     </a>
   </div>
-</section>
 
-<section class="section">
-  <div class="container">
-    <h2>Kontaktwege</h2>
-    <p>Sie erreichen uns über die in der Kontaktseite angegebenen Kanäle – typischerweise per E-Mail und Telefon.</p>
-    <p><a href="/sbshomepage/kontakt.html">Zur Kontaktseite →</a></p>
-  </div>
-</section>
+  <!-- FAQ -->
+  <h2>Häufige Fragen</h2>
 
-<section class="section">
-  <div class="container">
-    <h2>Häufige Themen</h2>
-    <ul class="bullet-list">
-      <li>Onboarding neuer Nutzer und erste Workflows</li>
-      <li>Einrichtung von E-Mail-Postfächern und Integrationen</li>
-      <li>Fragen zu Exportformaten und Abstimmung mit Kanzleien</li>
-    </ul>
-    <p>
-      Viele dieser Themen lassen sich in einem kurzen, gemeinsamen Call klären – gerne mit Fachbereich
-      und IT an einem Tisch.
-    </p>
-  </div>
-</section>
-
-<footer class="footer">
-  <div class="footer-grid">
-    <div>
-      <div class="footer-brand">
-        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
-        <div class="footer-brand-text">
-          <strong>SBS Deutschland</strong>
-          <span>Smart Business Service</span>
-        </div>
-      </div>
-      <p class="footer-tagline">
-        Enterprise KI-Lösungen für den deutschen Mittelstand. Entwickelt und betrieben in Deutschland.
-      </p>
-      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
-    </div>
-
-    <div>
-      <h4>Produkt</h4>
-      <ul>
-        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
-        <li><a href="https://app.sbsdeutschland.com/demo/copilot">Finance Copilot</a></li>
-        <li><a href="/preise">Preise & Pakete</a></li>
-        <li><a href="/static/landing/integrationen.html">Integrationen</a></li>
-        <li><a href="/static/landing/security.html">Sicherheit</a></li>
-      </ul>
-    </div>
-
-    <div>
-      <h4>Unternehmen</h4>
-      <ul>
-        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
-        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
-        <li><a href="/static/landing/support.html">Support</a></li>
-        <li><a href="/static/landing/kunden.html">Kunden</a></li>
-      </ul>
-    </div>
-
-    <div>
-      <h4>Rechtliches</h4>
-      <ul>
-        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
-        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
-        <li><a href="/sbshomepage/agb.html">AGB</a></li>
-      </ul>
-    </div>
+  <div class="sp-faq-item open">
+    <div class="sp-faq-q" onclick="toggleFaq(this)">Wie starte ich mit SBS?<span class="arrow">▼</span></div>
+    <div class="sp-faq-a">Registrieren Sie sich kostenlos unter <a href="https://app.sbsdeutschland.com/register">app.sbsdeutschland.com/register</a>. Der Free-Plan beinhaltet 5 Rechnungen/Monat. Laden Sie Ihre erste Rechnung hoch und die KI verarbeitet sie in ca. 3 Sekunden. Keine Kreditkarte erforderlich.</div>
   </div>
 
-  <div class="footer-bottom">
-    <p>© 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
-    <p>Made with ❤️ in Weinheim</p>
+  <div class="sp-faq-item">
+    <div class="sp-faq-q" onclick="toggleFaq(this)">Welche Rechnungsformate werden unterstützt?<span class="arrow">▼</span></div>
+    <div class="sp-faq-a">PDF, Scans (JPG/PNG), XRechnung (XML), ZUGFeRD (PDF/A-3 mit XML) und fotografierte Belege. Die E-Rechnungspflicht 2025 ist vollständig abgedeckt.</div>
   </div>
-</footer>
 
-<script src="/static/js/main.js"></script>
+  <div class="sp-faq-item">
+    <div class="sp-faq-q" onclick="toggleFaq(this)">Wie funktioniert der DATEV-Export?<span class="arrow">▼</span></div>
+    <div class="sp-faq-a">Nach der KI-Verarbeitung können Sie Buchungssätze im DATEV-Format (CSV oder XML) exportieren. Unsere ML-Buchungsvorschläge lernen aus Ihren Kontenplänen (SKR03/SKR04) und werden mit jeder verarbeiteten Rechnung genauer. Der Export ist direkt kompatibel mit DATEV Unternehmen Online.</div>
+  </div>
+
+  <div class="sp-faq-item">
+    <div class="sp-faq-q" onclick="toggleFaq(this)">Kann ich SBS mit meinem ERP-System verbinden?<span class="arrow">▼</span></div>
+    <div class="sp-faq-a">Ja. DATEV ist nativ integriert. SAP-Anbindung ist im Enterprise-Plan verfügbar. Über unsere REST API und n8n-Workflows können Sie SBS mit praktisch jedem System verbinden. Siehe unsere <a href="/static/landing/integrationen.html">Integrationsseite</a> für Details.</div>
+  </div>
+
+  <div class="sp-faq-item">
+    <div class="sp-faq-q" onclick="toggleFaq(this)">Wo werden meine Daten gespeichert?<span class="arrow">▼</span></div>
+    <div class="sp-faq-a">100 % in deutschen Rechenzentren (Frankfurt am Main). Keine Datenübertragung in die USA oder Drittländer. DSGVO-konform by Design. KI-Verarbeitung mit Zero Data Retention. Details in unserem <a href="/static/landing/security.html">Trust Center</a>.</div>
+  </div>
+
+  <div class="sp-faq-item">
+    <div class="sp-faq-q" onclick="toggleFaq(this)">Wie kann ich meinen Plan upgraden?<span class="arrow">▼</span></div>
+    <div class="sp-faq-a">Loggen Sie sich ein und gehen Sie zu Einstellungen → Plan. Das Upgrade wird sofort aktiv. Bei Downgrade bleibt Ihr Zugang bis zum Ende der bezahlten Periode auf dem höheren Plan. Bei Fragen: <a href="mailto:support@sbsdeutschland.com">support@sbsdeutschland.com</a>.</div>
+  </div>
+
+  <div class="sp-faq-item">
+    <div class="sp-faq-q" onclick="toggleFaq(this)">Bietet ihr Schulungen oder Workshops an?<span class="arrow">▼</span></div>
+    <div class="sp-faq-a">Ja. Professional-Kunden erhalten ein Guided Setup. Enterprise-Kunden bekommen 10 Stunden Onboarding &amp; Consulting sowie optionale Vor-Ort-Workshops in der Region Rhein-Neckar. Für individuelle Schulungen kontaktieren Sie uns direkt.</div>
+  </div>
+
+  <!-- CTA -->
+  <div class="sp-cta">
+    <h2>Noch Fragen? Wir sind für Sie da.</h2>
+    <p>Schreiben Sie uns oder buchen Sie direkt einen kostenlosen 30-Minuten Call mit unserem Team.</p>
+    <a href="https://calendly.com/ki-sbsdeutschland/sbs-nexus-30-minuten-discovery-call" target="_blank" rel="noopener">Gespräch vereinbaren →</a>
+  </div>
+
+</div>
+<div id="footer-slot"></div>
 <script>
-async function updateAccountStatus() {
-  try {
-    const r = await fetch('/api/user');
-    const u = await r.json();
-    if (u.logged_in) {
-      document.getElementById('accountName').textContent = u.name;
-    } else {
-      document.getElementById('accountName').textContent = 'Account';
-    }
-  } catch(e) {}
-}
-document.addEventListener('DOMContentLoaded', updateAccountStatus);
+function toggleFaq(el){var i=el.parentElement,o=i.classList.contains('open');document.querySelectorAll('.sp-faq-item').forEach(function(x){x.classList.remove('open')});if(!o)i.classList.add('open')}
+(function(){function l(id,p){fetch(p).then(function(r){return r.text()}).then(function(h){document.getElementById(id).innerHTML=h;document.getElementById(id).querySelectorAll("script").forEach(function(s){var n=document.createElement("script");n.textContent=s.textContent;document.body.appendChild(n)})})}l("header-slot","/static/includes/header-2026.html");l("footer-slot","/static/includes/footer-2026.html")})()
 </script>
-
-<script>
-  (function() {
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-      const saved = localStorage.getItem('theme') || 'light';
-      document.documentElement.setAttribute('data-theme', saved);
-      themeToggle.addEventListener('click', function() {
-        const current = document.documentElement.getAttribute('data-theme') || 'light';
-        const next = current === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-      });
-    }
-
-    const el = document.getElementById('accountName');
-    if (el) {
-      fetch('https://app.sbsdeutschland.com/api/user', { credentials: 'include' })
-        .then(function(r) { return r.ok ? r.json() : null; })
-        .then(function(u) {
-          if (!u) return;
-          if (u.logged_in && u.name) {
-            el.textContent = u.name;
-          } else {
-            el.textContent = 'App Login';
-          }
-        })
-        .catch(function() {});
-    }
-  })();
-</script>
-
-<script>
-// Auth Status Check
-async function checkAuthStatus() {
-  const guestEl = document.getElementById('authGuest');
-  const userEl = document.getElementById('authUser');
-  const nameEl = document.getElementById('accountName');
-  const emailEl = document.getElementById('accountEmail');
-  
-  try {
-    const res = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
-    const user = await res.json();
-    
-    if (user && user.logged_in) {
-      // Angemeldet
-      if (guestEl) guestEl.style.display = 'none';
-      if (userEl) userEl.style.display = 'block';
-      if (nameEl) nameEl.textContent = user.name || 'Account';
-      if (emailEl) emailEl.textContent = user.email || '';
-    } else {
-      // Nicht angemeldet
-      if (guestEl) guestEl.style.display = 'flex';
-      if (userEl) userEl.style.display = 'none';
-    }
-  } catch(e) {
-    // Fehler = nicht angemeldet
-    if (guestEl) guestEl.style.display = 'flex';
-    if (userEl) userEl.style.display = 'none';
-  }
-}
-document.addEventListener('DOMContentLoaded', checkAuthStatus);
-</script>
-<link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
-<script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
 </body>
 </html>
