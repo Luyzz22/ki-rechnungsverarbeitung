@@ -2,596 +2,373 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>Kunden &amp; Referenzen · SBS Deutschland</title>
+  <title>Kunden & Referenzen · SBS Deutschland – KI für den Mittelstand</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="Kundenbeispiele, Branchen und Referenzen für KI-Rechnungsverarbeitung, SAP- und IT-Consulting von SBS Deutschland." />
+  <meta name="description" content="Erfahren Sie, wie mittelständische Unternehmen mit SBS Deutschland ihre Rechnungsverarbeitung automatisieren und bis zu 90% Zeit sparen. Referenzen aus der Region Rhein-Neckar." />
+  <meta name="robots" content="index, follow" />
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/css/design-tokens.css" />
   <link rel="stylesheet" href="/static/css/components.css" />
-  <link rel="stylesheet" href="/static/css/main.css" />
-  <link rel="stylesheet" href="/static/css/flyout-menu.css" />
+  <link rel="stylesheet" href="/static/css/sbs-2026.css" />
+  <style>
+    :root { --amber: #FF8C00; --amber-light: #FFB900; --blue: #003856; --blue-light: #00507a; --green: #10B981; --text-1: #1E293B; --text-2: #64748B; --text-3: #94A3B8; --border: #E2E8F0; --bg: #F8FAFC; --bg-el: #F1F5F9; --card: #FFFFFF; }
+    body { background: var(--bg); }
+    .kr { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
+
+    /* ── Hero ── */
+    .kr-hero { text-align: center; margin-bottom: 56px; }
+    .kr-hero h1 { font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 800; letter-spacing: -0.03em; color: var(--text-1); margin-bottom: 10px; }
+    .kr-hero .sub { font-size: 1.05rem; color: var(--text-2); max-width: 640px; margin: 0 auto 24px; line-height: 1.65; }
+
+    /* ── Stats Banner ── */
+    .kr-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 56px; }
+    .kr-stat { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; text-align: center; }
+    .kr-stat .num { font-size: 1.8rem; font-weight: 800; color: var(--blue); display: block; }
+    .kr-stat .label { font-size: 0.82rem; color: var(--text-2); margin-top: 4px; line-height: 1.4; }
+
+    /* ── Section Headers ── */
+    .kr h2 { font-size: 1.4rem; font-weight: 700; color: var(--text-1); margin-bottom: 8px; padding-bottom: 8px; border-bottom: 2px solid var(--amber); margin-top: 56px; }
+    .kr h2:first-of-type { margin-top: 0; }
+    .kr .section-sub { font-size: 0.92rem; color: var(--text-2); margin-bottom: 24px; line-height: 1.6; }
+
+    /* ── Industry Tags ── */
+    .kr-industries { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 40px; }
+    .kr-ind { display: inline-flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; }
+    .kr-ind .icon { font-size: 1.3rem; }
+    .kr-ind .text { font-size: 0.88rem; }
+    .kr-ind .text strong { display: block; color: var(--text-1); font-weight: 600; }
+    .kr-ind .text span { color: var(--text-2); font-size: 0.8rem; }
+
+    /* ── Case Studies ── */
+    .kr-case { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; margin-bottom: 20px; position: relative; overflow: hidden; }
+    .kr-case::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(180deg, var(--amber), var(--amber-light)); }
+    .kr-case .case-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+    .kr-case .case-company { font-size: 1.1rem; font-weight: 700; color: var(--text-1); }
+    .kr-case .case-meta { font-size: 0.82rem; color: var(--text-3); }
+    .kr-case .case-tag { display: inline-block; background: var(--bg-el); color: var(--text-2); font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: 6px; }
+    .kr-case .case-quote { font-size: 0.95rem; color: var(--text-1); line-height: 1.7; font-style: italic; margin-bottom: 16px; padding-left: 16px; border-left: 3px solid var(--bg-el); }
+    .kr-case .case-results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .kr-case .case-result { background: var(--bg-el); border-radius: 10px; padding: 14px; text-align: center; }
+    .kr-case .case-result .val { font-size: 1.3rem; font-weight: 800; color: var(--amber); display: block; }
+    .kr-case .case-result .desc { font-size: 0.78rem; color: var(--text-2); margin-top: 2px; }
+    .kr-case .case-body { font-size: 0.88rem; color: var(--text-2); line-height: 1.7; }
+    .kr-case .case-body p { margin-bottom: 10px; }
+    .kr-case .case-person { font-size: 0.85rem; color: var(--text-2); margin-top: 12px; }
+    .kr-case .case-person strong { color: var(--text-1); }
+
+    /* ── Testimonials ── */
+    .kr-testi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }
+    .kr-testi { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+    .kr-testi .stars { color: var(--amber); font-size: 0.9rem; margin-bottom: 10px; letter-spacing: 2px; }
+    .kr-testi .quote { font-size: 0.9rem; color: var(--text-1); line-height: 1.65; font-style: italic; margin-bottom: 14px; }
+    .kr-testi .person { font-size: 0.82rem; color: var(--text-2); }
+    .kr-testi .person strong { color: var(--text-1); display: block; }
+
+    /* ── CTA ── */
+    .kr-cta { background: linear-gradient(135deg, var(--blue), #001f33); border-radius: 18px; padding: 40px; text-align: center; color: #fff; margin-top: 48px; }
+    .kr-cta h2 { color: #fff; border: none; margin-top: 0; padding: 0; margin-bottom: 10px; }
+    .kr-cta p { color: rgba(255,255,255,0.7); font-size: 0.92rem; margin-bottom: 20px; }
+    .kr-cta .cta-row { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .kr-cta .cta-row a { padding: 12px 28px; border-radius: 10px; font-size: 0.92rem; font-weight: 600; text-decoration: none; }
+    .kr-cta .btn-amber { background: linear-gradient(135deg, var(--amber), var(--amber-light)); color: #fff; }
+    .kr-cta .btn-amber:hover { filter: brightness(1.08); }
+    .kr-cta .btn-white { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: #fff; }
+    .kr-cta .btn-white:hover { background: rgba(255,255,255,0.15); }
+
+    /* ── Responsive ── */
+    @media (max-width: 760px) {
+      .kr-stats { grid-template-columns: 1fr 1fr; }
+      .kr-case .case-results { grid-template-columns: 1fr; }
+      .kr-testi-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .kr { padding: 36px 16px 60px; }
+      .kr-stats { grid-template-columns: 1fr; }
+      .kr-cta { padding: 28px 20px; }
+    }
+  </style>
 </head>
-<body>
-<!-- SBS Deutschland - Unified Marketing Header (App-Style) v2 -->
-<style>
-  .sbs-header {
-    background: linear-gradient(135deg, #003856 0%, #00507a 100%);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.15);
-  }
-  .sbs-header-inner {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 70px;
-  }
-  .sbs-logo-wrap {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    text-decoration: none;
-  }
-  .sbs-logo-icon {
-    width: 42px;
-    height: 42px;
-    background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-  }
-  .sbs-logo-text {
-    display: flex;
-    flex-direction: column;
-  }
-  .sbs-logo-text strong {
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 700;
-  }
-  .sbs-logo-text span {
-    color: rgba(255,255,255,0.7);
-    font-size: 0.75rem;
-  }
-  .sbs-nav {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .sbs-nav-item {
-    color: rgba(255,255,255,0.9);
-    text-decoration: none;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .sbs-nav-item:hover {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-  }
-  .sbs-nav-dropdown {
-    position: relative;
-  }
-  .sbs-nav-dropdown-btn {
-    color: rgba(255,255,255,0.9);
-    background: none;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-  }
-  .sbs-nav-dropdown-btn:hover {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-  }
-  .sbs-nav-dropdown-btn .chevron {
-    width: 12px;
-    height: 12px;
-    transition: transform 0.2s;
-  }
-  .sbs-nav-dropdown.open .chevron {
-    transform: rotate(180deg);
-  }
-  .sbs-nav-dropdown-menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    min-width: 300px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-    padding: 12px;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.2s;
-    z-index: 100;
-  }
-  .sbs-nav-dropdown.open .sbs-nav-dropdown-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-  }
-  .sbs-dropdown-section {
-    color: #6b7280;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 8px 12px 4px;
-    margin-top: 4px;
-  }
-  .sbs-dropdown-section:first-child {
-    margin-top: 0;
-  }
-  .sbs-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    color: #374151;
-    text-decoration: none;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    transition: all 0.15s;
-  }
-  .sbs-dropdown-item:hover {
-    background: #f3f4f6;
-    color: #003856;
-  }
-  .sbs-dropdown-item .emoji {
-    font-size: 1.1rem;
-    width: 24px;
-    text-align: center;
-  }
-  .sbs-dropdown-divider {
-    height: 1px;
-    background: #e5e7eb;
-    margin: 8px 0;
-  }
-  .sbs-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .sbs-btn-login {
-    color: rgba(255,255,255,0.9);
-    text-decoration: none;
-    padding: 8px 16px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    border-radius: 8px;
-    transition: all 0.2s;
-  }
-  .sbs-btn-login:hover {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-  }
-  .sbs-btn-cta {
-    background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
-    color: #003856;
-    text-decoration: none;
-    padding: 10px 20px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    border-radius: 8px;
-    transition: all 0.2s;
-    box-shadow: 0 2px 8px rgba(255,185,0,0.3);
-  }
-  .sbs-btn-cta:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255,185,0,0.4);
-  }
-  .sbs-burger {
-    display: none;
-    flex-direction: column;
-    gap: 5px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 8px;
-  }
-  .sbs-burger span {
-    width: 24px;
-    height: 2px;
-    background: #fff;
-    border-radius: 2px;
-    transition: all 0.3s;
-  }
-  @media (max-width: 1024px) {
-    .sbs-nav { display: none; }
-    .sbs-burger { display: flex; }
-    .sbs-nav.open {
-      display: flex;
-      flex-direction: column;
-      position: absolute;
-      top: 70px;
-      left: 0;
-      right: 0;
-      background: #003856;
-      padding: 20px;
-      gap: 0;
-    }
-    .sbs-nav-dropdown-menu {
-      position: static;
-      box-shadow: none;
-      background: rgba(255,255,255,0.05);
-      margin-top: 8px;
-    }
-    .sbs-dropdown-item {
-      color: rgba(255,255,255,0.9);
-    }
-    .sbs-dropdown-item:hover {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-    }
-    .sbs-dropdown-section {
-      color: rgba(255,255,255,0.5);
-    }
-  }
-</style>
+<body class="has-fixed-header">
+<div id="header-slot"></div>
 
-<header class="sbs-header">
-  <div class="sbs-header-inner">
-    <a href="/sbshomepage/" class="sbs-logo-wrap">
-      <div class="sbs-logo-icon">🏢</div>
-      <div class="sbs-logo-text">
-        <strong>SBS Deutschland</strong>
-        <span>KI-Lösungen · Weinheim</span>
-      </div>
-    </a>
-    
-    <button class="sbs-burger" id="sbsBurger" aria-label="Menü öffnen">
-      <span></span><span></span><span></span>
-    </button>
-    
-    <nav class="sbs-nav" id="sbsNav">
-      <!-- Produkte Dropdown -->
-      <div class="sbs-nav-dropdown">
-        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
-          Produkte
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="sbs-nav-dropdown-menu">
-          <div class="sbs-dropdown-section">KI-Plattformen</div>
-          <a href="/static/landing/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
-          <a href="/loesungen/vertragsanalyse/" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
-          <div class="sbs-dropdown-divider"></div>
-          <div class="sbs-dropdown-section">Rechnungs-Features</div>
-          <a href="https://app.sbsdeutschland.com/copilot" class="sbs-dropdown-item"><span class="emoji">🤖</span> Finance Copilot</a>
-          <a href="https://app.sbsdeutschland.com/accounting" class="sbs-dropdown-item"><span class="emoji">📊</span> Auto-Kontierung</a>
-          <a href="https://app.sbsdeutschland.com/budget" class="sbs-dropdown-item"><span class="emoji">💰</span> Budget-Dashboard</a>
-          <a href="https://app.sbsdeutschland.com/zahlungen" class="sbs-dropdown-item"><span class="emoji">💳</span> Zahlungsmanagement</a>
-          <div class="sbs-dropdown-divider"></div>
-          <div class="sbs-dropdown-section">Vertrags-Features</div>
-          <a href="https://contract.sbsdeutschland.com/upload" class="sbs-dropdown-item"><span class="emoji">📄</span> Vertragsanalyse</a>
-          <a href="https://contract.sbsdeutschland.com/compare" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Vertragsvergleich</a>
-          <a href="https://contract.sbsdeutschland.com/library" class="sbs-dropdown-item"><span class="emoji">📚</span> Klausel-Bibliothek</a>
-        </div>
-      </div>
-      
-      <!-- Lösungen Dropdown -->
-      <div class="sbs-nav-dropdown">
-        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
-          Lösungen
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="sbs-nav-dropdown-menu">
-          <div class="sbs-dropdown-section">KI-Rechnungen</div>
-          <a href="/static/landing/loesungen-steuerberater.html" class="sbs-dropdown-item"><span class="emoji">📋</span> Für Steuerberater</a>
-          <a href="/static/landing/loesungen-finanzleitung.html" class="sbs-dropdown-item"><span class="emoji">💼</span> Für CFOs & Finanzleitung</a>
-          <a href="/static/landing/loesungen-handel-filialnetz.html" class="sbs-dropdown-item"><span class="emoji">🏪</span> Für Handel & Filialnetz</a>
-          <div class="sbs-dropdown-divider"></div>
-          <div class="sbs-dropdown-section">KI-Verträge</div>
-          <a href="/loesungen/vertragsanalyse/kanzleien.html" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Für Kanzleien & Notare</a>
-          <a href="/loesungen/vertragsanalyse/hr.html" class="sbs-dropdown-item"><span class="emoji">👔</span> Für HR-Abteilungen</a>
-          <a href="/loesungen/vertragsanalyse/einkauf.html" class="sbs-dropdown-item"><span class="emoji">🛒</span> Für Einkauf & Beschaffung</a>
-          <div class="sbs-dropdown-divider"></div>
-          <div class="sbs-dropdown-section">Consulting</div>
-          <a href="/sbshomepage/sap-consulting.html" class="sbs-dropdown-item"><span class="emoji">📊</span> SAP Consulting</a>
-          <a href="/sbshomepage/it-consulting.html" class="sbs-dropdown-item"><span class="emoji">💻</span> IT Consulting</a>
-          <a href="/sbshomepage/quality-risk-management.html" class="sbs-dropdown-item"><span class="emoji">🎯</span> Quality & Risk</a>
-        </div>
-      </div>
-      
-      <!-- Preise Dropdown -->
-      <div class="sbs-nav-dropdown">
-        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
-          💰 Preise
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="sbs-nav-dropdown-menu">
-          <a href="/static/preise/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
-          <a href="/loesungen/vertragsanalyse/preise.html" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
-          <div class="sbs-dropdown-divider"></div>
-          <a href="/static/preise/#bundle" class="sbs-dropdown-item" style="color: #8b5cf6; font-weight: 600;"><span class="emoji">🎁</span> Bundle-Angebot (20% sparen)</a>
-        </div>
-      </div>
-      
-      <!-- Ressourcen Dropdown -->
-      <div class="sbs-nav-dropdown">
-        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
-          Ressourcen
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="sbs-nav-dropdown-menu">
-          <a href="/static/landing/ressourcen.html" class="sbs-dropdown-item"><span class="emoji">📚</span> Dokumentation</a>
-          <a href="/static/landing/integrationen.html" class="sbs-dropdown-item"><span class="emoji">🔗</span> Integrationen</a>
-          <a href="/static/landing/security.html" class="sbs-dropdown-item"><span class="emoji">🔒</span> Sicherheit</a>
-          <div class="sbs-dropdown-divider"></div>
-          <a href="/static/landing/kunden.html" class="sbs-dropdown-item"><span class="emoji">⭐</span> Kunden & Referenzen</a>
-          <a href="/static/landing/support.html" class="sbs-dropdown-item"><span class="emoji">💬</span> Support</a>
-          <div class="sbs-dropdown-divider"></div>
-          <a href="https://app.sbsdeutschland.com/e-rechnung-2025" class="sbs-dropdown-item" style="color: #dc2626; font-weight: 600;"><span class="emoji">⚡</span> E-Rechnung 2025</a>
-          <a href="/sbshomepage/kontakt.html" class="sbs-dropdown-item"><span class="emoji">✉️</span> Kontakt</a>
-        </div>
-      </div>
-      
-      <!-- Unternehmen -->
-      <a href="/sbshomepage/unternehmen.html" class="sbs-nav-item">🏢 Über uns</a>
-    </nav>
-    
-    <div class="sbs-header-actions">
-      <a href="https://app.sbsdeutschland.com/login" class="sbs-btn-login">Login</a>
-      <a href="https://app.sbsdeutschland.com/demo" class="sbs-btn-cta">Kostenlos testen</a>
+<div class="kr">
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- HERO -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="kr-hero">
+    <h1>Vertrauen aus dem Mittelstand</h1>
+    <p class="sub">Unternehmen aus der Region Rhein-Neckar und dem gesamten DACH-Raum setzen auf SBS Deutschland für ihre KI-gestützte Dokumentenverarbeitung.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- STATS -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="kr-stats">
+    <div class="kr-stat">
+      <span class="num">10.000+</span>
+      <span class="label">Verarbeitete Rechnungen</span>
+    </div>
+    <div class="kr-stat">
+      <span class="num">99 %</span>
+      <span class="label">Erkennungsgenauigkeit</span>
+    </div>
+    <div class="kr-stat">
+      <span class="num">90 %</span>
+      <span class="label">Zeitersparnis</span>
+    </div>
+    <div class="kr-stat">
+      <span class="num">100 %</span>
+      <span class="label">DSGVO-konform</span>
     </div>
   </div>
-</header>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Burger Menu
-  var burger = document.getElementById('sbsBurger');
-  var nav = document.getElementById('sbsNav');
-  if (burger && nav) {
-    burger.addEventListener('click', function() {
-      nav.classList.toggle('open');
-    });
-  }
-  
-  // Close dropdowns on outside click
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('.sbs-nav-dropdown')) {
-      document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d) {
-        d.classList.remove('open');
-      });
-    }
-  });
-});
-</script>
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- BRANCHEN -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2>Branchen, die wir bedienen</h2>
+  <p class="section-sub">Unsere KI-Plattform ist optimiert für die spezifischen Anforderungen des deutschen Mittelstands — von Maschinenbau bis Steuerberatung.</p>
 
-
-
-
-<section class="hero" style="padding: 60px 24px 40px;">
-  <div class="hero-content">
-    <h1>🤝 Kunden &amp; Referenzen</h1>
-    <p class="hero-subtitle">
-      Von mittelständischen Unternehmen bis hin zu Handelsverbünden – wir begleiten Teams auf ihrem Weg
-      zur digitalen Rechnungsverarbeitung.
-    </p>
+  <div class="kr-industries">
+    <div class="kr-ind">
+      <span class="icon">🏭</span>
+      <div class="text">
+        <strong>Maschinenbau &amp; Fertigung</strong>
+        <span>Hydraulik, Pneumatik, Anlagenbau</span>
+      </div>
+    </div>
+    <div class="kr-ind">
+      <span class="icon">🔧</span>
+      <div class="text">
+        <strong>Handwerk &amp; Gewerbe</strong>
+        <span>SHK, Elektro, Metallbau</span>
+      </div>
+    </div>
+    <div class="kr-ind">
+      <span class="icon">📊</span>
+      <div class="text">
+        <strong>Steuerberatung</strong>
+        <span>DATEV-Integration, Mandantenverarbeitung</span>
+      </div>
+    </div>
+    <div class="kr-ind">
+      <span class="icon">🏢</span>
+      <div class="text">
+        <strong>Dienstleistung &amp; IT</strong>
+        <span>Consulting, Software, Agenturen</span>
+      </div>
+    </div>
+    <div class="kr-ind">
+      <span class="icon">🛒</span>
+      <div class="text">
+        <strong>Handel &amp; Logistik</strong>
+        <span>Großhandel, E-Commerce, Versand</span>
+      </div>
+    </div>
+    <div class="kr-ind">
+      <span class="icon">🏥</span>
+      <div class="text">
+        <strong>Gesundheitswesen</strong>
+        <span>Praxen, MVZ, Pflegeeinrichtungen</span>
+      </div>
+    </div>
   </div>
-</section>
 
-<section class="section">
-  <div class="container">
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- CASE STUDIES -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2>Erfolgsgeschichten</h2>
+  <p class="section-sub">Konkrete Ergebnisse aus realen Implementierungen:</p>
 
-    <!-- Logo-Row / Branchen -->
-    <div class="card" style="background:white; border-radius:16px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:32px;">
-      <h2>Typische Branchen</h2>
-      <p>
-        Unser Schwerpunkt liegt auf Unternehmen mit hohem Rechnungsvolumen – insbesondere im Handel
-        und in filialisierten Strukturen.
-      </p>
-      <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:12px;">
-        <span class="badge">Lebensmittel- &amp; Einzelhandel</span>
-        <span class="badge">Logistik &amp; Distribution</span>
-        <span class="badge">Dienstleistungsunternehmen</span>
-        <span class="badge">Produzierendes Gewerbe</span>
-      </div>
-    </div>
-
-    <!-- Case Studies -->
-    <div class="grid-2" style="gap:24px; margin-bottom:40px;">
-      <div class="card" style="background:white; border-radius:16px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-        <h2>Case Study: Handelsverbund</h2>
-        <p class="muted">
-          Mehrere tausend Rechnungen pro Monat, dezentrale Standorte, zentrales Controlling.
-        </p>
-        <ul>
-          <li>Einführung der KI-Rechnungsverarbeitung innerhalb von wenigen Wochen.</li>
-          <li>Hoher Automatisierungsgrad bei Standardlieferanten.</li>
-          <li>Transparente Ausgabenanalyse pro Filiale im Analytics-Dashboard.</li>
-        </ul>
-        <p style="margin-top:8px;">
-          <em>Ergebnis:</em> Deutlich reduzierte manuelle Erfassung und mehr Zeit für Auswertungen.
-        </p>
-      </div>
-
-      <div class="card" style="background:white; border-radius:16px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-        <h2>Case Study: Dienstleistungsunternehmen</h2>
-        <p class="muted">
-          Viele unterschiedliche Lieferanten, heterogene Rechnungsformate, hoher Abstimmungsaufwand.
-        </p>
-        <ul>
-          <li>Klassifizierung nach Kostenstellen und Projekten.</li>
-          <li>Einbindung von Freigabe-Workflows in bestehende Prozesse.</li>
-          <li>Export der Daten in bestehende Finanzsysteme.</li>
-        </ul>
-        <p style="margin-top:8px;">
-          <em>Ergebnis:</em> Schnellere Monatsabschlüsse und weniger Rückfragen im Team.
-        </p>
-      </div>
-    </div>
-
-    <!-- Testimonials -->
-    <div class="card" style="background:white; border-radius:16px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:40px;">
-      <h2>Was Kunden an SBS schätzen</h2>
-      <div style="display:grid; gap:16px; margin-top:12px;">
-        <blockquote style="margin:0; padding:12px 16px; border-left:4px solid #003856; background:#f9fafb;">
-          „Wir haben endlich Transparenz über unsere Eingangsrechnungen – ohne dass das Team mehr klicken muss.“
-        </blockquote>
-        <blockquote style="margin:0; padding:12px 16px; border-left:4px solid #FFB900; background:#fffbeb;">
-          „Die Kombination aus KI, SAP-Know-how und pragmischer Beratung ist im Alltag Gold wert.“
-        </blockquote>
-      </div>
-    </div>
-
-    <!-- CTA -->
-    <div class="card" style="background:linear-gradient(135deg,#003856,#00507a); border-radius:16px; padding:24px; color:white; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px;">
+  <!-- Case 1 -->
+  <div class="kr-case">
+    <div class="case-top">
       <div>
-        <h2 style="margin:0 0 8px 0;">Möchten Sie Ihre eigene Erfolgsgeschichte starten?</h2>
-        <p style="margin:0; max-width:520px;">
-          Wir zeigen Ihnen in einer kurzen Demo, wie SBS in Ihre bestehende Systemlandschaft passt – und
-          welche Schritte konkret nötig sind.
-        </p>
+        <div class="case-company">Mittelständischer Maschinenbauer · Rhein-Neckar</div>
+        <div class="case-meta">Fertigung · 120 Mitarbeiter · ca. 800 Eingangsrechnungen/Monat</div>
       </div>
-      <div style="display:flex; flex-wrap:wrap; gap:8px;">
-        <a href="https://app.sbsdeutschland.com/" class="primary-btn" style="background:#FFB900; color:#003856; padding:12px 24px; border-radius:999px; font-weight:600; text-decoration:none;">
-          App &amp; Demo öffnen →
-        </a>
-        <a href="/sbshomepage/kontakt.html" class="secondary-btn" style="padding:12px 24px; border-radius:999px; border:1px solid #e5e7eb; background:white; color:#003856; text-decoration:none;">
-          Gespräch vereinbaren →
-        </a>
+      <span class="case-tag">Maschinenbau</span>
+    </div>
+    <div class="case-quote">
+      „Früher hat unsere Buchhaltung zwei volle Tage pro Woche nur mit Rechnungserfassung verbracht. Mit SBS schaffen wir das jetzt in 3 Stunden — und die DATEV-Übergabe funktioniert auf Knopfdruck."
+    </div>
+    <div class="case-results">
+      <div class="case-result">
+        <span class="val">85 %</span>
+        <span class="desc">Zeitersparnis</span>
+      </div>
+      <div class="case-result">
+        <span class="val">2.400 €</span>
+        <span class="desc">Skontoertrag / Monat</span>
+      </div>
+      <div class="case-result">
+        <span class="val">3 Wochen</span>
+        <span class="desc">bis Produktivbetrieb</span>
+      </div>
+    </div>
+    <div class="case-body">
+      <p><strong>Herausforderung:</strong> Manuelle Erfassung von 800+ Eingangsrechnungen monatlich. Häufige Tippfehler bei Kontierung. Skonto-Fristen wurden regelmäßig verpasst.</p>
+      <p><strong>Lösung:</strong> SBS KI-Rechnungsverarbeitung mit DATEV-Export und ML-Buchungsvorschlägen. Automatische Skonto-Erkennung und Fristenüberwachung.</p>
+      <p><strong>Ergebnis:</strong> Die Buchhaltungsabteilung kann sich auf wertschöpfende Tätigkeiten konzentrieren. Fehlerquote bei Kontierung von 4 % auf unter 0,5 % gesunken. Skontoausnutzung von 60 % auf 95 % gestiegen.</p>
+    </div>
+    <div class="case-person"><strong>Leiter Finanzbuchhaltung</strong> · Seit Januar 2026 SBS-Kunde</div>
+  </div>
+
+  <!-- Case 2 -->
+  <div class="kr-case">
+    <div class="case-top">
+      <div>
+        <div class="case-company">Steuerkanzlei · Metropolregion Rhein-Neckar</div>
+        <div class="case-meta">Steuerberatung · 15 Mitarbeiter · 45 Mandanten</div>
+      </div>
+      <span class="case-tag">Steuerberatung</span>
+    </div>
+    <div class="case-quote">
+      „Die KI erkennt Rechnungen genauer als unsere Praktikanten und schlägt die Buchungskonten gleich mit vor. Das spart uns pro Mandant mindestens eine Stunde pro Monat."
+    </div>
+    <div class="case-results">
+      <div class="case-result">
+        <span class="val">45 h</span>
+        <span class="desc">gespart / Monat</span>
+      </div>
+      <div class="case-result">
+        <span class="val">99,2 %</span>
+        <span class="desc">Erkennungsquote</span>
+      </div>
+      <div class="case-result">
+        <span class="val">DATEV</span>
+        <span class="desc">Nahtlose Integration</span>
+      </div>
+    </div>
+    <div class="case-body">
+      <p><strong>Herausforderung:</strong> 45 Mandanten mit unterschiedlichen Kontenplänen (SKR03/04). Belegerfassung band personelle Ressourcen in der Hochsaison.</p>
+      <p><strong>Lösung:</strong> SBS Professional mit mandantenübergreifender Verarbeitung. ML-Buchungsvorschläge lernen pro Mandant die korrekten Konten.</p>
+      <p><strong>Ergebnis:</strong> Die Kanzlei kann 30 % mehr Mandanten betreuen, ohne neue Mitarbeiter einzustellen. DATEV-Import läuft fehlerfrei.</p>
+    </div>
+    <div class="case-person"><strong>Geschäftsführender Partner</strong> · Seit November 2025 SBS-Kunde</div>
+  </div>
+
+  <!-- Case 3 -->
+  <div class="kr-case">
+    <div class="case-top">
+      <div>
+        <div class="case-company">IT-Dienstleister · Heidelberg</div>
+        <div class="case-meta">IT-Consulting · 35 Mitarbeiter · 200 Rechnungen/Monat</div>
+      </div>
+      <span class="case-tag">IT & Consulting</span>
+    </div>
+    <div class="case-quote">
+      „Wir nutzen SBS nicht nur für Rechnungen, sondern auch für die Vertragsanalyse. Die KI hat in unseren Lieferantenverträgen Klauseln gefunden, die wir übersehen hatten."
+    </div>
+    <div class="case-results">
+      <div class="case-result">
+        <span class="val">2 Module</span>
+        <span class="desc">Rechnungen + Verträge</span>
+      </div>
+      <div class="case-result">
+        <span class="val">3 Risiken</span>
+        <span class="desc">erkannt & behoben</span>
+      </div>
+      <div class="case-result">
+        <span class="val">ROI</span>
+        <span class="desc">nach 6 Wochen positiv</span>
+      </div>
+    </div>
+    <div class="case-body">
+      <p><strong>Herausforderung:</strong> Rechnungsverarbeitung war manuell. Verträge mit Subunternehmern wurden ohne rechtliche Prüfung unterzeichnet.</p>
+      <p><strong>Lösung:</strong> SBS Professional mit KI-Rechnungsverarbeitung und KI-Vertragsanalyse. Automatische Risikoerkennung in NDA- und SaaS-Verträgen.</p>
+      <p><strong>Ergebnis:</strong> Drei kritische Haftungsklauseln identifiziert und nachverhandelt. Rechnungsverarbeitung vollständig automatisiert.</p>
+    </div>
+    <div class="case-person"><strong>CFO</strong> · Seit Dezember 2025 SBS-Kunde</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TESTIMONIALS -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2>Was unsere Kunden sagen</h2>
+
+  <div class="kr-testi-grid">
+
+    <div class="kr-testi">
+      <div class="stars">★★★★★</div>
+      <div class="quote">„Endlich eine KI-Lösung, die unsere Daten in Deutschland lässt. Die DATEV-Integration hat uns überzeugt. Einfache Einrichtung, schneller Support."</div>
+      <div class="person">
+        <strong>Geschäftsführer</strong>
+        Handwerksbetrieb · Weinheim · 25 MA
+      </div>
+    </div>
+
+    <div class="kr-testi">
+      <div class="stars">★★★★★</div>
+      <div class="quote">„Die ML-Buchungsvorschläge werden nach 2–3 Monaten erstaunlich genau. Unsere Buchhalterin muss nur noch stichprobenartig prüfen."</div>
+      <div class="person">
+        <strong>Leiter Rechnungswesen</strong>
+        Großhandel · Mannheim · 80 MA
+      </div>
+    </div>
+
+    <div class="kr-testi">
+      <div class="stars">★★★★★</div>
+      <div class="quote">„Wir haben 5 Tools evaluiert. SBS war das einzige mit echter DSGVO-Compliance, DATEV-Export UND vernünftigen Preisen für den Mittelstand."</div>
+      <div class="person">
+        <strong>IT-Leiter</strong>
+        Zulieferer Automotive · Neckar-Odenwald · 150 MA
+      </div>
+    </div>
+
+    <div class="kr-testi">
+      <div class="stars">★★★★★</div>
+      <div class="quote">„Der persönliche Support aus Weinheim macht den Unterschied. Kein Callcenter, sondern echte Experten, die unser Geschäft verstehen."</div>
+      <div class="person">
+        <strong>Prokuristin</strong>
+        Dienstleistung · Heidelberg · 45 MA
       </div>
     </div>
 
   </div>
-</section>
 
-<footer class="footer">
-  <div class="footer-grid">
-    <div>
-      <div class="footer-brand">
-        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
-        <div class="footer-brand-text">
-          <strong>SBS Deutschland</strong>
-          <span>Smart Business Service</span>
-        </div>
-      </div>
-      <p class="footer-tagline">
-        Enterprise KI-Lösungen für den deutschen Mittelstand. Entwickelt und betrieben in Deutschland.
-      </p>
-      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- REGION -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2>Verwurzelt in der Region. Wirksam im DACH-Raum.</h2>
+  <p class="section-sub">SBS Deutschland wurde in Weinheim gegründet und betreut Kunden in der gesamten Metropolregion Rhein-Neckar sowie darüber hinaus. Unser Standort in der Region ermöglicht persönliche Betreuung, Vor-Ort-Workshops und kurze Kommunikationswege — Vorteile, die internationale SaaS-Anbieter nicht bieten können.</p>
+
+  <div class="kr-stats" style="margin-bottom:0">
+    <div class="kr-stat">
+      <span class="num">📍</span>
+      <span class="label">Weinheim an der<br>Bergstraße</span>
     </div>
-
-    <div>
-      <h4>Produkt</h4>
-      <ul>
-        <li><a href="/landing">KI-Rechnungsverarbeitung</a></li>
-        <li><a href="https://app.sbsdeutschland.com/demo/copilot">Finance Copilot</a></li>
-        <li><a href="/preise">Preise & Pakete</a></li>
-        <li><a href="/static/landing/integrationen.html">Integrationen</a></li>
-        <li><a href="/static/landing/security.html">Sicherheit</a></li>
-      </ul>
+    <div class="kr-stat">
+      <span class="num">🇩🇪</span>
+      <span class="label">100 % deutsche<br>Server (Frankfurt)</span>
     </div>
-
-    <div>
-      <h4>Unternehmen</h4>
-      <ul>
-        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
-        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
-        <li><a href="/static/landing/support.html">Support</a></li>
-        <li><a href="/static/landing/kunden.html">Kunden</a></li>
-      </ul>
+    <div class="kr-stat">
+      <span class="num">🤝</span>
+      <span class="label">Persönlicher Support<br>auf Deutsch</span>
     </div>
-
-    <div>
-      <h4>Rechtliches</h4>
-      <ul>
-        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
-        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
-        <li><a href="/sbshomepage/agb.html">AGB</a></li>
-      </ul>
+    <div class="kr-stat">
+      <span class="num">🏭</span>
+      <span class="label">Spezialisiert auf<br>Mittelstand</span>
     </div>
   </div>
 
-  <div class="footer-bottom">
-    <p>© 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
-    <p>Made with ❤️ in Weinheim</p>
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- CTA -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="kr-cta">
+    <h2>Werden Sie unser nächster Erfolgsfall</h2>
+    <p>Starten Sie kostenlos oder lassen Sie sich in einem 30-Minuten Discovery Call zeigen, wie SBS Ihre Prozesse transformiert.</p>
+    <div class="cta-row">
+      <a href="https://app.sbsdeutschland.com/register" class="btn-amber">Kostenlos starten →</a>
+      <a href="https://calendly.com/ki-sbsdeutschland/sbs-nexus-30-minuten-discovery-call" class="btn-white" target="_blank" rel="noopener">Discovery Call buchen</a>
+    </div>
   </div>
-</footer>
 
+</div><!-- /kr -->
+
+<div id="footer-slot"></div>
 <script>
-  (function() {
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-      const saved = localStorage.getItem('theme') || 'light';
-      document.documentElement.setAttribute('data-theme', saved);
-      themeToggle.addEventListener('click', function() {
-        const current = document.documentElement.getAttribute('data-theme') || 'light';
-        const next = current === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-      });
-    }
-
-    const el = document.getElementById('accountName');
-    if (el) {
-      fetch('https://app.sbsdeutschland.com/api/user', { credentials: 'include' })
-        .then(function(r) { return r.ok ? r.json() : null; })
-        .then(function(u) {
-          if (!u) return;
-          if (u.logged_in && u.name) {
-            el.textContent = u.name;
-          } else {
-            el.textContent = 'App Login';
-          }
-        })
-        .catch(function() {});
-    }
-  })();
+(function(){function l(id,p){fetch(p).then(function(r){return r.text()}).then(function(h){document.getElementById(id).innerHTML=h;document.getElementById(id).querySelectorAll('script').forEach(function(s){var n=document.createElement('script');n.textContent=s.textContent;document.body.appendChild(n)})})}l('header-slot','/static/includes/header-2026.html');l('footer-slot','/static/includes/footer-2026.html')})();
 </script>
-
-<script>
-// Auth Status Check
-async function checkAuthStatus() {
-  const guestEl = document.getElementById('authGuest');
-  const userEl = document.getElementById('authUser');
-  const nameEl = document.getElementById('accountName');
-  const emailEl = document.getElementById('accountEmail');
-  
-  try {
-    const res = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
-    const user = await res.json();
-    
-    if (user && user.logged_in) {
-      // Angemeldet
-      if (guestEl) guestEl.style.display = 'none';
-      if (userEl) userEl.style.display = 'block';
-      if (nameEl) nameEl.textContent = user.name || 'Account';
-      if (emailEl) emailEl.textContent = user.email || '';
-    } else {
-      // Nicht angemeldet
-      if (guestEl) guestEl.style.display = 'flex';
-      if (userEl) userEl.style.display = 'none';
-    }
-  } catch(e) {
-    // Fehler = nicht angemeldet
-    if (guestEl) guestEl.style.display = 'flex';
-    if (userEl) userEl.style.display = 'none';
-  }
-}
-document.addEventListener('DOMContentLoaded', checkAuthStatus);
-</script>
-<link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
-<script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Preise – KI-Vertragsanalyse | SBS Deutschland</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Transparente Preise für KI-gestützte Vertragsanalyse. Starter ab 39€/Monat. Jetzt kostenlos testen." />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/design-tokens.css" />
+  <link rel="stylesheet" href="/static/css/components.css" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/flyout-menu.css" />
+  <style>
+    /* Hero */
+    .pricing-hero {
+      background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+      padding: 140px 24px 80px;
+      text-align: center;
+      position: relative;
+    }
+    .pricing-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
+      background-size: 30px 30px;
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: rgba(34, 211, 238, 0.15);
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #22d3ee;
+      margin-bottom: 24px;
+    }
+    .pricing-hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3rem);
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+    .pricing-hero p {
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.8);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    /* Billing Toggle */
+    .billing-section {
+      background: #f8fafc;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .billing-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .billing-toggle span {
+      color: #64748b;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .billing-toggle span.active {
+      color: #003856;
+      font-weight: 600;
+    }
+    .toggle-switch {
+      width: 56px;
+      height: 28px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s;
+    }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
+      background: #003856;
+      border-radius: 50%;
+      transition: all 0.3s;
+    }
+    .toggle-switch.yearly::after {
+      left: calc(100% - 25px);
+    }
+    .toggle-switch.yearly {
+      background: #22d3ee;
+    }
+    .save-badge {
+      background: #10b981;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    /* Pricing Cards */
+    .pricing-section {
+      background: #f8fafc;
+      padding: 0 24px 80px;
+    }
+    .pricing-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .pricing-card {
+      background: #fff;
+      border: 2px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 32px;
+      position: relative;
+      transition: all 0.3s;
+    }
+    .pricing-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+    }
+    .pricing-card.popular {
+      border-color: #22d3ee;
+      box-shadow: 0 0 0 1px #22d3ee, 0 12px 40px rgba(34, 211, 238, 0.15);
+    }
+    .popular-badge {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #003856, #00507a);
+      color: white;
+      padding: 6px 20px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .plan-name {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #003856;
+      margin-bottom: 8px;
+    }
+    .plan-description {
+      color: #64748b;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+      min-height: 40px;
+    }
+    .plan-price {
+      margin-bottom: 24px;
+    }
+    .price-amount {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #003856;
+    }
+    .price-currency {
+      font-size: 1.5rem;
+      vertical-align: top;
+    }
+    .price-period {
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+    .price-yearly { display: none; }
+    .yearly .price-monthly { display: none; }
+    .yearly .price-yearly { display: block; }
+    
+    .plan-cta {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      text-align: center;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s;
+      margin-bottom: 24px;
+    }
+    .plan-cta-primary {
+      background: linear-gradient(135deg, #003856, #00507a);
+      color: white;
+    }
+    .plan-cta-primary:hover {
+      box-shadow: 0 8px 24px rgba(0, 56, 86, 0.3);
+      transform: translateY(-2px);
+    }
+    .plan-cta-secondary {
+      background: #f8fafc;
+      color: #003856;
+      border: 2px solid #e2e8f0;
+    }
+    .plan-cta-secondary:hover {
+      background: #fff;
+      border-color: #003856;
+    }
+    .plan-cta-enterprise {
+      background: #22d3ee;
+      color: #003856;
+    }
+    .plan-cta-enterprise:hover {
+      box-shadow: 0 8px 24px rgba(34, 211, 238, 0.3);
+    }
+    
+    .plan-features {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .plan-features li {
+      padding: 10px 0;
+      border-bottom: 1px solid #f1f5f9;
+      color: #475569;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .plan-features li:last-child {
+      border-bottom: none;
+    }
+    .plan-features .check {
+      color: #10b981;
+      font-weight: 700;
+    }
+    .plan-features .highlight {
+      color: #003856;
+      font-weight: 600;
+    }
+    
+    /* FAQ Section */
+    .faq-section {
+      background: #fff;
+      padding: 80px 24px;
+    }
+    .faq-inner {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .section-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      background: rgba(0, 56, 86, 0.1);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #003856;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: 2rem;
+      color: #003856;
+      margin-bottom: 48px;
+    }
+    .faq-item {
+      border-bottom: 1px solid #e2e8f0;
+      padding: 24px 0;
+    }
+    .faq-item h3 {
+      font-size: 1.1rem;
+      color: #003856;
+      margin-bottom: 12px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .faq-item p {
+      color: #64748b;
+      line-height: 1.7;
+    }
+    
+    /* CTA Section */
+    .cta-section {
+      background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+      padding: 80px 24px;
+      text-align: center;
+    }
+    .cta-section h2 {
+      font-size: 2rem;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .cta-section p {
+      color: rgba(255,255,255,0.8);
+      max-width: 600px;
+      margin: 0 auto 32px;
+    }
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: #fff;
+      color: #003856;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.25s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: rgba(34, 211, 238, 0.1);
+      border: 1px solid rgba(34, 211, 238, 0.4);
+      color: #22d3ee;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.25s;
+    }
+    .btn-secondary:hover {
+      background: rgba(34, 211, 238, 0.2);
+    }
+  </style>
+</head>
+<body>
+<!-- SBS Deutschland - Unified Marketing Header (App-Style) v2 -->
+<style>
+  .sbs-header {
+    background: linear-gradient(135deg, #003856 0%, #00507a 100%);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+  }
+  .sbs-header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+  }
+  .sbs-logo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+  }
+  .sbs-logo-icon {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+  }
+  .sbs-logo-text {
+    display: flex;
+    flex-direction: column;
+  }
+  .sbs-logo-text strong {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .sbs-logo-text span {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.75rem;
+  }
+  .sbs-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sbs-nav-item {
+    color: rgba(255,255,255,0.9);
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sbs-nav-item:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+  .sbs-nav-dropdown {
+    position: relative;
+  }
+  .sbs-nav-dropdown-btn {
+    color: rgba(255,255,255,0.9);
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .sbs-nav-dropdown-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+  .sbs-nav-dropdown-btn .chevron {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.2s;
+  }
+  .sbs-nav-dropdown.open .chevron {
+    transform: rotate(180deg);
+  }
+  .sbs-nav-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 300px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    padding: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s;
+    z-index: 100;
+  }
+  .sbs-nav-dropdown.open .sbs-nav-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  .sbs-dropdown-section {
+    color: #6b7280;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 12px 4px;
+    margin-top: 4px;
+  }
+  .sbs-dropdown-section:first-child {
+    margin-top: 0;
+  }
+  .sbs-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+  }
+  .sbs-dropdown-item:hover {
+    background: #f3f4f6;
+    color: #003856;
+  }
+  .sbs-dropdown-item .emoji {
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+  }
+  .sbs-dropdown-divider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 8px 0;
+  }
+  .sbs-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sbs-btn-login {
+    color: rgba(255,255,255,0.9);
+    text-decoration: none;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .sbs-btn-login:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+  .sbs-btn-cta {
+    background: linear-gradient(135deg, #FFB900 0%, #ff9500 100%);
+    color: #003856;
+    text-decoration: none;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(255,185,0,0.3);
+  }
+  .sbs-btn-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255,185,0,0.4);
+  }
+  .sbs-burger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+  }
+  .sbs-burger span {
+    width: 24px;
+    height: 2px;
+    background: #fff;
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
+  @media (max-width: 1024px) {
+    .sbs-nav { display: none; }
+    .sbs-burger { display: flex; }
+    .sbs-nav.open {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      top: 70px;
+      left: 0;
+      right: 0;
+      background: #003856;
+      padding: 20px;
+      gap: 0;
+    }
+    .sbs-nav-dropdown-menu {
+      position: static;
+      box-shadow: none;
+      background: rgba(255,255,255,0.05);
+      margin-top: 8px;
+    }
+    .sbs-dropdown-item {
+      color: rgba(255,255,255,0.9);
+    }
+    .sbs-dropdown-item:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .sbs-dropdown-section {
+      color: rgba(255,255,255,0.5);
+    }
+  }
+</style>
+
+<header class="sbs-header">
+  <div class="sbs-header-inner">
+    <a href="/sbshomepage/" class="sbs-logo-wrap">
+      <div class="sbs-logo-icon">🏢</div>
+      <div class="sbs-logo-text">
+        <strong>SBS Deutschland</strong>
+        <span>KI-Lösungen · Weinheim</span>
+      </div>
+    </a>
+    
+    <button class="sbs-burger" id="sbsBurger" aria-label="Menü öffnen">
+      <span></span><span></span><span></span>
+    </button>
+    
+    <nav class="sbs-nav" id="sbsNav">
+      <!-- Produkte Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          Produkte
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <div class="sbs-dropdown-section">KI-Plattformen</div>
+          <a href="/static/landing/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
+          <a href="/loesungen/vertragsanalyse/" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">Rechnungs-Features</div>
+          <a href="https://app.sbsdeutschland.com/copilot" class="sbs-dropdown-item"><span class="emoji">🤖</span> Finance Copilot</a>
+          <a href="https://app.sbsdeutschland.com/accounting" class="sbs-dropdown-item"><span class="emoji">📊</span> Auto-Kontierung</a>
+          <a href="https://app.sbsdeutschland.com/budget" class="sbs-dropdown-item"><span class="emoji">💰</span> Budget-Dashboard</a>
+          <a href="https://app.sbsdeutschland.com/zahlungen" class="sbs-dropdown-item"><span class="emoji">💳</span> Zahlungsmanagement</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">Vertrags-Features</div>
+          <a href="https://contract.sbsdeutschland.com/upload" class="sbs-dropdown-item"><span class="emoji">📄</span> Vertragsanalyse</a>
+          <a href="https://contract.sbsdeutschland.com/compare" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Vertragsvergleich</a>
+          <a href="https://contract.sbsdeutschland.com/library" class="sbs-dropdown-item"><span class="emoji">📚</span> Klausel-Bibliothek</a>
+        </div>
+      </div>
+      
+      <!-- Lösungen Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          Lösungen
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <div class="sbs-dropdown-section">KI-Rechnungen</div>
+          <a href="/static/landing/loesungen-steuerberater.html" class="sbs-dropdown-item"><span class="emoji">📋</span> Für Steuerberater</a>
+          <a href="/static/landing/loesungen-finanzleitung.html" class="sbs-dropdown-item"><span class="emoji">💼</span> Für CFOs & Finanzleitung</a>
+          <a href="/static/landing/loesungen-handel-filialnetz.html" class="sbs-dropdown-item"><span class="emoji">🏪</span> Für Handel & Filialnetz</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">KI-Verträge</div>
+          <a href="/loesungen/vertragsanalyse/kanzleien.html" class="sbs-dropdown-item"><span class="emoji">⚖️</span> Für Kanzleien & Notare</a>
+          <a href="/loesungen/vertragsanalyse/hr.html" class="sbs-dropdown-item"><span class="emoji">👔</span> Für HR-Abteilungen</a>
+          <a href="/loesungen/vertragsanalyse/einkauf.html" class="sbs-dropdown-item"><span class="emoji">🛒</span> Für Einkauf & Beschaffung</a>
+          <div class="sbs-dropdown-divider"></div>
+          <div class="sbs-dropdown-section">Consulting</div>
+          <a href="/sbshomepage/sap-consulting.html" class="sbs-dropdown-item"><span class="emoji">📊</span> SAP Consulting</a>
+          <a href="/sbshomepage/it-consulting.html" class="sbs-dropdown-item"><span class="emoji">💻</span> IT Consulting</a>
+          <a href="/sbshomepage/quality-risk-management.html" class="sbs-dropdown-item"><span class="emoji">🎯</span> Quality & Risk</a>
+        </div>
+      </div>
+      
+      <!-- Preise Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          💰 Preise
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <a href="/static/preise/" class="sbs-dropdown-item"><span class="emoji">🧾</span> KI-Rechnungsverarbeitung</a>
+          <a href="/loesungen/vertragsanalyse/preise.html" class="sbs-dropdown-item"><span class="emoji">📋</span> KI-Vertragsanalyse</a>
+          <div class="sbs-dropdown-divider"></div>
+          <a href="/static/preise/#bundle" class="sbs-dropdown-item" style="color: #8b5cf6; font-weight: 600;"><span class="emoji">🎁</span> Bundle-Angebot (20% sparen)</a>
+        </div>
+      </div>
+      
+      <!-- Ressourcen Dropdown -->
+      <div class="sbs-nav-dropdown">
+        <button class="sbs-nav-dropdown-btn" onclick="var wasOpen = this.parentElement.classList.contains('open'); document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d){d.classList.remove('open');}); if(!wasOpen) this.parentElement.classList.add('open'); event.stopPropagation();">
+          Ressourcen
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="sbs-nav-dropdown-menu">
+          <a href="/static/landing/ressourcen.html" class="sbs-dropdown-item"><span class="emoji">📚</span> Dokumentation</a>
+          <a href="/static/landing/integrationen.html" class="sbs-dropdown-item"><span class="emoji">🔗</span> Integrationen</a>
+          <a href="/static/landing/security.html" class="sbs-dropdown-item"><span class="emoji">🔒</span> Sicherheit</a>
+          <div class="sbs-dropdown-divider"></div>
+          <a href="/static/landing/kunden.html" class="sbs-dropdown-item"><span class="emoji">⭐</span> Kunden & Referenzen</a>
+          <a href="/static/landing/support.html" class="sbs-dropdown-item"><span class="emoji">💬</span> Support</a>
+          <a href="/sbshomepage/kontakt.html" class="sbs-dropdown-item"><span class="emoji">✉️</span> Kontakt</a>
+        </div>
+      </div>
+      
+      <!-- Unternehmen -->
+      <a href="/sbshomepage/unternehmen.html" class="sbs-nav-item">🏢 Über uns</a>
+    </nav>
+    
+    <div class="sbs-header-actions">
+      <a href="https://app.sbsdeutschland.com/login" class="sbs-btn-login">Login</a>
+      <a href="https://app.sbsdeutschland.com/demo" class="sbs-btn-cta">Kostenlos testen</a>
+    </div>
+  </div>
+</header>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Burger Menu
+  var burger = document.getElementById('sbsBurger');
+  var nav = document.getElementById('sbsNav');
+  if (burger && nav) {
+    burger.addEventListener('click', function() {
+      nav.classList.toggle('open');
+    });
+  }
+  
+  // Close dropdowns on outside click
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.sbs-nav-dropdown')) {
+      document.querySelectorAll('.sbs-nav-dropdown').forEach(function(d) {
+        d.classList.remove('open');
+      });
+    }
+  });
+});
+</script>
+
+
+<section class="pricing-hero">
+  <div class="hero-badge">💰 Preise</div>
+  <h1>Transparente Preise, flexibel skalierbar</h1>
+  <p>Wählen Sie den Plan, der zu Ihrem Bedarf passt. Alle Pläne beinhalten DSGVO-konformes Hosting in Deutschland.</p>
+</section>
+
+<div class="billing-section">
+  <div class="billing-toggle">
+    <span class="active" data-billing="monthly">Monatlich</span>
+    <div class="toggle-switch" id="billingToggle"></div>
+    <span data-billing="yearly">Jährlich</span>
+    <span class="save-badge">2 Monate gratis</span>
+  </div>
+</div>
+
+<section class="pricing-section">
+  <div class="pricing-inner">
+    <div class="pricing-grid">
+      
+      <!-- Starter -->
+      <div class="pricing-card" id="starterCard">
+        <div class="plan-name">Starter</div>
+        <div class="plan-description">Für Einzelanwender und kleine Teams</div>
+        <div class="plan-price">
+          <div class="price-monthly">
+            <span class="price-currency">€</span><span class="price-amount">39</span>
+            <span class="price-period">/ Monat</span>
+          </div>
+          <div class="price-yearly">
+            <span class="price-currency">€</span><span class="price-amount">32</span>
+            <span class="price-period">/ Monat (jährlich)</span>
+          </div>
+        </div>
+        <a href="https://app.sbsdeutschland.com/checkout?product=contract&plan=starter" class="plan-cta plan-cta-secondary">Plan wählen</a>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> <span class="highlight">25 Verträge</span> / Monat</li>
+          <li><span class="check">✓</span> Alle Vertragsarten</li>
+          <li><span class="check">✓</span> JSON & CSV Export</li>
+          <li><span class="check">✓</span> E-Mail Support</li>
+          <li><span class="check">✓</span> 30 Tage Speicherung</li>
+        </ul>
+      </div>
+      
+      <!-- Professional -->
+      <div class="pricing-card popular" id="professionalCard">
+        <div class="popular-badge">Beliebteste Wahl</div>
+        <div class="plan-name">Professional</div>
+        <div class="plan-description">Für wachsende Unternehmen</div>
+        <div class="plan-price">
+          <div class="price-monthly">
+            <span class="price-currency">€</span><span class="price-amount">119</span>
+            <span class="price-period">/ Monat</span>
+          </div>
+          <div class="price-yearly">
+            <span class="price-currency">€</span><span class="price-amount">99</span>
+            <span class="price-period">/ Monat (jährlich)</span>
+          </div>
+        </div>
+        <a href="https://app.sbsdeutschland.com/checkout?product=contract&plan=professional" class="plan-cta plan-cta-primary">Plan wählen</a>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> <span class="highlight">100 Verträge</span> / Monat</li>
+          <li><span class="check">✓</span> Alle Vertragsarten</li>
+          <li><span class="check">✓</span> JSON, CSV & PDF Export</li>
+          <li><span class="check">✓</span> API-Zugang</li>
+          <li><span class="check">✓</span> Prioritäts-Support</li>
+          <li><span class="check">✓</span> 1 Jahr Speicherung</li>
+          <li><span class="check">✓</span> Team-Features (3 User)</li>
+        </ul>
+      </div>
+      
+      <!-- Enterprise -->
+      <div class="pricing-card" id="enterpriseCard">
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-description">Für Großunternehmen & Kanzleien</div>
+        <div class="plan-price">
+          <div class="price-monthly">
+            <span class="price-currency">€</span><span class="price-amount">349</span>
+            <span class="price-period">/ Monat</span>
+          </div>
+          <div class="price-yearly">
+            <span class="price-currency">€</span><span class="price-amount">290</span>
+            <span class="price-period">/ Monat (jährlich)</span>
+          </div>
+        </div>
+        <a href="https://app.sbsdeutschland.com/checkout?product=contract&plan=enterprise" class="plan-cta plan-cta-enterprise">Plan wählen</a>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> <span class="highlight">Unbegrenzte</span> Verträge</li>
+          <li><span class="check">✓</span> Alle Vertragsarten</li>
+          <li><span class="check">✓</span> Alle Export-Formate</li>
+          <li><span class="check">✓</span> Erweiterte API</li>
+          <li><span class="check">✓</span> Dedicated Support</li>
+          <li><span class="check">✓</span> Unbegrenzte Speicherung</li>
+          <li><span class="check">✓</span> Unbegrenzte User</li>
+          <li><span class="check">✓</span> SSO & SAML</li>
+          <li><span class="check">✓</span> Custom Integrations</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="faq-section">
+  <div class="faq-inner">
+    <div style="text-align: center;">
+      <div class="section-badge">FAQ</div>
+      <h2 class="section-title">Häufige Fragen</h2>
+    </div>
+    
+    <div class="faq-item">
+      <h3>Kann ich kostenlos testen?</h3>
+      <p>Ja! Sie können bis zu 3 Verträge pro Monat kostenlos analysieren – ohne Registrierung und ohne Kreditkarte. Einfach Vertrag hochladen und los geht's.</p>
+    </div>
+    
+    <div class="faq-item">
+      <h3>Welche Vertragsarten werden unterstützt?</h3>
+      <p>Unsere KI analysiert Arbeitsverträge, SaaS-Verträge, Mietverträge, NDAs, Dienstleistungsverträge, Lieferverträge und viele weitere. Die Analyse funktioniert auf Deutsch und Englisch.</p>
+    </div>
+    
+    <div class="faq-item">
+      <h3>Wie sicher sind meine Daten?</h3>
+      <p>Alle Daten werden DSGVO-konform in deutschen Rechenzentren verarbeitet. Verträge werden nicht für KI-Training verwendet und können jederzeit gelöscht werden.</p>
+    </div>
+    
+    <div class="faq-item">
+      <h3>Kann ich den Plan wechseln?</h3>
+      <p>Ja, Sie können jederzeit upgraden oder downgraden. Bei einem Upgrade wird die Differenz anteilig berechnet, bei einem Downgrade gilt der neue Plan ab der nächsten Abrechnungsperiode.</p>
+    </div>
+    
+    <div class="faq-item">
+      <h3>Gibt es Mengenrabatte?</h3>
+      <p>Ja! Bei jährlicher Zahlung sparen Sie 2 Monate (ca. 17%). Für sehr große Volumen kontaktieren Sie uns für ein individuelles Angebot.</p>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <h2>Bereit für effizientere Vertragsprüfung?</h2>
+  <p>Starten Sie jetzt kostenlos oder sprechen Sie mit unserem Team für eine individuelle Beratung.</p>
+  <div class="cta-buttons">
+    <a href="https://contract.sbsdeutschland.com/upload" class="btn-primary">Kostenlos testen →</a>
+    <a href="/sbshomepage/kontakt.html" class="btn-secondary">Beratungsgespräch</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="footer-tagline">
+        Enterprise KI-Lösungen für den deutschen Mittelstand. Entwickelt und betrieben in Deutschland.
+      </p>
+      <div class="footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+    </div>
+
+    <div>
+      <h4>Produkt</h4>
+      <ul>
+        <li><a href="/static/landing/">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="https://app.sbsdeutschland.com/demo/copilot">Finance Copilot</a></li>
+        <li><a href="/static/preise/">Preise & Pakete</a></li>
+        <li><a href="/static/landing/integrationen.html">Integrationen</a></li>
+        <li><a href="/static/landing/security.html">Sicherheit</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Unternehmen</h4>
+      <ul>
+        <li><a href="/sbshomepage/unternehmen.html">Über uns</a></li>
+        <li><a href="/sbshomepage/kontakt.html">Kontakt</a></li>
+        <li><a href="/static/landing/support.html">Support</a></li>
+        <li><a href="/static/landing/kunden.html">Kunden</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>© 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Made with ❤️ in Weinheim</p>
+  </div>
+</footer>
+
+<script>
+// Billing Toggle
+const toggle = document.getElementById('billingToggle');
+const cards = document.querySelectorAll('.pricing-card');
+const billingLabels = document.querySelectorAll('.billing-toggle span[data-billing]');
+
+toggle.addEventListener('click', function() {
+  this.classList.toggle('yearly');
+  const isYearly = this.classList.contains('yearly');
+  
+  cards.forEach(card => {
+    if (isYearly) {
+      card.classList.add('yearly');
+    } else {
+      card.classList.remove('yearly');
+    }
+  });
+  
+  billingLabels.forEach(label => {
+    if (label.dataset.billing === 'yearly' && isYearly) {
+      label.classList.add('active');
+    } else if (label.dataset.billing === 'monthly' && !isYearly) {
+      label.classList.add('active');
+    } else {
+      label.classList.remove('active');
+    }
+  });
+});
+
+// Auth Status
+async function checkAuthStatus() {
+  const guestEl = document.getElementById('authGuest');
+  const userEl = document.getElementById('authUser');
+  const nameEl = document.getElementById('accountName');
+  const emailEl = document.getElementById('accountEmail');
+  try {
+    const res = await fetch('https://app.sbsdeutschland.com/api/user', {credentials: 'include'});
+    const user = await res.json();
+    if (user && user.logged_in) {
+      if (guestEl) guestEl.style.display = 'none';
+      if (userEl) userEl.style.display = 'block';
+      if (nameEl) nameEl.textContent = user.name || 'Account';
+      if (emailEl) emailEl.textContent = user.email || '';
+    }
+  } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', checkAuthStatus);
+</script>
+<script src="/static/js/main.js"></script>
+<link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
+<script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
+</body>
+</html>
