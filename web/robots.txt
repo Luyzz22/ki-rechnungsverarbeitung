@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sbsdeutschland.com/sitemap.xml
+
+# Keine Indexierung von App-Seiten
+Disallow: /api/
+Disallow: /admin/
+Disallow: /uploads/
+Disallow: /static/js/
+Disallow: /static/css/

@@ -92,6 +92,7 @@
       .sp-cta { padding: 28px 18px; }
     }
   </style>
+  <link rel="canonical" href="https://sbsdeutschland.com/static/landing/support.html" />
 </head>
 <body class="has-fixed-header">
 <div id="header-slot"></div>
@@ -289,5 +290,7 @@
 function toggleFaq(el){var i=el.parentElement,o=i.classList.contains('open');document.querySelectorAll('.sp-faq-item').forEach(function(x){x.classList.remove('open')});if(!o)i.classList.add('open')}
 (function(){function l(id,p){fetch(p).then(function(r){return r.text()}).then(function(h){document.getElementById(id).innerHTML=h;document.getElementById(id).querySelectorAll("script").forEach(function(s){var n=document.createElement("script");n.textContent=s.textContent;document.body.appendChild(n)})})}l("header-slot","/static/includes/header-2026.html");l("footer-slot","/static/includes/footer-2026.html")})()
 </script>
+<link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
+<script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
 </body>
 </html>

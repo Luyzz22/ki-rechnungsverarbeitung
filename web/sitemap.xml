@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://sbsdeutschland.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://sbsdeutschland.com/static/landing/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://sbsdeutschland.com/static/preise/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://sbsdeutschland.com/static/landing/kunden.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://sbsdeutschland.com/static/landing/integrationen.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://sbsdeutschland.com/static/landing/security.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://sbsdeutschland.com/static/landing/support.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://sbsdeutschland.com/static/landing/ressourcen.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://sbsdeutschland.com/static/landing/hydraulikdoc.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://sbsdeutschland.com/loesungen/vertragsanalyse/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://sbsdeutschland.com/static/landing/loesungen-steuerberater.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://sbsdeutschland.com/static/landing/loesungen-finanzleitung.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://sbsdeutschland.com/static/landing/impressum.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://sbsdeutschland.com/static/landing/datenschutz.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://sbsdeutschland.com/static/landing/agb.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+</urlset>
