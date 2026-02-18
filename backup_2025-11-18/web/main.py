@@ -1108,7 +1108,7 @@ def create_contact_page_with_form():
       </div>
       
       <div class="footer-bottom">
-        <p>&copy; 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
+        <p>&copy; 2026 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
         <p class="footer-made">Made with ❤️ in Weinheim</p>
       </div>
     </div>

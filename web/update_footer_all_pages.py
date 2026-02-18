@@ -58,7 +58,7 @@ NEW_FOOTER = '''  <!-- FOOTER -->
       </div>
       
       <div class="footer-bottom">
-        <p>&copy; 2025 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
+        <p>&copy; 2026 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
         <p class="footer-made">Made with ❤️ in Weinheim</p>
       </div>
     </div>
@@ -306,7 +306,7 @@ def main():
     print("   • Logo + Brand im ersten Bereich")
     print("   • Gradient-Background (Dunkelblau)")
     print("   • Akzent-Farbe: #FFB900 (SBS Gelb)")
-    print("   • Copyright: © 2025")
+    print("   • Copyright: © 2026")
     print("   • Responsive für Mobile optimiert")
     print()
     print("💾 Backups:")

@@ -178,7 +178,7 @@ class EmailNotifier:
             
             <p style="margin-top: 30px; color: #888; font-size: 12px;">
                 Diese Email wurde automatisch von der KI-Rechnungsverarbeitung generiert.<br>
-                © 2025 SBS Deutschland GmbH &amp; Co. KG
+                © 2026 SBS Deutschland GmbH &amp; Co. KG
             </p>
         </body>
         </html>
