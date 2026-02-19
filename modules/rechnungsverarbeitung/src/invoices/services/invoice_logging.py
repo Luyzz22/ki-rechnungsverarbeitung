@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from src.invoices.models import InvoiceDocumentMetadata
+from modules.rechnungsverarbeitung.src.invoices.models import InvoiceDocumentMetadata
 
 logger = logging.getLogger(__name__)
 

@@ -3,8 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from src.common.tenant_context import TenantContext
-
+from shared.tenant.context import TenantContext
 
 @dataclass
 class InvoiceDocumentMetadata:

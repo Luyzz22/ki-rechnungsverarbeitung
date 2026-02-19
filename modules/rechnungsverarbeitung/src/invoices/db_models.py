@@ -6,8 +6,7 @@ from typing import Optional
 from sqlalchemy import String, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.db import Base
-
+from shared.db.session import Base
 
 class Invoice(Base):
     __tablename__ = "invoices"
