@@ -50,3 +50,22 @@ Diese Struktur ist mit anderen SBS-Nexus-Modulen (HydraulikDoc, Verträge, Wartu
 abgestimmt, um ein einheitliches Enterprise-Datenmodell zu gewährleisten.[web:128][web:194]
 
 Weitere Details werden während der Implementierung iterativ ergänzt.
+
+## 6. Metadaten-Schema für Rechnungsdokumente (v1)
+
+Jede Rechnung im System soll mindestens folgende Metadaten besitzen:
+
+- `id`: Interne technische ID der Rechnung (UUID oder vergleichbar)
+- `tenant_id`: Mandant / Firma / Werk, dient der strikten Datenisolierung[web:195][web:232][web:244]
+- `document_type`: Immer `"invoice"` für dieses Modul
+- `file_name`: Original-Dateiname der hochgeladenen Rechnung
+- `mime_type`: Dateityp (z.B. application/pdf)
+- `uploaded_by`: Technische User-ID, die den Upload/Import ausgelöst hat[web:248][web:252]
+- `uploaded_at`: Zeitpunkt des Uploads
+- `processed_at`: Zeitpunkt, an dem die Rechnung erfolgreich extrahiert/validiert wurde
+- `source_system`: z.B. `"ki-rechnungsverarbeitung"` oder nachgelagertes ERP/DMS
+- `status`: z.B. `uploaded`, `processing`, `processed`, `error`[web:248]
+
+Dieses Schema lehnt sich an etablierte Multi-Tenant- und Dokumentmodelle an,
+bei denen `tenant_id` konsequent zur Isolation genutzt wird und `document_type`
+eine einheitliche Behandlung verschiedener Dokumentarten ermöglicht.[web:195][web:232][web:250]
