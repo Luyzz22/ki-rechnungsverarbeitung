@@ -1578,6 +1578,12 @@ from smart_maintenance import (
     init_maintenance_db
 )
 
+from spend_analytics import (
+    get_spend_overview, get_supplier_deep_dive, run_spend_analysis,
+    forecast_spend, set_budget, get_budgets, get_active_alerts,
+    acknowledge_alert
+)
+
 # Ensure DB is initialized
 init_maintenance_db()
 
@@ -1827,3 +1833,146 @@ async def get_maintenance_stats(authorization: str = Header(None)):
         "by_status": by_status,
         "by_urgency": by_urgency
     }
+
+
+# ═══════════════════════════════════════════════════════════════
+# PHASE 2: PREDICTIVE SPEND ALERTS & ANALYTICS
+# ═══════════════════════════════════════════════════════════════
+
+@router.get("/analytics/spend/overview")
+async def api_spend_overview(authorization: str = Header(None), months: int = 12):
+    """Comprehensive spend analytics dashboard"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    user = verify_api_key(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Ungültiger API Key")
+    try:
+        return {"status": "success", "data": get_spend_overview(months=months)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/analytics/spend/supplier/{supplier_name}")
+async def api_supplier_deep_dive(supplier_name: str, authorization: str = Header(None)):
+    """Deep dive analysis for a specific supplier"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    user = verify_api_key(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Ungültiger API Key")
+    try:
+        from urllib.parse import unquote
+        return {"status": "success", "data": get_supplier_deep_dive(unquote(supplier_name))}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/analytics/spend/forecast")
+async def api_spend_forecast(authorization: str = Header(None), months: int = 3):
+    """Predictive spend forecast"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    user = verify_api_key(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Ungültiger API Key")
+    try:
+        from dataclasses import asdict
+        forecasts = forecast_spend(months_ahead=min(months, 12))
+        return {"status": "success", "data": {"forecasts": [asdict(f) for f in forecasts]}}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/analytics/alerts/run")
+async def api_run_spend_analysis(authorization: str = Header(None)):
+    """Trigger spend analysis engine — generates alerts"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    user = verify_api_key(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Ungültiger API Key")
+    try:
+        from dataclasses import asdict
+        alerts = run_spend_analysis()
+        critical_alerts = [a for a in alerts if a.severity == "critical"]
+        if critical_alerts:
+            fire_webhook_event("spend.alert_critical", {
+                "alert_count": len(critical_alerts),
+                "alerts": [{"id": a.alert_id, "title": a.title, "severity": a.severity} for a in critical_alerts]
+            })
+        if alerts:
+            fire_webhook_event("spend.analysis_complete", {
+                "total": len(alerts),
+                "critical": len(critical_alerts),
+                "warnings": len([a for a in alerts if a.severity == "warning"])
+            })
+        return {"status": "success", "data": {"alerts_generated": len(alerts), "alerts": [asdict(a) for a in alerts]}}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/analytics/alerts")
+async def api_get_alerts(authorization: str = Header(None), limit: int = 20):
+    """Get active spend alerts"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    user = verify_api_key(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Ungültiger API Key")
+    try:
+        alerts = get_active_alerts(limit=min(limit, 100))
+        return {"status": "success", "data": {"alerts": alerts, "count": len(alerts)}}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/analytics/alerts/{alert_id}/acknowledge")
+async def api_acknowledge_alert(alert_id: str, authorization: str = Header(None)):
+    """Acknowledge a spend alert"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    user = verify_api_key(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Ungültiger API Key")
+    try:
+        return {"status": "success", "data": acknowledge_alert(alert_id, user["id"])}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/analytics/budgets")
+async def api_get_budgets(authorization: str = Header(None)):
+    """List budgets with utilization"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    user = verify_api_key(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Ungültiger API Key")
+    try:
+        return {"status": "success", "data": {"budgets": get_budgets()}}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/analytics/budgets")
+async def api_set_budget(request: Request, authorization: str = Header(None)):
+    """Create/update budget"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+    user = verify_api_key(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Ungültiger API Key")
+    try:
+        body = await request.json()
+        return {"status": "success", "data": set_budget(
+            budget_type=body.get("budget_type", "global"),
+            reference_key=body.get("reference_key", "all"),
+            monthly_limit=body.get("monthly_limit"),
+            quarterly_limit=body.get("quarterly_limit"),
+            yearly_limit=body.get("yearly_limit"),
+            alert_pct=body.get("alert_threshold_pct", 80.0),
+            critical_pct=body.get("critical_threshold_pct", 95.0)
+        )}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
