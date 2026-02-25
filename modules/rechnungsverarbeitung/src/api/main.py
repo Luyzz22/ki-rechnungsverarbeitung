@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 from fastapi import FastAPI, UploadFile, File, Header, HTTPException
+from fastapi.responses import JSONResponse
 
 from shared.tenant.context import TenantContext
 from shared.db.session import get_session
 from modules.rechnungsverarbeitung.src.invoices.services.invoice_processing import (
     process_invoice_upload,
 )
-from modules.rechnungsverarbeitung.src.invoices.db_models import Invoice
-
+from modules.rechnungsverarbeitung.src.invoices.db_models import Invoice, InvoiceEvent
 
 app = FastAPI(title="KI-Rechnungsverarbeitung API")
 
@@ -77,7 +77,7 @@ async def get_invoice(
             raise HTTPException(status_code=404, detail="Invoice not found")
 
         # Alle benötigten Felder innerhalb der offenen Session materialisieren
-        response_data = {
+        response_data: Dict[str, Any] = {
             "document_id": invoice.document_id,
             "tenant_id": invoice.tenant_id,
             "status": invoice.status,
@@ -114,7 +114,7 @@ async def list_invoices(
         )
         invoices = list(query)
 
-        items = [
+        items: List[Dict[str, Any]] = [
             {
                 "document_id": inv.document_id,
                 "tenant_id": inv.tenant_id,
@@ -135,4 +135,42 @@ async def list_invoices(
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/invoices/{document_id}/events")
+async def get_invoice_events(document_id: str, x_tenant_id: str = Header(alias="X-Tenant-ID")):
+    """
+    Liefert die Event-Historie einer Rechnung mandantengetrennt.
+    """
+    set_tenant_from_header(x_tenant_id)
+    tenant_id = TenantContext.get_current_tenant()
+
+    with get_session() as session:
+        events = (
+            session.query(InvoiceEvent)
+            .filter(
+                InvoiceEvent.document_id == document_id,
+                InvoiceEvent.tenant_id == tenant_id,
+            )
+            .order_by(InvoiceEvent.created_at.asc())
+            .all()
+        )
+
+        primitive_events = []
+        for ev in events:
+            primitive_events.append(
+                {
+                    "id": ev.id,
+                    "tenant_id": ev.tenant_id,
+                    "document_id": ev.document_id,
+                    "event_type": ev.event_type,
+                    "status_from": ev.status_from,
+                    "status_to": ev.status_to,
+                    "actor": ev.actor,
+                    "created_at": ev.created_at.isoformat() if ev.created_at else None,
+                    "metadata": {},
+                }
+            )
+
+    return JSONResponse(content=primitive_events)
 
