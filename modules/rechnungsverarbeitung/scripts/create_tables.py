@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from src.db import Base, engine
-from src.invoices.db_models import Invoice
+from shared.db.session import Base, engine
+from modules.rechnungsverarbeitung.src.invoices.db_models import Invoice, InvoiceEvent
 
 
 def main() -> None:
@@ -10,3 +10,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
