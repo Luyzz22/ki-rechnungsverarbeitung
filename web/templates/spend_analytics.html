@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Spend Intelligence · SBS Nexus</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/design-tokens.css" />
+  <link rel="stylesheet" href="/static/css/components.css" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/app-shell.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .si-container { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+    
+    /* Hero */
+    .si-hero {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+      padding: 32px 24px;
+      color: white;
+      margin-bottom: 24px;
+    }
+    .si-hero h1 { font-size: 1.8rem; font-weight: 700; margin: 0 0 4px 0; }
+    .si-hero p { opacity: 0.85; margin: 0; font-size: 0.95rem; }
+    .si-hero-actions { margin-top: 16px; display: flex; gap: 12px; align-items: center; }
+    .si-hero-actions button {
+      background: var(--color-accent);
+      color: var(--color-primary-dark);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .si-hero-actions button:hover { background: var(--color-accent-light); transform: translateY(-1px); }
+    .si-hero-actions button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .si-hero-actions .last-run { font-size: 0.8rem; opacity: 0.7; }
+
+    /* KPI Row */
+    .si-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .si-kpi {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-left: 4px solid var(--color-primary);
+    }
+    .si-kpi.accent { border-left-color: var(--color-accent); }
+    .si-kpi.success { border-left-color: var(--color-success); }
+    .si-kpi.warning { border-left-color: var(--color-warning); }
+    .si-kpi.danger { border-left-color: var(--color-error, #EF4444); }
+    .si-kpi .value { font-size: 1.8rem; font-weight: 700; color: var(--color-primary-dark); }
+    .si-kpi .label { font-size: 0.82rem; color: #6B7280; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .si-kpi .sub { font-size: 0.8rem; color: #9CA3AF; margin-top: 6px; }
+
+    /* Alert Banner */
+    .si-alerts {
+      background: white;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .si-alerts h3 { margin: 0 0 16px 0; font-size: 1.1rem; color: var(--color-primary-dark); }
+    .si-alert-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+    .si-alert-item.critical { background: #FEF2F2; border-left: 3px solid #EF4444; }
+    .si-alert-item.warning { background: var(--color-warning-light); border-left: 3px solid var(--color-warning); }
+    .si-alert-item.info { background: #EFF6FF; border-left: 3px solid #3B82F6; }
+    .si-alert-item .badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .si-alert-item.critical .badge { background: #EF4444; color: white; }
+    .si-alert-item.warning .badge { background: var(--color-warning); color: white; }
+    .si-alert-item.info .badge { background: #3B82F6; color: white; }
+    .si-alert-item .content { flex: 1; }
+    .si-alert-item .title { font-weight: 600; color: var(--color-primary-dark); }
+    .si-alert-item .msg { color: #6B7280; font-size: 0.85rem; margin-top: 2px; }
+    .si-alert-item .ack-btn {
+      background: none; border: 1px solid #D1D5DB; border-radius: 6px;
+      padding: 4px 12px; font-size: 0.78rem; cursor: pointer; color: #6B7280;
+    }
+    .si-alert-item .ack-btn:hover { background: #F3F4F6; }
+    .si-no-alerts { color: #10B981; font-weight: 500; padding: 12px 0; }
+
+    /* Cards / Sections */
+    .si-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    .si-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .si-card h3 { margin: 0 0 16px 0; font-size: 1.1rem; color: var(--color-primary-dark); }
+    .si-card canvas { max-height: 300px; }
+
+    /* Supplier Table */
+    .si-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .si-table th {
+      text-align: left; padding: 10px 12px; border-bottom: 2px solid #E5E7EB;
+      font-weight: 600; color: var(--color-primary-dark); font-size: 0.8rem;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .si-table td { padding: 10px 12px; border-bottom: 1px solid #F3F4F6; }
+    .si-table tr:hover td { background: rgba(0,56,86,0.02); }
+    .si-table .amount { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .si-table .pct { text-align: right; color: #6B7280; }
+    .si-bar-cell { position: relative; }
+    .si-bar {
+      position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      height: 6px; background: var(--color-primary-50); border-radius: 3px;
+      opacity: 0.6;
+    }
+
+    /* Forecast */
+    .si-forecast-row {
+      display: flex; gap: 16px; margin-bottom: 8px; align-items: center;
+      padding: 12px 16px; background: #F9FAFB; border-radius: 8px;
+    }
+    .si-forecast-row .period { font-weight: 600; color: var(--color-primary-dark); min-width: 80px; }
+    .si-forecast-row .amount { font-weight: 700; font-size: 1.1rem; color: var(--color-primary-dark); }
+    .si-forecast-row .conf {
+      font-size: 0.78rem; padding: 2px 8px; border-radius: 4px;
+      background: #EFF6FF; color: #3B82F6;
+    }
+    .si-forecast-row .trend { font-size: 0.85rem; }
+    .si-forecast-row .trend.rising { color: #EF4444; }
+    .si-forecast-row .trend.declining { color: #10B981; }
+    .si-forecast-row .trend.stable { color: #6B7280; }
+
+    /* Budget */
+    .si-budget-item { margin-bottom: 16px; }
+    .si-budget-item .header { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.88rem; }
+    .si-budget-item .name { font-weight: 600; color: var(--color-primary-dark); }
+    .si-budget-item .values { color: #6B7280; }
+    .si-budget-bar { height: 10px; background: #E5E7EB; border-radius: 5px; overflow: hidden; }
+    .si-budget-fill { height: 100%; border-radius: 5px; transition: width 1s ease; }
+    .si-budget-fill.green { background: var(--color-success); }
+    .si-budget-fill.yellow { background: var(--color-warning); }
+    .si-budget-fill.red { background: #EF4444; }
+
+    /* Concentration */
+    .si-concentration {
+      display: flex; align-items: center; gap: 16px; padding: 16px;
+      background: #F9FAFB; border-radius: 8px; margin-bottom: 12px;
+    }
+    .si-concentration .hhi-value { font-size: 2rem; font-weight: 700; color: var(--color-primary-dark); }
+    .si-concentration .hhi-label { font-size: 0.82rem; color: #6B7280; }
+    .si-concentration .level-badge {
+      padding: 4px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem;
+    }
+    .si-concentration .level-badge.hoch { background: #FEF2F2; color: #EF4444; }
+    .si-concentration .level-badge.mittel { background: var(--color-warning-light); color: var(--color-warning-dark); }
+    .si-concentration .level-badge.niedrig { background: var(--color-success-light); color: var(--color-success-dark); }
+
+    /* Loading */
+    .si-loading { text-align: center; padding: 60px; color: #6B7280; }
+    .si-spinner {
+      width: 40px; height: 40px; border: 3px solid #E5E7EB;
+      border-top-color: var(--color-primary); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      .si-grid-2 { grid-template-columns: 1fr; }
+      .si-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+{% include 'partials/header.html' %}
+
+<div class="si-hero">
+  <div class="si-container">
+    <h1>Spend Intelligence</h1>
+    <p>Predictive Analytics · Budget-Monitoring · Lieferanten-Risiko</p>
+    <div class="si-hero-actions">
+      <button onclick="runAnalysis()" id="runBtn">Analyse jetzt ausführen</button>
+      <span class="last-run" id="lastRun"></span>
+    </div>
+  </div>
+</div>
+
+<div class="si-container" id="mainContent">
+  <div class="si-loading" id="loadingState">
+    <div class="si-spinner"></div>
+    <p>Lade Spend Intelligence Daten...</p>
+  </div>
+</div>
+
+<script>
+const API_BASE = '/api/nexus';
+const API_KEY = '{{ api_key }}';
+const headers = { 'Authorization': API_KEY, 'Content-Type': 'application/json' };
+
+async function apiFetch(endpoint) {
+  const res = await fetch(API_BASE + endpoint, { headers });
+  if (!res.ok) throw new Error(`API Error: ${res.status}`);
+  return (await res.json()).data;
+}
+
+function fmt(n) {
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n);
+}
+
+function fmtNum(n) {
+  return new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(n);
+}
+
+async function loadDashboard() {
+  try {
+    const [overview, alerts, forecast, budgets] = await Promise.all([
+      apiFetch('/analytics/spend/overview'),
+      apiFetch('/analytics/alerts'),
+      apiFetch('/analytics/spend/forecast'),
+      apiFetch('/analytics/budgets')
+    ]);
+
+    const container = document.getElementById('mainContent');
+    container.innerHTML = '';
+
+    // ── KPIs ──
+    const o = overview.overview;
+    const conc = overview.suppliers.concentration;
+    container.innerHTML += `
+      <div class="si-kpi-grid">
+        <div class="si-kpi accent">
+          <div class="value">${fmt(o.total_spend)}</div>
+          <div class="label">Gesamtausgaben</div>
+          <div class="sub">${o.total_invoices} Rechnungen</div>
+        </div>
+        <div class="si-kpi">
+          <div class="value">${fmt(o.avg_invoice)}</div>
+          <div class="label">Ø Rechnung</div>
+          <div class="sub">Max: ${fmt(o.max_invoice)}</div>
+        </div>
+        <div class="si-kpi success">
+          <div class="value">${o.unique_suppliers}</div>
+          <div class="label">Lieferanten</div>
+          <div class="sub">Top 3: ${conc.top3_pct}% vom Spend</div>
+        </div>
+        <div class="si-kpi ${alerts.count > 0 ? 'warning' : 'success'}">
+          <div class="value">${alerts.count}</div>
+          <div class="label">Aktive Alerts</div>
+          <div class="sub">${alerts.count === 0 ? 'Alles im grünen Bereich' : 'Prüfung erforderlich'}</div>
+        </div>
+        <div class="si-kpi">
+          <div class="value">${overview.maintenance.total_requests || 0}</div>
+          <div class="label">Wartungsanfragen</div>
+          <div class="sub">${overview.maintenance.critical || 0} kritisch</div>
+        </div>
+      </div>
+    `;
+
+    // ── Alerts ──
+    let alertsHtml = '<div class="si-alerts"><h3>Aktive Alerts</h3>';
+    if (alerts.alerts.length === 0) {
+      alertsHtml += '<div class="si-no-alerts">✓ Keine offenen Alerts — Spend im Normalbereich</div>';
+    } else {
+      alerts.alerts.forEach(a => {
+        alertsHtml += `
+          <div class="si-alert-item ${a.severity}">
+            <span class="badge">${a.severity}</span>
+            <div class="content">
+              <div class="title">${a.title}</div>
+              <div class="msg">${a.message}</div>
+            </div>
+            <button class="ack-btn" onclick="ackAlert('${a.alert_id}', this)">Bestätigen</button>
+          </div>`;
+      });
+    }
+    alertsHtml += '</div>';
+    container.innerHTML += alertsHtml;
+
+    // ── Charts + Suppliers ──
+    container.innerHTML += `
+      <div class="si-grid-2">
+        <div class="si-card">
+          <h3>Monatlicher Spend-Trend</h3>
+          <canvas id="trendChart"></canvas>
+        </div>
+        <div class="si-card">
+          <h3>Lieferanten-Konzentration</h3>
+          <div class="si-concentration">
+            <div>
+              <div class="hhi-value">${fmtNum(conc.hhi_index)}</div>
+              <div class="hhi-label">HHI-Index</div>
+            </div>
+            <div>
+              <span class="level-badge ${conc.level}">${conc.level.charAt(0).toUpperCase() + conc.level.slice(1)}</span>
+              <div style="font-size:0.82rem;color:#6B7280;margin-top:6px;">
+                Top 3: ${conc.top3_pct}% · Top 5: ${conc.top5_pct}%
+              </div>
+            </div>
+          </div>
+          <canvas id="supplierChart"></canvas>
+        </div>
+      </div>
+    `;
+
+    // ── Forecast + Budgets ──
+    container.innerHTML += `
+      <div class="si-grid-2">
+        <div class="si-card">
+          <h3>Spend-Prognose</h3>
+          <div id="forecastContainer"></div>
+        </div>
+        <div class="si-card">
+          <h3>Budget-Status</h3>
+          <div id="budgetContainer"></div>
+        </div>
+      </div>
+    `;
+
+    // ── Supplier Table ──
+    let tableHtml = '<div class="si-card" style="margin-bottom:24px;"><h3>Top Lieferanten</h3><table class="si-table"><thead><tr><th>Lieferant</th><th>Rechnungen</th><th class="amount">Gesamt</th><th class="pct">Anteil</th><th class="pct">Kumuliert</th></tr></thead><tbody>';
+    overview.suppliers.list.slice(0, 10).forEach(s => {
+      tableHtml += `<tr>
+        <td><a href="#" onclick="loadSupplier('${encodeURIComponent(s.supplier)}');return false;" style="color:var(--color-primary);text-decoration:none;font-weight:500;">${s.supplier}</a></td>
+        <td>${s.invoice_count}</td>
+        <td class="amount">${fmt(s.total_spend)}</td>
+        <td class="pct">${s.spend_pct}%</td>
+        <td class="pct">${s.cumulative_pct}%</td>
+      </tr>`;
+    });
+    tableHtml += '</tbody></table></div>';
+    container.innerHTML += tableHtml;
+
+    // ── Render Charts ──
+    renderTrendChart(overview.monthly_trend);
+    renderSupplierChart(overview.suppliers.list.slice(0, 7));
+    renderForecast(forecast.forecasts);
+    renderBudgets(budgets.budgets);
+
+    document.getElementById('lastRun').textContent = `Letztes Update: ${new Date().toLocaleTimeString('de-DE')}`;
+
+  } catch (err) {
+    document.getElementById('mainContent').innerHTML = `
+      <div style="background:#FEF2F2;padding:24px;border-radius:12px;color:#991B1B;">
+        <strong>Fehler beim Laden:</strong> ${err.message}
+      </div>`;
+  }
+}
+
+function renderTrendChart(data) {
+  const ctx = document.getElementById('trendChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(d => d.period),
+      datasets: [{
+        label: 'Spend (€)',
+        data: data.map(d => d.total_spend),
+        backgroundColor: 'rgba(0, 56, 86, 0.7)',
+        borderRadius: 4,
+      }, {
+        label: 'Ø pro Rechnung (€)',
+        data: data.map(d => d.avg_spend),
+        type: 'line',
+        borderColor: '#FFB900',
+        backgroundColor: 'rgba(255, 185, 0, 0.1)',
+        tension: 0.3,
+        pointRadius: 4,
+        yAxisID: 'y1'
+      }]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'bottom' } },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: v => '€' + (v/1000).toFixed(0) + 'k' } },
+        y1: { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false },
+               ticks: { callback: v => '€' + v.toFixed(0) } }
+      }
+    }
+  });
+}
+
+function renderSupplierChart(data) {
+  const ctx = document.getElementById('supplierChart');
+  if (!ctx) return;
+  const colors = ['#003856','#004d7a','#FFB900','#10B981','#F59E0B','#8B5CF6','#EC4899'];
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: data.map(d => d.supplier),
+      datasets: [{ data: data.map(d => d.total_spend), backgroundColor: colors }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => `${ctx.label}: €${ctx.raw.toLocaleString('de-DE')}` } }
+      }
+    }
+  });
+}
+
+function renderForecast(forecasts) {
+  const container = document.getElementById('forecastContainer');
+  if (!container || !forecasts.length) {
+    if (container) container.innerHTML = '<p style="color:#6B7280;">Nicht genug Daten für Prognose.</p>';
+    return;
+  }
+  const trendIcons = { rising: '📈', declining: '📉', stable: '➡️' };
+  const trendLabels = { rising: 'Steigend', declining: 'Fallend', stable: 'Stabil' };
+  container.innerHTML = forecasts.map(f => `
+    <div class="si-forecast-row">
+      <span class="period">${f.period}</span>
+      <span class="amount">${fmt(f.predicted_amount)}</span>
+      <span class="conf">${(f.confidence * 100).toFixed(0)}% Konfidenz</span>
+      <span class="trend ${f.trend}">${trendIcons[f.trend]} ${trendLabels[f.trend]}</span>
+    </div>
+  `).join('');
+}
+
+function renderBudgets(budgets) {
+  const container = document.getElementById('budgetContainer');
+  if (!container) return;
+  if (!budgets.length) {
+    container.innerHTML = '<p style="color:#6B7280;">Keine Budgets konfiguriert.</p>';
+    return;
+  }
+  container.innerHTML = budgets.map(b => {
+    const pct = b.utilization_pct;
+    const colorClass = pct >= 95 ? 'red' : pct >= 80 ? 'yellow' : 'green';
+    return `
+      <div class="si-budget-item">
+        <div class="header">
+          <span class="name">${b.budget_type === 'global' ? 'Gesamt-Budget' : b.reference_key}</span>
+          <span class="values">${fmt(b.current_month_spent)} / ${fmt(b.monthly_limit)} (${pct}%)</span>
+        </div>
+        <div class="si-budget-bar"><div class="si-budget-fill ${colorClass}" style="width:${Math.min(pct, 100)}%"></div></div>
+      </div>`;
+  }).join('');
+}
+
+async function runAnalysis() {
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Analyse läuft...';
+  try {
+    const res = await fetch(API_BASE + '/analytics/alerts/run', { method: 'POST', headers });
+    const data = await res.json();
+    btn.textContent = `✓ ${data.data.alerts_generated} Alerts generiert`;
+    setTimeout(() => { loadDashboard(); btn.textContent = 'Analyse jetzt ausführen'; btn.disabled = false; }, 2000);
+  } catch (e) {
+    btn.textContent = 'Fehler — erneut versuchen';
+    btn.disabled = false;
+  }
+}
+
+async function ackAlert(alertId, btn) {
+  btn.disabled = true;
+  btn.textContent = '...';
+  try {
+    await fetch(API_BASE + `/analytics/alerts/${alertId}/acknowledge`, { method: 'POST', headers });
+    btn.closest('.si-alert-item').style.opacity = '0.4';
+    btn.textContent = '✓';
+  } catch (e) {
+    btn.textContent = 'Fehler';
+    btn.disabled = false;
+  }
+}
+
+async function loadSupplier(name) {
+  try {
+    const data = await apiFetch(`/analytics/spend/supplier/${name}`);
+    const d = data;
+    alert(`${d.supplier}\n\nGesamt: €${d.summary.total_spend.toLocaleString('de-DE')}\nRechnungen: ${d.summary.total_invoices}\nØ: €${d.summary.avg_invoice.toLocaleString('de-DE')}\nVolatilität: ${d.summary.volatility_pct}%\nRisiko: ${d.risk_assessment.risk_level}`);
+  } catch (e) {
+    alert('Fehler beim Laden der Lieferantendaten.');
+  }
+}
+
+// Init
+loadDashboard();
+</script>
+
+{% include 'partials/footer.html' %}
+</body>
+</html>
