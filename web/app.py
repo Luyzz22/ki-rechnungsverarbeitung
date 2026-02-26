@@ -1608,7 +1608,7 @@ import secrets
 
 from email_scheduler import email_scheduler
 # Add session middleware (muss nach app = FastAPI() kommen)
-app.add_middleware(SessionMiddleware, secret_key='sbs-invoice-app-secret-key-2025', domain='.sbsdeutschland.com')
+app.add_middleware(SessionMiddleware, secret_key=os.getenv('SESSION_SECRET_KEY', 'fallback-change-me'), domain='.sbsdeutschland.com')
 
 # -------------------------------------------------
 # Login-Helper & globale Login-Pflicht
