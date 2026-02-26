@@ -17,19 +17,19 @@ import base64
 import httpx
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 load_dotenv()
 
 # Gemini Configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
-def configure_gemini():
-    """Configure Gemini API"""
+def get_gemini_client():
+    """Get Gemini API client (new google-genai SDK)"""
     if GEMINI_API_KEY:
-        genai.configure(api_key=GEMINI_API_KEY)
-        return True
-    return False
+        return genai.Client(api_key=GEMINI_API_KEY)
+    return None
 
 # ============================================================================
 # PART 1: Visual Part Recognition (Gemini Vision)
@@ -50,11 +50,12 @@ async def recognize_part_from_image(image_base64: str, context: str = "") -> Dic
             "raw_response": "..."
         }
     """
-    if not configure_gemini():
+    client = get_gemini_client()
+    if not client:
         return {"error": "Gemini API not configured", "part_number": None}
     
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        # Using google-genai client (model specified in generate_content call)
         
         prompt = f"""Du bist ein Experte für industrielle Ersatzteile im deutschen Maschinenbau.
 Analysiere dieses Bild eines Ersatzteils oder einer Komponente.
@@ -84,10 +85,13 @@ Antworte AUSSCHLIESSLICH als JSON:
         # Decode base64 image
         image_data = base64.b64decode(image_base64)
         
-        response = model.generate_content([
-            prompt,
-            {"mime_type": "image/jpeg", "data": image_data}
-        ])
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=[
+                prompt,
+                types.Part.from_bytes(data=image_data, mime_type="image/jpeg")
+            ]
+        )
         
         # Parse JSON response
         response_text = response.text
@@ -690,22 +694,23 @@ Antworte NUR als JSON:
     "hydraulikdoc_analysis": true
 }}"""
 
-        # Nutze Gemini direkt (da GeminiVideoAnalyzer für Videos ist)
-        import google.generativeai as genai
+        # Nutze Gemini direkt (neue google-genai SDK)
+        from google import genai as genai_local
+        from google.genai import types as gtypes
         
         api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
-        if api_key:
-            genai.configure(api_key=api_key)
-        
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        client = genai_local.Client(api_key=api_key)
         
         # Decode image
         image_data = base64.b64decode(image_base64)
         
-        response = model.generate_content([
-            prompt,
-            {"mime_type": "image/jpeg", "data": image_data}
-        ])
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=[
+                prompt,
+                gtypes.Part.from_bytes(data=image_data, mime_type="image/jpeg")
+            ]
+        )
         
         # Parse response
         response_text = response.text
