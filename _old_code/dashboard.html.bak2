@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Dashboard | SBS Deutschland</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/design-tokens.css" />
+  <link rel="stylesheet" href="/static/css/components.css" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/flyout-menu.css" />
+  <link rel="stylesheet" href="/static/css/app-shell.css" />
+  <style>
+    /* Dashboard - Light Theme */
+    .dashboard-main {
+      background: #f8fafc;
+      min-height: calc(100vh - 80px);
+      padding-top: 20px;
+    }
+    
+    .dashboard-hero {
+      background: linear-gradient(135deg, #0a1628 0%, #1e3a5f 100%);
+      padding: 60px 24px 80px;
+      text-align: center;
+      color: #fff;
+    }
+    
+    .dashboard-hero h1 {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    
+    .dashboard-hero p {
+      color: rgba(255,255,255,0.8);
+      font-size: 1.05rem;
+    }
+    
+    .dashboard-content {
+      max-width: 1200px;
+      margin: -40px auto 0;
+      padding: 0 24px 80px;
+      position: relative;
+      z-index: 10;
+    }
+    
+    /* Product Cards */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    
+    .product-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      transition: all 0.3s;
+    }
+    
+    .product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+    
+    .product-card.invoice {
+      border-top: 4px solid #22d3ee;
+    }
+    
+    .product-card.contract {
+      border-top: 4px solid #8b5cf6;
+    }
+    
+    .product-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+    
+    .product-header h3 {
+      font-size: 1.15rem;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+    }
+    
+    .plan-badge {
+      font-size: 0.65rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .plan-badge.free { background: #f1f5f9; color: #64748b; }
+    .plan-badge.starter { background: #dbeafe; color: #2563eb; }
+    .plan-badge.pro { background: #d1fae5; color: #059669; }
+    .plan-badge.enterprise { background: #ede9fe; color: #7c3aed; }
+    
+    .product-description {
+      color: #64748b;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+    
+    /* Usage Bar */
+    .usage-section {
+      margin-bottom: 24px;
+    }
+    
+    .usage-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+    
+    .usage-bar {
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    
+    .usage-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.5s ease;
+    }
+    
+    .usage-fill.invoice { background: linear-gradient(90deg, #22d3ee, #06b6d4); }
+    .usage-fill.contract { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+    .usage-fill.warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .usage-fill.critical { background: linear-gradient(90deg, #ef4444, #f87171); }
+    
+    /* Quick Actions */
+    .quick-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .action-btn.primary {
+      background: #22d3ee;
+      color: #fff;
+    }
+    
+    .action-btn.primary.contract {
+      background: #8b5cf6;
+      color: #fff;
+    }
+    
+    .action-btn.upgrade {
+      background: linear-gradient(135deg, #FFB900, #f59e0b);
+      color: #1e293b;
+      font-weight: 600;
+      border: none;
+    }
+    .action-btn.upgrade:hover {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      transform: translateY(-2px);
+    }
+
+    .action-btn.secondary {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .action-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+    
+    /* Stats Grid */
+    .stats-section {
+      margin-bottom: 32px;
+    }
+    
+    .stats-section h2 {
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+    }
+    
+    .stat-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .stat-value.invoice { color: #0891b2; }
+    .stat-value.contract { color: #7c3aed; }
+    .stat-value.success { color: #059669; }
+    .stat-value.neutral { color: #1e293b; }
+    
+    .stat-label {
+      color: #64748b;
+      font-size: 0.85rem;
+    }
+    
+    /* Activity Section */
+    .activity-section {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    }
+    
+    .activity-section h2 {
+      font-size: 1.15rem;
+      margin-bottom: 16px;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .activity-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+    
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+    
+    .activity-icon.invoice { background: #ecfeff; }
+    .activity-icon.contract { background: #f3e8ff; }
+    
+    .activity-details {
+      flex: 1;
+    }
+    
+    .activity-details strong {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #1e293b;
+    }
+    
+    .activity-details span {
+      color: #94a3b8;
+      font-size: 0.8rem;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #94a3b8;
+    }
+    
+    .empty-state .icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+    
+    /* Upgrade Banner */
+    .upgrade-banner {
+      background: linear-gradient(135deg, #f3e8ff 0%, #ecfeff 100%);
+      border: 1px solid #c4b5fd;
+      border-radius: 16px;
+      padding: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+    }
+    
+    .upgrade-banner h3 {
+      font-size: 1.15rem;
+      margin-bottom: 6px;
+      color: #1e293b;
+    }
+    
+    .upgrade-banner p {
+      color: #64748b;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+    
+    .upgrade-btn {
+      background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+      color: #fff;
+      padding: 14px 28px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    
+    .upgrade-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
+    }
+    
+    @media (max-width: 768px) {
+      .products-grid { grid-template-columns: 1fr; }
+      .upgrade-banner { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+{% include 'partials/header_platform.html' %}
+
+<div class="dashboard-main">
+  <section class="dashboard-hero">
+    <h1>Willkommen zurück{% if user.name %}, {{ user.name.split()[0] }}{% endif %}!</h1>
+    <p>Ihre SBS Produkte und Aktivitäten auf einen Blick.</p>
+  </section>
+
+  <main class="dashboard-content">
+    
+    <!-- Produkt-Karten -->
+    <div class="products-grid">
+      
+      <!-- KI-Rechnungsverarbeitung -->
+      <div class="product-card invoice">
+        <div class="product-header">
+          <h3>🧾 KI-Rechnungsverarbeitung</h3>
+          <span class="plan-badge {% if invoice_plan == 'Professional' %}pro{% elif invoice_plan == 'Enterprise' %}enterprise{% elif invoice_plan == 'Starter' %}starter{% else %}free{% endif %}">{{ invoice_plan }}</span>
+        </div>
+        <p class="product-description">Automatische Extraktion, DATEV-Export & Finance Copilot</p>
+        
+        <div class="usage-section">
+          <div class="usage-header">
+            <span>Verbrauch diesen Monat</span>
+            <span>{{ invoice_used }} / {{ invoice_limit }}</span>
+          </div>
+          <div class="usage-bar">
+            <div class="usage-fill invoice {% if invoice_percent > 90 %}critical{% elif invoice_percent > 70 %}warning{% endif %}" 
+                 style="width: {{ invoice_percent }}%"></div>
+          </div>
+        </div>
+        
+        <div class="quick-actions">
+          {% if invoice_plan == 'Free' %}
+          <a href="/static/preise/" class="action-btn upgrade">🚀 Jetzt freischalten</a>
+          <a href="/" class="action-btn secondary">📤 Demo testen</a>
+          {% else %}
+          <a href="/" class="action-btn primary">📤 Rechnungen hochladen</a>
+          <a href="/copilot" class="action-btn secondary">🤖 Copilot</a>
+          <a href="/analytics" class="action-btn secondary">📊 Analytics</a>
+          <!-- MBR_DOWNLOAD_BUTTON: do not remove -->
+          <a href="/mbr" class="action-btn secondary" id="mbr-download-btn">📑 MBR</a>
+          {% endif %}
+        </div>
+      </div>
+      
+      <!-- KI-Vertragsanalyse -->
+      <div class="product-card contract">
+        <div class="product-header">
+          <h3>📋 KI-Vertragsanalyse</h3>
+          <span class="plan-badge {% if contract_plan == 'Professional' %}pro{% elif contract_plan == 'Enterprise' %}enterprise{% elif contract_plan == 'Starter' %}starter{% else %}free{% endif %}">{{ contract_plan }}</span>
+        </div>
+        <p class="product-description">Risiko-Erkennung, Fristen-Management & Vertragsregister</p>
+        
+        <div class="usage-section">
+          <div class="usage-header">
+            <span>Verbrauch diesen Monat</span>
+            <span>{{ contract_used }} / {{ contract_limit }}</span>
+          </div>
+          <div class="usage-bar">
+            <div class="usage-fill contract {% if contract_percent > 90 %}critical{% elif contract_percent > 70 %}warning{% endif %}" 
+                 style="width: {{ contract_percent }}%"></div>
+          </div>
+        </div>
+        
+        <div class="quick-actions">
+          {% if contract_plan == 'Free' %}
+          <a href="https://sbsdeutschland.com/loesungen/vertragsanalyse/preise.html" class="action-btn upgrade">🚀 Jetzt freischalten</a>
+          <a href="https://contract.sbsdeutschland.com/demo" class="action-btn secondary">📤 Demo testen</a>
+          {% else %}
+          <a href="https://contract.sbsdeutschland.com/upload" class="action-btn primary contract">📤 Vertrag analysieren</a>
+          <a href="https://contract.sbsdeutschland.com/copilot" class="action-btn secondary">🤖 Copilot</a>
+          <a href="https://contract.sbsdeutschland.com/history" class="action-btn secondary">📁 Verlauf</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Statistiken -->
+    <section class="stats-section">
+      <h2>📈 Ihre Kennzahlen</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value invoice">{{ total_invoices }}</div>
+          <div class="stat-label">Rechnungen verarbeitet</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value contract">{{ total_contracts }}</div>
+          <div class="stat-label">Verträge analysiert</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value success">{{ time_saved }}h</div>
+          <div class="stat-label">Zeit gespart</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value neutral">€{{ money_saved }}</div>
+          <div class="stat-label">Kosten gespart</div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Letzte Aktivitäten -->
+    <section class="activity-section">
+      <h2>🕐 Letzte Aktivitäten</h2>
+      {% if recent_activity %}
+      <ul class="activity-list">
+        {% for activity in recent_activity %}
+        <li class="activity-item">
+          <div class="activity-icon {{ activity.type }}">
+            {% if activity.type == 'invoice' %}🧾{% else %}📋{% endif %}
+          </div>
+          <div class="activity-details">
+            <strong>{{ activity.title }}</strong>
+            <span>{{ activity.time }}</span>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-state">
+        <div class="icon">📭</div>
+        <p>Noch keine Aktivitäten. Laden Sie Ihre erste Rechnung oder Ihren ersten Vertrag hoch!</p>
+      </div>
+      {% endif %}
+    </section>
+    
+    <!-- Upgrade Banner -->
+    {% if show_upgrade %}
+    <div class="upgrade-banner">
+      <div>
+        <h3>🚀 Mehr erreichen mit dem Bundle</h3>
+        <p>Kombinieren Sie Rechnungs- und Vertragsanalyse und sparen Sie 20% gegenüber Einzelkauf.</p>
+      </div>
+      <a href="/checkout?product=bundle&plan=professional" class="upgrade-btn">Jetzt upgraden →</a>
+    </div>
+    {% endif %}
+    
+  </main>
+</div>
+
+<footer class="app-footer">
+  <div class="app-footer-grid">
+    <div>
+      <div class="app-footer-brand">
+        <img src="/static/sbs-logo-new.png" alt="SBS Deutschland" />
+        <div class="app-footer-brand-text">
+          <strong>SBS Deutschland</strong>
+          <span>Smart Business Service</span>
+        </div>
+      </div>
+      <p class="app-footer-tagline">Enterprise KI-Lösungen für den deutschen Mittelstand. Entwickelt in Deutschland.</p>
+      <div class="app-footer-location">📍 In der Dell 19, 69469 Weinheim</div>
+    </div>
+    <div>
+      <h4>Produkt</h4>
+      <ul>
+        <li><a href="/static/landing/">KI-Rechnungsverarbeitung</a></li>
+        <li><a href="https://contract.sbsdeutschland.com/">KI-Vertragsanalyse</a></li>
+        <li><a href="/e-rechnung-2025">E-Rechnung 2025</a></li>
+        <li><a href="/copilot">Finance Copilot</a></li>
+        <li><a href="/static/preise/">Preise & Pakete</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Features</h4>
+      <ul>
+        <li><a href="/approvals">Freigabe-Workflow</a></li>
+        <li><a href="/datev">DATEV Export</a></li>
+        <li><a href="/integrations">Lexoffice / sevDesk</a></li>
+        <li><a href="/analytics">Analytics</a></li>
+        <li><a href="/accounting">Auto-Kontierung</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li><a href="/sbshomepage/impressum.html">Impressum</a></li>
+        <li><a href="/sbshomepage/datenschutz.html">Datenschutz</a></li>
+        <li><a href="/sbshomepage/agb.html">AGB</a></li>
+        <li><a href="/static/landing/security.html">Sicherheit</a></li>
+        <li><a href="/static/landing/support.html">Support</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="app-footer-bottom">
+    <p>© 2026 SBS Deutschland GmbH & Co. KG. Alle Rechte vorbehalten.</p>
+    <p>Enterprise KI-Plattform · Weinheim</p>
+  </div>
+</footer>
+
+<script src="/static/js/main.js"></script>
+<script src="/static/js/app-shell.js"></script>
+<!-- SBS Chat Widget -->
+<link rel="stylesheet" href="https://chat.sbsdeutschland.com/static/chat-widget.css">
+<script src="https://chat.sbsdeutschland.com/static/chat-widget.js" defer></script>
+</body>
+</html>
