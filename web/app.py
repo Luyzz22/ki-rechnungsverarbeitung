@@ -6797,3 +6797,16 @@ try:
     print("✅ Nexus Gateway API aktiviert: /api/nexus/*")
 except ImportError as e:
     print(f"⚠️ Nexus Gateway nicht verfügbar: {e}")
+
+@app.get("/spend-analytics", response_class=HTMLResponse)
+async def spend_analytics_page(request: Request):
+    """Spend Intelligence Dashboard"""
+    redirect = require_login(request)
+    if redirect:
+        return redirect
+    user_info = get_user_info(request.session.get("user_id"))
+    return templates.TemplateResponse("spend_analytics.html", {
+        "request": request,
+        "user": user_info,
+        "api_key": "sbs_nexus_secret_2026"
+    })
