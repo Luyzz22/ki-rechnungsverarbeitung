@@ -48,10 +48,23 @@ class DocumentClassifyResponse(BaseModel):
     details: Optional[dict] = None
 
 
-def verify_api_key(authorization: str = Header(None)):
+# In-Memory Rate Limiter für API
+_api_requests = {}
+
+def verify_api_key(authorization: str = Header(None), request: Request = None):
+    # Rate Limit: 120 requests/min per IP
+    from time import time
+    ip = request.client.host if request else "unknown"
+    now = time()
+    # Cleanup alte Einträge
+    _api_requests[ip] = [t for t in _api_requests.get(ip, []) if now - t < 60]
+    if len(_api_requests.get(ip, [])) >= 120:
+        raise HTTPException(status_code=429, detail="Rate limit überschritten (120/min)")
+    _api_requests.setdefault(ip, []).append(now)
+    
     if not authorization or authorization != NEXUS_API_KEY:
         raise HTTPException(status_code=401, detail="Ungültiger API-Key")
-    return {"id": 16, "email": "ki@sbsdeutschland.de", "is_admin": True}  # Default admin user for NEXUS_API_KEY
+    return {"id": 16, "email": "ki@sbsdeutschland.de", "is_admin": True}
 
 
 def extract_text_from_content(content: str, encoding: str, filename: str = None) -> str:
