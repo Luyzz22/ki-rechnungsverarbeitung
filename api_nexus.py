@@ -3,6 +3,8 @@ SBS Invoice-App - Nexus Gateway API Integration
 Erstellt automatisch via install_nexus_api.sh
 """
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import base64
 import tempfile
 import logging
