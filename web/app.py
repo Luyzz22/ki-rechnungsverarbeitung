@@ -6808,5 +6808,66 @@ async def spend_analytics_page(request: Request):
     return templates.TemplateResponse("spend_analytics.html", {
         "request": request,
         "user": user_info,
-        "api_key": "sbs_nexus_secret_2026"
+        "api_key": ""  # Removed: using session auth via /api/internal/spend/
     })
+
+# ============================================================================
+# SPEND INTELLIGENCE — Internal Session-Auth API (kein API Key im Frontend)
+# ============================================================================
+from spend_analytics import (
+    get_spend_overview, get_supplier_deep_dive, forecast_spend,
+    run_spend_analysis, get_active_alerts, acknowledge_alert,
+    get_budgets, set_budget
+)
+
+@app.get("/api/internal/spend/overview")
+async def internal_spend_overview(request: Request, months: int = 12):
+    if "user_id" not in request.session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user_id = request.session["user_id"]
+    return {"status": "success", "data": get_spend_overview(months=months, user_id=user_id)}
+
+@app.get("/api/internal/spend/alerts")
+async def internal_spend_alerts(request: Request, limit: int = 20):
+    if "user_id" not in request.session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user_id = request.session["user_id"]
+    alerts = get_active_alerts(limit=limit, user_id=user_id)
+    return {"status": "success", "data": {"alerts": alerts, "count": len(alerts)}}
+
+@app.get("/api/internal/spend/forecast")
+async def internal_spend_forecast(request: Request, months: int = 3):
+    if "user_id" not in request.session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user_id = request.session["user_id"]
+    return {"status": "success", "data": forecast_spend(months=months, user_id=user_id)}
+
+@app.get("/api/internal/spend/budgets")
+async def internal_spend_budgets(request: Request):
+    if "user_id" not in request.session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user_id = request.session["user_id"]
+    return {"status": "success", "data": {"budgets": get_budgets(user_id=user_id)}}
+
+@app.post("/api/internal/spend/alerts/run")
+async def internal_spend_run(request: Request):
+    if "user_id" not in request.session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user_id = request.session["user_id"]
+    check_rate_limit(request, "default")
+    result = run_spend_analysis(user_id=user_id)
+    return {"status": "success", "data": result}
+
+@app.post("/api/internal/spend/alerts/{alert_id}/acknowledge")
+async def internal_spend_ack(alert_id: str, request: Request):
+    if "user_id" not in request.session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    result = acknowledge_alert(alert_id)
+    return {"status": "success", "data": result}
+
+@app.get("/api/internal/spend/supplier/{name}")
+async def internal_spend_supplier(name: str, request: Request):
+    if "user_id" not in request.session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user_id = request.session["user_id"]
+    return {"status": "success", "data": get_supplier_deep_dive(name, user_id=user_id)}

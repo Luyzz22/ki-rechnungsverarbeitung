@@ -113,3 +113,15 @@ def check_rate_limit(request: Request, limit_type: str = "default"):
                 "remaining": remaining
             }
         )
+
+
+# Erweiterte Rate Limits für API
+API_RATE_LIMITS = {
+    "api_read": (120, 60),     # 120 reads/Minute
+    "api_write": (30, 60),     # 30 writes/Minute  
+    "api_analysis": (10, 60),  # 10 Analysen/Minute
+    "api_maintenance": (20, 60), # 20 Maintenance/Minute
+}
+
+# Merge into RATE_LIMITS
+RATE_LIMITS.update(API_RATE_LIMITS)
