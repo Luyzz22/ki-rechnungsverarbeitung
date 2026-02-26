@@ -146,7 +146,7 @@ def get_global_kpis(
         GlobalKpi dataclass instance.
     """
     where_clause = " WHERE 1=1 "
-    date_clause, params = _build_date_filter_clause(days, date_column="i.datum")
+    date_clause, params = _build_date_filter_clause(days, date_column="i.created_at")
     where_clause += date_clause
     
     # User filter via jobs JOIN
@@ -238,7 +238,7 @@ def get_top_vendors_by_gross(
         user_id: If set, only count invoices belonging to this user's jobs.
     """
     where_clause = " WHERE 1=1 "
-    date_clause, params = _build_date_filter_clause(days, date_column="i.datum")
+    date_clause, params = _build_date_filter_clause(days, date_column="i.created_at")
     where_clause += date_clause
     
     # User filter via jobs JOIN
@@ -299,8 +299,8 @@ def get_monthly_cost_trend(
     # Prefer 'datum', fallback to 'created_at'
     date_expr = """
         COALESCE(
-            NULLIF(i.datum, ''),
-            NULLIF(i.created_at, '')
+            NULLIF(i.created_at, ''),
+            NULLIF(i.datum, '')
         )
     """
 
