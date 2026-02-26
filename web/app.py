@@ -1115,6 +1115,61 @@ async def unified_dashboard(request: Request):
     # Show upgrade banner for Free/Starter users
     show_upgrade = invoice_access.get('plan') in ['free', 'starter'] or contract_access.get('plan') in ['free', 'starter']
     
+    # === Enterprise KPIs ===
+    conn2 = get_connection()
+    c2 = conn2.cursor()
+    
+    # Gesamtausgaben
+    c2.execute("SELECT COALESCE(SUM(betrag_brutto), 0) FROM invoices")
+    total_spend = c2.fetchone()[0]
+    
+    # Diesen Monat
+    c2.execute("SELECT COALESCE(SUM(betrag_brutto), 0), COUNT(*) FROM invoices WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')")
+    row_month = c2.fetchone()
+    month_spend = row_month[0]
+    month_count = row_month[1]
+    
+    # Letzten Monat (für Vergleich)
+    c2.execute("SELECT COALESCE(SUM(betrag_brutto), 0) FROM invoices WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now', '-1 month')")
+    last_month_spend = c2.fetchone()[0]
+    spend_change = round(((month_spend - last_month_spend) / max(last_month_spend, 1)) * 100, 1) if last_month_spend > 0 else 0
+    
+    # Offene Genehmigungen
+    c2.execute("SELECT COUNT(*) FROM invoices WHERE status='pending'")
+    pending_approvals = c2.fetchone()[0]
+    
+    # Top 5 Lieferanten (dieses Quartal)
+    c2.execute("""
+        SELECT rechnungsaussteller, COUNT(*), ROUND(SUM(betrag_brutto),2)
+        FROM invoices WHERE created_at >= date('now', '-3 months')
+        GROUP BY rechnungsaussteller ORDER BY SUM(betrag_brutto) DESC LIMIT 5
+    """)
+    top_suppliers = [{"name": r[0] or "Unbekannt", "count": r[1], "total": r[2]} for r in c2.fetchall()]
+    
+    # Monthly Trend (6 Monate)
+    c2.execute("""
+        SELECT strftime('%Y-%m', created_at) as month, COUNT(*), ROUND(SUM(betrag_brutto),2)
+        FROM invoices WHERE created_at >= date('now', '-6 months')
+        GROUP BY month ORDER BY month
+    """)
+    monthly_trend = [{"month": r[0], "count": r[1], "total": r[2]} for r in c2.fetchall()]
+    
+    # Spend Alerts
+    c2.execute("SELECT COUNT(*) FROM spend_alerts WHERE acknowledged=0")
+    active_alerts = c2.fetchone()[0]
+    
+    # Durchschnittliche Bearbeitungszeit
+    c2.execute("SELECT ROUND(AVG(betrag_brutto),2) FROM invoices")
+    avg_invoice = c2.fetchone()[0] or 0
+    
+    # Unique Lieferanten
+    c2.execute("SELECT COUNT(DISTINCT rechnungsaussteller) FROM invoices")
+    supplier_count = c2.fetchone()[0]
+    
+    conn2.close()
+    
+    import json as _json
+    
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "user": user,
@@ -1132,6 +1187,21 @@ async def unified_dashboard(request: Request):
         "money_saved": money_saved,
         "recent_activity": recent_activity,
         "show_upgrade": show_upgrade,
+        # Enterprise KPIs
+        "total_spend": total_spend,
+        "month_spend": month_spend,
+        "month_count": month_count,
+        "last_month_spend": last_month_spend,
+        "spend_change": spend_change,
+        "pending_approvals": pending_approvals,
+        "top_suppliers": top_suppliers,
+        "top_suppliers_json": _json.dumps(top_suppliers),
+        "monthly_trend": monthly_trend,
+        "monthly_trend_json": _json.dumps(monthly_trend),
+        "active_alerts": active_alerts,
+        "now_hour": datetime.now().hour,
+        "avg_invoice": avg_invoice,
+        "supplier_count": supplier_count,
     })
 
 
