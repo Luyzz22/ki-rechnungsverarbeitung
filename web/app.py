@@ -5911,7 +5911,14 @@ async def preview_datev_export(request: Request, invoice_id: int):
     
     conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM invoices WHERE id = ?", (invoice_id,))
+    # DSGVO: User darf nur eigene Rechnungen sehen
+    from database import is_admin_or_owner
+    if is_admin_or_owner(user_id):
+        cursor.execute("SELECT * FROM invoices WHERE id = ?", (invoice_id,))
+    else:
+        cursor.execute("""SELECT i.* FROM invoices i 
+            JOIN jobs j ON i.job_id = j.id 
+            WHERE i.id = ? AND j.user_id = ?""", (invoice_id, user_id))
     row = cursor.fetchone()
     conn.close()
     
@@ -6035,11 +6042,18 @@ async def suggest_kontierung(request: Request):
     if not invoice_id:
         return JSONResponse({"error": "invoice_id erforderlich"}, status_code=400)
     
-    # Lade Rechnung
+    # Lade Rechnung (DSGVO: User-Filter)
     conn = sqlite3.connect("invoices.db", check_same_thread=False)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM invoices WHERE id = ?", (invoice_id,))
+    from database import is_admin_or_owner
+    user_id = request.session.get("user_id")
+    if user_id and is_admin_or_owner(user_id):
+        cursor.execute("SELECT * FROM invoices WHERE id = ?", (invoice_id,))
+    else:
+        cursor.execute("""SELECT i.* FROM invoices i
+            JOIN jobs j ON i.job_id = j.id
+            WHERE i.id = ? AND j.user_id = ?""", (invoice_id, user_id))
     row = cursor.fetchone()
     conn.close()
     
@@ -6523,7 +6537,15 @@ async def sync_to_integration(request: Request):
     
     api_key = row['api_key']
     placeholders = ','.join(['?' for _ in invoice_ids])
-    cursor.execute(f"SELECT * FROM invoices WHERE id IN ({placeholders})", invoice_ids)
+    # DSGVO: User-Filter auf Rechnungen
+    from database import is_admin_or_owner
+    user_id = request.session.get("user_id")
+    if user_id and is_admin_or_owner(user_id):
+        cursor.execute(f"SELECT * FROM invoices WHERE id IN ({placeholders})", invoice_ids)
+    else:
+        cursor.execute(f"""SELECT i.* FROM invoices i
+            JOIN jobs j ON i.job_id = j.id
+            WHERE i.id IN ({placeholders}) AND j.user_id = ?""", invoice_ids + [user_id])
     invoices = [dict(r) for r in cursor.fetchall()]
     conn.close()
     
