@@ -5792,9 +5792,18 @@ async def export_to_datev(request: Request):
     cursor = conn.cursor()
     
     placeholders = ','.join(['?' for _ in invoice_ids])
-    cursor.execute(f"""
-        SELECT * FROM invoices WHERE id IN ({placeholders})
-    """, invoice_ids)
+    # DSGVO: Nur Rechnungen des eingeloggten Users (Admins sehen alle)
+    from database import is_admin_or_owner
+    if is_admin_or_owner(user_id):
+        cursor.execute(f"""
+            SELECT * FROM invoices WHERE id IN ({placeholders})
+        """, invoice_ids)
+    else:
+        cursor.execute(f"""
+            SELECT i.* FROM invoices i
+            JOIN jobs j ON i.job_id = j.id
+            WHERE i.id IN ({placeholders}) AND j.user_id = ?
+        """, invoice_ids + [user_id])
     
     invoices = [dict(row) for row in cursor.fetchall()]
     conn.close()
