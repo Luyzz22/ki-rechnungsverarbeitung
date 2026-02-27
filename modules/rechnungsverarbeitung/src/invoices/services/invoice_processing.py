@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+import hashlib
 import uuid
 from datetime import datetime
 from typing import BinaryIO
 
-from shared.db.session import get_session
 from shared.tenant.context import TenantContext
-from modules.rechnungsverarbeitung.src.invoices.db_models import Invoice
 from modules.rechnungsverarbeitung.src.invoices.models import InvoiceDocumentMetadata
+from modules.rechnungsverarbeitung.src.invoices.services.erechnung_hub import ERechnungHubService
 from modules.rechnungsverarbeitung.src.invoices.services.invoice_logging import (
     log_invoice_event_from_metadata,
 )
+
+
+STRUCTURED_FORMATS = {"xrechnung", "zugferd", "xml_other"}
 
 
 def process_invoice_upload(
@@ -20,12 +23,13 @@ def process_invoice_upload(
     uploaded_by: str | None = None,
 ) -> InvoiceDocumentMetadata:
     """
-    Einstiegspunkt für neue Rechnungsuploads.[web:281]
-    - Erzeugt eine technische Dokument-ID
-    - Erzeugt tenant-aware Metadaten
-    - Triggert die weitere Verarbeitung (Platzhalter)
+    Einstiegspunkt für neue Rechnungsuploads.
+
+    Ablauf (deterministisch):
+    - upload_received -> classified
+    - Für strukturierte Formate: validation_passed|validation_failed
+    - Für PDF/sonstige: classified ohne strukturierte Validierung
     """
-    # Stelle sicher, dass ein Tenant gesetzt ist (z.B. durch API-Gateway / Middleware)
     _ = TenantContext.get_current_tenant()
 
     document_id = str(uuid.uuid4())
@@ -36,58 +40,103 @@ def process_invoice_upload(
         uploaded_by=uploaded_by,
     )
 
-    # 1) Upload eingegangen (None -> uploaded)
+    payload = file_stream.read()
+    if hasattr(file_stream, "seek"):
+        file_stream.seek(0)
+    payload_sha256 = hashlib.sha256(payload).hexdigest()
+
     log_invoice_event_from_metadata(
         metadata=metadata,
         event_type="upload_received",
         status_from=None,
         status_to="uploaded",
         message="Invoice upload received",
+        extra_details={"payload_sha256": payload_sha256, "mime_type": mime_type, "file_name": file_name},
     )
+
+    hub = ERechnungHubService()
+    detected_format = hub.detect_invoice_format(payload, file_name)
+    metadata.document_type = detected_format
+    metadata.status = "classified"
 
     _persist_metadata(metadata)
 
-    # 2) Platzhalter: Extraktion erfolgreich (uploaded -> extracted)
-    metadata.status = "extracted"
     log_invoice_event_from_metadata(
         metadata=metadata,
-        event_type="extraction_completed",
+        event_type="format_classified",
         status_from="uploaded",
-        status_to="extracted",
-        message="Invoice extraction completed (placeholder)",
+        status_to="classified",
+        message=f"Detected invoice format: {detected_format}",
+        extra_details={"detected_format": detected_format, "payload_sha256": payload_sha256},
     )
 
-    # 3) Platzhalter: Validierung erfolgreich (extracted -> validated)
-    metadata.status = "validated"
-    log_invoice_event_from_metadata(
-        metadata=metadata,
-        event_type="validation_succeeded",
-        status_from="extracted",
-        status_to="validated",
-        message="Invoice validation succeeded (placeholder)",
-    )
+    if detected_format in STRUCTURED_FORMATS:
+        _, _, report = hub.validate_structured_invoice(
+            document_id=metadata.id,
+            tenant_id=metadata.tenant_id,
+            xml_content=payload,
+        )
+        previous_status = metadata.status
+        metadata.status = "validated" if report.status == "passed" else "validation_failed"
 
-    # 4) Platzhalter: Buchung erfolgreich (validated -> booked)
-    metadata.status = "booked"
-    log_invoice_event_from_metadata(
-        metadata=metadata,
-        event_type="booking_succeeded",
-        status_from="validated",
-        status_to="booked",
-        message="Invoice booking succeeded (placeholder)",
-    )
+        _persist_metadata(metadata)
 
-    # TODO: Hier folgt deine tatsächliche Extraktion/Verarbeitung des PDF
-    # z.B. call_extract_invoice(file_stream, metadata)
+        log_invoice_event_from_metadata(
+            metadata=metadata,
+            event_type="validation_completed",
+            status_from=previous_status,
+            status_to=metadata.status,
+            message=f"Validation status={report.status}; engine={report.engine}; config={report.config_version}",
+            extra_details={
+                "validation_status": report.status,
+                "validation_engine": report.engine,
+                "validation_config_version": report.config_version,
+                "error_count": len(report.errors),
+                "warning_count": len(report.warnings),
+                "payload_sha256": payload_sha256,
+            },
+        )
+    else:
+        log_invoice_event_from_metadata(
+            metadata=metadata,
+            event_type="validation_skipped",
+            status_from="classified",
+            status_to="classified",
+            message="Structured validation skipped for non-XML invoice format",
+            extra_details={"reason": "non_structured_format", "detected_format": detected_format, "payload_sha256": payload_sha256},
+        )
 
     return metadata
 
 
 def _persist_metadata(metadata: InvoiceDocumentMetadata) -> None:
     """
-    Persistiert die aktuelle Metadaten-Sicht der Rechnung als Invoice-Row.[web:283]
+    Persistiert die aktuelle Metadaten-Sicht der Rechnung als Invoice-Row.
+    Bei bestehender document_id wird ein Update durchgeführt.
     """
+    from shared.db.session import get_session
+    from modules.rechnungsverarbeitung.src.invoices.db_models import Invoice
+
     with get_session() as session:
+        existing: Invoice | None = (
+            session.query(Invoice)
+            .filter(
+                Invoice.document_id == metadata.id,
+                Invoice.tenant_id == metadata.tenant_id,
+            )
+            .first()
+        )
+
+        if existing:
+            existing.document_type = metadata.document_type
+            existing.file_name = metadata.file_name
+            existing.mime_type = metadata.mime_type
+            existing.uploaded_by = metadata.uploaded_by
+            existing.processed_at = metadata.processed_at
+            existing.source_system = metadata.source_system
+            existing.status = metadata.status
+            return
+
         invoice = Invoice(
             document_id=metadata.id,
             tenant_id=metadata.tenant_id,
@@ -101,5 +150,3 @@ def _persist_metadata(metadata: InvoiceDocumentMetadata) -> None:
             status=metadata.status,
         )
         session.add(invoice)
-        session.commit()
-
