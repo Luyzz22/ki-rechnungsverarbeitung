@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
-from shared.db.session import get_session
 from shared.tenant.context import TenantContext
-from modules.rechnungsverarbeitung.src.invoices.db_models import InvoiceEvent
-from modules.rechnungsverarbeitung.src.invoices.models import InvoiceDocumentMetadata
+
+if TYPE_CHECKING:
+    from modules.rechnungsverarbeitung.src.invoices.models import InvoiceDocumentMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +27,10 @@ def log_invoice_event(
     """
     tenant_id = TenantContext.get_current_tenant()
     if not tenant_id:
-        # Defensive: Event-Log darf nie ohne Tenant laufen
         raise RuntimeError("TenantContext is not set for log_invoice_event")
+
+    from shared.db.session import get_session
+    from modules.rechnungsverarbeitung.src.invoices.db_models import InvoiceEvent
 
     event = InvoiceEvent(
         tenant_id=tenant_id,
@@ -38,9 +40,7 @@ def log_invoice_event(
         status_to=status_to,
         actor=actor,
         created_at=datetime.utcnow(),
-        # Hinweis: In der DB ist metadata aktuell ein generisches Feld;
-        # im API serialisieren wir es konservativ als {}.
-        metadata=metadata or {},
+        details=metadata or {},
     )
 
     with get_session() as session:
@@ -49,17 +49,21 @@ def log_invoice_event(
 
 
 def log_invoice_event_from_metadata(
-    metadata: InvoiceDocumentMetadata,
+    metadata: "InvoiceDocumentMetadata",
     event_type: str,
     status_from: Optional[str],
     status_to: Optional[str],
     message: Optional[str] = None,
+    extra_details: dict[str, Any] | None = None,
 ) -> None:
     """
     Convenience-Wrapper: Logging & persistentes Event auf Basis der Metadaten.[web:284]
     Privacy by Design: Wir loggen nur Metadaten/IDs, keine Rechnungsinhalte.[web:284]
     """
-    # Structured Log (z.B. für zentrale Log-Pipeline)
+    details = {"message": message} if message else {}
+    if extra_details:
+        details.update(extra_details)
+
     logger.info(
         "invoice_event",
         extra={
@@ -70,16 +74,15 @@ def log_invoice_event_from_metadata(
             "status_to": status_to,
             "event_type": event_type,
             "message": message or "",
+            "details": details,
         },
     )
 
-    # Persistentes Event im DB-Event-Log
     log_invoice_event(
         document_id=metadata.id,
         event_type=event_type,
         status_from=status_from,
         status_to=status_to,
         actor=metadata.uploaded_by,
-        metadata={"message": message} if message else {},
+        metadata=details,
     )
-

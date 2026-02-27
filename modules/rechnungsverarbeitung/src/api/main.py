@@ -168,7 +168,7 @@ async def get_invoice_events(document_id: str, x_tenant_id: str = Header(alias="
                     "status_to": ev.status_to,
                     "actor": ev.actor,
                     "created_at": ev.created_at.isoformat() if ev.created_at else None,
-                    "metadata": {},
+                    "metadata": ev.details or {},
                 }
             )
 
