@@ -49,7 +49,7 @@ notifications:
     smtp_server: "smtp.gmail.com"
     smtp_port: 587
     username: "luis220195@gmail.com"
-    password: "***REMOVED***"
+    password: "kwyr rrfc gcks owjp"
     from_address: "luis220195@gmail.com"
     to_addresses:
       - "luis@schenk.com"
