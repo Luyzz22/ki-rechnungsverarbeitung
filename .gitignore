@@ -119,3 +119,12 @@ web/templates/*.bak-*
 backups/*.db.gz
 *.bak-*
 .codex/
+
+# --- Phase 0 additions ---
+config.yaml
+docker-compose.override.yml
+alembic/versions/__pycache__/
+evidence/
+exports/
+..bfg-report/
+phase0-deploy.sh

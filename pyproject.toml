@@ -1,0 +1,29 @@
+[project]
+name = "sbs-nexus-finance"
+version = "0.1.0"
+description = "KI-gestuetzte E-Rechnungsverarbeitung fuer den deutschen Mittelstand"
+requires-python = ">=3.12"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["modules", "shared"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "S", "UP", "SIM"]
+ignore = ["E501", "S101", "B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S105", "S106"]
+"alembic/**/*.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "modules/rechnungsverarbeitung/tests"]
+pythonpath = ["."]
+addopts = "-v --tb=short"

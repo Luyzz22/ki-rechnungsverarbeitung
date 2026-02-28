@@ -1,0 +1,71 @@
+version: "4.1"
+
+ai:
+  mode: "hybrid"
+  primary_model: "gpt-4o"
+  primary_provider: "openai"
+  fallback_model: "claude-sonnet-4-20250514"
+  fallback_provider: "anthropic"
+  complexity_threshold: 0
+  temperature: 0
+  max_retries: 3
+  timeout: 30
+
+processing:
+  parallel_processing: true
+  max_workers: 4
+  batch_size: 100
+  chunk_size: 3500
+  input_dir: test_rechnungen
+  max_pdfs_per_run: 1000
+  max_file_size_mb: 50
+
+ocr:
+  language: "deu"
+  dpi: 300
+
+paths:
+  input_directory: "test_rechnungen"
+  output_directory: "output"
+
+export:
+  formats:
+    - xlsx
+    - csv
+  create_datev: true
+  create_dashboard: true
+
+datev:
+  enabled: true
+
+dashboard:
+  output_dir: "output/charts"
+  auto_generate: true
+  theme: "dark"
+
+notifications:
+  email:
+    enabled: true
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: "luis220195@gmail.com"
+    password: "kwyr rrfc gcks owjp"
+    from_address: "luis220195@gmail.com"
+    to_addresses:
+      - "luis@schenk.com"
+      - "andreas@schenk.com"
+
+validation:
+  enabled: true
+  required_fields:
+    - rechnungsnummer
+    - datum
+    - betrag_brutto
+
+logging:
+  level: INFO
+
+features:
+  ocr_fallback: true
+  datev_export: true
+  dashboard: true
