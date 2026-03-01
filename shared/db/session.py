@@ -1,18 +1,19 @@
 """Database session management with SQLAlchemy."""
 from __future__ import annotations
-import os
 from contextlib import contextmanager
 from typing import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg://sbs_user:dev_password_change_me@localhost:5432/sbs_nexus",
-)
+from shared.settings import get_settings
 
-engine = create_engine(DATABASE_URL, echo=False, future=True, pool_pre_ping=True)
+engine = create_engine(
+    get_settings().database_url,
+    echo=False,
+    future=True,
+    pool_pre_ping=True,
+)
 SessionLocal: sessionmaker[Session] = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
