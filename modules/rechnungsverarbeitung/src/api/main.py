@@ -18,6 +18,12 @@ from shared.db.session import get_session
 from modules.rechnungsverarbeitung.src.invoices.services.invoice_processing import (
     process_invoice_upload,
 )
+from modules.rechnungsverarbeitung.src.invoices.services.notifications import (
+    NotificationService,
+)
+
+notification_service = NotificationService()
+
 from modules.rechnungsverarbeitung.src.invoices.services.state_machine import (
     InvoiceStateMachine,
     TransitionError,
@@ -266,6 +272,17 @@ async def transition_invoice(
             details=result.details,
         )
         session.add(event)
+
+    # Notify
+    notification_service.notify_transition(
+        document_id=document_id,
+        file_name=invoice.file_name if hasattr(invoice, "file_name") else document_id,
+        from_status=result.from_status.value,
+        to_status=result.to_status.value,
+        actor=result.actor,
+        details=result.details,
+        tenant_id=tenant_id,
+    )
 
     return TransitionResponse(
         document_id=document_id,
