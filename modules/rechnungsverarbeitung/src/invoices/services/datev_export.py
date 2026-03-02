@@ -233,3 +233,81 @@ class DatevExportService:
             except ValueError:
                 continue
         return fallback.strftime("%d%m")
+
+
+    def export_batch(
+        self,
+        tenant_id: str,
+        invoices: list[dict[str, Any]],
+    ) -> DatevExportResult:
+        """Batch export multiple invoices as single DATEV Buchungsstapel.
+
+        Args:
+            tenant_id: Tenant scope.
+            invoices: List of dicts with document_id, kontierung, invoice_data.
+
+        Returns:
+            DatevExportResult for the combined batch.
+        """
+        now = datetime.utcnow()
+        batch_id = f"DATEV-{tenant_id}-{now.strftime('%Y%m%d_%H%M%S')}-BATCH"
+
+        records: list[DatevBookingRecord] = []
+        total = 0.0
+
+        for inv in invoices:
+            k = inv.get("kontierung", {})
+            meta = inv.get("invoice_data", {})
+            betrag = float(k.get("betrag", k.get("total_gross", 0)))
+            total += betrag
+
+            belegdatum = self._format_belegdatum(
+                k.get("belegdatum", meta.get("invoice_date", "")), now
+            )
+
+            records.append(DatevBookingRecord(
+                umsatz=betrag,
+                soll_haben="S",
+                konto=str(k.get("konto", "4900")),
+                gegenkonto=str(k.get("gegenkonto", "1600")),
+                belegdatum=belegdatum,
+                buchungstext=str(k.get("buchungstext", meta.get("file_name", "Rechnung")))[:60],
+                belegnummer=str(inv.get("document_id", ""))[:20],
+                steuerschluessel=str(k.get("steuerschluessel", "")),
+                kostenstelle=str(k.get("kostenstelle", "")),
+            ))
+
+        csv_content = self._generate_csv(records)
+
+        tenant_dir = self.export_dir / tenant_id
+        tenant_dir.mkdir(parents=True, exist_ok=True)
+        filepath = tenant_dir / f"{batch_id}.csv"
+        filepath.write_text(csv_content, encoding="cp1252", errors="replace")
+
+        export_hash = hashlib.sha256(csv_content.encode("utf-8")).hexdigest()
+
+        meta_out = {
+            "batch_id": batch_id,
+            "tenant_id": tenant_id,
+            "records_count": len(records),
+            "total_amount": total,
+            "export_hash": export_hash,
+            "skr": self.skr,
+            "created_at": now.isoformat(),
+            "document_ids": [inv.get("document_id") for inv in invoices],
+        }
+        meta_path = tenant_dir / f"{batch_id}.meta.json"
+        meta_path.write_text(json.dumps(meta_out, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        logger.info("datev_batch_export", extra={"batch_id": batch_id, "records": len(records), "total": total})
+
+        return DatevExportResult(
+            batch_id=batch_id,
+            file_path=str(filepath),
+            records_count=len(records),
+            total_amount=total,
+            export_hash=export_hash,
+            created_at=now.isoformat(),
+            skr=self.skr,
+        )
+

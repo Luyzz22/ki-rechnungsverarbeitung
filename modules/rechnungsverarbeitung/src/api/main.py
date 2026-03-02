@@ -646,4 +646,73 @@ async def suggest_kontierung(
     }
 
 
+
+
+class DatevBatchRequest(BaseModel):
+    document_ids: list[str]
+    kontierungen: dict[str, dict[str, Any]]  # document_id -> kontierung
+
+
+@v1.post("/invoices/datev-batch")
+async def batch_export_datev(
+    body: DatevBatchRequest,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    """Batch export multiple approved invoices to single DATEV file."""
+    tenant_id = _require_tenant(x_tenant_id)
+
+    invoices_data = []
+    with get_session() as session:
+        for doc_id in body.document_ids:
+            invoice = _get_invoice_or_404(session, doc_id, tenant_id)
+            if invoice.status != "approved":
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Invoice {doc_id} not approved (status: {invoice.status})",
+                )
+            k = body.kontierungen.get(doc_id, {})
+            invoices_data.append({
+                "document_id": doc_id,
+                "kontierung": k,
+                "invoice_data": {"file_name": invoice.file_name},
+            })
+
+    result = datev_service.export_batch(tenant_id=tenant_id, invoices=invoices_data)
+
+    # Transition all to exported
+    with get_session() as session:
+        for doc_id in body.document_ids:
+            invoice = _get_invoice_or_404(session, doc_id, tenant_id)
+            try:
+                tr = state_machine.transition(
+                    document_id=doc_id,
+                    current_status=invoice.status,
+                    target_status="exported",
+                    details={"datev_batch": result.batch_id},
+                )
+                invoice.status = tr.to_status.value
+                invoice.processed_at = datetime.utcnow()
+                session.add(InvoiceEvent(
+                    tenant_id=tenant_id,
+                    document_id=doc_id,
+                    event_type=tr.event_type,
+                    status_from=tr.from_status.value,
+                    status_to=tr.to_status.value,
+                    actor=tr.actor,
+                    created_at=tr.timestamp,
+                    details=tr.details,
+                ))
+            except TransitionError:
+                pass
+
+    return {
+        "batch_id": result.batch_id,
+        "records_count": result.records_count,
+        "total_amount": result.total_amount,
+        "export_hash": result.export_hash,
+        "skr": result.skr,
+        "document_ids": body.document_ids,
+    }
+
+
 app.include_router(v1)
