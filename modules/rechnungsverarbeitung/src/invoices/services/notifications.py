@@ -160,7 +160,26 @@ class NotificationService:
     ) -> bool:
         """Send to n8n webhook for workflow automation."""
         try:
+            emoji = STATUS_EMOJI.get(to_status, "📋")
+            label = STATUS_LABELS.get(to_status, to_status)
+            actor_str = actor or "System"
+
+            text = (
+                f"{emoji} *E-Rechnung: {label}*\n\n"
+                f"📄 *Datei:* {file_name}\n"
+                f"🔄 *Status:* {from_status} → {to_status}\n"
+                f"👤 *Aktion:* {actor_str}\n"
+                f"🆔 *ID:* `{document_id[:12]}...`"
+            )
+
+            if to_status == "suggested" and details:
+                konto = details.get("konto", "")
+                confidence = details.get("confidence", 0)
+                model = details.get("model", "")
+                text += f"\n🤖 Konto {konto} | {confidence:.0%} | {model}"
+
             payload = {
+                "text": text,
                 "event": "invoice_transition",
                 "document_id": document_id,
                 "file_name": file_name,
