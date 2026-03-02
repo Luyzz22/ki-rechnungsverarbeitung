@@ -273,16 +273,17 @@ async def transition_invoice(
         )
         session.add(event)
 
-    # Notify
-    notification_service.notify_transition(
-        document_id=document_id,
-        file_name=invoice.file_name if hasattr(invoice, "file_name") else document_id,
-        from_status=result.from_status.value,
-        to_status=result.to_status.value,
-        actor=result.actor,
-        details=result.details,
-        tenant_id=tenant_id,
-    )
+        # Notify (inside session so invoice attrs accessible)
+        _file_name = invoice.file_name or document_id
+        notification_service.notify_transition(
+            document_id=document_id,
+            file_name=_file_name,
+            from_status=result.from_status.value,
+            to_status=result.to_status.value,
+            actor=result.actor,
+            details=result.details,
+            tenant_id=tenant_id,
+        )
 
     return TransitionResponse(
         document_id=document_id,
