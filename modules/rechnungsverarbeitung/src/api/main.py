@@ -1,14 +1,30 @@
-"""SBS Nexus Finance API – v1.1.0
+from __future__ import annotations
+
+import sentry_sdk
+import os
+from dotenv import load_dotenv
+load_dotenv("/var/www/invoice-app/.env")
+
+if os.getenv('SENTRY_DSN'):
+    sentry_sdk.init(
+        dsn=os.getenv('SENTRY_DSN'),
+        traces_sample_rate=0.2,
+        profiles_sample_rate=0.1,
+        environment=os.getenv('SENTRY_ENV', 'production'),
+        release='belegflow-ai@1.0.0',
+        send_default_pii=False,
+    )
+
+"""SBS Nexus Finance API – v1.0.0
 
 Phase 1: State Machine + Audit Chain + GoBD Evidence integration.
 """
-from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, UploadFile, File, Header, HTTPException, APIRouter
+from fastapi import FastAPI, UploadFile, File, Header, HTTPException, APIRouter, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -45,14 +61,27 @@ evidence_service = GoBDEvidenceService(evidence_dir=settings.gobd_evidence_dir)
 
 # ── App ───────────────────────────────────────────────────────────────
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from modules.rechnungsverarbeitung.src.auth.rate_limiter import limiter, rate_limit_handler
+from modules.rechnungsverarbeitung.src.auth.jwt_auth import (
+    create_tokens, decode_token, verify_password, hash_password,
+    get_current_user, get_tenant_from_auth, UserAuth, TokenResponse,
+)
+from pydantic import BaseModel as PydanticBaseModel
+
 app = FastAPI(
     title="SBS Nexus Finance API",
-    version="1.1.0",
-    description="KI-gestuetzte E-Rechnungsverarbeitung fuer den deutschen Mittelstand",
-    docs_url="/api/v1/docs",
-    redoc_url="/api/v1/redoc",
-    openapi_url="/api/v1/openapi.json",
+    description="Enterprise KI-Rechnungsverarbeitung — GoBD-konform, DATEV-ready",
+    version="1.2.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+    contact={"name": "SBS Deutschland GmbH & Co. KG", "email": "ki@sbsdeutschland.de"},
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -142,7 +171,7 @@ async def health():
     return {
         "status": status,
         "checks": checks,
-        "version": "1.1.0",
+        "version": "1.0.0",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -196,14 +225,20 @@ async def list_invoices(
         items = [
             {
                 "document_id": inv.document_id,
+                "current_state": inv.status,
                 "status": inv.status,
                 "file_name": inv.file_name,
                 "document_type": inv.document_type,
+                "supplier": getattr(inv, 'supplier', None),
+                "total_amount": float(inv.total_amount) if getattr(inv, 'total_amount', None) else None,
+                "currency": getattr(inv, 'currency', None) or 'EUR',
+                "invoice_number": getattr(inv, 'invoice_number', None),
+                "created_at": inv.uploaded_at.isoformat() if inv.uploaded_at else None,
                 "uploaded_at": inv.uploaded_at.isoformat() if inv.uploaded_at else None,
             }
             for inv in invoices
         ]
-    return {"items": items, "total": len(items), "limit": limit, "offset": offset}
+    return items
 
 
 @v1.get("/invoices/{document_id}")
@@ -219,6 +254,7 @@ async def get_invoice(
             "document_id": invoice.document_id,
             "tenant_id": invoice.tenant_id,
             "status": invoice.status,
+            "current_state": invoice.status,
             "file_name": invoice.file_name,
             "document_type": invoice.document_type,
             "uploaded_by": invoice.uploaded_by,
@@ -714,6 +750,330 @@ async def batch_export_datev(
         "skr": result.skr,
         "document_ids": body.document_ids,
     }
+
+
+
+
+# ---------------------------------------------------------------------------
+# Finance Copilot
+# ---------------------------------------------------------------------------
+from modules.rechnungsverarbeitung.src.invoices.services.finance_copilot import (
+    FinanceCopilotService,
+)
+
+copilot_service = FinanceCopilotService()
+
+
+class CopilotRequest(BaseModel):
+    question: str
+    conversation_history: list[dict[str, str]] | None = None
+
+
+@v1.post("/copilot/chat")
+async def copilot_chat(
+    body: CopilotRequest,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    """AI Finance Copilot – ask questions about your invoices."""
+    tenant_id = _require_tenant(x_tenant_id)
+    result = copilot_service.chat(
+        question=body.question,
+        tenant_id=tenant_id,
+        conversation_history=body.conversation_history,
+    )
+    return result
+
+
+
+
+# ---------------------------------------------------------------------------
+# Dashboard Analytics
+# ---------------------------------------------------------------------------
+from modules.rechnungsverarbeitung.src.invoices.services.analytics_service import AnalyticsService
+analytics_service = AnalyticsService()
+
+@v1.get("/analytics/dashboard")
+async def analytics_dashboard(days: int = 90, x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID")):
+    tenant_id = _require_tenant(x_tenant_id)
+    return analytics_service.get_dashboard(tenant_id=tenant_id, days=days)
+
+
+
+
+# ---------------------------------------------------------------------------
+# Auth Endpoints
+# ---------------------------------------------------------------------------
+class LoginRequest(PydanticBaseModel):
+    email: str
+    password: str
+
+class RefreshRequest(PydanticBaseModel):
+    refresh_token: str
+
+@v1.post("/auth/token", response_model=TokenResponse, tags=["Auth"])
+async def login(body: LoginRequest):
+    """Authenticate and receive JWT tokens."""
+    # For now, simple demo auth — replace with DB lookup
+    if body.email == "demo@sbsdeutschland.de" and body.password == "demo2026":
+        return create_tokens(user_id="demo-user", tenant_id="test-ai-live", role="user")
+    raise HTTPException(status_code=401, detail="Invalid credentials")
+
+@v1.post("/auth/refresh", response_model=TokenResponse, tags=["Auth"])
+async def refresh(body: RefreshRequest):
+    """Refresh an expired access token."""
+    payload = decode_token(body.refresh_token)
+    if payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+    return create_tokens(user_id=payload["sub"], tenant_id=payload["tenant_id"])
+
+@v1.get("/auth/me", tags=["Auth"])
+async def get_me(user: UserAuth = Depends(get_current_user)):
+    """Get current authenticated user info."""
+    return {"user_id": user.user_id, "tenant_id": user.tenant_id, "role": user.role}
+
+
+
+
+# ---------------------------------------------------------------------------
+# User Management
+# ---------------------------------------------------------------------------
+from modules.rechnungsverarbeitung.src.invoices.services.user_service import UserService
+user_service = UserService()
+
+class RegisterRequest(PydanticBaseModel):
+    email: str
+    password: str
+    name: str
+    company: str = ""
+
+class LoginRequest2(PydanticBaseModel):
+    email: str
+    password: str
+
+@v1.post("/users/register", tags=["Users"])
+async def register_user(body: RegisterRequest):
+    """Register a new user and create tenant."""
+    try:
+        result = user_service.register(email=body.email, password=body.password, name=body.name, company=body.company)
+        tokens = create_tokens(user_id=result["user_id"], tenant_id=result["tenant_id"], role=result["role"])
+        # Send welcome email
+        email_notification_service.send_welcome(to_email=body.email, name=body.name)
+        return {"user": result, "tokens": tokens}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@v1.post("/users/login", tags=["Users"])
+async def login_user(body: LoginRequest2):
+    """Login with email/password, returns JWT + user profile."""
+    try:
+        result = user_service.login(email=body.email, password=body.password)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+@v1.get("/users/profile", tags=["Users"])
+async def get_profile(user: UserAuth = Depends(get_current_user)):
+    """Get current user profile."""
+    profile = user_service.get_user(user.user_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="User not found")
+    return profile
+
+@v1.get("/users/team", tags=["Users"])
+async def list_team(user: UserAuth = Depends(get_current_user)):
+    """List all users in current tenant."""
+    return user_service.list_users(user.tenant_id)
+
+
+
+
+# ---------------------------------------------------------------------------
+# Email Ingestion
+# ---------------------------------------------------------------------------
+from modules.rechnungsverarbeitung.src.invoices.services.email_ingestion import EmailIngestionService
+email_service = EmailIngestionService()
+
+@v1.post("/email/poll", tags=["Email Ingestion"])
+async def trigger_email_poll(user: UserAuth = Depends(get_current_user)):
+    """Manually trigger email inbox polling."""
+    results = email_service.poll()
+    return {"processed": len(results), "invoices": results}
+
+@v1.get("/email/status", tags=["Email Ingestion"])
+async def email_status():
+    """Check email ingestion configuration status."""
+    configured = all([email_service.host, email_service.user, email_service.password])
+    return {
+        "configured": configured,
+        "imap_host": email_service.host if configured else None,
+        "imap_user": email_service.user if configured else None,
+        "folder": email_service.folder,
+        "slack_webhook": bool(email_service.slack_webhook),
+    }
+
+
+
+
+# ---------------------------------------------------------------------------
+# Subscriptions & Billing (Stripe)
+# ---------------------------------------------------------------------------
+from modules.rechnungsverarbeitung.src.invoices.services.subscription_service import SubscriptionService
+from modules.rechnungsverarbeitung.src.invoices.services.email_notifications import EmailService
+email_notification_service = EmailService()
+
+subscription_service = SubscriptionService()
+
+@v1.get("/billing/plans", tags=["Billing"])
+async def list_plans():
+    """List available subscription plans."""
+    return subscription_service.get_plans()
+
+@v1.get("/billing/subscription", tags=["Billing"])
+async def get_subscription(user: UserAuth = Depends(get_current_user)):
+    """Get current tenant subscription status."""
+    return subscription_service.get_tenant_subscription(user.tenant_id)
+
+@v1.post("/billing/checkout", tags=["Billing"])
+async def create_checkout(
+    plan_id: str,
+    user: UserAuth = Depends(get_current_user),
+):
+    """Create Stripe Checkout session for plan upgrade."""
+    try:
+        from modules.rechnungsverarbeitung.src.invoices.services.user_service import UserService
+        us = UserService()
+        profile = us.get_user(user.user_id)
+        email = profile.get("email", "") if profile else ""
+        result = subscription_service.create_checkout_session(
+            tenant_id=user.tenant_id,
+            plan_id=plan_id,
+            user_email=email,
+            success_url="https://belegflow-ai.de/billing/success",
+            cancel_url="https://belegflow-ai.de/billing/cancel",
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@v1.post("/billing/portal", tags=["Billing"])
+async def create_portal(user: UserAuth = Depends(get_current_user)):
+    """Create Stripe Customer Portal session."""
+    try:
+        result = subscription_service.create_portal_session(
+            tenant_id=user.tenant_id,
+            return_url="https://belegflow-ai.de/dashboard",
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@v1.get("/billing/usage", tags=["Billing"])
+async def check_usage(user: UserAuth = Depends(get_current_user)):
+    """Check invoice processing usage vs plan limit."""
+    return subscription_service.check_invoice_limit(user.tenant_id)
+
+@v1.post("/billing/webhook", tags=["Billing"], include_in_schema=False)
+async def stripe_webhook(request: Request):
+    """Stripe webhook endpoint."""
+    from fastapi import Request
+    payload = await request.body()
+    sig = request.headers.get("stripe-signature", "")
+    try:
+        result = subscription_service.handle_webhook(payload, sig)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+
+
+# ---------------------------------------------------------------------------
+# RBAC — Role-Based Access Control
+# ---------------------------------------------------------------------------
+class UpdateRoleRequest(PydanticBaseModel):
+    user_id: str
+    role: str  # admin, editor, viewer
+
+class InviteRequest(PydanticBaseModel):
+    email: str
+    name: str
+    role: str = "editor"
+    password: str = ""
+
+@v1.put("/users/role", tags=["RBAC"])
+async def update_user_role(body: UpdateRoleRequest, user: UserAuth = Depends(get_current_user)):
+    """Update a team member's role. Admin only."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    try:
+        return user_service.update_role(admin_tenant_id=user.tenant_id, target_user_id=body.user_id, new_role=body.role)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@v1.post("/users/invite", tags=["RBAC"])
+async def invite_team_member(body: InviteRequest, user: UserAuth = Depends(get_current_user)):
+    """Invite a new team member to current tenant. Admin only."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    import secrets
+    password = body.password if body.password else secrets.token_urlsafe(12)
+    try:
+        result = user_service.invite_user(
+            email=body.email, password=password, name=body.name,
+            tenant_id=user.tenant_id, role=body.role,
+        )
+        result["temp_password"] = password
+        # Send invite email
+        email_result = email_notification_service.send_invite(
+            to_email=body.email, inviter_name="Admin", temp_password=password, role=body.role,
+        )
+        result["email_sent"] = email_result.get("sent", False)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@v1.delete("/users/{user_id}", tags=["RBAC"])
+async def remove_team_member(user_id: str, user: UserAuth = Depends(get_current_user)):
+    """Remove a team member from tenant. Admin only."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    try:
+        return user_service.delete_user(admin_tenant_id=user.tenant_id, target_user_id=user_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+
+
+# ---------------------------------------------------------------------------
+# Password Reset
+# ---------------------------------------------------------------------------
+class ForgotPasswordRequest(PydanticBaseModel):
+    email: str
+
+@v1.post("/auth/forgot-password", tags=["Auth"])
+async def forgot_password(body: ForgotPasswordRequest):
+    """Send a temporary password via email."""
+    import secrets
+    from shared.db.session import get_session
+    from sqlalchemy import text
+    from modules.rechnungsverarbeitung.src.auth.jwt_auth import hash_password
+
+    with get_session() as s:
+        row = s.execute(text("SELECT id, name, email FROM users WHERE email = :e"), {"e": body.email.lower().strip()}).fetchone()
+        if not row:
+            return {"message": "Falls ein Konto existiert, wird eine E-Mail gesendet."}
+
+        temp_pw = secrets.token_urlsafe(10)
+        import bcrypt
+        hashed = bcrypt.hashpw(temp_pw[:72].encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        s.execute(text("UPDATE users SET password_hash = :pw WHERE id = :id"), {"pw": hashed, "id": row[0]})
+        s.commit()
+
+    email_notification_service.send_invite(
+        to_email=row[2], inviter_name="BelegFlow AI", temp_password=temp_pw, role="password-reset",
+    )
+    return {"message": "Falls ein Konto existiert, wird eine E-Mail gesendet."}
 
 
 app.include_router(v1)

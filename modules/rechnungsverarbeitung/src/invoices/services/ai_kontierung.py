@@ -114,13 +114,13 @@ class AIKontierungService:
 
     def _suggest_gemini(self, invoice_data: dict[str, Any], skr: str) -> KontierungResult:
         """Use Google Gemini 2.0 Flash for kontierung."""
-        import google.generativeai as genai
+        from google import genai
 
-        genai.configure(api_key=self.gemini_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        client = genai.Client(api_key=self.gemini_key)
+        
 
         prompt = KONTIERUNG_PROMPT.format(invoice_data=json.dumps(invoice_data, indent=2, ensure_ascii=False))
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
         raw = response.text.strip()
 
         parsed = self._parse_json_response(raw)
@@ -132,7 +132,7 @@ class AIKontierungService:
             kostenstelle=parsed.get("kostenstelle", ""),
             confidence=float(parsed.get("confidence", 0.5)),
             reasoning=parsed.get("reasoning", ""),
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             raw_response=raw,
         )
 

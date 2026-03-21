@@ -1,311 +1,202 @@
-"""Email Ingestion Service – IMAP-based invoice auto-processing.
-
-Connects to an IMAP mailbox, fetches unread emails with PDF/XML attachments,
-and feeds them into the invoice processing pipeline.
-
-Features:
-- IMAP IDLE support for near-realtime processing
-- Attachment extraction (PDF, XML)
-- Duplicate detection via Message-ID
-- Configurable polling interval
-- Tenant routing via email address mapping
-"""
+"""E-Mail Ingestion Service — IMAP Polling, Auto-Upload, Slack Alerts."""
 from __future__ import annotations
 
 import email
 import hashlib
-import imaplib
+import json
 import logging
 import os
 import re
-from dataclasses import dataclass, field
+import uuid
 from datetime import datetime
 from email.header import decode_header
-from typing import Any, BinaryIO
+from typing import Any, Optional
 
+import imapclient
+import requests
+from dotenv import load_dotenv
+from sqlalchemy import text
+
+from shared.db.session import get_session
+
+load_dotenv()
 logger = logging.getLogger(__name__)
-
-SUPPORTED_MIME_TYPES = {
-    "application/pdf": "pdf",
-    "application/xml": "xml",
-    "text/xml": "xml",
-    "application/octet-stream": "auto",
-}
-
-INVOICE_FILENAME_PATTERNS = [
-    r"rechnung",
-    r"invoice",
-    r"factur",
-    r"beleg",
-    r"gutschrift",
-    r"credit.?note",
-    r"e-rechnung",
-    r"xrechnung",
-    r"zugferd",
-]
-
-
-@dataclass
-class EmailAttachment:
-    """Extracted email attachment."""
-
-    filename: str
-    content: bytes
-    mime_type: str
-    content_hash: str
-
-
-@dataclass
-class IngestResult:
-    """Result of processing a single email."""
-
-    message_id: str
-    subject: str
-    sender: str
-    received_at: str
-    attachments_found: int
-    invoices_processed: int
-    errors: list[str] = field(default_factory=list)
-    document_ids: list[str] = field(default_factory=list)
-
-
-@dataclass
-class IngestionStats:
-    """Batch ingestion statistics."""
-
-    emails_checked: int = 0
-    emails_with_attachments: int = 0
-    invoices_ingested: int = 0
-    duplicates_skipped: int = 0
-    errors: int = 0
-    results: list[IngestResult] = field(default_factory=list)
 
 
 class EmailIngestionService:
-    """IMAP email ingestion for invoice auto-processing.
+    """Polls IMAP inbox for invoice attachments, processes and uploads them."""
 
-    Usage:
-        service = EmailIngestionService(
-            imap_host="imap.example.com",
-            imap_user="invoices@company.de",
-            imap_pass="secret",
-        )
-        stats = service.poll_and_process(tenant_id="tenant-1")
-    """
+    ALLOWED_EXTENSIONS = {".pdf", ".xml", ".png", ".jpg", ".jpeg"}
+    ALLOWED_MIMES = {
+        "application/pdf", "text/xml", "application/xml",
+        "image/png", "image/jpeg",
+    }
 
-    def __init__(
-        self,
-        imap_host: str | None = None,
-        imap_port: int = 993,
-        imap_user: str | None = None,
-        imap_pass: str | None = None,
-        imap_folder: str = "INBOX",
-        use_ssl: bool = True,
-    ) -> None:
-        self.imap_host = imap_host or os.getenv("IMAP_HOST", "")
-        self.imap_port = imap_port
-        self.imap_user = imap_user or os.getenv("IMAP_USER", "")
-        self.imap_pass = imap_pass or os.getenv("IMAP_PASS", "")
-        self.imap_folder = imap_folder
-        self.use_ssl = use_ssl
-        self._processed_ids: set[str] = set()
+    def __init__(self):
+        self.host = os.getenv("IMAP_HOST", "")
+        self.user = os.getenv("IMAP_USER", "")
+        self.password = os.getenv("IMAP_PASSWORD", "")
+        self.folder = os.getenv("IMAP_FOLDER", "INBOX")
+        self.processed_folder = os.getenv("IMAP_PROCESSED_FOLDER", "Processed")
+        self.slack_webhook = os.getenv("SLACK_WEBHOOK_URL", "")
+        self.upload_dir = os.getenv("UPLOAD_DIR", "/var/www/invoice-app/uploads")
+        self.default_tenant = os.getenv("DEFAULT_TENANT_ID", "tenant-97931dfa")
 
-    def poll_and_process(
-        self,
-        tenant_id: str,
-        max_emails: int = 50,
-        process_callback: Any | None = None,
-    ) -> IngestionStats:
-        """Poll IMAP for new invoices and process them.
+    def poll(self) -> list[dict[str, Any]]:
+        """Poll IMAP inbox for new invoice emails. Returns list of processed items."""
+        if not all([self.host, self.user, self.password]):
+            logger.warning("IMAP not configured, skipping poll")
+            return []
 
-        Args:
-            tenant_id: Target tenant for ingested invoices.
-            max_emails: Maximum emails to process per batch.
-            process_callback: Optional callable(filename, content, mime_type, tenant_id) -> document_id
-
-        Returns:
-            IngestionStats with processing results.
-        """
-        stats = IngestionStats()
-
-        if not all([self.imap_host, self.imap_user, self.imap_pass]):
-            logger.warning("email_ingestion_not_configured")
-            return stats
-
+        results = []
         try:
-            conn = self._connect()
+            with imapclient.IMAPClient(self.host, ssl=True) as client:
+                client.login(self.user, self.password)
+                client.select_folder(self.folder, readonly=False)
+
+                # Search for unseen messages
+                msg_ids = client.search(["UNSEEN"])
+                logger.info(f"email_poll: {len(msg_ids)} new messages")
+
+                if not msg_ids:
+                    return []
+
+                for uid, data in client.fetch(msg_ids, ["RFC822", "ENVELOPE"]).items():
+                    try:
+                        result = self._process_message(uid, data, client)
+                        if result:
+                            results.extend(result)
+                    except Exception as e:
+                        logger.error(f"email_process_error uid={uid}: {e}")
+
         except Exception as e:
-            logger.error(f"IMAP connection failed: {e}")
-            stats.errors = 1
-            return stats
+            logger.error(f"imap_connection_error: {e}")
+            self._notify_slack(f"IMAP Fehler: {e}", is_error=True)
 
-        try:
-            conn.select(self.imap_folder)
-            _, msg_ids = conn.search(None, "UNSEEN")
+        if results:
+            self._notify_slack_summary(results)
 
-            if not msg_ids[0]:
-                return stats
+        return results
 
-            ids = msg_ids[0].split()[:max_emails]
-
-            for msg_id in ids:
-                stats.emails_checked += 1
-
-                try:
-                    result = self._process_email(conn, msg_id, tenant_id, process_callback)
-                    if result.attachments_found > 0:
-                        stats.emails_with_attachments += 1
-                    stats.invoices_ingested += result.invoices_processed
-                    stats.results.append(result)
-                except Exception as e:
-                    logger.error(f"Email processing error: {e}")
-                    stats.errors += 1
-
-        finally:
-            try:
-                conn.logout()
-            except Exception:
-                pass
-
-        logger.info(
-            "email_ingestion_complete",
-            extra={
-                "tenant_id": tenant_id,
-                "emails_checked": stats.emails_checked,
-                "invoices_ingested": stats.invoices_ingested,
-                "errors": stats.errors,
-            },
-        )
-
-        return stats
-
-    def _connect(self) -> imaplib.IMAP4_SSL | imaplib.IMAP4:
-        """Establish IMAP connection."""
-        if self.use_ssl:
-            conn = imaplib.IMAP4_SSL(self.imap_host, self.imap_port)
-        else:
-            conn = imaplib.IMAP4(self.imap_host, self.imap_port)
-        conn.login(self.imap_user, self.imap_pass)
-        return conn
-
-    def _process_email(
-        self,
-        conn: imaplib.IMAP4_SSL | imaplib.IMAP4,
-        msg_id: bytes,
-        tenant_id: str,
-        process_callback: Any | None,
-    ) -> IngestResult:
-        """Process a single email message."""
-        _, data = conn.fetch(msg_id, "(RFC822)")
-        raw = data[0][1]
+    def _process_message(self, uid: int, data: dict, client: imapclient.IMAPClient) -> list[dict]:
+        """Process a single email message, extract invoice attachments."""
+        raw = data[b"RFC822"]
         msg = email.message_from_bytes(raw)
 
-        message_id = msg.get("Message-ID", f"unknown-{msg_id.decode()}")
-        subject = self._decode_header(msg.get("Subject", ""))
         sender = self._decode_header(msg.get("From", ""))
-        date_str = msg.get("Date", datetime.utcnow().isoformat())
+        subject = self._decode_header(msg.get("Subject", ""))
+        date_str = msg.get("Date", "")
 
-        result = IngestResult(
-            message_id=message_id,
-            subject=subject,
-            sender=sender,
-            received_at=date_str,
-            attachments_found=0,
-            invoices_processed=0,
-        )
+        logger.info(f"email_processing: uid={uid} from={sender} subject={subject}")
 
-        # Skip duplicates
-        if message_id in self._processed_ids:
-            return result
-        self._processed_ids.add(message_id)
-
-        # Extract attachments
-        attachments = self._extract_attachments(msg)
-        result.attachments_found = len(attachments)
-
-        for att in attachments:
-            if process_callback:
-                try:
-                    doc_id = process_callback(
-                        att.filename, att.content, att.mime_type, tenant_id
-                    )
-                    result.document_ids.append(str(doc_id))
-                    result.invoices_processed += 1
-                except Exception as e:
-                    result.errors.append(f"{att.filename}: {e}")
-            else:
-                result.invoices_processed += 1
-                result.document_ids.append(f"dry-run:{att.content_hash[:12]}")
-
-        # Mark as seen
-        if result.invoices_processed > 0:
-            conn.store(msg_id, "+FLAGS", "\\Seen")
-
-        return result
-
-    def _extract_attachments(self, msg: email.message.Message) -> list[EmailAttachment]:
-        """Extract invoice-relevant attachments from email."""
-        attachments: list[EmailAttachment] = []
-
+        attachments = []
         for part in msg.walk():
             content_type = part.get_content_type()
-            disposition = str(part.get("Content-Disposition", ""))
-
-            if "attachment" not in disposition and content_type not in SUPPORTED_MIME_TYPES:
+            filename = part.get_filename()
+            if not filename:
                 continue
 
-            filename = part.get_filename()
-            if filename:
-                filename = self._decode_header(filename)
-            else:
-                ext = SUPPORTED_MIME_TYPES.get(content_type, "bin")
-                filename = f"attachment.{ext}"
+            filename = self._decode_header(filename)
+            ext = os.path.splitext(filename)[1].lower()
 
-            # Filter: only invoice-relevant files
-            if not self._is_invoice_attachment(filename, content_type):
+            if ext not in self.ALLOWED_EXTENSIONS:
                 continue
 
             payload = part.get_payload(decode=True)
             if not payload:
                 continue
 
-            content_hash = hashlib.sha256(payload).hexdigest()
+            # Save file
+            file_id = str(uuid.uuid4())
+            safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", filename)
+            save_path = os.path.join(self.upload_dir, f"{file_id}_{safe_name}")
+            os.makedirs(self.upload_dir, exist_ok=True)
 
-            attachments.append(
-                EmailAttachment(
-                    filename=filename,
-                    content=payload,
-                    mime_type=content_type,
-                    content_hash=content_hash,
-                )
+            with open(save_path, "wb") as f:
+                f.write(payload)
+
+            file_hash = hashlib.sha256(payload).hexdigest()
+
+            # Create invoice record
+            doc_id = str(uuid.uuid4())
+            self._create_invoice_record(
+                document_id=doc_id,
+                file_name=filename,
+                file_path=save_path,
+                file_hash=file_hash,
+                mime_type=content_type,
+                sender=sender,
+                subject=subject,
+                tenant_id=self._resolve_tenant(sender),
             )
+
+            attachments.append({
+                "document_id": doc_id,
+                "file_name": filename,
+                "sender": sender,
+                "subject": subject,
+                "size_kb": round(len(payload) / 1024, 1),
+                "file_hash": file_hash[:16],
+            })
+
+        # Mark as seen / move to processed
+        if attachments:
+            try:
+                if self.processed_folder:
+                    client.create_folder(self.processed_folder)
+                    client.move([uid], self.processed_folder)
+            except Exception:
+                pass  # Folder might already exist or move not supported
 
         return attachments
 
-    @staticmethod
-    def _is_invoice_attachment(filename: str, mime_type: str) -> bool:
-        """Check if attachment is likely an invoice."""
-        if mime_type not in SUPPORTED_MIME_TYPES:
-            return False
+    def _create_invoice_record(self, document_id: str, file_name: str, file_path: str,
+                                file_hash: str, mime_type: str, sender: str,
+                                subject: str, tenant_id: str):
+        """Insert invoice into database with uploaded status."""
+        with get_session() as s:
+            s.execute(text("""
+                INSERT INTO invoices (document_id, tenant_id, document_type, file_name,
+                    mime_type, uploaded_by, uploaded_at, source_system, status)
+                VALUES (:did, :tid, :dtype, :fname, :mime, :upby, :now, :src, 'uploaded')
+            """), {
+                "did": document_id, "tid": tenant_id, "dtype": "invoice",
+                "fname": file_name, "mime": mime_type,
+                "upby": f"email:{sender}", "now": datetime.utcnow(),
+                "src": "email-ingestion",
+            })
 
-        lower = filename.lower()
+            # Create upload event
+            s.execute(text("""
+                INSERT INTO invoice_events (id, document_id, tenant_id, event_type,
+                    status_from, status_to, actor, created_at, details)
+                VALUES (:id, :did, :tid, 'uploaded', NULL, 'uploaded', :actor, :now, :details)
+            """), {
+                "id": str(uuid.uuid4()), "did": document_id, "tid": tenant_id,
+                "actor": "email-ingestion",
+                "now": datetime.utcnow(),
+                "details": json.dumps({"source": "email", "sender": sender, "subject": subject, "hash": file_hash}),
+            })
+            s.commit()
 
-        # XML files are always relevant
-        if lower.endswith(".xml"):
-            return True
+    def _resolve_tenant(self, sender: str) -> str:
+        """Resolve sender email to tenant. Falls back to default."""
+        email_addr = re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", sender or "")
+        if not email_addr:
+            return self.default_tenant
 
-        # PDF: check filename patterns
-        if lower.endswith(".pdf"):
-            if any(re.search(pat, lower) for pat in INVOICE_FILENAME_PATTERNS):
-                return True
-            # Accept all PDFs from invoice-specific mailboxes
-            return True
+        addr = email_addr.group().lower()
+        with get_session() as s:
+            row = s.execute(
+                text("SELECT tenant_id FROM users WHERE email = :e"), {"e": addr}
+            ).fetchone()
 
-        return False
+        if row:
+            return row[0]
+        return self.default_tenant
 
-    @staticmethod
-    def _decode_header(value: str) -> str:
-        """Decode RFC2047 encoded header."""
+    def _decode_header(self, value: str) -> str:
+        """Decode email header value."""
         if not value:
             return ""
         parts = decode_header(value)
@@ -316,3 +207,27 @@ class EmailIngestionService:
             else:
                 decoded.append(str(part))
         return " ".join(decoded)
+
+    def _notify_slack(self, message: str, is_error: bool = False):
+        """Send notification to Slack."""
+        if not self.slack_webhook:
+            return
+        icon = "\u274c" if is_error else "\ud83d\udce7"
+        try:
+            requests.post(self.slack_webhook, json={"text": f"{icon} *E-Mail Ingestion*: {message}"}, timeout=5)
+        except Exception as e:
+            logger.warning(f"slack_notify_error: {e}")
+
+    def _notify_slack_summary(self, results: list[dict]):
+        """Send summary of processed emails to Slack."""
+        if not self.slack_webhook:
+            return
+        lines = [f"\ud83d\udce7 *E-Mail Ingestion: {len(results)} Rechnung(en) verarbeitet*\n"]
+        for r in results[:5]:
+            lines.append(f"  \u2022 `{r['file_name']}` von {r['sender']} ({r['size_kb']} KB)")
+        if len(results) > 5:
+            lines.append(f"  ... und {len(results) - 5} weitere")
+        try:
+            requests.post(self.slack_webhook, json={"text": "\n".join(lines)}, timeout=5)
+        except Exception:
+            pass
