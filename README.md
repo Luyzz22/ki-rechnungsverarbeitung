@@ -2,7 +2,7 @@
 
 ![Tests](https://github.com/Luyzz22/ki-rechnungsverarbeitung/actions/workflows/tests.yml/badge.svg)
 
-> **Automatische Rechnungsverarbeitung mit Multi-Model KI für den deutschen Mittelstand**
+> **KI-native Rechnungsverarbeitung für den deutschen Mittelstand**
 
 [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
@@ -13,18 +13,30 @@
 
 ## 📋 Übersicht
 
-Eine KI-gestützte Lösung zur automatischen Verarbeitung von Eingangsrechnungen. Das System kombiniert mehrere KI-Modelle für zuverlässige Extraktion und liefert DATEV-kompatible Exporte für Steuerberater und mittelständische Unternehmen im DACH-Raum.
+Eine KI-gestützte Lösung zur Verarbeitung von Eingangsrechnungen. Das System kombiniert mehrere KI-Modelle für Extraktion, Kontierungsvorschläge (SKR03/SKR04), Duplikaterkennung und liefert DATEV-kompatible Exporte für Steuerberater und mittelständische Unternehmen im DACH-Raum.
 
 ### 🎯 Kernfunktionen
 
 - ✅ **Multi-Model KI**: Kombination aus GPT-4o und Claude für zuverlässige Extraktion
-- ✅ **DATEV-Export**: Nahtlose Integration für Steuerberater und Buchhaltung
+- ✅ **DATEV-kompatibler Export**: Für Steuerberater und DATEV-Workflows
 - ✅ **Dubletten-Erkennung**: Automatische Prüfung auf doppelte Rechnungen
 - ✅ **Plausibilitätsprüfung**: Validierung von Beträgen und Pflichtangaben
 - ✅ **Batch-Processing**: Mehrere Rechnungen parallel verarbeiten (8 Threads)
 - ✅ **Flexible Exporte**: Excel, CSV und DATEV-Format
 - ✅ **Email-Benachrichtigung**: Automatische Benachrichtigung bei Fertigstellung
-- ✅ **DSGVO-orientierte Verarbeitung**: Hosting in Deutschland (EU)
+- ✅ **Audit-Trail**: Nachvollziehbare Prozess- und Exportereignisse
+- ✅ **DSGVO-orientierte Verarbeitung**: Datenschutz- und Rollenmodell im Produktfluss
+
+> Rechtlich sensible Aussagen zu DSGVO, GoBD, E-Rechnung und EU AI Act sind einsatz- und vertragsabhängig zu validieren (juristisch prüfen, DSB prüfen, steuerlich validieren).
+
+### 🔐 Trust & Doku
+
+- Landing: `/landing`
+- Sicherheit: `/sicherheit`
+- Compliance: `/compliance`
+- AVV (Entwurf): `/avv`
+- API-Übersicht: `/api`
+- Swagger/OpenAPI: `/docs`, `/openapi.json`
 
 ---
 

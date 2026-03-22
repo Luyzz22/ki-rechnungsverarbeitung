@@ -205,6 +205,36 @@ async def landing_page():
     """Landing Page für Marketing"""
     return FileResponse("web/static/landing/index.html")
 
+
+@app.get("/sicherheit")
+async def trust_security_page():
+    """Öffentliche Sicherheits-/Trust-Seite."""
+    return FileResponse("web/static/landing/security.html")
+
+
+@app.get("/compliance")
+async def compliance_page():
+    """Öffentliche Compliance-Übersicht."""
+    return FileResponse("web/static/landing/compliance.html")
+
+
+@app.get("/avv")
+async def avv_page():
+    """Öffentliche AVV-Entwurfsseite."""
+    return FileResponse("web/static/landing/avv.html")
+
+
+@app.get("/api", response_class=HTMLResponse, include_in_schema=False)
+async def api_overview_page():
+    """Öffentliche API-Übersichtsseite (nicht OpenAPI)."""
+    return FileResponse("web/static/landing/api.html")
+
+
+@app.get("/referenzen")
+async def referenzen_page():
+    """Öffentliche Referenz-/Einsatzprofil-Seite."""
+    return FileResponse("web/static/landing/referenzen.html")
+
 # Templates
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
