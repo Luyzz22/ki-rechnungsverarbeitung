@@ -7,16 +7,18 @@ SQLite Database für Job-Persistenz
 import sqlite3
 import json
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = Path("/var/www/invoice-app/invoices.db").resolve()
+DB_PATH = Path(os.getenv("INVOICE_DB_PATH", "/var/www/invoice-app/invoices.db")).resolve()
 
 def get_connection():
     """Get database connection"""
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     return conn
@@ -2228,4 +2230,3 @@ def get_export_stats(user_id: int = None):
     
     conn.close()
     return {"total": total, "this_week": this_week, "total_invoices": total_invoices, "total_amount": total_amount}
-

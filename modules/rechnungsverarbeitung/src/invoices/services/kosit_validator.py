@@ -13,7 +13,10 @@ from __future__ import annotations
 
 import logging
 import re
+import shutil
+import subprocess
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 from lxml import etree
 
@@ -44,8 +47,28 @@ class ValidationResult:
         }
 
 
+@dataclass
+class KositValidationResult:
+    status: str
+    errors: list[str]
+    warnings: list[str]
+    engine: str
+    config_version: str
+    raw_output: str
+
+
 class KoSITValidator:
     """Validates XRechnung XML documents."""
+
+    def __init__(
+        self,
+        binary: str = "kosit-validator",
+        timeout_seconds: int = 10,
+        config_version: str = "xrechnung-3.0.1",
+    ) -> None:
+        self.binary = binary
+        self.timeout_seconds = timeout_seconds
+        self.config_version = config_version
 
     def validate(self, xml_content: str | bytes) -> ValidationResult:
         result = ValidationResult()
@@ -132,6 +155,70 @@ class KoSITValidator:
 
         logger.info(f"kosit_validation: valid={result.valid} errors={len(result.errors)} warnings={len(result.warnings)}")
         return result
+
+    def validate_file(self, invoice_path: str | Path, report_dir: str | Path) -> KositValidationResult:
+        """
+        Validate XML file via KoSIT binary when available.
+        Falls back to warning-mode when validator binary is not installed.
+        """
+        invoice_path = Path(invoice_path)
+        report_dir = Path(report_dir)
+        report_dir.mkdir(parents=True, exist_ok=True)
+
+        if shutil.which(self.binary) is None:
+            return KositValidationResult(
+                status="warning",
+                errors=[],
+                warnings=[f"KoSIT validator binary '{self.binary}' not found; fallback mode active."],
+                engine="kosit-fallback",
+                config_version=self.config_version,
+                raw_output="",
+            )
+
+        cmd = [
+            self.binary,
+            "--input",
+            str(invoice_path),
+            "--output",
+            str(report_dir),
+        ]
+        try:
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=self.timeout_seconds,
+            )
+        except subprocess.TimeoutExpired:
+            return KositValidationResult(
+                status="failed",
+                errors=[f"KoSIT validation timed out after {self.timeout_seconds}s"],
+                warnings=[],
+                engine="kosit",
+                config_version=self.config_version,
+                raw_output="",
+            )
+
+        raw_output = (proc.stdout or "") + ("\n" + proc.stderr if proc.stderr else "")
+        if proc.returncode == 0:
+            return KositValidationResult(
+                status="passed",
+                errors=[],
+                warnings=[],
+                engine="kosit",
+                config_version=self.config_version,
+                raw_output=raw_output.strip(),
+            )
+
+        errors = [line.strip() for line in (proc.stderr or "").splitlines() if line.strip()] or ["KoSIT validation failed"]
+        return KositValidationResult(
+            status="failed",
+            errors=errors,
+            warnings=[],
+            engine="kosit",
+            config_version=self.config_version,
+            raw_output=raw_output.strip(),
+        )
 
 # Backward compatibility alias
 KositValidator = KoSITValidator
