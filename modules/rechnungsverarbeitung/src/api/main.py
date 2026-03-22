@@ -394,6 +394,70 @@ async def validate_xrechnung(
         result = validator.validate(xml)
         return {"invoice_id": document_id, "validation": result.to_dict(), "xml_length": len(xml)}
 
+
+
+# ── AUDIT & EXPORT HISTORY ──────────────────────────────────
+
+@v1.get("/audit-log")
+async def get_audit_log(
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+    limit: int = 100,
+    offset: int = 0,
+):
+    """Full audit trail of all invoice events."""
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        from sqlalchemy import text
+        rows = session.execute(text("""
+            SELECT ie.id, ie.document_id, ie.event_type, ie.status_from, ie.status_to,
+                   ie.actor, ie.created_at, ie.details, i.file_name, i.supplier
+            FROM invoice_events ie
+            LEFT JOIN invoices i ON ie.document_id = i.document_id AND ie.tenant_id = i.tenant_id
+            WHERE ie.tenant_id = :t
+            ORDER BY ie.created_at DESC
+            LIMIT :l OFFSET :o
+        """), {"t": tenant_id, "l": limit, "o": offset}).fetchall()
+
+        total = session.execute(text("SELECT COUNT(*) FROM invoice_events WHERE tenant_id = :t"), {"t": tenant_id}).scalar() or 0
+
+        return {
+            "events": [{
+                "id": r[0], "document_id": r[1], "event_type": r[2],
+                "status_from": r[3], "status_to": r[4], "actor": r[5],
+                "created_at": r[6].isoformat() if r[6] else None,
+                "details": r[7], "file_name": r[8], "supplier": r[9],
+            } for r in rows],
+            "total": total,
+        }
+
+
+@v1.get("/export-history")
+async def get_export_history(
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+    limit: int = 50,
+):
+    """History of all DATEV exports and XRechnung generations."""
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        from sqlalchemy import text
+        rows = session.execute(text("""
+            SELECT ie.document_id, ie.event_type, ie.actor, ie.created_at, ie.details,
+                   i.file_name, i.supplier, i.total_amount, i.currency, i.invoice_number
+            FROM invoice_events ie
+            LEFT JOIN invoices i ON ie.document_id = i.document_id AND ie.tenant_id = i.tenant_id
+            WHERE ie.tenant_id = :t AND ie.event_type IN ('datev_exported', 'xrechnung_generated', 'transition_completed')
+            ORDER BY ie.created_at DESC
+            LIMIT :l
+        """), {"t": tenant_id, "l": limit}).fetchall()
+
+        return [{
+            "document_id": r[0], "event_type": r[1], "actor": r[2],
+            "created_at": r[3].isoformat() if r[3] else None,
+            "details": r[4], "file_name": r[5], "supplier": r[6],
+            "total_amount": float(r[7]) if r[7] else None,
+            "currency": r[8], "invoice_number": r[9],
+        } for r in rows]
+
 # ── CRUD ──────────────────────────────────────────────────────────────
 
 
