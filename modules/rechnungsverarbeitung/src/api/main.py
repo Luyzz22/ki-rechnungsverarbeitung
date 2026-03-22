@@ -417,15 +417,14 @@ async def upload_batch(
     results = []
     for f in files:
         try:
-            content_bytes = await f.read()
             file_name = f.filename or "upload.pdf"
-            result = invoice_service.process_upload(
-                file_content=content_bytes,
+            metadata = process_invoice_upload(
+                file_stream=f.file,
                 file_name=file_name,
-                content_type=f.content_type or "application/pdf",
-                tenant_id=tenant_id,
+                mime_type=f.content_type or "application/pdf",
+                uploaded_by="batch-upload",
             )
-            results.append({"file_name": file_name, "document_id": result["document_id"], "status": result["status"], "success": True})
+            results.append({"file_name": file_name, "document_id": metadata.id, "status": metadata.status, "success": True})
         except Exception as e:
             results.append({"file_name": getattr(f, 'filename', 'unknown'), "success": False, "error": str(e)})
 
