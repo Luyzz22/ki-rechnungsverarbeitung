@@ -269,6 +269,131 @@ async def generate_xrechnung(
             headers={"Content-Disposition": f'attachment; filename="{invoice.invoice_number or document_id}_xrechnung.xml"'},
         )
 
+
+
+# ── BUDGET ──────────────────────────────────────────────────────────────
+
+@v1.get("/budget/kategorien")
+async def get_budget_kategorien(
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        from sqlalchemy import text
+        rows = session.execute(text("SELECT id, name, beschreibung, konten_mapping, aktiv FROM budget_kategorien WHERE tenant_id = :t ORDER BY id"), {"t": tenant_id}).fetchall()
+        return [{"id":r[0],"name":r[1],"beschreibung":r[2],"konten_mapping":r[3],"aktiv":r[4]} for r in rows]
+
+
+@v1.get("/budget/summary")
+async def get_budget_summary(
+    jahr: int = 2026,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    """Budget vs Actual summary for a year."""
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        from sqlalchemy import text
+
+        # Get budget per category
+        budgets = session.execute(text("""
+            SELECT bk.id, bk.name, COALESCE(SUM(mb.betrag), 0) as budget_total
+            FROM budget_kategorien bk
+            LEFT JOIN monats_budgets mb ON mb.kategorie_id = bk.id AND mb.jahr = :j AND mb.tenant_id = :t
+            WHERE bk.tenant_id = :t AND bk.aktiv = TRUE
+            GROUP BY bk.id, bk.name ORDER BY bk.id
+        """), {"t": tenant_id, "j": jahr}).fetchall()
+
+        # Get actual spend from invoices
+        actual_total = session.execute(text("""
+            SELECT COALESCE(SUM(total_amount), 0) FROM invoices
+            WHERE tenant_id = :t AND EXTRACT(YEAR FROM uploaded_at) = :j AND total_amount IS NOT NULL
+        """), {"t": tenant_id, "j": jahr}).scalar() or 0
+
+        budget_total = sum(r[2] for r in budgets)
+
+        return {
+            "jahr": jahr,
+            "budget_total": float(budget_total),
+            "actual_total": float(actual_total),
+            "utilization": round(float(actual_total) / float(budget_total) * 100, 1) if budget_total > 0 else 0,
+            "kategorien": [{"id":r[0],"name":r[1],"budget":float(r[2]),"actual":0} for r in budgets],
+        }
+
+
+@v1.post("/budget/set")
+async def set_budget(
+    request: Request,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    tenant_id = _require_tenant(x_tenant_id)
+    data = await request.json()
+    with get_session() as session:
+        from sqlalchemy import text
+        session.execute(text("""
+            INSERT INTO monats_budgets (tenant_id, kategorie_id, jahr, monat, betrag, notiz)
+            VALUES (:t, :k, :j, :m, :b, :n)
+            ON CONFLICT (tenant_id, kategorie_id, jahr, monat) DO UPDATE SET betrag = :b, notiz = :n
+        """), {"t":tenant_id,"k":data["kategorie_id"],"j":data["jahr"],"m":data["monat"],"b":data["betrag"],"n":data.get("notiz","")})
+    return {"status": "ok"}
+
+
+@v1.get("/budget/monat")
+async def get_budget_monat(
+    jahr: int = 2026,
+    monat: int = 1,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        from sqlalchemy import text
+        rows = session.execute(text("""
+            SELECT bk.id, bk.name, COALESCE(mb.betrag, 0), mb.notiz
+            FROM budget_kategorien bk
+            LEFT JOIN monats_budgets mb ON mb.kategorie_id = bk.id AND mb.jahr = :j AND mb.monat = :m AND mb.tenant_id = :t
+            WHERE bk.tenant_id = :t AND bk.aktiv = TRUE
+            ORDER BY bk.id
+        """), {"t":tenant_id,"j":jahr,"m":monat}).fetchall()
+        return [{"kategorie_id":r[0],"name":r[1],"betrag":float(r[2]),"notiz":r[3] or ""} for r in rows]
+
+
+
+@v1.post("/invoices/{document_id}/validate-xrechnung")
+async def validate_xrechnung(
+    document_id: str,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    """Generate XRechnung and validate against KoSIT rules."""
+    from modules.rechnungsverarbeitung.src.invoices.services.xrechnung_generator import XRechnungGenerator
+    from modules.rechnungsverarbeitung.src.invoices.services.kosit_validator import KoSITValidator
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        invoice = _get_invoice_or_404(session, document_id, tenant_id)
+        invoice_data = {
+            "supplier": invoice.supplier,
+            "invoice_number": invoice.invoice_number,
+            "invoice_date": invoice.invoice_date,
+            "due_date": invoice.due_date,
+            "total_amount_gross": float(invoice.total_amount) if invoice.total_amount else 0,
+            "tax_amount": float(invoice.tax_amount) if getattr(invoice, 'tax_amount', None) else None,
+            "currency": invoice.currency or 'EUR',
+        }
+        if getattr(invoice, 'extracted_data', None):
+            import json as _json
+            try:
+                extra = _json.loads(invoice.extracted_data) if isinstance(invoice.extracted_data, str) else invoice.extracted_data
+                invoice_data['line_items'] = extra.get('line_items', [])
+                invoice_data['iban'] = extra.get('iban')
+                invoice_data['tax_rate'] = extra.get('tax_rate', 19)
+                if extra.get('total_amount_net'):
+                    invoice_data['total_amount_net'] = extra['total_amount_net']
+            except Exception:
+                pass
+        gen = XRechnungGenerator()
+        xml = gen.generate(invoice_data)
+        validator = KoSITValidator()
+        result = validator.validate(xml)
+        return {"invoice_id": document_id, "validation": result.to_dict(), "xml_length": len(xml)}
+
 # ── CRUD ──────────────────────────────────────────────────────────────
 
 
