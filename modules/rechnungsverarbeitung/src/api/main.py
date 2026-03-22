@@ -398,6 +398,39 @@ async def validate_xrechnung(
 
 
 
+
+
+@v1.post("/invoices/upload-batch")
+async def upload_batch(
+    request: Request,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    """Upload multiple invoices at once (max 20 files)."""
+    tenant_id = _require_tenant(x_tenant_id)
+    form = await request.form()
+    files = form.getlist("files")
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided")
+    if len(files) > 20:
+        raise HTTPException(status_code=400, detail="Max 20 files per batch")
+
+    results = []
+    for f in files:
+        try:
+            content_bytes = await f.read()
+            file_name = f.filename or "upload.pdf"
+            result = invoice_service.process_upload(
+                file_content=content_bytes,
+                file_name=file_name,
+                content_type=f.content_type or "application/pdf",
+                tenant_id=tenant_id,
+            )
+            results.append({"file_name": file_name, "document_id": result["document_id"], "status": result["status"], "success": True})
+        except Exception as e:
+            results.append({"file_name": getattr(f, 'filename', 'unknown'), "success": False, "error": str(e)})
+
+    return {"total": len(files), "successful": sum(1 for r in results if r["success"]), "failed": sum(1 for r in results if not r["success"]), "results": results}
+
 # ── DUPLICATE + ANOMALY + EXPORT ────────────────────────────
 
 @v1.get("/invoices/{document_id}/duplicate-check")
