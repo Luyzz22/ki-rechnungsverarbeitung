@@ -38,7 +38,7 @@ class FinanceCopilotService:
     """AI-powered finance assistant with DB-grounded answers."""
 
     def __init__(self) -> None:
-        self.gemini_key = os.getenv("GOOGLE_API_KEY", "")
+        self.gemini_key = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", ""))
         self.anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
 
     # ------------------------------------------------------------------

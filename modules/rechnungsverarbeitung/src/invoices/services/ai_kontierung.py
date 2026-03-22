@@ -78,7 +78,7 @@ class AIKontierungService:
     """
 
     def __init__(self) -> None:
-        self.gemini_key = os.getenv("GOOGLE_API_KEY", "")
+        self.gemini_key = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", ""))
         self.anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
 
     def suggest(
