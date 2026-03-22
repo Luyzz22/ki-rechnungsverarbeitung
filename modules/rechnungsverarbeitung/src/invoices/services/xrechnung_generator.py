@@ -1,265 +1,222 @@
-"""XRechnung Generator – EN16931-compliant outgoing invoices.
+"""XRechnung / ZUGFeRD Generator for BelegFlow AI.
 
-Generates UBL 2.1 XML invoices conforming to:
-- EN16931 (European e-invoicing standard)
-- XRechnung 3.0.2 (German CIUS)
-- Leitweg-ID routing for public sector
+Generates EN 16931-compliant e-invoices in XRechnung (UBL 2.1) format
+from extracted invoice data. Required for the E-Rechnungspflicht 2027.
 
-Output: Valid XML ready for KoSIT validation and Peppol transmission.
+Output: Valid XML conforming to XRechnung 3.0 / EN 16931.
 """
 from __future__ import annotations
 
-import hashlib
+import logging
 import uuid
-from dataclasses import dataclass, field
 from datetime import datetime, date
-from pathlib import Path
-from typing import Any
-from xml.etree.ElementTree import Element, SubElement, tostring, indent
+from typing import Any, Optional
+from xml.etree.ElementTree import Element, SubElement, tostring
 
+logger = logging.getLogger(__name__)
 
-# UBL 2.1 Namespaces
+# XRechnung UBL 2.1 Namespaces
 NS = {
-    "": "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
+    "ubl": "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
     "cac": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
     "cbc": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
 }
 
-XRECHNUNG_CUSTOMIZATION = "urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0"
-XRECHNUNG_PROFILE = "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0"
-
-
-@dataclass
-class Party:
-    """Invoice party (seller or buyer)."""
-    name: str
-    street: str = ""
-    city: str = ""
-    postal_code: str = ""
-    country_code: str = "DE"
-    vat_id: str = ""
-    tax_id: str = ""
-    email: str = ""
-    leitweg_id: str = ""
-
-
-@dataclass
-class LineItem:
-    """Invoice line item."""
-    description: str
-    quantity: float = 1.0
-    unit_code: str = "C62"  # piece
-    unit_price: float = 0.0
-    vat_percent: float = 19.0
-    item_id: str = ""
-
-
-@dataclass
-class InvoiceData:
-    """Complete invoice data for XRechnung generation."""
-    invoice_number: str
-    issue_date: date
-    due_date: date
-    seller: Party
-    buyer: Party
-    line_items: list[LineItem] = field(default_factory=list)
-    currency: str = "EUR"
-    note: str = ""
-    payment_reference: str = ""
-    iban: str = ""
-    bic: str = ""
-    bank_name: str = ""
-
 
 class XRechnungGenerator:
-    """Generates EN16931/XRechnung 3.0 compliant UBL 2.1 XML.
+    """Generates XRechnung-compliant UBL 2.1 invoices."""
 
-    Usage:
-        gen = XRechnungGenerator(output_dir="./exports/xrechnung")
-        path, xml_hash = gen.generate(invoice_data)
-    """
+    def generate(self, invoice_data: dict[str, Any], seller: dict | None = None, buyer: dict | None = None) -> str:
+        """Generate XRechnung XML from invoice data.
 
-    def __init__(self, output_dir: str = "./exports/xrechnung") -> None:
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-
-    def generate(self, data: InvoiceData) -> tuple[Path, str]:
-        """Generate XRechnung XML file.
+        Args:
+            invoice_data: Extracted invoice fields (supplier, amounts, dates, line_items)
+            seller: Seller info override {name, street, city, zip, country, vat_id, iban}
+            buyer: Buyer info override {name, street, city, zip, country, vat_id}
 
         Returns:
-            Tuple of (file_path, sha256_hash).
+            XML string conforming to XRechnung 3.0
         """
-        root = self._build_xml(data)
-        indent(root, space="  ")
+        # Build seller from invoice data if not provided
+        if not seller:
+            seller = {
+                "name": invoice_data.get("supplier", "Unbekannter Lieferant"),
+                "street": "",
+                "city": "",
+                "zip": "",
+                "country": "DE",
+                "vat_id": "",
+                "iban": invoice_data.get("iban", ""),
+            }
 
-        xml_bytes = b'<?xml version="1.0" encoding="UTF-8"?>\n' + tostring(root, encoding="unicode").encode("utf-8")
-        xml_hash = hashlib.sha256(xml_bytes).hexdigest()
+        if not buyer:
+            buyer = {
+                "name": "SBS Deutschland GmbH & Co. KG",
+                "street": "",
+                "city": "Heidelberg",
+                "zip": "69115",
+                "country": "DE",
+                "vat_id": "",
+            }
 
-        filename = f"XR-{data.invoice_number}-{data.issue_date.isoformat()}.xml"
-        filepath = self.output_dir / filename
-        filepath.write_bytes(xml_bytes)
+        inv_number = invoice_data.get("invoice_number", f"BF-{uuid.uuid4().hex[:8].upper()}")
+        inv_date = invoice_data.get("invoice_date", date.today().isoformat())
+        due_date = invoice_data.get("due_date")
+        currency = invoice_data.get("currency", "EUR")
+        total_net = invoice_data.get("total_amount_net", 0) or 0
+        tax_amount = invoice_data.get("tax_amount", 0) or 0
+        total_gross = invoice_data.get("total_amount_gross") or invoice_data.get("total_amount", 0) or 0
+        tax_rate = invoice_data.get("tax_rate", 19) or 19
+        line_items = invoice_data.get("line_items", []) or []
 
-        return filepath, xml_hash
+        # If no net amount, calculate from gross
+        if not total_net and total_gross:
+            total_net = round(total_gross / (1 + tax_rate / 100), 2)
+            tax_amount = round(total_gross - total_net, 2)
 
-    def _build_xml(self, data: InvoiceData) -> Element:
-        """Build UBL 2.1 Invoice XML tree."""
-        # Register namespaces
-        for prefix, uri in NS.items():
-            if prefix:
-                Element(f"{{{uri}}}dummy")
-
-        root = Element("Invoice")
-        root.set("xmlns", NS[""])
+        root = Element("{%s}Invoice" % NS["ubl"])
+        root.set("xmlns", NS["ubl"])
         root.set("xmlns:cac", NS["cac"])
         root.set("xmlns:cbc", NS["cbc"])
 
-        # BT-24: CustomizationID
-        self._cbc(root, "CustomizationID", XRECHNUNG_CUSTOMIZATION)
-        # BT-23: ProfileID
-        self._cbc(root, "ProfileID", XRECHNUNG_PROFILE)
-        # BT-1: Invoice number
-        self._cbc(root, "ID", data.invoice_number)
-        # BT-2: Issue date
-        self._cbc(root, "IssueDate", data.issue_date.isoformat())
-        # BT-9: Due date
-        self._cbc(root, "DueDate", data.due_date.isoformat())
-        # BT-3: Invoice type (380 = Commercial invoice)
-        self._cbc(root, "InvoiceTypeCode", "380")
-        # BT-22: Note
-        if data.note:
-            self._cbc(root, "Note", data.note)
-        # BT-5: Currency
-        self._cbc(root, "DocumentCurrencyCode", data.currency)
-        # BT-10: Buyer reference / Leitweg-ID
-        if data.buyer.leitweg_id:
-            self._cbc(root, "BuyerReference", data.buyer.leitweg_id)
+        # Customization + Profile
+        SubElement(root, "{%s}CustomizationID" % NS["cbc"]).text = (
+            "urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0"
+        )
+        SubElement(root, "{%s}ProfileID" % NS["cbc"]).text = "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0"
 
-        # Seller (BG-4)
-        self._add_party(root, "AccountingSupplierParty", data.seller)
-        # Buyer (BG-7)
-        self._add_party(root, "AccountingCustomerParty", data.buyer)
+        # Invoice Number + Dates
+        SubElement(root, "{%s}ID" % NS["cbc"]).text = inv_number
+        SubElement(root, "{%s}IssueDate" % NS["cbc"]).text = str(inv_date)[:10]
+        if due_date:
+            SubElement(root, "{%s}DueDate" % NS["cbc"]).text = str(due_date)[:10]
+        SubElement(root, "{%s}InvoiceTypeCode" % NS["cbc"]).text = "380"
+        SubElement(root, "{%s}DocumentCurrencyCode" % NS["cbc"]).text = currency
 
-        # Payment means (BG-16)
-        if data.iban:
-            pm = SubElement(root, f"{{{NS['cac']}}}PaymentMeans")
-            self._cbc(pm, "PaymentMeansCode", "58")  # SEPA
-            if data.payment_reference:
-                self._cbc(pm, "PaymentID", data.payment_reference)
-            payee = SubElement(pm, f"{{{NS['cac']}}}PayeeFinancialAccount")
-            self._cbc(payee, "ID", data.iban)
-            if data.bic:
-                branch = SubElement(payee, f"{{{NS['cac']}}}FinancialInstitutionBranch")
-                self._cbc(branch, "ID", data.bic)
+        # Buyer Reference (Leitweg-ID for public sector, otherwise generic)
+        SubElement(root, "{%s}BuyerReference" % NS["cbc"]).text = "BF-BUYER-REF"
 
-        # Tax totals and line items
-        net_total = sum(item.quantity * item.unit_price for item in data.line_items)
-        vat_total = sum(item.quantity * item.unit_price * item.vat_percent / 100 for item in data.line_items)
-        gross_total = net_total + vat_total
+        # Seller (AccountingSupplierParty)
+        self._add_party(root, "AccountingSupplierParty", seller)
 
-        # Tax total (BG-22)
-        tax_total = SubElement(root, f"{{{NS['cac']}}}TaxTotal")
-        ta = self._cbc(tax_total, "TaxAmount", f"{vat_total:.2f}")
-        ta.set("currencyID", data.currency)
+        # Buyer (AccountingCustomerParty)
+        self._add_party(root, "AccountingCustomerParty", buyer)
 
-        # Group by VAT rate
-        vat_groups: dict[float, float] = {}
-        for item in data.line_items:
-            base = item.quantity * item.unit_price
-            vat_groups[item.vat_percent] = vat_groups.get(item.vat_percent, 0) + base
+        # Payment Means
+        if seller.get("iban"):
+            pm = SubElement(root, "{%s}PaymentMeans" % NS["cac"])
+            SubElement(pm, "{%s}PaymentMeansCode" % NS["cbc"]).text = "58"
+            payee = SubElement(pm, "{%s}PayeeFinancialAccount" % NS["cac"])
+            SubElement(payee, "{%s}ID" % NS["cbc"]).text = seller["iban"]
 
-        for rate, base in vat_groups.items():
-            subtotal = SubElement(tax_total, f"{{{NS['cac']}}}TaxSubtotal")
-            tb = self._cbc(subtotal, "TaxableAmount", f"{base:.2f}")
-            tb.set("currencyID", data.currency)
-            tv = self._cbc(subtotal, "TaxAmount", f"{base * rate / 100:.2f}")
-            tv.set("currencyID", data.currency)
-            cat = SubElement(subtotal, f"{{{NS['cac']}}}TaxCategory")
-            self._cbc(cat, "ID", "S")
-            self._cbc(cat, "Percent", f"{rate:.1f}")
-            scheme = SubElement(cat, f"{{{NS['cac']}}}TaxScheme")
-            self._cbc(scheme, "ID", "VAT")
+        # Tax Total
+        tt = SubElement(root, "{%s}TaxTotal" % NS["cac"])
+        ta = SubElement(tt, "{%s}TaxAmount" % NS["cbc"])
+        ta.text = f"{tax_amount:.2f}"
+        ta.set("currencyID", currency)
 
-        # Legal monetary totals (BG-22)
-        totals = SubElement(root, f"{{{NS['cac']}}}LegalMonetaryTotal")
-        le = self._cbc(totals, "LineExtensionAmount", f"{net_total:.2f}")
-        le.set("currencyID", data.currency)
-        te = self._cbc(totals, "TaxExclusiveAmount", f"{net_total:.2f}")
-        te.set("currencyID", data.currency)
-        ti = self._cbc(totals, "TaxInclusiveAmount", f"{gross_total:.2f}")
-        ti.set("currencyID", data.currency)
-        pa = self._cbc(totals, "PayableAmount", f"{gross_total:.2f}")
-        pa.set("currencyID", data.currency)
+        ts = SubElement(tt, "{%s}TaxSubtotal" % NS["cac"])
+        tb = SubElement(ts, "{%s}TaxableAmount" % NS["cbc"])
+        tb.text = f"{total_net:.2f}"
+        tb.set("currencyID", currency)
+        ta2 = SubElement(ts, "{%s}TaxAmount" % NS["cbc"])
+        ta2.text = f"{tax_amount:.2f}"
+        ta2.set("currencyID", currency)
+        tc = SubElement(ts, "{%s}TaxCategory" % NS["cac"])
+        SubElement(tc, "{%s}ID" % NS["cbc"]).text = "S"
+        SubElement(tc, "{%s}Percent" % NS["cbc"]).text = str(int(tax_rate))
+        SubElement(tc, "{%s}TaxScheme" % NS["cac"]).append(
+            self._text_elem("{%s}ID" % NS["cbc"], "VAT")
+        )
 
-        # Invoice lines (BG-25)
-        for i, item in enumerate(data.line_items, 1):
-            self._add_line(root, i, item, data.currency)
+        # Legal Monetary Total
+        lmt = SubElement(root, "{%s}LegalMonetaryTotal" % NS["cac"])
+        for tag, val in [
+            ("LineExtensionAmount", total_net),
+            ("TaxExclusiveAmount", total_net),
+            ("TaxInclusiveAmount", total_gross),
+            ("PayableAmount", total_gross),
+        ]:
+            el = SubElement(lmt, "{%s}%s" % (NS["cbc"], tag))
+            el.text = f"{val:.2f}"
+            el.set("currencyID", currency)
 
-        return root
+        # Invoice Lines
+        if line_items:
+            for idx, item in enumerate(line_items, 1):
+                self._add_line(root, idx, item, currency, tax_rate)
+        else:
+            # Single line from total
+            self._add_line(root, 1, {
+                "description": invoice_data.get("supplier", "Lieferung/Leistung"),
+                "quantity": 1,
+                "unit_price": total_net,
+                "total": total_net,
+            }, currency, tax_rate)
 
-    def _add_party(self, parent: Element, tag: str, party: Party) -> None:
-        """Add AccountingSupplierParty or AccountingCustomerParty."""
-        wrapper = SubElement(parent, f"{{{NS['cac']}}}{tag}")
-        p = SubElement(wrapper, f"{{{NS['cac']}}}Party")
+        xml_str = tostring(root, encoding="unicode", xml_declaration=False)
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_str
 
-        if party.email:
-            contact = SubElement(p, f"{{{NS['cac']}}}EndpointID")
-            contact.text = party.email
-            contact.set("schemeID", "EM")
+        logger.info(f"xrechnung_generated: {inv_number} | {total_gross} {currency}")
+        return xml_str
 
-        name_el = SubElement(p, f"{{{NS['cac']}}}PartyName")
-        self._cbc(name_el, "Name", party.name)
+    def _add_party(self, root: Element, party_type: str, info: dict) -> None:
+        party_wrapper = SubElement(root, "{%s}%s" % (NS["cac"], party_type))
+        party = SubElement(party_wrapper, "{%s}Party" % NS["cac"])
 
-        if party.street or party.city:
-            addr = SubElement(p, f"{{{NS['cac']}}}PostalAddress")
-            if party.street:
-                self._cbc(addr, "StreetName", party.street)
-            if party.city:
-                self._cbc(addr, "CityName", party.city)
-            if party.postal_code:
-                self._cbc(addr, "PostalZone", party.postal_code)
-            country = SubElement(addr, f"{{{NS['cac']}}}Country")
-            self._cbc(country, "IdentificationCode", party.country_code)
+        if info.get("name"):
+            pn = SubElement(party, "{%s}PartyName" % NS["cac"])
+            SubElement(pn, "{%s}Name" % NS["cbc"]).text = info["name"]
 
-        if party.vat_id:
-            tax_scheme = SubElement(p, f"{{{NS['cac']}}}PartyTaxScheme")
-            self._cbc(tax_scheme, "CompanyID", party.vat_id)
-            scheme = SubElement(tax_scheme, f"{{{NS['cac']}}}TaxScheme")
-            self._cbc(scheme, "ID", "VAT")
+        addr = SubElement(party, "{%s}PostalAddress" % NS["cac"])
+        if info.get("street"):
+            SubElement(addr, "{%s}StreetName" % NS["cbc"]).text = info["street"]
+        if info.get("city"):
+            SubElement(addr, "{%s}CityName" % NS["cbc"]).text = info["city"]
+        if info.get("zip"):
+            SubElement(addr, "{%s}PostalZone" % NS["cbc"]).text = info["zip"]
+        country = SubElement(addr, "{%s}Country" % NS["cac"])
+        SubElement(country, "{%s}IdentificationCode" % NS["cbc"]).text = info.get("country", "DE")
 
-        legal = SubElement(p, f"{{{NS['cac']}}}PartyLegalEntity")
-        self._cbc(legal, "RegistrationName", party.name)
+        if info.get("vat_id"):
+            pts = SubElement(party, "{%s}PartyTaxScheme" % NS["cac"])
+            SubElement(pts, "{%s}CompanyID" % NS["cbc"]).text = info["vat_id"]
+            SubElement(pts, "{%s}TaxScheme" % NS["cac"]).append(
+                self._text_elem("{%s}ID" % NS["cbc"], "VAT")
+            )
 
-    def _add_line(self, root: Element, line_id: int, item: LineItem, currency: str) -> None:
-        """Add InvoiceLine."""
-        line = SubElement(root, f"{{{NS['cac']}}}InvoiceLine")
-        self._cbc(line, "ID", str(line_id))
+        ple = SubElement(party, "{%s}PartyLegalEntity" % NS["cac"])
+        SubElement(ple, "{%s}RegistrationName" % NS["cbc"]).text = info.get("name", "")
 
-        qty = self._cbc(line, "InvoicedQuantity", f"{item.quantity:.2f}")
-        qty.set("unitCode", item.unit_code)
+    def _add_line(self, root: Element, idx: int, item: dict, currency: str, tax_rate: float) -> None:
+        line = SubElement(root, "{%s}InvoiceLine" % NS["cac"])
+        SubElement(line, "{%s}ID" % NS["cbc"]).text = str(idx)
 
-        amount = item.quantity * item.unit_price
-        la = self._cbc(line, "LineExtensionAmount", f"{amount:.2f}")
-        la.set("currencyID", currency)
+        qty = SubElement(line, "{%s}InvoicedQuantity" % NS["cbc"])
+        qty.text = str(item.get("quantity", 1))
+        qty.set("unitCode", "C62")
 
-        # Item
-        inv_item = SubElement(line, f"{{{NS['cac']}}}Item")
-        self._cbc(inv_item, "Description", item.description)
-        self._cbc(inv_item, "Name", item.description[:80])
+        lea = SubElement(line, "{%s}LineExtensionAmount" % NS["cbc"])
+        lea.text = f"{item.get('total', 0):.2f}"
+        lea.set("currencyID", currency)
 
-        tax_cat = SubElement(inv_item, f"{{{NS['cac']}}}ClassifiedTaxCategory")
-        self._cbc(tax_cat, "ID", "S")
-        self._cbc(tax_cat, "Percent", f"{item.vat_percent:.1f}")
-        scheme = SubElement(tax_cat, f"{{{NS['cac']}}}TaxScheme")
-        self._cbc(scheme, "ID", "VAT")
+        i = SubElement(line, "{%s}Item" % NS["cac"])
+        SubElement(i, "{%s}Name" % NS["cbc"]).text = item.get("description", "Position")[:100]
 
-        # Price
-        price = SubElement(line, f"{{{NS['cac']}}}Price")
-        pa = self._cbc(price, "PriceAmount", f"{item.unit_price:.2f}")
+        ctc = SubElement(i, "{%s}ClassifiedTaxCategory" % NS["cac"])
+        SubElement(ctc, "{%s}ID" % NS["cbc"]).text = "S"
+        SubElement(ctc, "{%s}Percent" % NS["cbc"]).text = str(int(tax_rate))
+        SubElement(ctc, "{%s}TaxScheme" % NS["cac"]).append(
+            self._text_elem("{%s}ID" % NS["cbc"], "VAT")
+        )
+
+        price = SubElement(line, "{%s}Price" % NS["cac"])
+        pa = SubElement(price, "{%s}PriceAmount" % NS["cbc"])
+        pa.text = f"{item.get('unit_price', item.get('total', 0)):.2f}"
         pa.set("currencyID", currency)
 
     @staticmethod
-    def _cbc(parent: Element, tag: str, text: str) -> Element:
-        """Add a cbc: element."""
-        el = SubElement(parent, f"{{{NS['cbc']}}}{tag}")
+    def _text_elem(tag: str, text: str) -> Element:
+        el = Element(tag)
         el.text = text
         return el

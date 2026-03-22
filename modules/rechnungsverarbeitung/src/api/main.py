@@ -201,6 +201,74 @@ async def upload_invoice(
     }
 
 
+
+
+@v1.get("/invoices/{document_id}/file")
+async def download_invoice_file(
+    document_id: str,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    """Download the original invoice file."""
+    from modules.rechnungsverarbeitung.src.invoices.services.file_storage import FileStorageService
+    from fastapi.responses import FileResponse
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        invoice = _get_invoice_or_404(session, document_id, tenant_id)
+        fs = FileStorageService()
+        file_path = fs.get_path(tenant_id, document_id, invoice.file_name)
+        if not file_path:
+            raise HTTPException(status_code=404, detail="File not found in storage")
+        return FileResponse(
+            path=str(file_path),
+            filename=invoice.file_name,
+            media_type=invoice.mime_type or "application/octet-stream",
+        )
+
+
+
+@v1.post("/invoices/{document_id}/generate-xrechnung")
+async def generate_xrechnung(
+    document_id: str,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    """Generate XRechnung XML from extracted invoice data."""
+    from modules.rechnungsverarbeitung.src.invoices.services.xrechnung_generator import XRechnungGenerator
+    from fastapi.responses import Response
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        invoice = _get_invoice_or_404(session, document_id, tenant_id)
+        invoice_data = {
+            "supplier": invoice.supplier,
+            "invoice_number": invoice.invoice_number,
+            "invoice_date": invoice.invoice_date,
+            "due_date": invoice.due_date,
+            "total_amount": float(invoice.total_amount) if invoice.total_amount else 0,
+            "total_amount_gross": float(invoice.total_amount) if invoice.total_amount else 0,
+            "tax_amount": float(invoice.tax_amount) if getattr(invoice, 'tax_amount', None) else None,
+            "currency": invoice.currency or 'EUR',
+            "iban": None,
+        }
+        # Try to get line items from extracted_data
+        if getattr(invoice, 'extracted_data', None):
+            import json
+            try:
+                extra = json.loads(invoice.extracted_data) if isinstance(invoice.extracted_data, str) else invoice.extracted_data
+                invoice_data['line_items'] = extra.get('line_items', [])
+                invoice_data['iban'] = extra.get('iban')
+                invoice_data['tax_rate'] = extra.get('tax_rate', 19)
+                if extra.get('total_amount_net'):
+                    invoice_data['total_amount_net'] = extra['total_amount_net']
+            except Exception:
+                pass
+
+        gen = XRechnungGenerator()
+        xml_content = gen.generate(invoice_data)
+        return Response(
+            content=xml_content,
+            media_type="application/xml",
+            headers={"Content-Disposition": f'attachment; filename="{invoice.invoice_number or document_id}_xrechnung.xml"'},
+        )
+
 # ── CRUD ──────────────────────────────────────────────────────────────
 
 

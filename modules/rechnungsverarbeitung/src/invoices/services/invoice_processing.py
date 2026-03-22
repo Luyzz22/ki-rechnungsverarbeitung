@@ -10,6 +10,8 @@ from shared.tenant.context import TenantContext
 from modules.rechnungsverarbeitung.src.invoices.models import InvoiceDocumentMetadata
 from modules.rechnungsverarbeitung.src.invoices.services.erechnung_hub import ERechnungHubService
 from modules.rechnungsverarbeitung.src.invoices.services.ai_extraction import AIExtractionService
+from modules.rechnungsverarbeitung.src.invoices.services.file_storage import FileStorageService
+
 
 from modules.rechnungsverarbeitung.src.invoices.services.invoice_logging import (
     log_invoice_event_from_metadata,
@@ -44,6 +46,16 @@ def process_invoice_upload(
     )
 
     payload = file_stream.read()
+
+    # Store file persistently
+    try:
+        fs = FileStorageService()
+        storage_path = fs.store(metadata.tenant_id, document_id, file_name, payload)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f'File storage failed: {e}')
+        storage_path = None
+
     if hasattr(file_stream, "seek"):
         file_stream.seek(0)
     payload_sha256 = hashlib.sha256(payload).hexdigest()
