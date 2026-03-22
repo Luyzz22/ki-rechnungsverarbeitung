@@ -536,6 +536,126 @@ async def generate_zugferd(
     xml = svc.to_zugferd_xml(data)
     return StreamingResponse(io.BytesIO(xml.encode("utf-8")), media_type="application/xml", headers={"Content-Disposition": f"attachment; filename=zugferd-{document_id[:8]}.xml"})
 
+
+
+@v1.get("/invoices/{document_id}/skonto-check")
+async def check_skonto(
+    document_id: str,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    """Check for Skonto/discount terms and calculate savings."""
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        invoice = _get_invoice_or_404(session, document_id, tenant_id)
+        amount = float(invoice.total_amount) if invoice.total_amount else 0
+        extracted = {}
+        if getattr(invoice, 'extracted_data', None):
+            import json as _json
+            try:
+                extracted = _json.loads(invoice.extracted_data) if isinstance(invoice.extracted_data, str) else (invoice.extracted_data or {})
+            except Exception:
+                pass
+
+        # Check for skonto terms in extracted data or payment text
+        skonto_rate = extracted.get('skonto_rate') or extracted.get('discount_rate')
+        skonto_days = extracted.get('skonto_days') or extracted.get('discount_days')
+        payment_terms = extracted.get('payment_terms') or extracted.get('payment_reference') or ''
+
+        # Try to detect skonto from payment terms text
+        import re
+        if not skonto_rate and payment_terms:
+            m = re.search(r'(\d+)\s*%\s*[Ss]konto', str(payment_terms))
+            if m:
+                skonto_rate = float(m.group(1))
+            m2 = re.search(r'(\d+)\s*[Tt]age', str(payment_terms))
+            if m2:
+                skonto_days = int(m2.group(1))
+
+        # Default: check common 2%/10 days pattern
+        if not skonto_rate:
+            skonto_rate = 2.0
+            skonto_days = 10
+            detected = False
+        else:
+            detected = True
+
+        savings = round(amount * (float(skonto_rate) / 100), 2)
+        due_date = invoice.due_date or ''
+        skonto_deadline = ''
+        if invoice.invoice_date and skonto_days:
+            from datetime import datetime, timedelta
+            try:
+                base = datetime.strptime(str(invoice.invoice_date), '%Y-%m-%d')
+                skonto_deadline = (base + timedelta(days=int(skonto_days))).strftime('%Y-%m-%d')
+            except Exception:
+                pass
+
+        return {
+            "document_id": document_id,
+            "skonto_detected": detected,
+            "skonto_rate": float(skonto_rate) if skonto_rate else None,
+            "skonto_days": int(skonto_days) if skonto_days else None,
+            "skonto_deadline": skonto_deadline,
+            "potential_savings": savings,
+            "invoice_amount": amount,
+            "due_date": due_date,
+        }
+
+
+@v1.get("/analytics/supplier-scorecard")
+async def supplier_scorecard(
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    """Supplier performance scorecard with spending and frequency data."""
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        from sqlalchemy import text
+        rows = session.execute(text("""
+            SELECT supplier, COUNT(*) as count, SUM(total_amount) as total,
+                   AVG(total_amount) as avg_amount, MIN(total_amount) as min_amount,
+                   MAX(total_amount) as max_amount, MIN(uploaded_at) as first_seen, MAX(uploaded_at) as last_seen
+            FROM invoices
+            WHERE tenant_id = :t AND supplier IS NOT NULL AND supplier != ''
+            GROUP BY supplier ORDER BY total DESC
+        """), {"t": tenant_id}).fetchall()
+        return [{
+            "supplier": r[0], "invoice_count": r[1], "total_spend": float(r[2] or 0),
+            "avg_amount": round(float(r[3] or 0), 2), "min_amount": float(r[4] or 0),
+            "max_amount": float(r[5] or 0),
+            "first_seen": r[6].isoformat() if r[6] else None,
+            "last_seen": r[7].isoformat() if r[7] else None,
+        } for r in rows]
+
+
+@v1.get("/export/datev-zip")
+async def export_datev_zip(
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    """One-Click DATEV: ZIP with DATEV CSV + all invoice PDFs."""
+    import zipfile
+    from modules.rechnungsverarbeitung.src.invoices.services.export_service import ExportService
+    from modules.rechnungsverarbeitung.src.invoices.services.file_storage import FileStorageService
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        from sqlalchemy import text
+        rows = session.execute(text("SELECT document_id, supplier, total_amount, currency, invoice_number, invoice_date, due_date, status, tax_amount, extracted_data, file_name FROM invoices WHERE tenant_id = :t AND status IN ('suggested','approved','exported') ORDER BY uploaded_at DESC"), {"t": tenant_id}).fetchall()
+        invoices = [{"document_id":r[0],"supplier":r[1],"total_amount":r[2],"currency":r[3],"invoice_number":r[4],"invoice_date":r[5],"due_date":r[6],"status":r[7],"tax_amount":r[8],"extracted_data":r[9],"file_name":r[10]} for r in rows]
+
+    svc = ExportService()
+    fs = FileStorageService()
+    csv_content = svc.to_csv(invoices)
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr('DATEV-Export.csv', csv_content)
+        for inv in invoices:
+            if inv.get('file_name') and inv.get('document_id'):
+                fpath = fs.get_path(tenant_id, inv['document_id'], inv['file_name'])
+                if fpath and fpath.exists():
+                    zf.write(str(fpath), f"Rechnungen/{inv.get('invoice_number') or inv['document_id'][:8]}_{inv['file_name']}")
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="application/zip", headers={"Content-Disposition": "attachment; filename=datev-komplett-export.zip"})
+
 # ── AUDIT & EXPORT HISTORY ──────────────────────────────────
 
 @v1.get("/audit-log")
@@ -695,7 +815,7 @@ async def transition_invoice(
 
         # Persist audit event
         event = InvoiceEvent(
-            tenant_id=tenant_id,
+            uploaded_by="batch-upload",
             document_id=document_id,
             event_type=result.event_type,
             status_from=result.from_status.value,
@@ -715,7 +835,7 @@ async def transition_invoice(
             to_status=result.to_status.value,
             actor=result.actor,
             details=result.details,
-            tenant_id=tenant_id,
+            uploaded_by="batch-upload",
         )
 
     return TransitionResponse(
@@ -821,7 +941,7 @@ async def create_evidence_package(
 
         path = evidence_service.create_package(
             document_id=document_id,
-            tenant_id=tenant_id,
+            uploaded_by="batch-upload",
             audit_chain=chain,
             metadata={
                 "file_name": invoice.file_name,
@@ -886,7 +1006,7 @@ async def export_to_datev(
 
         result = datev_service.export_invoice(
             document_id=document_id,
-            tenant_id=tenant_id,
+            uploaded_by="batch-upload",
             kontierung=body.model_dump(),
             invoice_data={"file_name": invoice.file_name},
         )
@@ -903,7 +1023,7 @@ async def export_to_datev(
             invoice.processed_at = datetime.utcnow()
 
             event = InvoiceEvent(
-                tenant_id=tenant_id,
+                uploaded_by="batch-upload",
                 document_id=document_id,
                 event_type=tr.event_type,
                 status_from=tr.from_status.value,
@@ -964,7 +1084,7 @@ async def validate_invoice(
         # Run validation
         json_path, txt_path, report = erechnung_hub.validate_structured_invoice(
             document_id=document_id,
-            tenant_id=tenant_id,
+            uploaded_by="batch-upload",
             xml_content=content,
         )
 
@@ -986,7 +1106,7 @@ async def validate_invoice(
                 invoice.status = tr.to_status.value
 
                 event = InvoiceEvent(
-                    tenant_id=tenant_id,
+                    uploaded_by="batch-upload",
                     document_id=document_id,
                     event_type=tr.event_type,
                     status_from=tr.from_status.value,
@@ -1083,7 +1203,7 @@ async def suggest_kontierung(
                 current_status = tr.to_status.value
 
                 event = InvoiceEvent(
-                    tenant_id=tenant_id,
+                    uploaded_by="batch-upload",
                     document_id=document_id,
                     event_type=tr.event_type,
                     status_from=tr.from_status.value,
@@ -1134,7 +1254,7 @@ async def batch_export_datev(
                 "invoice_data": {"file_name": invoice.file_name},
             })
 
-    result = datev_service.export_batch(tenant_id=tenant_id, invoices=invoices_data)
+    result = datev_service.export_batch(uploaded_by="batch-upload", invoices=invoices_data)
 
     # Transition all to exported
     with get_session() as session:
@@ -1150,7 +1270,7 @@ async def batch_export_datev(
                 invoice.status = tr.to_status.value
                 invoice.processed_at = datetime.utcnow()
                 session.add(InvoiceEvent(
-                    tenant_id=tenant_id,
+                    uploaded_by="batch-upload",
                     document_id=doc_id,
                     event_type=tr.event_type,
                     status_from=tr.from_status.value,
@@ -1198,7 +1318,7 @@ async def copilot_chat(
     tenant_id = _require_tenant(x_tenant_id)
     result = copilot_service.chat(
         question=body.question,
-        tenant_id=tenant_id,
+        uploaded_by="batch-upload",
         conversation_history=body.conversation_history,
     )
     return result
@@ -1215,7 +1335,7 @@ analytics_service = AnalyticsService()
 @v1.get("/analytics/dashboard")
 async def analytics_dashboard(days: int = 90, x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID")):
     tenant_id = _require_tenant(x_tenant_id)
-    return analytics_service.get_dashboard(tenant_id=tenant_id, days=days)
+    return analytics_service.get_dashboard(uploaded_by="batch-upload", days=days)
 
 
 
