@@ -826,18 +826,41 @@ class KontierungRequest(BaseModel):
 @v1.post("/invoices/{document_id}/kontierung")
 async def suggest_kontierung(
     document_id: str,
-    body: KontierungRequest,
+    body: KontierungRequest | None = None,
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
-    """AI-powered account assignment suggestion."""
+    """AI-powered account assignment suggestion. Auto-loads from DB if no body."""
     tenant_id = _require_tenant(x_tenant_id)
 
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
 
+        # Auto-build invoice_data from DB if no body provided
+        if body and body.invoice_data:
+            inv_data = body.invoice_data
+            skr = body.skr
+        else:
+            inv_data = {
+                "rechnungsaussteller": invoice.supplier or "",
+                "betrag_brutto": float(invoice.total_amount) if invoice.total_amount else 0,
+                "waehrung": invoice.currency or "EUR",
+                "rechnungsnummer": invoice.invoice_number or "",
+                "datum": invoice.invoice_date or "",
+                "file_name": invoice.file_name or "",
+            }
+            if getattr(invoice, "extracted_data", None):
+                import json as _json
+                try:
+                    extra = _json.loads(invoice.extracted_data) if isinstance(invoice.extracted_data, str) else invoice.extracted_data
+                    if extra.get("line_items"):
+                        inv_data["positionen"] = extra["line_items"]
+                except Exception:
+                    pass
+            skr = "SKR03"
+
         result = ai_kontierung.suggest(
-            invoice_data=body.invoice_data,
-            skr=body.skr,
+            invoice_data=inv_data,
+            skr=skr,
         )
 
         current_status = invoice.status
