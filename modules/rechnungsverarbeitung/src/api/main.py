@@ -396,6 +396,114 @@ async def validate_xrechnung(
 
 
 
+
+
+# ── DUPLICATE + ANOMALY + EXPORT ────────────────────────────
+
+@v1.get("/invoices/{document_id}/duplicate-check")
+async def check_duplicates(
+    document_id: str,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    from modules.rechnungsverarbeitung.src.invoices.services.duplicate_detection import DuplicateDetectionService
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        svc = DuplicateDetectionService()
+        matches = svc.check(session, tenant_id, document_id)
+        return {"document_id": document_id, "duplicates": [m.to_dict() for m in matches], "count": len(matches)}
+
+
+@v1.get("/invoices/{document_id}/anomaly-check")
+async def check_anomalies(
+    document_id: str,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    from modules.rechnungsverarbeitung.src.invoices.services.anomaly_detection import AnomalyDetectionService
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        svc = AnomalyDetectionService()
+        anomalies = svc.analyze(session, tenant_id, document_id)
+        return {"document_id": document_id, "anomalies": [a.to_dict() for a in anomalies], "count": len(anomalies)}
+
+
+@v1.get("/invoices/{document_id}/mark-duplicate")
+async def mark_duplicate(
+    document_id: str,
+    duplicate_of: str = "",
+    is_duplicate: bool = True,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        from sqlalchemy import text
+        session.execute(text("UPDATE invoices SET status = :s WHERE document_id = :d AND tenant_id = :t"),
+            {"s": "duplicate" if is_duplicate else "suggested", "d": document_id, "t": tenant_id})
+        return {"status": "ok", "document_id": document_id, "marked_as": "duplicate" if is_duplicate else "not_duplicate"}
+
+
+from fastapi.responses import StreamingResponse
+import io
+
+@v1.get("/export/csv")
+async def export_csv(
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    from modules.rechnungsverarbeitung.src.invoices.services.export_service import ExportService
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        from sqlalchemy import text
+        rows = session.execute(text("SELECT document_id, supplier, total_amount, currency, invoice_number, invoice_date, due_date, status, tax_amount, extracted_data FROM invoices WHERE tenant_id = :t ORDER BY uploaded_at DESC"), {"t": tenant_id}).fetchall()
+        invoices = [{"document_id":r[0],"supplier":r[1],"total_amount":r[2],"currency":r[3],"invoice_number":r[4],"invoice_date":r[5],"due_date":r[6],"status":r[7],"tax_amount":r[8],"extracted_data":r[9]} for r in rows]
+    svc = ExportService()
+    csv_content = svc.to_csv(invoices)
+    return StreamingResponse(io.BytesIO(csv_content.encode("utf-8-sig")), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=rechnungen-export.csv"})
+
+
+@v1.get("/export/excel")
+async def export_excel(
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    from modules.rechnungsverarbeitung.src.invoices.services.export_service import ExportService
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        from sqlalchemy import text
+        rows = session.execute(text("SELECT document_id, supplier, total_amount, currency, invoice_number, invoice_date, due_date, status, tax_amount, extracted_data FROM invoices WHERE tenant_id = :t ORDER BY uploaded_at DESC"), {"t": tenant_id}).fetchall()
+        invoices = [{"document_id":r[0],"supplier":r[1],"total_amount":r[2],"currency":r[3],"invoice_number":r[4],"invoice_date":r[5],"due_date":r[6],"status":r[7],"tax_amount":r[8],"extracted_data":r[9]} for r in rows]
+    svc = ExportService()
+    excel_bytes = svc.to_excel_bytes(invoices)
+    return StreamingResponse(io.BytesIO(excel_bytes), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=rechnungen-export.xlsx"})
+
+
+@v1.post("/invoices/{document_id}/generate-zugferd")
+async def generate_zugferd(
+    document_id: str,
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+):
+    from modules.rechnungsverarbeitung.src.invoices.services.export_service import ExportService
+    tenant_id = _require_tenant(x_tenant_id)
+    with get_session() as session:
+        invoice = _get_invoice_or_404(session, document_id, tenant_id)
+        data = {
+            "supplier": invoice.supplier,
+            "invoice_number": invoice.invoice_number,
+            "invoice_date": invoice.invoice_date,
+            "due_date": invoice.due_date,
+            "total_amount": float(invoice.total_amount) if invoice.total_amount else 0,
+            "tax_amount": float(invoice.tax_amount) if getattr(invoice, "tax_amount", None) else None,
+            "currency": invoice.currency or "EUR",
+        }
+        if getattr(invoice, "extracted_data", None):
+            import json as _json
+            try:
+                extra = _json.loads(invoice.extracted_data) if isinstance(invoice.extracted_data, str) else invoice.extracted_data
+                data["total_amount_net"] = extra.get("total_amount_net")
+                data["total_amount_gross"] = extra.get("total_amount_gross", data["total_amount"])
+            except Exception:
+                pass
+    svc = ExportService()
+    xml = svc.to_zugferd_xml(data)
+    return StreamingResponse(io.BytesIO(xml.encode("utf-8")), media_type="application/xml", headers={"Content-Disposition": f"attachment; filename=zugferd-{document_id[:8]}.xml"})
+
 # ── AUDIT & EXPORT HISTORY ──────────────────────────────────
 
 @v1.get("/audit-log")
