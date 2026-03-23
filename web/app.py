@@ -67,12 +67,25 @@ log_formatter = logging.Formatter(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
+# Resolve log path (CI/non-root safe)
+LOG_PATH = Path(os.getenv("APP_LOG_PATH", "/var/www/invoice-app/logs/app.log"))
+FALLBACK_LOG_PATH = Path(".runtime-data/logs/app.log")
+
 # File Handler
-file_handler = RotatingFileHandler(
-    '/var/www/invoice-app/logs/app.log',
-    maxBytes=10*1024*1024,  # 10MB
-    backupCount=5
-)
+try:
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    file_handler = RotatingFileHandler(
+        str(LOG_PATH),
+        maxBytes=10 * 1024 * 1024,  # 10MB
+        backupCount=5
+    )
+except OSError:
+    FALLBACK_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    file_handler = RotatingFileHandler(
+        str(FALLBACK_LOG_PATH),
+        maxBytes=10 * 1024 * 1024,  # 10MB
+        backupCount=5
+    )
 file_handler.setFormatter(log_formatter)
 file_handler.setLevel(logging.INFO)
 

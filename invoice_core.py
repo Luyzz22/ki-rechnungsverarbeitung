@@ -266,7 +266,9 @@ def extract_text_from_pdf(pdf_path: str) -> str:
             # Optimierte OCR mit Fallback
             result = ocr_with_fallback(image)
             page_ocr = result.get("text", "")
-            logger.info(f"OCR Seite {i+1}: {result.get("confidence", 0)*100:.0f}% Konfidenz, Methode: {result.get("method", "unknown")}")
+            logger.info(
+                f"OCR Seite {i+1}: {result.get('confidence', 0) * 100:.0f}% Konfidenz, Methode: {result.get('method', 'unknown')}"
+            )
             ocr_text += page_ocr + "\n"
         
         logger.info(f"OCR extracted {len(ocr_text)} chars")
@@ -361,4 +363,3 @@ def run_plausibility_for_invoice(invoice_id: int):
     except Exception as e:
         logger.error(f"❌ Plausibility check failed for invoice {invoice_id}: {e}")
         return 0
-
