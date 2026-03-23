@@ -13,12 +13,30 @@ from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
-# Initialize clients
-openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-anthropic_client = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+_openai_client: OpenAI | None = None
+_anthropic_client: Anthropic | None = None
 
-logger.info("✅ OpenAI-Client initialisiert")
-logger.info("✅ Claude-Client initialisiert")
+
+def get_openai_client() -> OpenAI:
+    global _openai_client
+    if _openai_client is None:
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY not configured")
+        _openai_client = OpenAI(api_key=api_key)
+        logger.info("✅ OpenAI-Client initialisiert")
+    return _openai_client
+
+
+def get_anthropic_client() -> Anthropic:
+    global _anthropic_client
+    if _anthropic_client is None:
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY not configured")
+        _anthropic_client = Anthropic(api_key=api_key)
+        logger.info("✅ Claude-Client initialisiert")
+    return _anthropic_client
 
 
 SYSTEM_PROMPT_OPENAI = """Du bist ein Elite-Experte für professionelle Rechnungsverarbeitung mit 20 Jahren Erfahrung in Buchhaltung, Steuerrecht und Dokumentenanalyse.
@@ -734,7 +752,7 @@ def extract_invoice_data(text: str, provider: str, model: str) -> dict:
                 }
             ]
             
-            resp = anthropic_client.messages.create(
+            resp = get_anthropic_client().messages.create(
                 model=model,
                 max_tokens=4000,
                 temperature=0,
@@ -749,7 +767,7 @@ def extract_invoice_data(text: str, provider: str, model: str) -> dict:
                 {"role": "user", "content": f"═══════════════════════════════════════════════════════════════════\n\nRECHNUNG:\n\n{text}\n\n═══════════════════════════════════════════════════════════════════\n\nExtrahiere jetzt ALLE Daten als JSON. Scanne den Footer systematisch!"}
             ]
             
-            resp = openai_client.chat.completions.create(
+            resp = get_openai_client().chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=0,
@@ -876,7 +894,7 @@ WICHTIG:
 - NUR JSON zurückgeben, keine Erklärungen"""
 
         # GPT-4o Vision API Call
-        response = openai_client.chat.completions.create(
+        response = get_openai_client().chat.completions.create(
             model="gpt-4o",
             messages=[
                 {
