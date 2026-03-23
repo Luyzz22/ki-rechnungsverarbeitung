@@ -7,9 +7,10 @@ Email (SendGrid) & Slack notifications after processing
 import os
 import logging
 import base64
+import json
 from pathlib import Path
 from typing import Dict, List
-import requests
+from urllib import request
 try:
     from sendgrid import SendGridAPIClient
     from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
@@ -23,6 +24,19 @@ except ImportError:
     pass
 
 logger = logging.getLogger(__name__)
+
+
+def _post_json(url: str, payload: Dict) -> None:
+    """Send JSON via stdlib HTTP client."""
+    body = json.dumps(payload).encode("utf-8")
+    req = request.Request(
+        url,
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with request.urlopen(req, timeout=10):
+        return
 
 
 class EmailNotifier:
@@ -235,8 +249,7 @@ class SlackNotifier:
                 ]
             }
             
-            response = requests.post(self.webhook_url, json=message)
-            response.raise_for_status()
+            _post_json(self.webhook_url, message)
             
             logger.info("Slack notification sent")
             return True
@@ -272,8 +285,7 @@ class SlackNotifier:
                 ]
             }
             
-            response = requests.post(self.webhook_url, json=message)
-            response.raise_for_status()
+            _post_json(self.webhook_url, message)
             
             logger.info("Slack error notification sent")
             return True

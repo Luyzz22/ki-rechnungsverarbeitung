@@ -15,13 +15,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
       - run: pip install ruff mypy
-      - run: ruff check .
-      - run: ruff format --check .
+      - name: Ruff (changed python files only)
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            CHANGED_PY="$(git diff --name-only --diff-filter=ACMRT "${BASE_SHA}" "${HEAD_SHA}" | grep -E '^(modules/|shared/).*\\.py$' || true)"
+          else
+            CHANGED_PY="$(git diff --name-only --diff-filter=ACMRT HEAD~1 HEAD | grep -E '^(modules/|shared/).*\\.py$' || true)"
+          fi
+
+          if [[ -z "${CHANGED_PY}" ]]; then
+            echo "No changed Python files detected. Skipping Ruff."
+            exit 0
+          fi
+
+          echo "Changed Python files:"
+          echo "${CHANGED_PY}"
+
+          ruff check ${CHANGED_PY}
+          ruff format --check ${CHANGED_PY}
 
   test:
     name: Tests

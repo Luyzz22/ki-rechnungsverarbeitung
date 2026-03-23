@@ -53,8 +53,6 @@ except ImportError:
     NEXUS_AVAILABLE = False
 from fastapi.responses import FileResponse, RedirectResponse
 import logging
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from database import save_job, save_invoices, get_job, get_all_jobs, get_statistics, get_invoices_by_job
 from notifications import send_sendgrid_email
@@ -69,12 +67,25 @@ log_formatter = logging.Formatter(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
+# Resolve log path (CI/non-root safe)
+LOG_PATH = Path(os.getenv("APP_LOG_PATH", "/var/www/invoice-app/logs/app.log"))
+FALLBACK_LOG_PATH = Path(".runtime-data/logs/app.log")
+
 # File Handler
-file_handler = RotatingFileHandler(
-    '/var/www/invoice-app/logs/app.log',
-    maxBytes=10*1024*1024,  # 10MB
-    backupCount=5
-)
+try:
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    file_handler = RotatingFileHandler(
+        str(LOG_PATH),
+        maxBytes=10 * 1024 * 1024,  # 10MB
+        backupCount=5
+    )
+except OSError:
+    FALLBACK_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    file_handler = RotatingFileHandler(
+        str(FALLBACK_LOG_PATH),
+        maxBytes=10 * 1024 * 1024,  # 10MB
+        backupCount=5
+    )
 file_handler.setFormatter(log_formatter)
 file_handler.setLevel(logging.INFO)
 
@@ -204,6 +215,36 @@ app.include_router(invoice_router)  # NEU
 async def landing_page():
     """Landing Page für Marketing"""
     return FileResponse("web/static/landing/index.html")
+
+
+@app.get("/sicherheit")
+async def trust_security_page():
+    """Öffentliche Sicherheits-/Trust-Seite."""
+    return FileResponse("web/static/landing/security.html")
+
+
+@app.get("/compliance")
+async def compliance_page():
+    """Öffentliche Compliance-Übersicht."""
+    return FileResponse("web/static/landing/compliance.html")
+
+
+@app.get("/avv")
+async def avv_page():
+    """Öffentliche AVV-Entwurfsseite."""
+    return FileResponse("web/static/landing/avv.html")
+
+
+@app.get("/api", response_class=HTMLResponse, include_in_schema=False)
+async def api_overview_page():
+    """Öffentliche API-Übersichtsseite (nicht OpenAPI)."""
+    return FileResponse("web/static/landing/api.html")
+
+
+@app.get("/referenzen")
+async def referenzen_page():
+    """Öffentliche Referenz-/Einsatzprofil-Seite."""
+    return FileResponse("web/static/landing/referenzen.html")
 
 # Templates
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -3837,6 +3878,9 @@ async def job_details_page(request: Request, job_id: str):
 
 def send_password_reset_email(to_email: str, token: str):
     """Sendet die Passwort-Zurücksetzen-E-Mail via SendGrid."""
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail
+
     api_key = os.getenv("SENDGRID_API_KEY")
     from_email = os.getenv("SENDGRID_FROM_EMAIL", "noreply@sbsdeutschland.com")
 
@@ -3897,6 +3941,9 @@ def send_password_reset_email(to_email: str, token: str):
 
 def send_password_reset_email(to_email: str, token: str):
     """Sendet die Passwort-Zurücksetzen-E-Mail via SendGrid."""
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail
+
     api_key = os.getenv("SENDGRID_API_KEY")
     from_email = os.getenv("SENDGRID_FROM_EMAIL", "noreply@sbsdeutschland.com")
 

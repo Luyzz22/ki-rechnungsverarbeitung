@@ -11,13 +11,33 @@ Produkte:
 
 import sqlite3
 import logging
+import os
+from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from enum import Enum
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = '/var/www/invoice-app/invoices.db'
+DB_PATH = Path(os.getenv("INVOICE_DB_PATH", "/var/www/invoice-app/invoices.db")).resolve()
+DB_FALLBACK_PATH = Path(".runtime-data/invoices.db").resolve()
+
+
+def _resolve_db_path() -> Path:
+    """Resolve writable SQLite path for CI/non-root environments."""
+    global DB_PATH
+    try:
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        return DB_PATH
+    except OSError:
+        DB_FALLBACK_PATH.parent.mkdir(parents=True, exist_ok=True)
+        DB_PATH = DB_FALLBACK_PATH
+        logger.warning("Subscription DB path not writable, using fallback path: %s", DB_PATH)
+        return DB_PATH
+
+
+def _get_connection() -> sqlite3.Connection:
+    return sqlite3.connect(str(_resolve_db_path()))
 
 
 class Product(Enum):
@@ -103,7 +123,7 @@ PRICING = {
 
 def init_product_subscriptions_table():
     """Erstellt erweiterte Subscriptions-Tabelle mit Multi-Product Support"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = _get_connection()
     cursor = conn.cursor()
     
     # Neue Tabelle für Product-Subscriptions
@@ -145,7 +165,7 @@ def get_user_products(user_id: int) -> List[Dict[str, Any]]:
     Returns:
         Liste der aktiven Produkte mit Plan-Details
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = _get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -171,7 +191,7 @@ def has_product_access(user_id: int, product: str) -> Dict[str, Any]:
     Returns:
         Dict mit access, plan, limits, usage
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = _get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -283,7 +303,7 @@ def create_product_subscription(
     Returns:
         Subscription ID
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = _get_connection()
     cursor = conn.cursor()
     
     # Berechne Limit
@@ -308,7 +328,7 @@ def create_product_subscription(
 
 def increment_usage(user_id: int, product: str) -> bool:
     """Erhöht Usage-Counter für Produkt"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = _get_connection()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -332,7 +352,7 @@ def increment_usage(user_id: int, product: str) -> bool:
 
 def reset_monthly_usage():
     """Setzt monatliche Usage zurück (Cronjob)"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = _get_connection()
     cursor = conn.cursor()
     
     cursor.execute('''

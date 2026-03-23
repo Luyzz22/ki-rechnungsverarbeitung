@@ -5,11 +5,12 @@ JWT-basiertes SSO für alle SBS Apps (Invoice, Contract, etc.)
 """
 
 import os
-import jwt
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from functools import wraps
+from jose import jwt
+from jose.exceptions import ExpiredSignatureError, JWTError
 
 logger = logging.getLogger(__name__)
 
@@ -72,10 +73,10 @@ def verify_sso_token(token: str) -> Optional[Dict[str, Any]]:
             options={"verify_aud": False}  # Audience-Check optional
         )
         return payload
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         logger.warning("SSO Token abgelaufen")
         return None
-    except jwt.InvalidTokenError as e:
+    except JWTError as e:
         logger.warning(f"Ungültiger SSO Token: {e}")
         return None
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <title>Trust Center · Sicherheit & Datenschutz · SBS Deutschland</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="SBS Deutschland Trust Center – Sicherheitsarchitektur, DSGVO-Compliance, Verschlüsselung, Datenstandort Deutschland und Zertifizierungsroadmap." />
+  <meta name="description" content="SBS Deutschland Trust Center – Sicherheitsarchitektur, Datenschutz-Transparenz, Verschlüsselung und Datenstandort in Deutschland." />
   <meta name="robots" content="index, follow" />
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/css/design-tokens.css" />
@@ -95,16 +95,20 @@
   <!-- HERO -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <h1>Trust Center</h1>
-  <p class="tc-sub">Sicherheit &amp; Datenschutz bei SBS Deutschland &mdash; Ihre Daten bleiben in Deutschland. DSGVO-konform by Design. Gebaut für die Sicherheitsanforderungen des deutschen Mittelstands.</p>
+  <p class="tc-sub">Sicherheit &amp; Datenschutz bei SBS Deutschland &mdash; mit Fokus auf transparente Maßnahmen, Rollen-/Rechtekonzept und nachvollziehbare Prozesse für den deutschen Mittelstand.</p>
   <p class="tc-version">Stand: 12. Februar 2026</p>
 
   <div class="tc-badges">
     <span class="tc-badge"><span class="icon">🇩🇪</span> 100 % Deutsche Server</span>
     <span class="tc-badge"><span class="icon">🔐</span> AES-256 Verschlüsselung</span>
-    <span class="tc-badge"><span class="icon">✅</span> DSGVO-konform</span>
-    <span class="tc-badge"><span class="icon">🛡️</span> EU AI Act konform</span>
+    <span class="tc-badge"><span class="icon">✅</span> DSGVO-orientiert</span>
+    <span class="tc-badge"><span class="icon">🛡️</span> EU AI Act Transparenz</span>
     <span class="tc-badge"><span class="icon">📝</span> Audit Logs</span>
     <span class="tc-badge"><span class="icon">🔑</span> RBAC &amp; SSO</span>
+  </div>
+
+  <div class="tc-info">
+    <p><strong>Wichtiger Hinweis:</strong> Diese Seite beschreibt den technischen Umsetzungsstand. Rechtliche Bewertung, vertragliche Reichweite und steuerliche Einordnung sind je Einsatzfall zu prüfen (juristisch prüfen, DSB prüfen, steuerlich validieren).</p>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
@@ -165,7 +169,7 @@
         <span class="tc-card-status active">Aktiv</span>
       </div>
       <h3>KI-Datenschutz (Zero Data Retention)</h3>
-      <p>Kundendaten werden nicht zum Training von KI-Modellen verwendet. Verarbeitung erfolgt mit Zero Data Retention Policy bei allen AI-Providern. Art. 50 EU AI Act konform.</p>
+      <p>Kundendaten werden nicht zum Training eigener KI-Modelle verwendet. Für KI-Funktionen gelten providerabhängige Verarbeitungs- und Aufbewahrungsregeln, die vertraglich dokumentiert werden.</p>
     </div>
 
     <div class="tc-card">
@@ -183,7 +187,7 @@
         <span class="tc-card-status active">Aktiv</span>
       </div>
       <h3>Backup &amp; Recovery</h3>
-      <p>Automatisierte tägliche Backups aller Datenbanken und Konfigurationen. Georedundante Speicherung. Recovery-Tests dokumentiert. RPO &lt; 24h, RTO &lt; 4h.</p>
+      <p>Regelmäßige Backups und Wiederherstellungsprozesse sind eingerichtet. Verbindliche RPO/RTO-Zusagen erfolgen ausschließlich vertraglich.</p>
     </div>
 
     <div class="tc-card">
@@ -192,7 +196,7 @@
         <span class="tc-card-status active">Aktiv</span>
       </div>
       <h3>Datenisolation</h3>
-      <p>Strikte Mandantentrennung auf Datenbankebene. Jeder API-Aufruf wird gegen User-Ownership validiert. Kein Zugriff auf fremde Daten möglich &mdash; auch nicht durch Administratoren.</p>
+      <p>Mandanten- und Benutzertrennung wird technisch umgesetzt (u. a. user_id-basierte Datenzugriffe). Administrativer Zugriff ist rollengebunden und nachvollziehbar protokolliert.</p>
     </div>
 
   </div>
@@ -213,18 +217,18 @@
     <tbody>
       <tr>
         <td><strong>DSGVO</strong></td>
-        <td><span class="st green">Konform</span></td>
-        <td>Vollständig konform mit der EU-Datenschutz-Grundverordnung. Auftragsverarbeitungsvertrag (AVV) nach Art.&nbsp;28 DSGVO verfügbar. Datenschutzbeauftragter benannt.</td>
+        <td><span class="st yellow">In Umsetzung</span></td>
+        <td>Datenschutzprozesse und AVV-Struktur sind vorhanden; finale rechtliche Bewertung erfolgt je Vertrag und Einsatzkontext.</td>
       </tr>
       <tr>
         <td><strong>GoBD</strong></td>
-        <td><span class="st green">Konform</span></td>
-        <td>Konform mit den Grundsätzen zur ordnungsmäßigen Führung und Aufbewahrung von Büchern, Aufzeichnungen und Unterlagen. Revisionssichere Archivierung.</td>
+        <td><span class="st yellow">Orientiert</span></td>
+        <td>GoBD-orientierte Prüfspur mit Audit-Log und versionierbaren Prozessschritten; steuerliche Gesamtbewertung erfolgt durch Steuerberatung.</td>
       </tr>
       <tr>
         <td><strong>EU AI Act</strong></td>
-        <td><span class="st green">Konform</span></td>
-        <td>Transparenzhinweise gemäß Art.&nbsp;50 Verordnung (EU) 2024/1689. KI-generierte Inhalte als solche gekennzeichnet. Dokumentierte Risikoklassifizierung.</td>
+        <td><span class="st yellow">Transparenzfokus</span></td>
+        <td>KI-Hinweise und Human-in-the-loop sind produktseitig vorgesehen. Vollständige regulatorische Einordnung ist fallabhängig zu prüfen.</td>
       </tr>
       <tr>
         <td><strong>DDG</strong></td>

@@ -7,17 +7,37 @@ SQLite Database für Job-Persistenz
 import sqlite3
 import json
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = Path("/var/www/invoice-app/invoices.db").resolve()
+DB_PATH = Path(os.getenv("INVOICE_DB_PATH", "/var/www/invoice-app/invoices.db")).resolve()
+_DB_FALLBACK_PATH = Path.cwd() / ".runtime-data" / "invoices.db"
+
+
+def _ensure_db_path() -> Path:
+    """
+    Ensure we have a writable DB path.
+    Falls back to a repo-local runtime path when system paths are not writable
+    (e.g. CI runners without /var/www permissions).
+    """
+    global DB_PATH
+    try:
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        return DB_PATH
+    except OSError:
+        _DB_FALLBACK_PATH.parent.mkdir(parents=True, exist_ok=True)
+        DB_PATH = _DB_FALLBACK_PATH.resolve()
+        logger.warning("DB path not writable, using fallback path: %s", DB_PATH)
+        return DB_PATH
 
 def get_connection():
     """Get database connection"""
-    conn = sqlite3.connect(str(DB_PATH))
+    db_path = _ensure_db_path()
+    conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -2228,4 +2248,3 @@ def get_export_stats(user_id: int = None):
     
     conn.close()
     return {"total": total, "this_week": this_week, "total_invoices": total_invoices, "total_amount": total_amount}
-

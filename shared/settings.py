@@ -1,6 +1,8 @@
 """Application settings loaded from environment variables."""
 from __future__ import annotations
+
 from functools import lru_cache
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,11 +10,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_env: str = "development"
-    app_secret_key: str = "dev-secret-change-in-production"
+    app_secret_key: str = ""
     app_port: int = 8000
-    app_host: str = "0.0.0.0"
+    app_host: str = "127.0.0.1"
     log_level: str = "INFO"
-    database_url: str = "postgresql+psycopg://sbs_user:dev_password_change_me@localhost:5432/sbs_nexus"
+    database_url: str = "postgresql+psycopg://localhost:5432/sbs_nexus"
     openai_api_key: str = ""
     anthropic_api_key: str = ""
     smtp_server: str = ""
