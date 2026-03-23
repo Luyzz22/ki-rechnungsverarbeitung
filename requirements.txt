@@ -56,3 +56,4 @@ python-pptx>=1.0.0
 # Utilities
 pytz>=2025.1
 tqdm>=4.67.0
+schedule>=1.2.0,<2.0
