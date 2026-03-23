@@ -15,11 +15,29 @@ from typing import Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 DB_PATH = Path(os.getenv("INVOICE_DB_PATH", "/var/www/invoice-app/invoices.db")).resolve()
+_DB_FALLBACK_PATH = Path.cwd() / ".runtime-data" / "invoices.db"
+
+
+def _ensure_db_path() -> Path:
+    """
+    Ensure we have a writable DB path.
+    Falls back to a repo-local runtime path when system paths are not writable
+    (e.g. CI runners without /var/www permissions).
+    """
+    global DB_PATH
+    try:
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        return DB_PATH
+    except OSError:
+        _DB_FALLBACK_PATH.parent.mkdir(parents=True, exist_ok=True)
+        DB_PATH = _DB_FALLBACK_PATH.resolve()
+        logger.warning("DB path not writable, using fallback path: %s", DB_PATH)
+        return DB_PATH
 
 def get_connection():
     """Get database connection"""
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH))
+    db_path = _ensure_db_path()
+    conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     return conn
 

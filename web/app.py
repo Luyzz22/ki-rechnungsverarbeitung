@@ -53,8 +53,6 @@ except ImportError:
     NEXUS_AVAILABLE = False
 from fastapi.responses import FileResponse, RedirectResponse
 import logging
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from database import save_job, save_invoices, get_job, get_all_jobs, get_statistics, get_invoices_by_job
 from notifications import send_sendgrid_email
@@ -3867,6 +3865,9 @@ async def job_details_page(request: Request, job_id: str):
 
 def send_password_reset_email(to_email: str, token: str):
     """Sendet die Passwort-Zurücksetzen-E-Mail via SendGrid."""
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail
+
     api_key = os.getenv("SENDGRID_API_KEY")
     from_email = os.getenv("SENDGRID_FROM_EMAIL", "noreply@sbsdeutschland.com")
 
@@ -3927,6 +3928,9 @@ def send_password_reset_email(to_email: str, token: str):
 
 def send_password_reset_email(to_email: str, token: str):
     """Sendet die Passwort-Zurücksetzen-E-Mail via SendGrid."""
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail
+
     api_key = os.getenv("SENDGRID_API_KEY")
     from_email = os.getenv("SENDGRID_FROM_EMAIL", "noreply@sbsdeutschland.com")
 

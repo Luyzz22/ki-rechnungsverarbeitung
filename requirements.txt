@@ -30,6 +30,7 @@ anthropic>=0.40.0,<1.0
 
 # HTTP
 httpx>=0.28.0,<1.0
+requests>=2.32.0,<3.0
 
 # Auth & Security
 python-jose[cryptography]>=3.3.0
