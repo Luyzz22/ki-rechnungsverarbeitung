@@ -94,7 +94,20 @@ def _resolve_cors_origins() -> list[str]:
     """
     raw = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
     if raw:
-        return [o.strip() for o in raw.split(",") if o.strip()]
+        candidates = [o.strip() for o in raw.split(",") if o.strip()]
+        # Fail-closed: a literal "*" entry in the override would re-introduce
+        # the exact wildcard+credentials configuration this hotfix removes.
+        # Browsers reject Access-Control-Allow-Origin: * with credentials, so
+        # silently accepting it would also break authenticated cross-site
+        # requests at runtime. Refuse at startup with a clear message.
+        if any(o == "*" for o in candidates):
+            raise RuntimeError(
+                "SECURITY: CORS_ALLOWED_ORIGINS contains a wildcard '*' entry, "
+                "which is incompatible with allow_credentials=True. Configure "
+                "an explicit comma-separated origin list (e.g. "
+                "'https://app.sbsdeutschland.com,https://sbsnexus.de')."
+            )
+        return candidates
 
     env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or "").strip().lower()
     if env in ("development", "dev", "test", "ci"):
