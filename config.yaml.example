@@ -46,14 +46,13 @@ dashboard:
 notifications:
   email:
     enabled: true
-    smtp_server: "smtp.gmail.com"
+    smtp_server: "${SMTP_SERVER:-smtp.example.com}"
     smtp_port: 587
-    username: "luis220195@gmail.com"
-    password: "kwyr rrfc gcks owjp"
-    from_address: "luis220195@gmail.com"
+    username: "CHANGE_ME"            # set via SMTP_USERNAME env var; never commit a real value
+    password: "CHANGE_ME"            # set via SMTP_PASSWORD env var; never commit a real value
+    from_address: "CHANGE_ME"        # set via SMTP_FROM env var
     to_addresses:
-      - "luis@schenk.com"
-      - "andreas@schenk.com"
+      - "CHANGE_ME"                  # set via SMTP_TO env var (comma-separated list parsed at runtime)
 
 validation:
   enabled: true

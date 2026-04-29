@@ -4,8 +4,6 @@ SBS Deutschland – Two-Factor Authentication (TOTP)
 Implementiert zeitbasierte Einmalpasswörter (Google Authenticator kompatibel).
 """
 
-import pyotp
-import qrcode
 import io
 import base64
 import logging
@@ -13,6 +11,24 @@ from typing import Optional, Dict
 from database import get_connection
 
 logger = logging.getLogger(__name__)
+
+# CI/test environments may not install pyotp/qrcode (they are not in
+# requirements.txt). Production has them installed; 2FA endpoints work as
+# before. Without them, importing this module still succeeds; 2FA functions
+# raise a clear RuntimeError at call time instead of crashing on import.
+try:
+    import pyotp  # type: ignore[import-not-found]
+    import qrcode  # type: ignore[import-not-found]
+    _2FA_DEPS_AVAILABLE = True
+except ImportError as _2fa_import_err:  # pragma: no cover - exercised only without optional deps
+    pyotp = None  # type: ignore[assignment]
+    qrcode = None  # type: ignore[assignment]
+    _2FA_DEPS_AVAILABLE = False
+    logger.warning(
+        "2FA dependencies (pyotp/qrcode) are not installed; "
+        "calling 2FA functions will raise an AttributeError at runtime: %s",
+        _2fa_import_err,
+    )
 
 
 def generate_totp_secret() -> str:

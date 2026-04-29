@@ -1718,8 +1718,34 @@ from starlette.middleware.sessions import SessionMiddleware
 import secrets
 
 from email_scheduler import email_scheduler
+
+
+# --- Security hotfix: fail-closed session secret resolution ---------------
+# See docs/FLOWCHECK_SECURITY_HOTFIX_PLAN.md (F-09).
+# SessionMiddleware needs a string secret at construction time, so this
+# resolver is invoked eagerly. In production the legacy app fails closed at
+# startup if SESSION_SECRET_KEY is missing; ENVIRONMENT=development allows a
+# clearly insecure fallback for local work.
+def _resolve_session_secret() -> str:
+    value = os.getenv("SESSION_SECRET_KEY")
+    if value:
+        return value
+    env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or "").strip().lower()
+    if env in ("development", "dev", "test", "ci"):
+        app_logger.warning(
+            "SECURITY: SESSION_SECRET_KEY is not set; using insecure non-production "
+            "fallback (env=%s). This MUST NOT be used in production.",
+            env,
+        )
+        return "DEV-INSECURE-SESSION-SECRET-CHANGE-ME"  # noqa: S105
+    raise RuntimeError(
+        "SECURITY: SESSION_SECRET_KEY is not configured. Set the environment variable, "
+        "or run with ENVIRONMENT in {development, dev, test, ci} for a clearly insecure fallback."
+    )
+
+
 # Add session middleware (muss nach app = FastAPI() kommen)
-app.add_middleware(SessionMiddleware, secret_key=os.getenv('SESSION_SECRET_KEY', 'fallback-change-me'), domain='.sbsdeutschland.com')
+app.add_middleware(SessionMiddleware, secret_key=_resolve_session_secret(), domain='.sbsdeutschland.com')
 
 # -------------------------------------------------
 # Login-Helper & globale Login-Pflicht
@@ -4037,11 +4063,24 @@ async def password_reset_request_submit(request: Request, email: str = Form(...)
         )
 
 
+def _reset_token_fingerprint(token: str | None) -> str:
+    """Return an 8-char SHA-256 fingerprint of a reset token for safe logging.
+
+    Security hotfix per docs/FLOWCHECK_SECURITY_HOTFIX_PLAN.md (F-07): never
+    log raw password-reset tokens; fingerprint is one-way and useful for
+    correlating logs across the request lifecycle without leaking the token.
+    """
+    if not token:
+        return "-"
+    import hashlib  # local import to keep diff minimal
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()[:8]
+
+
 @app.get("/password-reset/confirm", response_class=HTMLResponse)
 async def password_reset_confirm_page(request: Request):
     """Formular zum Setzen eines neuen Passworts (über ?token=...)."""
     token = request.query_params.get("token") or ""
-    logger.info("🔐 [RESET-CONFIRM-GET] called with token=%s", token)
+    logger.info("🔐 [RESET-CONFIRM-GET] called token_fp=%s present=%s", _reset_token_fingerprint(token), bool(token))
 
     token_valid = False
     error = None
@@ -4077,7 +4116,7 @@ async def password_reset_confirm_submit(
     password_confirm: str | None = Form(None),
 ):
     """Verarbeitet das Formular: setzt neues Passwort, wenn Token gültig."""
-    logger.info("🔐 [RESET-CONFIRM-POST] called with token=%s", token)
+    logger.info("🔐 [RESET-CONFIRM-POST] called token_fp=%s present=%s", _reset_token_fingerprint(token), bool(token))
 
     # Alternativen Feldnamen auflösen (je nach Template-Version)
     if new_password is None:

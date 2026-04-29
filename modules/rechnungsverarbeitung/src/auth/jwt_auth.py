@@ -1,6 +1,7 @@
 """JWT Authentication & API Key Auth for SBS Nexus Finance API."""
 from __future__ import annotations
 
+import logging
 import os
 import time
 import hashlib
@@ -17,8 +18,39 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Config
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_hex(32))
+logger = logging.getLogger(__name__)
+
+# --- Security hotfix: fail-closed JWT secret resolution -------------------
+# See docs/FLOWCHECK_SECURITY_HOTFIX_PLAN.md (F-05).
+# Lazy resolution avoids import-time crashes in tests/CI; the modular API
+# fails closed at first JWT operation when JWT_SECRET_KEY is missing in
+# production. ENVIRONMENT=development allows a clearly insecure fallback.
+_DEV_JWT_SECRET_FALLBACK = "DEV-INSECURE-JWT-SECRET-CHANGE-ME"  # noqa: S105
+_jwt_secret_cache: Optional[str] = None
+
+
+def _resolve_jwt_secret() -> str:
+    global _jwt_secret_cache
+    if _jwt_secret_cache is not None:
+        return _jwt_secret_cache
+    value = os.getenv("JWT_SECRET_KEY")
+    if value:
+        _jwt_secret_cache = value
+        return value
+    env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or "").strip().lower()
+    if env in ("development", "dev"):
+        logger.warning(
+            "SECURITY: JWT_SECRET_KEY is not set; using insecure development fallback. "
+            "This MUST NOT be used in production."
+        )
+        _jwt_secret_cache = _DEV_JWT_SECRET_FALLBACK
+        return _jwt_secret_cache
+    raise RuntimeError(
+        "SECURITY: JWT_SECRET_KEY is not configured. Set the environment variable, "
+        "or run with ENVIRONMENT=development for a clearly insecure development fallback."
+    )
+
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 30
@@ -66,7 +98,7 @@ def create_access_token(user_id: str, tenant_id: str, role: str = "user") -> str
         "exp": now + ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "type": "access",
     }
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, _resolve_jwt_secret(), algorithm=ALGORITHM)
 
 def create_refresh_token(user_id: str, tenant_id: str) -> str:
     now = int(time.time())
@@ -77,7 +109,7 @@ def create_refresh_token(user_id: str, tenant_id: str) -> str:
         "exp": now + REFRESH_TOKEN_EXPIRE_DAYS * 86400,
         "type": "refresh",
     }
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, _resolve_jwt_secret(), algorithm=ALGORITHM)
 
 def create_tokens(user_id: str, tenant_id: str, role: str = "user") -> TokenResponse:
     return TokenResponse(
@@ -87,7 +119,7 @@ def create_tokens(user_id: str, tenant_id: str, role: str = "user") -> TokenResp
 
 def decode_token(token: str) -> dict:
     try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return jwt.decode(token, _resolve_jwt_secret(), algorithms=[ALGORITHM])
     except JWTError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}")
 

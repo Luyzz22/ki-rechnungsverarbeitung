@@ -14,8 +14,38 @@ from jose.exceptions import ExpiredSignatureError, JWTError
 
 logger = logging.getLogger(__name__)
 
-# Shared Secret (gleich auf allen Apps)
-JWT_SECRET = os.getenv("JWT_SECRET", os.getenv("SECRET_KEY", "sbs-deutschland-shared-secret-2025"))
+# --- Security hotfix: fail-closed shared SSO secret -----------------------
+# See docs/FLOWCHECK_SECURITY_HOTFIX_PLAN.md (F-04 / F-05).
+# Lazy resolution keeps `from shared_auth import ...` working in legacy
+# imports (web/app.py); SSO encode/decode fails closed when the secret is
+# missing in production.
+_DEV_SHARED_JWT_SECRET_FALLBACK = "DEV-INSECURE-SHARED-JWT-SECRET-CHANGE-ME"  # noqa: S105
+_shared_jwt_secret_cache = None
+
+
+def _resolve_shared_jwt_secret() -> str:
+    global _shared_jwt_secret_cache
+    if _shared_jwt_secret_cache is not None:
+        return _shared_jwt_secret_cache
+    value = os.getenv("JWT_SECRET") or os.getenv("SECRET_KEY")
+    if value:
+        _shared_jwt_secret_cache = value
+        return value
+    env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or "").strip().lower()
+    if env in ("development", "dev"):
+        logger.warning(
+            "SECURITY: JWT_SECRET / SECRET_KEY is not set; using insecure development fallback. "
+            "This MUST NOT be used in production."
+        )
+        _shared_jwt_secret_cache = _DEV_SHARED_JWT_SECRET_FALLBACK
+        return _shared_jwt_secret_cache
+    raise RuntimeError(
+        "SECURITY: shared SSO JWT_SECRET (or SECRET_KEY) is not configured. "
+        "Set the environment variable, or run with ENVIRONMENT=development for a "
+        "clearly insecure development fallback."
+    )
+
+
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = 24 * 7  # 7 Tage
 COOKIE_NAME = "sbs_auth_token"
@@ -49,7 +79,7 @@ def create_sso_token(user_id: int, email: str, name: str = None, extra: Dict = N
     if extra:
         payload.update(extra)
     
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    return jwt.encode(payload, _resolve_shared_jwt_secret(), algorithm=JWT_ALGORITHM)
 
 
 def verify_sso_token(token: str) -> Optional[Dict[str, Any]]:
@@ -68,7 +98,7 @@ def verify_sso_token(token: str) -> Optional[Dict[str, Any]]:
     try:
         payload = jwt.decode(
             token, 
-            JWT_SECRET, 
+            _resolve_shared_jwt_secret(), 
             algorithms=[JWT_ALGORITHM],
             options={"verify_aud": False}  # Audience-Check optional
         )
