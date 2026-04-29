@@ -49,6 +49,41 @@ def _resolve_nexus_api_key() -> str:
     )
 
 
+# --- Security hotfix #1b: fail-closed Resend API key resolution -----------
+# See docs/FLOWCHECK_SECURITY_HOTFIX_PLAN.md (F-04 follow-up).
+# Lazy resolution so module import keeps working; outbound Resend calls
+# fail closed at request time when RESEND_API_KEY is missing in production.
+_DEV_RESEND_API_KEY_FALLBACK = "DEV-INSECURE-RESEND-API-KEY-CHANGE-ME"  # noqa: S105 (clearly insecure dev string)
+_resend_api_key_cache: Optional[str] = None
+
+
+def _resolve_resend_api_key() -> str:
+    global _resend_api_key_cache
+    if _resend_api_key_cache is not None:
+        return _resend_api_key_cache
+    value = os.getenv("RESEND_API_KEY")
+    if value:
+        _resend_api_key_cache = value
+        return value
+    env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or "").strip().lower()
+    if env in ("development", "dev"):
+        logger.warning(
+            "SECURITY: RESEND_API_KEY is not set; using insecure development fallback. "
+            "Outbound Resend calls will fail authentication. This MUST NOT be used in production."
+        )
+        _resend_api_key_cache = _DEV_RESEND_API_KEY_FALLBACK
+        return _resend_api_key_cache
+    raise RuntimeError(
+        "SECURITY: RESEND_API_KEY is not configured. Set the environment variable, "
+        "or run with ENVIRONMENT=development for a clearly insecure development fallback."
+    )
+
+
+def _resend_authorization_header() -> str:
+    """Build the Authorization header value for outbound Resend requests."""
+    return f"Bearer {_resolve_resend_api_key()}"
+
+
 class InvoiceProcessRequest(BaseModel):
     content: str
     filename: Optional[str] = None
@@ -738,7 +773,7 @@ async def register(request: RegisterRequest):
             requests.post(
                 "https://api.resend.com/emails",
                 headers={
-                    "Authorization": "Bearer re_BG21cv8V_2JKgr3eGdWFQb3LPU6Koyzmi",
+                    "Authorization": _resend_authorization_header(),
                     "Content-Type": "application/json"
                 },
                 json={
@@ -761,7 +796,7 @@ async def register(request: RegisterRequest):
         requests.post(
             "https://api.resend.com/emails",
             headers={
-                "Authorization": "Bearer re_BG21cv8V_2JKgr3eGdWFQb3LPU6Koyzmi",
+                "Authorization": _resend_authorization_header(),
                 "Content-Type": "application/json"
             },
             json={
@@ -824,7 +859,7 @@ async def forgot_password(request: ForgotPasswordRequest):
         response = requests.post(
             "https://api.resend.com/emails",
             headers={
-                "Authorization": "Bearer re_BG21cv8V_2JKgr3eGdWFQb3LPU6Koyzmi",
+                "Authorization": _resend_authorization_header(),
                 "Content-Type": "application/json"
             },
             json={
@@ -1354,7 +1389,7 @@ def send_notification_email(to_email: str, subject: str, message: str):
         response = requests.post(
             "https://api.resend.com/emails",
             headers={
-                "Authorization": "Bearer re_123456789",  # Replace with env var
+                "Authorization": _resend_authorization_header(),
                 "Content-Type": "application/json"
             },
             json={
