@@ -83,9 +83,51 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
+
+def _resolve_cors_origins() -> list[str]:
+    """Resolve CORS allow_origins for the modular API.
+
+    Wildcard origins ("*") combined with allow_credentials=True is unsafe and
+    rejected by browsers (CORS spec requires an explicit origin list when
+    credentials are sent). Tracked as F-06 in
+    docs/FLOWCHECK_SECURITY_HOTFIX_PLAN.md.
+    """
+    raw = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
+    if raw:
+        candidates = [o.strip() for o in raw.split(",") if o.strip()]
+        # Fail-closed: a literal "*" entry in the override would re-introduce
+        # the exact wildcard+credentials configuration this hotfix removes.
+        # Browsers reject Access-Control-Allow-Origin: * with credentials, so
+        # silently accepting it would also break authenticated cross-site
+        # requests at runtime. Refuse at startup with a clear message.
+        if any(o == "*" for o in candidates):
+            raise RuntimeError(
+                "SECURITY: CORS_ALLOWED_ORIGINS contains a wildcard '*' entry, "
+                "which is incompatible with allow_credentials=True. Configure "
+                "an explicit comma-separated origin list (e.g. "
+                "'https://app.sbsdeutschland.com,https://sbsnexus.de')."
+            )
+        return candidates
+
+    env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or "").strip().lower()
+    if env in ("development", "dev", "test", "ci"):
+        return [
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:3001",
+        ]
+    return [
+        "https://sbsdeutschland.com",
+        "https://app.sbsdeutschland.com",
+        "https://sbsnexus.de",
+        "https://www.sbsnexus.de",
+    ]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_resolve_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
