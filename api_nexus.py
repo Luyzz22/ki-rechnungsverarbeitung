@@ -17,7 +17,36 @@ from pydantic import BaseModel
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/nexus", tags=["Nexus Gateway Integration"])
 
-NEXUS_API_KEY = os.getenv("NEXUS_API_KEY", "sbs_nexus_secret_2026")
+
+# --- Security hotfix: fail-closed secret resolution -----------------------
+# See docs/FLOWCHECK_SECURITY_HOTFIX_PLAN.md (F-02 / F-04).
+# Lazy resolution is intentional so that the optional `from api_nexus import ...`
+# in web/app.py keeps working when NEXUS_API_KEY is not configured: only the
+# Nexus endpoints fail-closed instead of crashing the entire legacy app.
+_DEV_NEXUS_API_KEY_FALLBACK = "DEV-INSECURE-NEXUS-API-KEY-CHANGE-ME"  # noqa: S105 (clearly insecure dev string)
+_nexus_api_key_cache: Optional[str] = None
+
+
+def _resolve_nexus_api_key() -> str:
+    global _nexus_api_key_cache
+    if _nexus_api_key_cache is not None:
+        return _nexus_api_key_cache
+    value = os.getenv("NEXUS_API_KEY")
+    if value:
+        _nexus_api_key_cache = value
+        return value
+    env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or "").strip().lower()
+    if env in ("development", "dev"):
+        logger.warning(
+            "SECURITY: NEXUS_API_KEY is not set; using insecure development fallback. "
+            "This MUST NOT be used in production."
+        )
+        _nexus_api_key_cache = _DEV_NEXUS_API_KEY_FALLBACK
+        return _nexus_api_key_cache
+    raise RuntimeError(
+        "SECURITY: NEXUS_API_KEY is not configured. Set the environment variable, "
+        "or run with ENVIRONMENT=development for a clearly insecure development fallback."
+    )
 
 
 class InvoiceProcessRequest(BaseModel):
@@ -62,7 +91,13 @@ def verify_api_key(authorization: str = Header(None), request: Request = None):
         raise HTTPException(status_code=429, detail="Rate limit überschritten (120/min)")
     _api_requests.setdefault(ip, []).append(now)
     
-    if not authorization or authorization != NEXUS_API_KEY:
+    try:
+        expected_key = _resolve_nexus_api_key()
+    except RuntimeError as exc:
+        logger.error("Nexus API misconfigured: %s", exc)
+        raise HTTPException(status_code=500, detail="Security configuration error") from exc
+
+    if not authorization or authorization != expected_key:
         raise HTTPException(status_code=401, detail="Ungültiger API-Key")
     return {"id": 16, "email": "ki@sbsdeutschland.de", "is_admin": True}
 
