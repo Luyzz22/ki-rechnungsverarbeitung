@@ -1731,15 +1731,16 @@ def _resolve_session_secret() -> str:
     if value:
         return value
     env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or "").strip().lower()
-    if env in ("development", "dev"):
+    if env in ("development", "dev", "test", "ci"):
         app_logger.warning(
-            "SECURITY: SESSION_SECRET_KEY is not set; using insecure development "
-            "fallback. This MUST NOT be used in production."
+            "SECURITY: SESSION_SECRET_KEY is not set; using insecure non-production "
+            "fallback (env=%s). This MUST NOT be used in production.",
+            env,
         )
         return "DEV-INSECURE-SESSION-SECRET-CHANGE-ME"  # noqa: S105
     raise RuntimeError(
         "SECURITY: SESSION_SECRET_KEY is not configured. Set the environment variable, "
-        "or run with ENVIRONMENT=development for a clearly insecure development fallback."
+        "or run with ENVIRONMENT in {development, dev, test, ci} for a clearly insecure fallback."
     )
 
 
