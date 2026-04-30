@@ -164,6 +164,23 @@ def _require_tenant(x_tenant_id: str | None) -> str:
     return x_tenant_id
 
 
+def _resolve_tenant_for_authenticated_request(
+    x_tenant_id: str | None,
+    user: UserAuth,
+) -> str:
+    """JWT/API-key tenant is canonical; optional X-Tenant-ID must match if sent."""
+    canonical = user.tenant_id
+    if x_tenant_id is not None:
+        header_tenant = x_tenant_id.strip()
+        if header_tenant and header_tenant != canonical:
+            raise HTTPException(
+                status_code=403,
+                detail="X-Tenant-ID does not match authenticated tenant",
+            )
+    TenantContext.set_current_tenant(canonical)
+    return canonical
+
+
 def _get_invoice_or_404(session, document_id: str, tenant_id: str) -> Invoice:
     invoice: Invoice | None = (
         session.query(Invoice)
@@ -223,11 +240,12 @@ async def health():
 
 @v1.post("/invoices/upload")
 async def upload_invoice(
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
     uploaded_by: str | None = Header(default=None, alias="X-User-ID"),
     file: UploadFile = File(...),
 ):
-    _require_tenant(x_tenant_id)
+    _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     metadata = process_invoice_upload(
         file_stream=file.file,
         file_name=file.filename,
@@ -248,12 +266,13 @@ async def upload_invoice(
 @v1.get("/invoices/{document_id}/file")
 async def download_invoice_file(
     document_id: str,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """Download the original invoice file."""
     from modules.rechnungsverarbeitung.src.invoices.services.file_storage import FileStorageService
     from fastapi.responses import FileResponse
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
         fs = FileStorageService()
@@ -271,12 +290,13 @@ async def download_invoice_file(
 @v1.post("/invoices/{document_id}/generate-xrechnung")
 async def generate_xrechnung(
     document_id: str,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """Generate XRechnung XML from extracted invoice data."""
     from modules.rechnungsverarbeitung.src.invoices.services.xrechnung_generator import XRechnungGenerator
     from fastapi.responses import Response
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
         invoice_data = {
