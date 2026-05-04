@@ -465,10 +465,11 @@ async def validate_xrechnung(
 @v1.post("/invoices/upload-batch")
 async def upload_batch(
     request: Request,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """Upload multiple invoices at once (max 20 files)."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     form = await request.form()
     files = form.getlist("files")
     if not files:
@@ -497,10 +498,11 @@ async def upload_batch(
 @v1.get("/invoices/{document_id}/duplicate-check")
 async def check_duplicates(
     document_id: str,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     from modules.rechnungsverarbeitung.src.invoices.services.duplicate_detection import DuplicateDetectionService
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         svc = DuplicateDetectionService()
         matches = svc.check(session, tenant_id, document_id)
@@ -510,10 +512,11 @@ async def check_duplicates(
 @v1.get("/invoices/{document_id}/anomaly-check")
 async def check_anomalies(
     document_id: str,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     from modules.rechnungsverarbeitung.src.invoices.services.anomaly_detection import AnomalyDetectionService
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         svc = AnomalyDetectionService()
         anomalies = svc.analyze(session, tenant_id, document_id)
@@ -525,9 +528,10 @@ async def mark_duplicate(
     document_id: str,
     duplicate_of: str = "",
     is_duplicate: bool = True,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         from sqlalchemy import text
         session.execute(text("UPDATE invoices SET status = :s WHERE document_id = :d AND tenant_id = :t"),
@@ -540,10 +544,11 @@ import io
 
 @v1.get("/export/csv")
 async def export_csv(
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     from modules.rechnungsverarbeitung.src.invoices.services.export_service import ExportService
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         from sqlalchemy import text
         rows = session.execute(text("SELECT document_id, supplier, total_amount, currency, invoice_number, invoice_date, due_date, status, tax_amount, extracted_data FROM invoices WHERE tenant_id = :t ORDER BY uploaded_at DESC"), {"t": tenant_id}).fetchall()
@@ -555,10 +560,11 @@ async def export_csv(
 
 @v1.get("/export/excel")
 async def export_excel(
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     from modules.rechnungsverarbeitung.src.invoices.services.export_service import ExportService
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         from sqlalchemy import text
         rows = session.execute(text("SELECT document_id, supplier, total_amount, currency, invoice_number, invoice_date, due_date, status, tax_amount, extracted_data FROM invoices WHERE tenant_id = :t ORDER BY uploaded_at DESC"), {"t": tenant_id}).fetchall()
