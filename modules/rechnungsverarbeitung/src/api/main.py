@@ -1003,10 +1003,11 @@ async def verify_chain(
 @v1.post("/invoices/{document_id}/evidence")
 async def create_evidence_package(
     document_id: str,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """Create a sealed GoBD evidence package for this invoice."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
 
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
@@ -1070,10 +1071,11 @@ class DatevExportRequest(BaseModel):
 async def export_to_datev(
     document_id: str,
     body: DatevExportRequest,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """Export approved invoice to DATEV Buchungsstapel."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
 
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
@@ -1140,11 +1142,12 @@ erechnung_hub = ERechnungHubService()
 @v1.post("/invoices/{document_id}/validate")
 async def validate_invoice(
     document_id: str,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
     file: UploadFile = File(...),
 ):
     """Run KoSIT validation on an uploaded XML invoice."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
 
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
@@ -1231,10 +1234,11 @@ class KontierungRequest(BaseModel):
 async def suggest_kontierung(
     document_id: str,
     body: KontierungRequest | None = None,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """AI-powered account assignment suggestion. Auto-loads from DB if no body."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
 
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
