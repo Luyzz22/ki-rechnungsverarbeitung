@@ -84,12 +84,15 @@ def _verify_password_hash(password: str, stored_hash: str | None) -> tuple[bool,
     if _is_bcrypt_hash(stored_hash):
         import bcrypt
 
-        valid = bcrypt.checkpw(password[:72].encode("utf-8"), stored_hash.encode("utf-8"))
+        try:
+            valid = bcrypt.checkpw(password[:72].encode("utf-8"), stored_hash.encode("utf-8"))
+        except (ValueError, TypeError):
+            return False, False
         return valid, False
 
     if _is_legacy_sha256_hash(stored_hash):
         legacy_hash = _hash_password_legacy_sha256(password)
-        valid = hmac.compare_digest(legacy_hash, stored_hash)
+        valid = hmac.compare_digest(legacy_hash, stored_hash.lower())
         return valid, valid
 
     return False, False
