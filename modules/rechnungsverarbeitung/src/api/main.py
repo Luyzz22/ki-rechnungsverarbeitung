@@ -797,12 +797,13 @@ async def get_export_history(
 
 @v1.get("/invoices")
 async def list_invoices(
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
     status: str | None = None,
     limit: int = 50,
     offset: int = 0,
 ):
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         query = session.query(Invoice).filter(Invoice.tenant_id == tenant_id)
         if status:
@@ -835,9 +836,10 @@ async def list_invoices(
 @v1.get("/invoices/{document_id}")
 async def get_invoice(
     document_id: str,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
         allowed = state_machine.get_allowed_transitions(invoice.status)
@@ -863,10 +865,11 @@ async def get_invoice(
 async def transition_invoice(
     document_id: str,
     body: TransitionRequest,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """Execute a validated state transition on an invoice."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
 
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
@@ -925,10 +928,11 @@ async def transition_invoice(
 @v1.get("/invoices/{document_id}/transitions")
 async def get_allowed_transitions(
     document_id: str,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """Query which transitions are currently valid for this invoice."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
         allowed = state_machine.get_allowed_transitions(invoice.status)
@@ -945,9 +949,10 @@ async def get_allowed_transitions(
 @v1.get("/invoices/{document_id}/events")
 async def get_invoice_events(
     document_id: str,
-    x_tenant_id: str = Header(alias="X-Tenant-ID"),
+    user: UserAuth = Depends(get_current_user),
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         events = (
             session.query(InvoiceEvent)
@@ -975,10 +980,11 @@ async def get_invoice_events(
 @v1.get("/invoices/{document_id}/chain/verify")
 async def verify_chain(
     document_id: str,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """Verify the hash-chain integrity for a document's audit trail."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         _get_invoice_or_404(session, document_id, tenant_id)
         chain = _build_audit_chain(session, document_id, tenant_id)
