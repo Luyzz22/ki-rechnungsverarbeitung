@@ -337,9 +337,10 @@ async def generate_xrechnung(
 
 @v1.get("/budget/kategorien")
 async def get_budget_kategorien(
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         from sqlalchemy import text
         rows = session.execute(text("SELECT id, name, beschreibung, konten_mapping, aktiv FROM budget_kategorien WHERE tenant_id = :t ORDER BY id"), {"t": tenant_id}).fetchall()
@@ -349,10 +350,11 @@ async def get_budget_kategorien(
 @v1.get("/budget/summary")
 async def get_budget_summary(
     jahr: int = 2026,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """Budget vs Actual summary for a year."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         from sqlalchemy import text
 
@@ -385,9 +387,10 @@ async def get_budget_summary(
 @v1.post("/budget/set")
 async def set_budget(
     request: Request,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     data = await request.json()
     with get_session() as session:
         from sqlalchemy import text
@@ -403,9 +406,10 @@ async def set_budget(
 async def get_budget_monat(
     jahr: int = 2026,
     monat: int = 1,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         from sqlalchemy import text
         rows = session.execute(text("""
@@ -422,12 +426,13 @@ async def get_budget_monat(
 @v1.post("/invoices/{document_id}/validate-xrechnung")
 async def validate_xrechnung(
     document_id: str,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """Generate XRechnung and validate against KoSIT rules."""
     from modules.rechnungsverarbeitung.src.invoices.services.xrechnung_generator import XRechnungGenerator
     from modules.rechnungsverarbeitung.src.invoices.services.kosit_validator import KoSITValidator
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
         invoice_data = {
