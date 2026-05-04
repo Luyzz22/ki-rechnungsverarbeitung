@@ -1047,9 +1047,7 @@ init_users_table()
 
 def create_user(email: str, password: str, name: str = '', company: str = '') -> int:
     """Create new user, returns user_id"""
-    import hashlib
-    
-    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    password_hash = _hash_password_bcrypt(password)
     
     conn = get_connection()
     cursor = conn.cursor()
@@ -1161,9 +1159,7 @@ init_users_table()
 
 def create_user(email: str, password: str, name: str = '', company: str = '') -> int:
     """Create new user, returns user_id"""
-    import hashlib
-    
-    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    password_hash = _hash_password_bcrypt(password)
     
     conn = get_connection()
     cursor = conn.cursor()
@@ -1936,9 +1932,7 @@ def verify_reset_token(token: str) -> Optional[int]:
 
 
 def reset_password(token: str, new_password: str) -> bool:
-    """Reset user password with token, using sha256 hashing (wie create_user)."""
-    import hashlib
-
+    """Reset user password with token, using bcrypt hashing."""
     user_id = verify_reset_token(token)
     if not user_id:
         return False
@@ -1946,7 +1940,7 @@ def reset_password(token: str, new_password: str) -> bool:
     conn = get_connection()
     cursor = conn.cursor()
 
-    password_hash = hashlib.sha256(new_password.encode("utf-8")).hexdigest()
+    password_hash = _hash_password_bcrypt(new_password)
     cursor.execute(
         "UPDATE users SET password_hash = ? WHERE id = ?",
         (password_hash, user_id),
