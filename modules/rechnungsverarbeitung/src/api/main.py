@@ -732,12 +732,13 @@ async def export_datev_zip(
 
 @v1.get("/audit-log")
 async def get_audit_log(
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
     limit: int = 100,
     offset: int = 0,
 ):
     """Full audit trail of all invoice events."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         from sqlalchemy import text
         rows = session.execute(text("""
@@ -765,11 +766,12 @@ async def get_audit_log(
 
 @v1.get("/export-history")
 async def get_export_history(
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
     limit: int = 50,
 ):
     """History of all DATEV exports and XRechnung generations."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         from sqlalchemy import text
         rows = session.execute(text("""
