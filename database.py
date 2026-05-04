@@ -5,6 +5,8 @@ SQLite Database für Job-Persistenz
 """
 
 import sqlite3
+import hashlib
+import hmac
 import json
 import logging
 import os
@@ -40,6 +42,58 @@ def get_connection():
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def _is_bcrypt_hash(value: str | None) -> bool:
+    """Return True when value looks like a bcrypt hash."""
+    if not value:
+        return False
+    return value.startswith(("$2a$", "$2b$", "$2y$"))
+
+
+def _is_legacy_sha256_hash(value: str | None) -> bool:
+    """Return True when value looks like the legacy unsalted SHA-256 hex format."""
+    if not value:
+        return False
+    candidate = value.strip()
+    return len(candidate) == 64 and all(char in "0123456789abcdefABCDEF" for char in candidate)
+
+
+def _hash_password_bcrypt(password: str) -> str:
+    """Hash a plaintext password with bcrypt, matching modular auth truncation."""
+    import bcrypt
+
+    return bcrypt.hashpw(password[:72].encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def _hash_password_legacy_sha256(password: str) -> str:
+    """Hash a plaintext password with the legacy SHA-256 format."""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+def _verify_password_hash(password: str, stored_hash: str | None) -> tuple[bool, bool]:
+    """Verify password against bcrypt or legacy SHA-256.
+
+    Returns (is_valid, needs_rehash). needs_rehash is True only when a legacy
+    SHA-256 hash matched and should be upgraded to bcrypt by the caller.
+    """
+    if not stored_hash:
+        return False, False
+
+    stored_hash = stored_hash.strip()
+    if _is_bcrypt_hash(stored_hash):
+        import bcrypt
+
+        valid = bcrypt.checkpw(password[:72].encode("utf-8"), stored_hash.encode("utf-8"))
+        return valid, False
+
+    if _is_legacy_sha256_hash(stored_hash):
+        legacy_hash = _hash_password_legacy_sha256(password)
+        valid = hmac.compare_digest(legacy_hash, stored_hash)
+        return valid, valid
+
+    return False, False
+
 
 def init_database():
     """Initialize database tables"""
