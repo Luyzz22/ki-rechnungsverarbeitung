@@ -674,10 +674,11 @@ async def check_skonto(
 
 @v1.get("/analytics/supplier-scorecard")
 async def supplier_scorecard(
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """Supplier performance scorecard with spending and frequency data."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         from sqlalchemy import text
         rows = session.execute(text("""
@@ -699,13 +700,14 @@ async def supplier_scorecard(
 
 @v1.get("/export/datev-zip")
 async def export_datev_zip(
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """One-Click DATEV: ZIP with DATEV CSV + all invoice PDFs."""
     import zipfile
     from modules.rechnungsverarbeitung.src.invoices.services.export_service import ExportService
     from modules.rechnungsverarbeitung.src.invoices.services.file_storage import FileStorageService
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         from sqlalchemy import text
         rows = session.execute(text("SELECT document_id, supplier, total_amount, currency, invoice_number, invoice_date, due_date, status, tax_amount, extracted_data, file_name FROM invoices WHERE tenant_id = :t AND status IN ('suggested','approved','exported') ORDER BY uploaded_at DESC"), {"t": tenant_id}).fetchall()
