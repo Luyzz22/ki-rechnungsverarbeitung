@@ -16,15 +16,24 @@ F-01 route-auth hardening for the modular API in `modules/rechnungsverarbeitung/
 - Export and reporting routes for CSV, Excel, DATEV ZIP, audit log, export history, supplier scorecard, analytics dashboard, and copilot chat.
 - Existing user, billing, and RBAC routes that already depended on `get_current_user` remain protected.
 
-## Routes Intentionally Left Public
+## Routes Intentionally Left Public / Bootstrap
 
+- `POST /api/v1/auth/token`
+- `POST /api/v1/auth/refresh`
+- `POST /api/v1/users/register`
+- `POST /api/v1/users/login`
 - `GET /api/v1/email/status`
+- `GET /api/v1/billing/plans`
 - `POST /api/v1/billing/webhook`
 - `POST /api/v1/auth/forgot-password`
 
+These routes are intentionally public or bootstrap-oriented entry points, not protected business routes. They should remain unauthenticated unless the auth/product model changes, but each needs its own abuse controls and tests.
+
 ## Why These Routes Remain Public
 
+- `POST /api/v1/auth/token`, `POST /api/v1/auth/refresh`, `POST /api/v1/users/register`, and `POST /api/v1/users/login` are authentication or onboarding entry points and must be reachable before a user has a token.
 - `GET /api/v1/email/status` remains public as a non-sensitive configuration health signal. It no longer returns IMAP host, IMAP user, or other sensitive configuration values.
+- `GET /api/v1/billing/plans` remains public so unauthenticated users can view available plans.
 - `POST /api/v1/billing/webhook` remains public because Stripe must be able to call it directly; signature verification is delegated to `subscription_service.handle_webhook`.
 - `POST /api/v1/auth/forgot-password` remains public because password recovery must be available before authentication. It preserves the generic response and must not reveal whether an account exists.
 
@@ -37,14 +46,21 @@ F-01 route-auth hardening for the modular API in `modules/rechnungsverarbeitung/
 
 ## Validation
 
-Focused F-01 route-auth scan output showed only the three intentionally public routes without `Depends(get_current_user)`:
+An AST-based route scan shows the following `/api/v1` routes without `Depends(get_current_user)`. These are intentionally public/bootstrap routes, not protected business routes:
 
 ```text
-F-01 focused public routes without Depends(get_current_user):
+AST route scan: intentionally public/bootstrap routes without Depends(get_current_user):
+- POST /api/v1/auth/token
+- POST /api/v1/auth/refresh
+- POST /api/v1/users/register
+- POST /api/v1/users/login
 - GET /api/v1/email/status
+- GET /api/v1/billing/plans
 - POST /api/v1/billing/webhook
 - POST /api/v1/auth/forgot-password
 ```
+
+Future route-auth audits must use AST-based route scanning rather than fixed line-window grep, because dependency declarations can move across multiple signature lines and line-window scans can undercount public routes.
 
 Compile check:
 
