@@ -1322,10 +1322,11 @@ class DatevBatchRequest(BaseModel):
 @v1.post("/invoices/datev-batch")
 async def batch_export_datev(
     body: DatevBatchRequest,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """Batch export multiple approved invoices to single DATEV file."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
 
     invoices_data = []
     with get_session() as session:
@@ -1401,13 +1402,12 @@ class CopilotRequest(BaseModel):
 @v1.post("/copilot/chat")
 async def copilot_chat(
     body: CopilotRequest,
-    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+    user: UserAuth = Depends(get_current_user),
 ):
     """AI Finance Copilot – ask questions about your invoices."""
-    tenant_id = _require_tenant(x_tenant_id)
     result = copilot_service.chat(
         question=body.question,
-        uploaded_by="batch-upload",
+        tenant_id=user.tenant_id,
         conversation_history=body.conversation_history,
     )
     return result
@@ -1422,9 +1422,8 @@ from modules.rechnungsverarbeitung.src.invoices.services.analytics_service impor
 analytics_service = AnalyticsService()
 
 @v1.get("/analytics/dashboard")
-async def analytics_dashboard(days: int = 90, x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID")):
-    tenant_id = _require_tenant(x_tenant_id)
-    return analytics_service.get_dashboard(uploaded_by="batch-upload", days=days)
+async def analytics_dashboard(days: int = 90, user: UserAuth = Depends(get_current_user)):
+    return analytics_service.get_dashboard(tenant_id=user.tenant_id, days=days)
 
 
 
