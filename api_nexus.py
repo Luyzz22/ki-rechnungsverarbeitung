@@ -356,6 +356,7 @@ async def get_stats():
 # AUTH ENDPOINTS
 # ══════════════════════════════════════════════════════════════════════════════
 import hashlib
+from database import _hash_password_bcrypt
 
 class LoginRequest(BaseModel):
     email: str
@@ -365,7 +366,7 @@ class LoginRequest(BaseModel):
 async def login(request: LoginRequest):
     """User Login für Dashboard"""
     import sqlite3
-    from database import _hash_password_bcrypt, _verify_password_hash
+    from database import _verify_password_hash
 
     conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
     cursor = conn.cursor()
@@ -558,7 +559,7 @@ async def create_user(request: CreateUserRequest, authorization: str = Header(No
         raise HTTPException(status_code=403, detail="Keine Admin-Berechtigung")
     
     # Create user
-    password_hash = hashlib.sha256(request.password.encode()).hexdigest()
+    password_hash = _hash_password_bcrypt(request.password)
     
     try:
         cursor.execute("""
@@ -634,7 +635,7 @@ async def reset_password(request: ResetPasswordRequest, authorization: str = Hea
     if not result or not result[0]:
         raise HTTPException(status_code=403, detail="Keine Admin-Berechtigung")
     
-    password_hash = hashlib.sha256(request.new_password.encode()).hexdigest()
+    password_hash = _hash_password_bcrypt(request.new_password)
     
     # Hole User-Info
     cursor.execute("SELECT email, name FROM users WHERE id = ?", (request.user_id,))
@@ -751,7 +752,7 @@ async def register(request: RegisterRequest):
     is_company = request.email.endswith("@sbsdeutschland.de") or request.email.endswith("@sbsdeutschland.com")
     
     # Create user
-    password_hash = hashlib.sha256(request.password.encode()).hexdigest()
+    password_hash = _hash_password_bcrypt(request.password)
     
     if is_company:
         # Company emails: auto-verified + auto-admin
@@ -915,7 +916,7 @@ async def reset_password_with_token(request: ResetPasswordTokenRequest):
         raise HTTPException(status_code=400, detail="Link ist abgelaufen")
     
     # Update password
-    password_hash = hashlib.sha256(request.new_password.encode()).hexdigest()
+    password_hash = _hash_password_bcrypt(request.new_password)
     cursor.execute("""
         UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL 
         WHERE id = ?
