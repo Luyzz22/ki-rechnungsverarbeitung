@@ -18,6 +18,7 @@ F-01 route-auth hardening for the modular API in `modules/rechnungsverarbeitung/
 
 ## Routes Intentionally Left Public / Bootstrap
 
+- `GET /api/v1/health`
 - `POST /api/v1/auth/token`
 - `POST /api/v1/auth/refresh`
 - `POST /api/v1/users/register`
@@ -31,6 +32,7 @@ These routes are intentionally public or bootstrap-oriented entry points, not pr
 
 ## Why These Routes Remain Public
 
+- `GET /api/v1/health`
 - `POST /api/v1/auth/token`, `POST /api/v1/auth/refresh`, `POST /api/v1/users/register`, and `POST /api/v1/users/login` are authentication or onboarding entry points and must be reachable before a user has a token.
 - `GET /api/v1/email/status` remains public as a non-sensitive configuration health signal. It no longer returns IMAP host, IMAP user, or other sensitive configuration values.
 - `GET /api/v1/billing/plans` remains public so unauthenticated users can view available plans.
@@ -46,7 +48,7 @@ These routes are intentionally public or bootstrap-oriented entry points, not pr
 
 ## Validation
 
-An AST-based route scan shows the following `/api/v1` routes without `Depends(get_current_user)`. These are intentionally public/bootstrap routes, not protected business routes:
+An AST-based route scan plus explicit `app` route check shows the following `/api/v1` routes without `Depends(get_current_user)`. These are intentionally public/bootstrap/health routes, not protected business routes:
 
 ```text
 AST route scan: intentionally public/bootstrap routes without Depends(get_current_user):
