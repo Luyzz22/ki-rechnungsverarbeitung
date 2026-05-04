@@ -577,10 +577,11 @@ async def export_excel(
 @v1.post("/invoices/{document_id}/generate-zugferd")
 async def generate_zugferd(
     document_id: str,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     from modules.rechnungsverarbeitung.src.invoices.services.export_service import ExportService
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
         data = {
@@ -609,10 +610,11 @@ async def generate_zugferd(
 @v1.get("/invoices/{document_id}/skonto-check")
 async def check_skonto(
     document_id: str,
+    user: UserAuth = Depends(get_current_user),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
 ):
     """Check for Skonto/discount terms and calculate savings."""
-    tenant_id = _require_tenant(x_tenant_id)
+    tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
         amount = float(invoice.total_amount) if invoice.total_amount else 0
