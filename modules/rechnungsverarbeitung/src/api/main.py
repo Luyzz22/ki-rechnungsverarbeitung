@@ -1533,10 +1533,8 @@ async def email_status():
     configured = all([email_service.host, email_service.user, email_service.password])
     return {
         "configured": configured,
-        "imap_host": email_service.host if configured else None,
-        "imap_user": email_service.user if configured else None,
-        "folder": email_service.folder,
-        "slack_webhook": bool(email_service.slack_webhook),
+        "folder_configured": bool(email_service.folder),
+        "slack_webhook_configured": bool(email_service.slack_webhook),
     }
 
 
@@ -1607,6 +1605,7 @@ async def stripe_webhook(request: Request):
     payload = await request.body()
     sig = request.headers.get("stripe-signature", "")
     try:
+        # Public webhook: subscription_service.handle_webhook verifies the Stripe signature.
         result = subscription_service.handle_webhook(payload, sig)
         return result
     except ValueError as e:
@@ -1682,6 +1681,7 @@ class ForgotPasswordRequest(PydanticBaseModel):
 @v1.post("/auth/forgot-password", tags=["Auth"])
 async def forgot_password(body: ForgotPasswordRequest):
     """Send a temporary password via email."""
+    # Public recovery endpoint: protect with rate limiting to reduce abuse and enumeration attempts.
     import secrets
     from shared.db.session import get_session
     from sqlalchemy import text
