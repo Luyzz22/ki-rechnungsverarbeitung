@@ -1068,32 +1068,39 @@ def create_user(email: str, password: str, name: str = '', company: str = '') ->
 
 def verify_user(email: str, password: str) -> dict:
     """Verify user credentials, returns user dict or None"""
-    import hashlib
     from datetime import datetime
-    
-    password_hash = hashlib.sha256(password.encode()).hexdigest()
-    
+
     conn = get_connection()
     cursor = conn.cursor()
-    
+
     cursor.execute('''
-        SELECT id, email, name, company, is_active 
-        FROM users 
-        WHERE email = ? AND password_hash = ?
-    ''', (email, password_hash))
-    
+        SELECT id, email, name, company, is_active, password_hash
+        FROM users
+        WHERE email = ?
+    ''', (email,))
+
     row = cursor.fetchone()
-    
-    if row and row[4]:  # is_active
-        # Update last login
+
+    if not row or not row[4]:  # is_active
+        conn.close()
+        return None
+
+    is_valid, needs_rehash = _verify_password_hash(password, row[5])
+    if not is_valid:
+        conn.close()
+        return None
+
+    if needs_rehash:
+        cursor.execute(
+            'UPDATE users SET password_hash = ?, last_login = ? WHERE id = ?',
+            (_hash_password_bcrypt(password), datetime.now().isoformat(), row[0]),
+        )
+    else:
         cursor.execute('UPDATE users SET last_login = ? WHERE id = ?', 
                       (datetime.now().isoformat(), row[0]))
-        conn.commit()
-        conn.close()
-        return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
-    
+    conn.commit()
     conn.close()
-    return None
+    return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
 
 def get_user_by_id(user_id: int) -> dict:
     """Get user by ID inkl. Admin-Status"""
@@ -1180,32 +1187,39 @@ def create_user(email: str, password: str, name: str = '', company: str = '') ->
 
 def verify_user(email: str, password: str) -> dict:
     """Verify user credentials, returns user dict or None"""
-    import hashlib
     from datetime import datetime
-    
-    password_hash = hashlib.sha256(password.encode()).hexdigest()
-    
+
     conn = get_connection()
     cursor = conn.cursor()
-    
+
     cursor.execute('''
-        SELECT id, email, name, company, is_active 
-        FROM users 
-        WHERE email = ? AND password_hash = ?
-    ''', (email, password_hash))
-    
+        SELECT id, email, name, company, is_active, password_hash
+        FROM users
+        WHERE email = ?
+    ''', (email,))
+
     row = cursor.fetchone()
-    
-    if row and row[4]:  # is_active
-        # Update last login
+
+    if not row or not row[4]:  # is_active
+        conn.close()
+        return None
+
+    is_valid, needs_rehash = _verify_password_hash(password, row[5])
+    if not is_valid:
+        conn.close()
+        return None
+
+    if needs_rehash:
+        cursor.execute(
+            'UPDATE users SET password_hash = ?, last_login = ? WHERE id = ?',
+            (_hash_password_bcrypt(password), datetime.now().isoformat(), row[0]),
+        )
+    else:
         cursor.execute('UPDATE users SET last_login = ? WHERE id = ?', 
                       (datetime.now().isoformat(), row[0]))
-        conn.commit()
-        conn.close()
-        return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
-    
+    conn.commit()
     conn.close()
-    return None
+    return {'id': row[0], 'email': row[1], 'name': row[2], 'company': row[3]}
 
 def get_user_by_id(user_id: int) -> dict:
     """Get user by ID inkl. Admin-Status"""
