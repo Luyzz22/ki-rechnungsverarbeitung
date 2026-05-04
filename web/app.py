@@ -1466,11 +1466,10 @@ async def create_user(request: Request):
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
     
-    from database import get_connection
-    import hashlib
+    from database import get_connection, _hash_password_bcrypt
     
     data = await request.json()
-    password_hash = hashlib.sha256(data["password"].encode()).hexdigest()
+    password_hash = _hash_password_bcrypt(data["password"])
     
     conn = get_connection()
     cursor = conn.cursor()
