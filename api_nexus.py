@@ -365,6 +365,8 @@ class LoginRequest(BaseModel):
 async def login(request: LoginRequest):
     """User Login für Dashboard"""
     import sqlite3
+    from database import _hash_password_bcrypt, _verify_password_hash
+
     conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
     cursor = conn.cursor()
     
@@ -390,15 +392,20 @@ async def login(request: LoginRequest):
     if verified and not verified[0]:
         raise HTTPException(status_code=403, detail="Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse")
     
-    # Password check (SHA256)
-    input_hash = hashlib.sha256(request.password.encode()).hexdigest()
-    if input_hash != password_hash:
+    is_valid, needs_rehash = _verify_password_hash(request.password, password_hash)
+    if not is_valid:
         raise HTTPException(status_code=401, detail="Ungültige Anmeldedaten")
     
     # Update last_login
     conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
     cursor = conn.cursor()
-    cursor.execute("UPDATE users SET last_login = datetime('now') WHERE id = ?", (user_id,))
+    if needs_rehash:
+        cursor.execute(
+            "UPDATE users SET password_hash = ?, last_login = datetime('now') WHERE id = ?",
+            (_hash_password_bcrypt(request.password), user_id),
+        )
+    else:
+        cursor.execute("UPDATE users SET last_login = datetime('now') WHERE id = ?", (user_id,))
     conn.commit()
     conn.close()
     
