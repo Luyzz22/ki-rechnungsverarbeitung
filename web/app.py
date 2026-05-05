@@ -2638,6 +2638,7 @@ async def create_report(request: Request):
     """Erstellt neuen geplanten Bericht"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     
@@ -2657,6 +2658,7 @@ async def remove_report(report_id: int, request: Request):
     """Löscht geplanten Bericht"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     success = delete_report(report_id, request.session["user_id"])
     return {"success": success}
@@ -2666,6 +2668,7 @@ async def toggle_scheduled_report(report_id: int, request: Request):
     """Aktiviert/deaktiviert Bericht"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     active = data.get("active", True)
@@ -2806,6 +2809,7 @@ async def create_widget(request: Request):
     """Fügt neues Widget hinzu"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     widget = add_widget(
@@ -2821,6 +2825,7 @@ async def edit_widget(widget_id: int, request: Request):
     """Aktualisiert Widget"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     success = update_widget(widget_id, request.session["user_id"], data)
@@ -2831,6 +2836,7 @@ async def delete_widget(widget_id: int, request: Request):
     """Entfernt Widget"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     success = remove_widget(widget_id, request.session["user_id"])
     return {"success": success}
@@ -2840,6 +2846,7 @@ async def reorder_dashboard(request: Request):
     """Sortiert Widgets neu"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     success = reorder_widgets(request.session["user_id"], data.get("widget_ids", []))
