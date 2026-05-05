@@ -2692,6 +2692,7 @@ async def suggest_booking_account(request: Request):
     """KI-Kontenvorschlag für eine Rechnung"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     skr = data.get("skr", "SKR03")
@@ -2704,6 +2705,7 @@ async def suggest_accounts_batch(request: Request):
     """KI-Kontenvorschläge für mehrere Rechnungen"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     invoices = data.get("invoices", [])
@@ -2717,6 +2719,7 @@ async def learn_account_mapping(request: Request):
     """Lernt aus User-Korrektur"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     learn_from_correction(
@@ -2743,6 +2746,7 @@ async def export_sepa_xml(request: Request):
     """Generiert SEPA-XML für Zahlungen"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     invoices = data.get("invoices", [])
@@ -2769,6 +2773,7 @@ async def export_job_sepa(job_id: str, request: Request):
     """Exportiert Job-Rechnungen als SEPA-XML"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     debtor = data.get("debtor", {})
@@ -3584,7 +3589,12 @@ async def accounting_page(request: Request):
     conn.close()
     
     user_info = get_user_info(request.session.get("user_id"))
-    return templates.TemplateResponse("accounting.html", {"request": request, "jobs": jobs, "user": user_info})
+    return templates.TemplateResponse("accounting.html", {
+        "request": request,
+        "jobs": jobs,
+        "user": user_info,
+        "csrf_token": _get_or_create_csrf_token(request),
+    })
 
 @app.post("/api/duplicate/{detection_id}/review")
 async def review_duplicate(detection_id: int, request: Request):
