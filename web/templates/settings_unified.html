@@ -910,7 +910,7 @@ function saveProfile(e) {
   
   fetch('/api/profile', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
     body: JSON.stringify(data)
   })
   .then(r => r.json())
@@ -933,7 +933,7 @@ function saveCompany(e) {
   
   fetch('/api/profile/company', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
     body: JSON.stringify({
       company: form.company.value,
       vat_id: form.vat_id.value,
@@ -965,7 +965,7 @@ function changePassword(e) {
   
   fetch('/api/profile/password', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
     body: JSON.stringify({
       current_password: form.current_password.value,
       new_password: form.new_password.value
@@ -1032,7 +1032,7 @@ function loadNotifications() {
 function saveNotification(type, value) {
   fetch('/api/notifications/settings', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
     body: JSON.stringify({ [type]: value })
   })
   .then(r => r.json())
@@ -1056,7 +1056,7 @@ function testSlackWebhook() {
   if (!webhook.startsWith("https://hooks.slack.com/")) { showToast("Ungültige Webhook URL", "error"); return; }
   var btn = document.getElementById("testSlackBtn");
   btn.disabled = true; btn.textContent = "⏳ Teste...";
-  fetch("/api/settings/slack/test", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({webhook_url: webhook}) })
+  fetch("/api/settings/slack/test", { method: "POST", headers: {"Content-Type": "application/json", "X-CSRF-Token": csrfToken}, body: JSON.stringify({webhook_url: webhook}) })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       btn.disabled = false; btn.textContent = "🧪 Testen";
@@ -1072,7 +1072,7 @@ function saveSlackWebhook() {
 }
 
 function saveSlackSettings(enabled, webhook) {
-  fetch("/api/settings/slack", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({enabled: enabled, webhook_url: webhook}) })
+  fetch("/api/settings/slack", { method: "POST", headers: {"Content-Type": "application/json", "X-CSRF-Token": csrfToken}, body: JSON.stringify({enabled: enabled, webhook_url: webhook}) })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.success) showToast("Slack-Einstellungen gespeichert!", "success");
@@ -1096,7 +1096,7 @@ function saveWeeklyReport() {
 }
 
 function saveWeeklySettings(enabled, day, time) {
-  fetch("/api/settings/weekly-report", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({enabled: enabled, day: day || 1, time: time || "07:00"}) })
+  fetch("/api/settings/weekly-report", { method: "POST", headers: {"Content-Type": "application/json", "X-CSRF-Token": csrfToken}, body: JSON.stringify({enabled: enabled, day: day || 1, time: time || "07:00"}) })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.success) showToast("Wöchentlicher Report " + (enabled ? "aktiviert" : "deaktiviert") + "!", "success");
