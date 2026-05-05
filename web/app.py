@@ -1457,7 +1457,8 @@ async def admin_users_page(request: Request):
     return templates.TemplateResponse("admin_users.html", {
         "request": request,
         "users": users,
-        "new_this_week": new_this_week
+        "new_this_week": new_this_week,
+        "csrf_token": _get_or_create_csrf_token(request),
     })
 
 @app.post("/api/admin/users", tags=["Admin"])
