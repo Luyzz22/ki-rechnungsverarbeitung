@@ -863,6 +863,7 @@
   {% include 'partials/footer.html' %}
 
   <script>
+    const csrfToken = "{{ csrf_token }}";
     let currentInvoices = [];
     let currentJobId = null;
     let accountsList = [];
@@ -924,7 +925,7 @@
         const skr = document.getElementById('skr-select').value;
         const suggestRes = await fetch('/api/accounting/suggest/batch', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
           body: JSON.stringify({ invoices, skr })
         });
         const suggestData = await suggestRes.json();
@@ -1117,7 +1118,7 @@
         for (const inv of changed) {
           await fetch('/api/accounting/learn', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
             body: JSON.stringify({ invoice: inv, account: inv.selectedAccount })
           });
         }
@@ -1166,7 +1167,7 @@
       try {
         const res = await fetch(`/api/job/${currentJobId}/export/sepa`, {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
           body: JSON.stringify({ debtor: { name, iban, bic } })
         });
 
