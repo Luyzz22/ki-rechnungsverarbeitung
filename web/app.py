@@ -2553,6 +2553,7 @@ async def create_org(request: Request):
     """Erstellt neue Organisation"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     name = data.get("name", "").strip()
@@ -2568,6 +2569,7 @@ async def switch_org(org_id: int, request: Request):
     """Wechselt aktive Organisation"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     if switch_organization(request.session["user_id"], org_id):
         return {"success": True}
@@ -2593,6 +2595,7 @@ async def add_org_member(org_id: int, request: Request):
     
     if not check_permission(request.session["user_id"], org_id, OrgRole.ADMIN):
         return JSONResponse({"error": "Admin required"}, status_code=403)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     user_id = data.get("user_id")
@@ -3532,7 +3535,11 @@ async def team_page(request: Request):
     if not is_admin_or_owner(user_id):
         return RedirectResponse("/dashboard?error=no_permission", status_code=303)
     user_info = get_user_info(user_id)
-    return templates.TemplateResponse("team.html", {"request": request, "user": user_info})
+    return templates.TemplateResponse("team.html", {
+        "request": request,
+        "user": user_info,
+        "csrf_token": _get_or_create_csrf_token(request),
+    })
 
 @app.get("/audit-log", response_class=HTMLResponse)
 async def audit_log_page(request: Request):
@@ -4731,6 +4738,7 @@ async def assign_role(request: Request):
     admin_check = require_admin(request)
     if admin_check:
         return {"error": "Nur Admins können Rollen ändern"}
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     user_id = data.get("user_id")
@@ -4769,6 +4777,7 @@ async def invite_team_member(request: Request):
     admin_check = require_admin(request)
     if admin_check:
         return {"error": "Nur Admins können einladen"}
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     import secrets
     from datetime import datetime, timedelta
@@ -4849,6 +4858,7 @@ async def cancel_invitation(invitation_id: int, request: Request):
     admin_check = require_admin(request)
     if admin_check:
         return {"error": "Nur Admins können Einladungen verwalten"}
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     from database import get_connection
     conn = get_connection()
@@ -4866,6 +4876,7 @@ async def update_member_status(user_id: int, request: Request):
     admin_check = require_admin(request)
     if admin_check:
         return {"error": "Nur Admins können User-Status ändern"}
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     # Sich selbst nicht deaktivieren
     if user_id == request.session["user_id"]:
