@@ -842,6 +842,8 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
+const csrfToken = "{{ csrf_token }}";
+
 // ═══════════════════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════════════
@@ -1152,7 +1154,7 @@ function loadApiKeys() {
 }
 
 function generateApiKey() {
-  fetch('/api/keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"name":"API Key"}' })
+  fetch('/api/keys', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }, body: '{"name":"API Key"}' })
     .then(r => r.json())
     .then(function(data) {
       if (data.key) {
@@ -1171,7 +1173,7 @@ function generateApiKey() {
 function revokeApiKey(keyId) {
   if (!confirm('API-Key wirklich widerrufen? Alle Integrationen werden ungültig.')) return;
   
-  fetch('/api/keys/' + keyId, { method: 'DELETE' })
+  fetch('/api/keys/' + keyId, { method: 'DELETE', headers: { 'X-CSRF-Token': csrfToken } })
     .then(r => r.json())
     .then(function(res) {
       if (res.success) {
