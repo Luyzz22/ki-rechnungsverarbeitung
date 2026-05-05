@@ -2373,6 +2373,7 @@ async def update_profile(request: Request):
     """Update user profile"""
     if 'user_id' not in request.session:
         return {"success": False, "error": "Not logged in"}
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     try:
         data = await request.json()
@@ -2386,6 +2387,7 @@ async def change_password(request: Request):
     """Change user password"""
     if 'user_id' not in request.session:
         return {"success": False, "error": "Not logged in"}
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     try:
         data = await request.json()
@@ -2498,6 +2500,7 @@ async def verify_2fa_setup(request: Request):
     """Verifiziert Code und aktiviert 2FA"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     code = data.get("code", "")
@@ -2513,6 +2516,7 @@ async def disable_2fa_endpoint(request: Request):
     """Deaktiviert 2FA"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     code = data.get("code", "")
@@ -5050,6 +5054,7 @@ async def update_notification_settings(request: Request):
     """Aktualisiert Benachrichtigungseinstellungen"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     user_email = request.session.get("user_email", "")
     data = await request.json()
     try:
@@ -5075,6 +5080,7 @@ async def save_slack_settings(request: Request):
     """Speichert Slack Webhook URL"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     user_email = request.session.get("user_email", "")
     data = await request.json()
     enabled = data.get("enabled", False)
@@ -5099,6 +5105,7 @@ async def test_slack_webhook(request: Request):
     """Testet Slack Webhook URL"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     data = await request.json()
     webhook_url = data.get("webhook_url", "").strip()
     user_name = request.session.get("user_name", "User")
@@ -5121,6 +5128,7 @@ async def save_weekly_report_settings(request: Request):
     """Speichert Woechentlicher Report Einstellungen"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     user_email = request.session.get("user_email", "")
     data = await request.json()
     enabled = data.get("enabled", False)
@@ -5174,6 +5182,7 @@ async def update_company_profile(request: Request):
     """Aktualisiert Firmendaten"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     
