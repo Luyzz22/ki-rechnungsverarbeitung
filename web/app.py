@@ -1465,6 +1465,7 @@ async def create_user(request: Request):
     """Neuen User anlegen"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     from database import get_connection, _hash_password_bcrypt
     
@@ -1485,6 +1486,7 @@ async def update_user_admin(user_id: int, request: Request):
     """User bearbeiten"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     from database import get_connection
     data = await request.json()
@@ -1503,6 +1505,7 @@ async def toggle_user_status(user_id: int, request: Request):
     """User aktivieren/deaktivieren"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     from database import get_connection
     data = await request.json()
