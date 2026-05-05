@@ -2636,9 +2636,9 @@ async def list_scheduled_reports(request: Request):
 @app.post("/api/reports/scheduled", tags=["Reports"])
 async def create_report(request: Request):
     """Erstellt neuen geplanten Bericht"""
-    _require_csrf_token(request, _get_submitted_csrf_token(request))
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     
@@ -2656,9 +2656,9 @@ async def create_report(request: Request):
 @app.delete("/api/reports/scheduled/{report_id}", tags=["Reports"])
 async def remove_report(report_id: int, request: Request):
     """Löscht geplanten Bericht"""
-    _require_csrf_token(request, _get_submitted_csrf_token(request))
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     success = delete_report(report_id, request.session["user_id"])
     return {"success": success}
@@ -2666,9 +2666,9 @@ async def remove_report(report_id: int, request: Request):
 @app.post("/api/reports/scheduled/{report_id}/toggle", tags=["Reports"])
 async def toggle_scheduled_report(report_id: int, request: Request):
     """Aktiviert/deaktiviert Bericht"""
-    _require_csrf_token(request, _get_submitted_csrf_token(request))
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     active = data.get("active", True)
@@ -2807,9 +2807,9 @@ async def list_widgets(request: Request):
 @app.post("/api/dashboard/widgets", tags=["Dashboard"])
 async def create_widget(request: Request):
     """Fügt neues Widget hinzu"""
-    _require_csrf_token(request, _get_submitted_csrf_token(request))
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     widget = add_widget(
@@ -2823,9 +2823,9 @@ async def create_widget(request: Request):
 @app.put("/api/dashboard/widgets/{widget_id}", tags=["Dashboard"])
 async def edit_widget(widget_id: int, request: Request):
     """Aktualisiert Widget"""
-    _require_csrf_token(request, _get_submitted_csrf_token(request))
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     success = update_widget(widget_id, request.session["user_id"], data)
@@ -2834,9 +2834,9 @@ async def edit_widget(widget_id: int, request: Request):
 @app.delete("/api/dashboard/widgets/{widget_id}", tags=["Dashboard"])
 async def delete_widget(widget_id: int, request: Request):
     """Entfernt Widget"""
-    _require_csrf_token(request, _get_submitted_csrf_token(request))
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     success = remove_widget(widget_id, request.session["user_id"])
     return {"success": success}
@@ -2844,9 +2844,9 @@ async def delete_widget(widget_id: int, request: Request):
 @app.post("/api/dashboard/widgets/reorder", tags=["Dashboard"])
 async def reorder_dashboard(request: Request):
     """Sortiert Widgets neu"""
-    _require_csrf_token(request, _get_submitted_csrf_token(request))
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     success = reorder_widgets(request.session["user_id"], data.get("widget_ids", []))
