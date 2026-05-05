@@ -2364,7 +2364,8 @@ async def unified_settings_page(request: Request):
     
     return templates.TemplateResponse("settings_unified.html", {
         "request": request,
-        "user": user
+        "user": user,
+        "csrf_token": _get_or_create_csrf_token(request),
     })
 
 @app.put("/api/profile")
@@ -2408,6 +2409,7 @@ async def create_new_api_key(request: Request):
     """Erstellt einen neuen API-Key"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     name = data.get("name", "API Key")
@@ -2426,6 +2428,7 @@ async def delete_api_key(key_id: int, request: Request):
     """Widerruft einen API-Key"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     success = revoke_api_key(key_id, request.session["user_id"])
     return {"success": success}
@@ -2446,6 +2449,7 @@ async def create_new_webhook(request: Request):
     """Erstellt einen neuen Webhook"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     url = data.get("url")
@@ -2469,6 +2473,7 @@ async def delete_user_webhook(webhook_id: int, request: Request):
     """Löscht einen Webhook"""
     if "user_id" not in request.session:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     success = delete_webhook(webhook_id, request.session["user_id"])
     return {"success": success}
