@@ -156,6 +156,8 @@
 {% include 'partials/footer.html' %}
 
 <script>
+const csrfToken = "{{ csrf_token }}";
+
 const roleColors = {
   'owner': '#7c3aed', 'admin': '#dc2626', 'manager': '#d97706', 
   'member': '#16a34a', 'viewer': '#2563eb', 'finance_manager': '#16a34a',
@@ -240,7 +242,7 @@ async function changeRole(userId, roleId) {
   try {
     const res = await fetch('/api/team/role', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
       body: JSON.stringify({ user_id: userId, role_id: parseInt(roleId), action: 'set' })
     });
     const data = await res.json();
@@ -268,7 +270,7 @@ async function inviteUser() {
   try {
     const res = await fetch('/api/team/invite', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
       body: JSON.stringify({ email, role })
     });
     const data = await res.json();
