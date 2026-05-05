@@ -1714,6 +1714,7 @@ async def websocket_endpoint(websocket: WebSocket, job_id: str):
 
 # Session Management
 from starlette.middleware.sessions import SessionMiddleware
+import hmac
 import secrets
 
 from email_scheduler import email_scheduler
@@ -1745,6 +1746,38 @@ def _resolve_session_secret() -> str:
 
 # Add session middleware (muss nach app = FastAPI() kommen)
 app.add_middleware(SessionMiddleware, secret_key=_resolve_session_secret(), domain='.sbsdeutschland.com')
+
+
+def _get_or_create_csrf_token(request: Request) -> str:
+    token = request.session.get("csrf_token")
+    if not token:
+        token = secrets.token_urlsafe(32)
+        request.session["csrf_token"] = token
+    return token
+
+
+def _get_submitted_csrf_token(request: Request, form_data: object | None = None) -> str | None:
+    header_token = request.headers.get("X-CSRF-Token")
+    if header_token:
+        return header_token
+    if form_data is not None and hasattr(form_data, "get"):
+        form_token = form_data.get("csrf_token")
+        if isinstance(form_token, str):
+            return form_token
+    return None
+
+
+def _validate_csrf_token(request: Request, submitted_token: str | None) -> bool:
+    expected_token = request.session.get("csrf_token")
+    if not expected_token or not submitted_token:
+        return False
+    return hmac.compare_digest(expected_token, submitted_token)
+
+
+def _require_csrf_token(request: Request, submitted_token: str | None) -> None:
+    if not _validate_csrf_token(request, submitted_token):
+        raise HTTPException(status_code=403, detail="Invalid CSRF token")
+
 
 # -------------------------------------------------
 # Login-Helper & globale Login-Pflicht
