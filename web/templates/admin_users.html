@@ -147,6 +147,8 @@
   </div>
   
   <script>
+    const csrfToken = "{{ csrf_token }}";
+
     function filterUsers() {
       const search = document.getElementById('searchInput').value.toLowerCase();
       const status = document.getElementById('statusFilter').value;
@@ -201,7 +203,7 @@
       
       const resp = await fetch(url, {
         method,
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
         body: JSON.stringify(data)
       });
       
@@ -217,7 +219,7 @@
       
       const resp = await fetch(`/api/admin/users/${id}/toggle`, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
         body: JSON.stringify({is_active: active})
       });
       
