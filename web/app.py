@@ -1329,6 +1329,7 @@ async def job_details_page_old(request: Request, job_id: str):
             "plausibility_warnings": plausibility_warnings,
             "duplicates": duplicates,
             "user": user_info,
+            "csrf_token": _get_or_create_csrf_token(request),
         },
     )
 
@@ -3601,6 +3602,7 @@ async def review_duplicate(detection_id: int, request: Request):
     """Mark duplicate as reviewed"""
     if "user_id" not in request.session:
         raise HTTPException(status_code=401, detail="Not authenticated")
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     body = await request.json()
     is_duplicate = body.get('is_duplicate', False)
@@ -3667,6 +3669,9 @@ def validate_einvoice(xml_string: str):
 @app.post("/api/plausibility/{check_id}/review")
 async def review_plausibility(check_id: int, request: Request):
     """Review a plausibility check"""
+    if "user_id" not in request.session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     data = await request.json()
     status = data.get('status')
     
@@ -3968,6 +3973,7 @@ async def job_details_page(request: Request, job_id: str):
             "plausibility_warnings": plausibility_warnings,
             "duplicates": duplicates,
             "user": user_info,
+            "csrf_token": _get_or_create_csrf_token(request),
         },
     )
 

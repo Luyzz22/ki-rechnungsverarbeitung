@@ -674,6 +674,8 @@
 
 
 <script>
+const csrfToken = "{{ csrf_token }}";
+
 async function markDuplicate(detectionId, isDuplicate) {
   if (!confirm(isDuplicate ? 'Als Duplikat markieren?' : 'Als unterschiedlich markieren?')) {
     return;
@@ -682,7 +684,7 @@ async function markDuplicate(detectionId, isDuplicate) {
   try {
     const response = await fetch(`/api/duplicate/${detectionId}/review`, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
       body: JSON.stringify({is_duplicate: isDuplicate})
     });
     
