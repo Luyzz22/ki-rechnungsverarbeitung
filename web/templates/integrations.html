@@ -266,13 +266,15 @@
 
 {% block scripts %}
 <script>
+  const csrfToken = "{{ csrf_token }}";
+
   async function testConnection(provider) {
     const key = document.getElementById(provider + '-key').value;
     if (!key) { alert('Bitte API-Key eingeben'); return; }
     
     const res = await fetch('/api/integrations/test', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
       body: JSON.stringify({ provider, api_key: key })
     });
     
@@ -286,7 +288,7 @@
     
     const res = await fetch('/api/integrations/save', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
       body: JSON.stringify({ provider, api_key: key, enabled: true })
     });
     
