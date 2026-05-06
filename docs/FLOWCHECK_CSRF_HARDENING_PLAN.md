@@ -26,6 +26,14 @@ The risk is especially high for admin and finance workflows: user creation, sett
 
 Every exemption must be explicit and documented with the authentication mechanism that replaces CSRF protection, such as Stripe signature verification, webhook signing secret, Bearer token, or API key.
 
+## Documented Public Demo CSRF Exception
+
+- `POST /api/demo/copilot/query`
+  - Classification: public demo endpoint, not authenticated business mutation.
+  - Reason for exemption: route is used by the public Finance Copilot demo without login/session CSRF bootstrap.
+  - Compensating controls: IP-based daily usage cap, admin-only bypass, demo-only data snapshot, no tenant data mutation.
+  - Follow-up: consider CAPTCHA, stronger rate limiting, or signed one-time demo tokens if abuse increases.
+
 ## Routes Requiring Special Treatment
 
 - Login and registration routes:
