@@ -299,6 +299,8 @@
 
 {% block scripts %}
 <script>
+  const csrfToken = "{{ csrf_token }}";
+
   // Filter functionality
   document.querySelectorAll('.filter-tab').forEach(tab => {
     tab.addEventListener('click', function() {
@@ -318,7 +320,10 @@
   
   async function approveInvoice(id) {
     if (!confirm('Rechnung freigeben?')) return;
-    const res = await fetch(`/api/approvals/${id}/approve`, { method: 'POST' });
+    const res = await fetch(`/api/approvals/${id}/approve`, {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': csrfToken }
+    });
     if (res.ok) location.reload();
   }
   
@@ -327,7 +332,7 @@
     if (!comment) return;
     const res = await fetch(`/api/approvals/${id}/reject`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
       body: JSON.stringify({ comment })
     });
     if (res.ok) location.reload();

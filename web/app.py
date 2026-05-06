@@ -5703,6 +5703,7 @@ async def approvals_page(request: Request, status: str = None):
         "user": user_info,
         "statuses": [s.value for s in InvoiceStatus],
         "now": datetime.now().strftime("%Y-%m-%d"),
+        "csrf_token": _get_or_create_csrf_token(request),
     })
 
 
@@ -5724,6 +5725,7 @@ async def my_approvals_page(request: Request):
         "stats": stats,
         "user": user_info,
         "now": datetime.now().strftime("%Y-%m-%d"),
+        "csrf_token": _get_or_create_csrf_token(request),
     })
 
 
@@ -5745,6 +5747,7 @@ async def approve_invoice(invoice_id: int, request: Request, comment: str = Form
     # Permission check
     if not manager.can_user_approve(user_id, invoice_id):
         return JSONResponse({"error": "Keine Berechtigung für diese Freigabe"}, status_code=403)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     # Get client info for audit
     ip = request.client.host if request.client else None
@@ -5770,6 +5773,7 @@ async def reject_invoice(invoice_id: int, request: Request, comment: str = Form(
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     if not comment:
         return JSONResponse({"error": "Ablehnungsgrund erforderlich"}, status_code=400)
@@ -5804,6 +5808,7 @@ async def assign_invoice(invoice_id: int, request: Request, assignee_id: int = F
     user_info = get_user_info(user_id)
     if not user_info.get('is_admin'):
         return JSONResponse({"error": "Keine Berechtigung"}, status_code=403)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     manager = get_approval_manager()
     success = manager.assign_invoice(invoice_id, assignee_id, user_id)
@@ -5819,6 +5824,7 @@ async def add_invoice_comment(invoice_id: int, request: Request, comment: str = 
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     manager = get_approval_manager()
     ip = request.client.host if request.client else None
@@ -5855,6 +5861,7 @@ async def bulk_approve_invoices(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     invoice_ids = data.get('invoice_ids', [])
@@ -5899,6 +5906,7 @@ async def approval_rules_page(request: Request):
         "rules": rules,
         "user": user_info,
         "now": datetime.now().strftime("%Y-%m-%d"),
+        "csrf_token": _get_or_create_csrf_token(request),
     })
 
 
@@ -5908,6 +5916,7 @@ async def create_approval_rule(request: Request):
     admin_check = require_admin(request)
     if admin_check:
         return JSONResponse({"error": "Admin required"}, status_code=403)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     user_id = request.session.get("user_id")
@@ -5931,6 +5940,7 @@ async def update_approval_rule(rule_id: int, request: Request):
     admin_check = require_admin(request)
     if admin_check:
         return JSONResponse({"error": "Admin required"}, status_code=403)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     
@@ -5946,6 +5956,7 @@ async def delete_approval_rule(rule_id: int, request: Request):
     admin_check = require_admin(request)
     if admin_check:
         return JSONResponse({"error": "Admin required"}, status_code=403)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     manager = get_approval_manager()
     manager.delete_rule(rule_id)
