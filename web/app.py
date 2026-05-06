@@ -2908,6 +2908,7 @@ async def create_checkout_session(request: Request):
     """Create Stripe checkout session - Multi-Product Support"""
     if 'user_id' not in request.session:
         return {"error": "Not logged in"}
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     try:
         data = await request.json()
@@ -6010,6 +6011,7 @@ async def datev_export_page(request: Request):
         "user": user_info,
         "invoices": invoices,
         "kontenrahmen": ["SKR03", "SKR04"],
+        "csrf_token": _get_or_create_csrf_token(request),
     })
 
 
@@ -6019,6 +6021,7 @@ async def export_to_datev(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     
@@ -6227,6 +6230,7 @@ async def get_buchungsvorschau(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     invoice_ids = data.get('invoice_ids', [])
@@ -6285,6 +6289,7 @@ async def suggest_kontierung(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     invoice_id = data.get('invoice_id')
@@ -6332,6 +6337,7 @@ async def save_kontierung(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     
@@ -6453,7 +6459,8 @@ async def zahlungen_dashboard(request: Request):
     return templates.TemplateResponse("zahlungen_dashboard.html", {
         "request": request,
         "user": user_info,
-        "dashboard": dashboard
+        "dashboard": dashboard,
+        "csrf_token": _get_or_create_csrf_token(request),
     })
 
 
@@ -6508,6 +6515,7 @@ async def api_zahlungen_analysieren(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     invoice_ids = data.get('invoice_ids', [])
@@ -6542,6 +6550,7 @@ async def api_zahlung_status_update(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     invoice_id = data.get('invoice_id')
@@ -6710,7 +6719,8 @@ async def integrations_page(request: Request):
     return templates.TemplateResponse("integrations.html", {
         "request": request,
         "user": user_info,
-        "integrations": integrations
+        "integrations": integrations,
+        "csrf_token": _get_or_create_csrf_token(request),
     })
 
 
@@ -6720,6 +6730,7 @@ async def test_integration(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     provider = data.get('provider')
@@ -6744,6 +6755,7 @@ async def save_integration(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     provider = data.get('provider')
@@ -6772,6 +6784,7 @@ async def sync_to_integration(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
     provider = data.get('provider')

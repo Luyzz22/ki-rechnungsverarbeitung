@@ -345,13 +345,15 @@
 
 {% block scripts %}
 <script>
+  const csrfToken = "{{ csrf_token }}";
+
   async function markAsPaid(invoiceId) {
     if (!confirm('Rechnung als bezahlt markieren?')) return;
     
     try {
       const res = await fetch('/api/zahlungen/status', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
         body: JSON.stringify({
           invoice_id: invoiceId,
           status: 'bezahlt',
