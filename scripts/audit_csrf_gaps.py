@@ -2,7 +2,8 @@
 """Static CSRF regression guard for the legacy FastAPI app.
 
 This script scans web/app.py for authenticated mutating routes that look like
-browser/session JSON or form handlers but do not call _require_csrf_token.
+browser/session JSON, form, or multipart handlers but do not call
+_require_csrf_token.
 It is intentionally conservative and dependency-free.
 """
 
@@ -89,14 +90,18 @@ def scan_routes(app_path: Path = APP_PATH) -> list[RouteBlock]:
 
 def is_candidate(route: RouteBlock) -> bool:
     has_request = "request: Request" in route.signature
-    reads_json_or_form = "await request.json()" in route.block or "Form(" in route.signature
+    reads_mutating_payload = (
+        "await request.json()" in route.block
+        or "Form(" in route.signature
+        or "File(" in route.signature
+    )
     uses_session_auth = (
         "request.session" in route.block
         or "require_login(request)" in route.block
         or "require_admin(request)" in route.block
     )
     has_csrf = "_require_csrf_token" in route.block
-    return has_request and reads_json_or_form and uses_session_auth and not has_csrf
+    return has_request and reads_mutating_payload and uses_session_auth and not has_csrf
 
 
 def main() -> int:
