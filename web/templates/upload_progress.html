@@ -120,6 +120,7 @@
     </div>
     
     <script>
+        const csrfToken = "{{ csrf_token }}";
         let currentJobId = null;
         let ws = null;
         let processedFiles = {};
@@ -167,6 +168,7 @@
             try {
                 const response = await fetch('/api/upload', {
                     method: 'POST',
+                    headers: { 'X-CSRF-Token': csrfToken },
                     body: formData
                 });
                 

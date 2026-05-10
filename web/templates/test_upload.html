@@ -3,6 +3,8 @@
   <button type="button" onclick="testUpload()">Test Upload</button>
 </form>
 <script>
+const csrfToken = "{{ csrf_token }}";
+
 async function testUpload() {
   const formData = new FormData();
   const files = document.getElementById('fileInput').files;
@@ -14,6 +16,7 @@ async function testUpload() {
   
   const response = await fetch('/api/upload', {
     method: 'POST',
+    headers: { 'X-CSRF-Token': csrfToken },
     body: formData
   });
   const data = await response.json();

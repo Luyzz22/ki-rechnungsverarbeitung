@@ -1644,7 +1644,10 @@ async def get_supplier_patterns_endpoint(supplier: str):
 @app.get("/upload-progress", response_class=HTMLResponse)
 async def upload_progress_page(request: Request):
     """Upload page with real-time progress"""
-    return templates.TemplateResponse("upload_progress.html", {"request": request})
+    return templates.TemplateResponse("upload_progress.html", {
+        "request": request,
+        "csrf_token": _get_or_create_csrf_token(request),
+    })
 
 @app.get("/email-config", response_class=HTMLResponse)
 async def email_config_page(request: Request):
@@ -3520,7 +3523,10 @@ async def contact_form(request: Request):
 
 @app.get("/test", response_class=HTMLResponse)
 async def test_upload_page(request: Request):
-    return templates.TemplateResponse("test_upload.html", {"request": request})
+    return templates.TemplateResponse("test_upload.html", {
+        "request": request,
+        "csrf_token": _get_or_create_csrf_token(request),
+    })
 
 
 
