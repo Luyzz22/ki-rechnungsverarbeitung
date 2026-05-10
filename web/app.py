@@ -1921,8 +1921,13 @@ async def demo_upload_live(request: Request, file: UploadFile = File(...)):
             }
         )
     
+    safe_filename = Path(file.filename or "demo.pdf").name
+    if safe_filename in ("", ".", ".."):
+        safe_filename = "demo.pdf"
+    safe_filename = safe_filename.replace("/", "_").replace("\\", "_")
+
     # Nur PDFs erlauben
-    if not file.filename.lower().endswith(".pdf"):
+    if not safe_filename.lower().endswith(".pdf"):
         return JSONResponse(
             status_code=400,
             content={"error": "Nur PDF-Dateien erlaubt"}
@@ -1935,6 +1940,11 @@ async def demo_upload_live(request: Request, file: UploadFile = File(...)):
             status_code=400,
             content={"error": "Datei zu groß. Maximum: 10 MB"}
         )
+    if not file_content.startswith(b"%PDF"):
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Nur gültige PDF-Dateien erlaubt"}
+        )
     
     try:
         # Erstelle Demo-Job ID
@@ -1945,7 +1955,7 @@ async def demo_upload_live(request: Request, file: UploadFile = File(...)):
         demo_upload_path.mkdir(exist_ok=True)
         
         # Speichere Datei
-        pdf_path = demo_upload_path / file.filename
+        pdf_path = demo_upload_path / safe_filename
         with open(pdf_path, "wb") as f:
             f.write(file_content)
         
@@ -1966,7 +1976,7 @@ async def demo_upload_live(request: Request, file: UploadFile = File(...)):
             if 'confidence' not in data:
                 data['confidence'] = data.get('ki_score', 85)
         
-        data['filename'] = file.filename
+        data['filename'] = safe_filename
         
         # 2. Statistiken berechnen
         results = [data]
@@ -2037,7 +2047,7 @@ async def demo_upload_live(request: Request, file: UploadFile = File(...)):
         processing_jobs[demo_job_id]["results"] = results
         
         # 9. Demo-Nutzung aufzeichnen
-        record_demo_usage(ip_address, file.filename)
+        record_demo_usage(ip_address, safe_filename)
         
         # Verbleibende Demo-Nutzungen
         remaining = usage["remaining"] - 1 if not is_admin else 999
@@ -2055,13 +2065,11 @@ async def demo_upload_live(request: Request, file: UploadFile = File(...)):
             }
         }
         
-    except Exception as e:
-        app_logger.error(f"Demo processing error: {e}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        app_logger.warning("Demo upload processing failed")
         return JSONResponse(
             status_code=500,
-            content={"error": "Verarbeitung fehlgeschlagen", "detail": str(e)}
+            content={"error": "Verarbeitung fehlgeschlagen"}
         )
 
 
