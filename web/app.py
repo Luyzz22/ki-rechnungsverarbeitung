@@ -2066,7 +2066,7 @@ async def demo_upload_live(request: Request, file: UploadFile = File(...)):
         }
         
     except Exception:
-        app_logger.warning("Demo upload processing failed")
+        app_logger.exception("Demo upload processing failed")
         return JSONResponse(
             status_code=500,
             content={"error": "Verarbeitung fehlgeschlagen"}
