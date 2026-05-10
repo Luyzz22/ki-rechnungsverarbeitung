@@ -3462,30 +3462,44 @@ async def download_invoice(request: Request, subscription_id: int):
 async def contact_form(request: Request):
     """Handle contact form submissions"""
     try:
+        check_rate_limit(request, "api")
         data = await request.json()
-        
-        name = data.get('name', '')
-        email = data.get('email', '')
-        phone = data.get('phone', '')
-        company = data.get('company', '')
-        service = data.get('service', '')
-        message = data.get('message', '')
+        import html
+
+        name = str(data.get('name') or '').strip()[:120]
+        email = str(data.get('email') or '').strip()[:254]
+        phone = str(data.get('phone') or '').strip()[:80]
+        company = str(data.get('company') or '').strip()[:160]
+        service = str(data.get('service') or '').strip()[:120]
+        message = str(data.get('message') or '').strip()[:3000]
+
+        if not name or not email or not message:
+            return JSONResponse({"success": False, "error": "Pflichtfelder fehlen"}, status_code=400)
+
+        safe_name = html.escape(name, quote=True)
+        safe_email = html.escape(email, quote=True)
+        safe_phone = html.escape(phone, quote=True)
+        safe_company = html.escape(company, quote=True)
+        safe_service = html.escape(service, quote=True)
+        safe_message = html.escape(message, quote=True)
         
         # Send email to SBS
-        subject = f"Kontaktanfrage: {service} - {name}"
+        subject_service = service.replace("\r", " ").replace("\n", " ")
+        subject_name = name.replace("\r", " ").replace("\n", " ")
+        subject = f"Kontaktanfrage: {subject_service} - {subject_name}"
         body = f"""
         <html>
         <body style="font-family: Arial, sans-serif;">
             <h2>Neue Kontaktanfrage</h2>
             <table style="border-collapse: collapse;">
-                <tr><td style="padding: 8px; font-weight: bold;">Service:</td><td style="padding: 8px;">{service}</td></tr>
-                <tr><td style="padding: 8px; font-weight: bold;">Name:</td><td style="padding: 8px;">{name}</td></tr>
-                <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">{email}</td></tr>
-                <tr><td style="padding: 8px; font-weight: bold;">Telefon:</td><td style="padding: 8px;">{phone or '-'}</td></tr>
-                <tr><td style="padding: 8px; font-weight: bold;">Unternehmen:</td><td style="padding: 8px;">{company or '-'}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Service:</td><td style="padding: 8px;">{safe_service}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Name:</td><td style="padding: 8px;">{safe_name}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">{safe_email}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Telefon:</td><td style="padding: 8px;">{safe_phone or '-'}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Unternehmen:</td><td style="padding: 8px;">{safe_company or '-'}</td></tr>
             </table>
             <h3>Nachricht:</h3>
-            <p style="background: #f5f5f5; padding: 16px; border-radius: 8px;">{message}</p>
+            <p style="background: #f5f5f5; padding: 16px; border-radius: 8px;">{safe_message}</p>
         </body>
         </html>
         """
@@ -3502,10 +3516,10 @@ async def contact_form(request: Request):
                 <h1 style="margin: 0;">Vielen Dank!</h1>
             </div>
             <div style="padding: 30px;">
-                <p>Hallo {name},</p>
+                <p>Hallo {safe_name},</p>
                 <p>vielen Dank für Ihre Anfrage. Wir haben Ihre Nachricht erhalten und werden uns innerhalb von 24 Stunden bei Ihnen melden.</p>
                 <p><strong>Ihre Anfrage:</strong></p>
-                <p style="background: #f5f5f5; padding: 16px; border-radius: 8px;">{message}</p>
+                <p style="background: #f5f5f5; padding: 16px; border-radius: 8px;">{safe_message}</p>
                 <p>Mit freundlichen Grüßen,<br>Ihr SBS Deutschland Team</p>
             </div>
             <div style="background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666;">
@@ -3517,9 +3531,9 @@ async def contact_form(request: Request):
         threading.Thread(target=send_subscription_email, args=(email, confirm_subject, confirm_body)).start()
         
         return {"success": True, "message": "Nachricht gesendet"}
-    except Exception as e:
-        print(f"Contact form error: {e}")
-        return {"success": False, "error": str(e)}
+    except Exception:
+        app_logger.warning("Contact form submission failed")
+        return {"success": False, "error": "Nachricht konnte nicht gesendet werden"}
 
 @app.get("/test", response_class=HTMLResponse)
 async def test_upload_page(request: Request):
