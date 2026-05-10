@@ -5555,12 +5555,13 @@ async def copilot_demo_query(request: Request):
     # Parse Request
     try:
         data = await request.json()
-        question = data.get("question", "").strip()
-    except:
-        return {"error": "Ungültige Anfrage"}
+        question = str(data.get("question") or "").strip()
+        question = question[:500]
+    except Exception:
+        return JSONResponse({"error": "Ungültige Anfrage"}, status_code=400)
     
     if not question:
-        return {"error": "Bitte stellen Sie eine Frage"}
+        return JSONResponse({"error": "Bitte stellen Sie eine Frage"}, status_code=400)
     
     # Demo-Finanzdaten (realistisches Beispiel-Unternehmen)
     demo_snapshot = {
@@ -5662,11 +5663,12 @@ WICHTIG: Dies ist eine Demo mit Beispieldaten. Erwähne das NICHT in deiner Antw
         
         # Nutzung aufzeichnen
         if not is_admin:
+            logged_question = question.replace("\r", " ").replace("\n", " ")[:200]
             conn = sqlite3.connect('invoices.db', check_same_thread=False)
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT INTO copilot_demo_usage (ip_address, question, created_at) VALUES (?, ?, ?)",
-                (ip_address, question[:200], datetime.now().isoformat())
+                (ip_address, logged_question, datetime.now().isoformat())
             )
             conn.commit()
             
@@ -5694,9 +5696,9 @@ WICHTIG: Dies ist eine Demo mit Beispieldaten. Erwähne das NICHT in deiner Antw
             "suggested_questions": suggested
         }
         
-    except Exception as e:
-        app_logger.error(f"Copilot demo error: {e}")
-        return {"error": f"Analyse fehlgeschlagen: {str(e)}"}
+    except Exception:
+        app_logger.warning("Copilot demo query failed")
+        return JSONResponse(status_code=500, content={"error": "Analyse fehlgeschlagen"})
 
 
 
