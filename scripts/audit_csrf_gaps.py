@@ -16,7 +16,10 @@ from pathlib import Path
 
 
 APP_PATH = Path(__file__).resolve().parents[1] / "web" / "app.py"
-DOCUMENTED_EXCEPTIONS = {("POST", "/api/demo/copilot/query")}
+DOCUMENTED_EXCEPTIONS = {
+    ("POST", "/api/demo/copilot/query"),
+    ("POST", "/api/demo/upload"),
+}
 ROUTE_RE = re.compile(r'^\s*@app\.(post|put|patch|delete)\(\s*["\']([^"\']+)["\']')
 SECTION_RE = re.compile(r"^\s*#\s*(?:[=─-]{3,}|===|---)")
 DEF_RE = re.compile(r"^\s*(?:async\s+)?def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(")

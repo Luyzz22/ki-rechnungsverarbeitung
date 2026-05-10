@@ -266,7 +266,11 @@ async def home(request: Request):
         return redirect
     """Main upload page"""
     user_info = get_user_info(request.session.get("user_id"))
-    return templates.TemplateResponse("index.html", {"request": request, "user": user_info})
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "user": user_info,
+        "csrf_token": _get_or_create_csrf_token(request),
+    })
 
 @app.post("/api/upload", tags=["Jobs"])
 async def upload_files(request: Request, files: List[UploadFile] = File(default=[])):
@@ -284,6 +288,7 @@ async def upload_files(request: Request, files: List[UploadFile] = File(default=
             status_code=401,
             content={"error": "Bitte melden Sie sich an", "redirect": "/login"},
         )
+    _require_csrf_token(request, _get_submitted_csrf_token(request))
 
     user_id = request.session["user_id"]
     

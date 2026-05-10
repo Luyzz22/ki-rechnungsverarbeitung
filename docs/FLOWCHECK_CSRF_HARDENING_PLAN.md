@@ -33,6 +33,11 @@ Every exemption must be explicit and documented with the authentication mechanis
   - Reason for exemption: route is used by the public Finance Copilot demo without login/session CSRF bootstrap.
   - Compensating controls: IP-based daily usage cap, admin-only bypass, demo-only data snapshot, no tenant data mutation.
   - Follow-up: consider CAPTCHA, stronger rate limiting, or signed one-time demo tokens if abuse increases.
+- `POST /api/demo/upload`
+  - Classification: public demo upload endpoint, not authenticated business upload.
+  - Reason for exemption: route supports public live demo upload without login/session CSRF bootstrap.
+  - Compensating controls: IP-based daily usage cap, admin-only bypass, demo workflow isolation.
+  - Follow-up: consider CAPTCHA, stronger rate limiting, malware scanning hardening, or signed one-time demo tokens if abuse increases.
 
 ## Routes Requiring Special Treatment
 

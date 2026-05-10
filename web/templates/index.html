@@ -845,6 +845,8 @@
 <!-- JavaScript -->
 <script src="/static/js/main.js"></script>
 <script>
+const csrfToken = "{{ csrf_token }}";
+
 // ============================================
 // TOAST SYSTEM
 // ============================================
@@ -1027,6 +1029,7 @@ processBtn.addEventListener('click', async () => {
 
     const response = await fetch('/api/upload', {
       method: 'POST',
+      headers: { 'X-CSRF-Token': csrfToken },
       body: formData
     });
 

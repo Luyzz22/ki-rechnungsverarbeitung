@@ -85,6 +85,8 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install bandit
       - run: bandit -r modules/ shared/ -ll --skip B101
+      - name: CSRF gap audit
+        run: python3 scripts/audit_csrf_gaps.py
 
   docker:
     name: Docker Build
