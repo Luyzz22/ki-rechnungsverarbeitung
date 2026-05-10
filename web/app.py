@@ -2129,7 +2129,8 @@ async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {
         "request": request,
         "error": None,
-        "next": next_url
+        "next": next_url,
+        "csrf_token": _get_or_create_csrf_token(request),
     })
 
 @app.post("/login")
@@ -2149,6 +2150,8 @@ async def login_submit(request: Request):
     logger = logging.getLogger("invoice_app")
 
     form = await request.form()
+    _require_csrf_token(request, _get_submitted_csrf_token(request, form))
+    csrf_token = _get_or_create_csrf_token(request)
     email = (form.get("email") or "").strip()
     password = form.get("password") or ""
     next_url = form.get("next") or request.query_params.get("next") or "/history"
@@ -2179,6 +2182,7 @@ async def login_submit(request: Request):
                 "error": "Ungültige Email oder Passwort",
                 "next": next_url,
                 "email": email,
+                "csrf_token": csrf_token,
             },
             status_code=400,
         )
@@ -2239,7 +2243,8 @@ async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {
         "request": request,
         "error": None,
-        "next": next_url
+        "next": next_url,
+        "csrf_token": _get_or_create_csrf_token(request),
     })
 
 @app.post("/register")
@@ -2248,6 +2253,8 @@ async def register_submit(request: Request):
     from database import create_user, email_exists
     
     form = await request.form()
+    _require_csrf_token(request, _get_submitted_csrf_token(request, form))
+    csrf_token = _get_or_create_csrf_token(request)
     name = form.get('name', '')
     email = form.get('email', '')
     company = form.get('company', '')
@@ -2258,45 +2265,52 @@ async def register_submit(request: Request):
     if not email or not password:
         return templates.TemplateResponse("register.html", {
             "request": request,
-            "error": "Email und Passwort sind erforderlich"
+            "error": "Email und Passwort sind erforderlich",
+            "csrf_token": csrf_token,
         })
     
     if password != password2:
         return templates.TemplateResponse("register.html", {
             "request": request,
-            "error": "Passwörter stimmen nicht überein"
+            "error": "Passwörter stimmen nicht überein",
+            "csrf_token": csrf_token,
         })
     
     # Enterprise Passwort-Anforderungen
     if len(password) < 8:
         return templates.TemplateResponse("register.html", {
             "request": request,
-            "error": "Passwort muss mindestens 8 Zeichen haben"
+            "error": "Passwort muss mindestens 8 Zeichen haben",
+            "csrf_token": csrf_token,
         })
     
     import re
     if not re.search(r'[A-Z]', password):
         return templates.TemplateResponse("register.html", {
             "request": request,
-            "error": "Passwort muss mindestens einen Großbuchstaben enthalten"
+            "error": "Passwort muss mindestens einen Großbuchstaben enthalten",
+            "csrf_token": csrf_token,
         })
     
     if not re.search(r'[a-z]', password):
         return templates.TemplateResponse("register.html", {
             "request": request,
-            "error": "Passwort muss mindestens einen Kleinbuchstaben enthalten"
+            "error": "Passwort muss mindestens einen Kleinbuchstaben enthalten",
+            "csrf_token": csrf_token,
         })
     
     if not re.search(r'[0-9]', password):
         return templates.TemplateResponse("register.html", {
             "request": request,
-            "error": "Passwort muss mindestens eine Zahl enthalten"
+            "error": "Passwort muss mindestens eine Zahl enthalten",
+            "csrf_token": csrf_token,
         })
     
     if email_exists(email):
         return templates.TemplateResponse("register.html", {
             "request": request,
-            "error": "Email ist bereits registriert"
+            "error": "Email ist bereits registriert",
+            "csrf_token": csrf_token,
         })
     
     # Create user
@@ -4131,16 +4145,24 @@ def send_password_reset_email(to_email: str, token: str):
 @app.get("/password-reset/request", response_class=HTMLResponse)
 async def password_reset_request_page(request: Request):
     """Zeigt Formular zum Anfordern eines Reset-Links."""
+    next_url = request.query_params.get("next", "/login")
     return templates.TemplateResponse(
         "password_reset_request.html",
         {"request": request, "error": None,
-        "next": next_url, "success": None},
+        "next": next_url, "success": None, "csrf_token": _get_or_create_csrf_token(request)},
     )
 
 
 @app.post("/password-reset/request", response_class=HTMLResponse)
-async def password_reset_request_submit(request: Request, email: str = Form(...)):
+async def password_reset_request_submit(
+    request: Request,
+    email: str = Form(...),
+    csrf_token: str | None = Form(None),
+):
     """Verarbeitet Formular: erstellt Token, sendet E-Mail."""
+    _require_csrf_token(request, _get_submitted_csrf_token(request, {"csrf_token": csrf_token}))
+    next_url = request.query_params.get("next", "/login")
+    csrf_context_token = _get_or_create_csrf_token(request)
     logger.info("🔐 Password reset requested for: %s", email)
     token = create_password_reset_token(email)
     logger.info("🔑 Token created (not None): %s", token is not None)
@@ -4153,7 +4175,7 @@ async def password_reset_request_submit(request: Request, email: str = Form(...)
         return templates.TemplateResponse(
             "password_reset_request.html",
             {"request": request, "error": None,
-        "next": next_url, "success": generic_success},
+        "next": next_url, "success": generic_success, "csrf_token": csrf_context_token},
         )
 
     try:
@@ -4161,14 +4183,14 @@ async def password_reset_request_submit(request: Request, email: str = Form(...)
         return templates.TemplateResponse(
             "password_reset_request.html",
             {"request": request, "error": None,
-        "next": next_url, "success": generic_success},
+        "next": next_url, "success": generic_success, "csrf_token": csrf_context_token},
         )
     except Exception as e:
         logger.exception("❌ Fehler beim Versenden der Reset-E-Mail: %s", e)
         error = "Beim Versenden der E-Mail ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut."
         return templates.TemplateResponse(
             "password_reset_request.html",
-            {"request": request, "error": error, "success": None},
+            {"request": request, "error": error, "success": None, "csrf_token": csrf_context_token},
         )
 
 
@@ -4211,6 +4233,7 @@ async def password_reset_confirm_page(request: Request):
             "token_valid": token_valid,
             "error": error,
             "success": None,
+            "csrf_token": _get_or_create_csrf_token(request),
         },
     )
 
@@ -4223,8 +4246,12 @@ async def password_reset_confirm_submit(
     confirm_password: str | None = Form(None),
     password: str | None = Form(None),
     password_confirm: str | None = Form(None),
+    csrf_token: str | None = Form(None),
 ):
     """Verarbeitet das Formular: setzt neues Passwort, wenn Token gültig."""
+    _require_csrf_token(request, _get_submitted_csrf_token(request, {"csrf_token": csrf_token}))
+    next_url = request.query_params.get("next", "/login")
+    csrf_context_token = _get_or_create_csrf_token(request)
     logger.info("🔐 [RESET-CONFIRM-POST] called token_fp=%s present=%s", _reset_token_fingerprint(token), bool(token))
 
     # Alternativen Feldnamen auflösen (je nach Template-Version)
@@ -4243,6 +4270,7 @@ async def password_reset_confirm_submit(
                 "token_valid": True,
                 "error": error,
                 "success": None,
+                "csrf_token": csrf_context_token,
             },
         )
 
@@ -4256,6 +4284,7 @@ async def password_reset_confirm_submit(
                 "token_valid": True,
                 "error": error,
                 "success": None,
+                "csrf_token": csrf_context_token,
             },
         )
 
@@ -4269,6 +4298,7 @@ async def password_reset_confirm_submit(
                 "token_valid": True,
                 "error": error,
                 "success": None,
+                "csrf_token": csrf_context_token,
             },
         )
 
@@ -4289,6 +4319,7 @@ async def password_reset_confirm_submit(
                 "token_valid": False,
                 "error": error,
                 "success": None,
+                "csrf_token": csrf_context_token,
             },
         )
 
@@ -4302,6 +4333,7 @@ async def password_reset_confirm_submit(
             "error": None,
         "next": next_url,
             "success": success,
+            "csrf_token": csrf_context_token,
         },
     )
 
