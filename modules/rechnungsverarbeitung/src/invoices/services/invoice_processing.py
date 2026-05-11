@@ -9,6 +9,7 @@ from typing import BinaryIO
 from shared.tenant.context import TenantContext
 from modules.rechnungsverarbeitung.src.invoices.models import InvoiceDocumentMetadata
 from modules.rechnungsverarbeitung.src.invoices.services.control_engine import ControlEngine
+from modules.rechnungsverarbeitung.src.invoices.services.policy_engine import PolicyEngine
 from modules.rechnungsverarbeitung.src.invoices.services.erechnung_hub import ERechnungHubService
 from modules.rechnungsverarbeitung.src.invoices.services.ai_extraction import AIExtractionService
 from modules.rechnungsverarbeitung.src.invoices.services.file_storage import FileStorageService
@@ -178,6 +179,24 @@ def process_invoice_upload(
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f"FlowCheck control evaluation failed: {e}")
+
+    try:
+        policy_result = PolicyEngine().evaluate(
+            metadata=metadata,
+            extracted=extracted_details,
+            policy_context={},
+        )
+        log_invoice_event_from_metadata(
+            metadata=metadata,
+            event_type="flowcheck.policy.evaluated",
+            status_from=metadata.status,
+            status_to=metadata.status,
+            message=policy_result.summary,
+            extra_details=policy_result.to_audit_details(),
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"FlowCheck policy evaluation failed: {e}")
 
     return metadata
 

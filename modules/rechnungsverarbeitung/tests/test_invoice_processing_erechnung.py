@@ -92,14 +92,18 @@ def test_process_structured_invoice_validation_pass(monkeypatch) -> None:
         "format_classified",
         "validation_completed",
         "flowcheck_controls_evaluated",
+        "flowcheck.policy.evaluated",
     ]
     assert all("payload_sha256" in event[3] for event in events[:3])
     assert events[2][3]["validation_status"] == "passed"
-    assert events[-1][0] == "flowcheck_controls_evaluated"
-    assert {"score", "status", "findings"}.issubset(events[-1][3])
-    assert events[-1][3]["status"] == "passed"
-    assert events[-1][3]["score"] == 100
-    assert events[-1][3]["findings"] == []
+    assert events[-2][0] == "flowcheck_controls_evaluated"
+    assert {"score", "status", "findings"}.issubset(events[-2][3])
+    assert events[-2][3]["status"] == "passed"
+    assert events[-2][3]["score"] == 100
+    assert events[-2][3]["findings"] == []
+    assert events[-1][0] == "flowcheck.policy.evaluated"
+    assert events[-1][3]["status"] == "review_required"
+    assert "findings" in events[-1][3]
 
 
 def test_process_pdf_skips_structured_validation(monkeypatch) -> None:
@@ -147,10 +151,13 @@ def test_process_pdf_skips_structured_validation(monkeypatch) -> None:
         "format_classified",
         "validation_skipped",
         "flowcheck_controls_evaluated",
+        "flowcheck.policy.evaluated",
     ]
     assert events[2][3]["reason"] == "non_structured_format"
-    assert events[-1][0] == "flowcheck_controls_evaluated"
-    assert {"score", "status", "findings"}.issubset(events[-1][3])
+    assert events[-2][0] == "flowcheck_controls_evaluated"
+    assert {"score", "status", "findings"}.issubset(events[-2][3])
+    assert events[-1][0] == "flowcheck.policy.evaluated"
+    assert events[-1][3]["status"] == "review_required"
 
 
 def test_process_pdf_flowcheck_passes_with_extracted_invoice_data(monkeypatch) -> None:
@@ -227,7 +234,12 @@ def test_process_pdf_flowcheck_passes_with_extracted_invoice_data(monkeypatch) -
         "validation_skipped",
         "ai_extraction_completed",
         "flowcheck_controls_evaluated",
+        "flowcheck.policy.evaluated",
     ]
+    assert events[-2][0] == "flowcheck_controls_evaluated"
+    assert events[-2][3]["status"] == "passed"
+    assert events[-2][3]["score"] == 100
+    assert events[-2][3]["findings"] == []
+    assert events[-1][0] == "flowcheck.policy.evaluated"
     assert events[-1][3]["status"] == "passed"
-    assert events[-1][3]["score"] == 100
     assert events[-1][3]["findings"] == []
