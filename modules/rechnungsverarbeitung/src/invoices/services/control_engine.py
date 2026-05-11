@@ -74,53 +74,56 @@ class ControlEngine:
         extracted_data = extracted or {}
         validation_data = validation or {}
         findings: list[ControlFinding] = []
+        extraction_available = _has_substantive_extraction_fields(extracted_data)
 
-        supplier = _first_present(extracted_data, ("supplier", "rechnungsaussteller"))
-        if not supplier:
-            findings.append(
-                ControlFinding(
-                    code="missing_supplier",
-                    severity=ControlSeverity.WARNING,
-                    message="Supplier is missing",
-                    field="supplier",
+        amount: float | None = None
+        if extraction_available:
+            supplier = _first_present(extracted_data, ("supplier", "rechnungsaussteller"))
+            if not supplier:
+                findings.append(
+                    ControlFinding(
+                        code="missing_supplier",
+                        severity=ControlSeverity.WARNING,
+                        message="Supplier is missing",
+                        field="supplier",
+                    )
                 )
-            )
 
-        amount = _parse_amount(
-            _first_present(extracted_data, ("total_amount", "total_amount_gross", "betrag_brutto"))
-        )
-        if amount is None or amount <= 0:
-            findings.append(
-                ControlFinding(
-                    code="missing_total_amount",
-                    severity=ControlSeverity.CRITICAL,
-                    message="Total amount is missing or invalid",
-                    field="total_amount",
-                )
+            amount = _parse_amount(
+                _first_present(extracted_data, ("total_amount", "total_amount_gross", "betrag_brutto"))
             )
+            if amount is None or amount <= 0:
+                findings.append(
+                    ControlFinding(
+                        code="missing_total_amount",
+                        severity=ControlSeverity.CRITICAL,
+                        message="Total amount is missing or invalid",
+                        field="total_amount",
+                    )
+                )
 
-        currency = _first_present(extracted_data, ("currency", "waehrung"))
-        if currency and str(currency).strip().upper() != "EUR":
-            findings.append(
-                ControlFinding(
-                    code="unsupported_currency",
-                    severity=ControlSeverity.WARNING,
-                    message="Currency is not supported",
-                    field="currency",
-                    details={"currency": str(currency).strip()},
+            currency = _first_present(extracted_data, ("currency", "waehrung"))
+            if currency and str(currency).strip().upper() != "EUR":
+                findings.append(
+                    ControlFinding(
+                        code="unsupported_currency",
+                        severity=ControlSeverity.WARNING,
+                        message="Currency is not supported",
+                        field="currency",
+                        details={"currency": str(currency).strip()},
+                    )
                 )
-            )
 
-        invoice_number = _first_present(extracted_data, ("invoice_number", "rechnungsnummer"))
-        if not invoice_number:
-            findings.append(
-                ControlFinding(
-                    code="missing_invoice_number",
-                    severity=ControlSeverity.WARNING,
-                    message="Invoice number is missing",
-                    field="invoice_number",
+            invoice_number = _first_present(extracted_data, ("invoice_number", "rechnungsnummer"))
+            if not invoice_number:
+                findings.append(
+                    ControlFinding(
+                        code="missing_invoice_number",
+                        severity=ControlSeverity.WARNING,
+                        message="Invoice number is missing",
+                        field="invoice_number",
+                    )
                 )
-            )
 
         if metadata.status == "validation_failed" or validation_data.get("status") == "failed":
             findings.append(
@@ -144,7 +147,7 @@ class ControlEngine:
                 )
             )
 
-        if amount is not None and amount >= self.HIGH_AMOUNT_THRESHOLD:
+        if extraction_available and amount is not None and amount >= self.HIGH_AMOUNT_THRESHOLD:
             findings.append(
                 ControlFinding(
                     code="high_amount_review",
@@ -180,6 +183,21 @@ def _first_present(data: Mapping[str, Any], keys: tuple[str, ...]) -> Any:
     return None
 
 
+def _has_substantive_extraction_fields(data: Mapping[str, Any]) -> bool:
+    return _first_present(
+        data,
+        (
+            "supplier",
+            "rechnungsaussteller",
+            "total_amount",
+            "total_amount_gross",
+            "betrag_brutto",
+            "invoice_number",
+            "rechnungsnummer",
+        ),
+    ) is not None
+
+
 def _parse_amount(value: Any) -> float | None:
     if value is None:
         return None
@@ -192,7 +210,10 @@ def _parse_amount(value: Any) -> float | None:
         if not normalized:
             return None
         if "," in normalized and "." in normalized:
-            normalized = normalized.replace(".", "").replace(",", ".")
+            if normalized.rfind(",") > normalized.rfind("."):
+                normalized = normalized.replace(".", "").replace(",", ".")
+            else:
+                normalized = normalized.replace(",", "")
         else:
             normalized = normalized.replace(",", ".")
         try:

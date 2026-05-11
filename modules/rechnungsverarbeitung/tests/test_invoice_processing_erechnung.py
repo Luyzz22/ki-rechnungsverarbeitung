@@ -97,6 +97,9 @@ def test_process_structured_invoice_validation_pass(monkeypatch) -> None:
     assert events[2][3]["validation_status"] == "passed"
     assert events[-1][0] == "flowcheck_controls_evaluated"
     assert {"score", "status", "findings"}.issubset(events[-1][3])
+    assert events[-1][3]["status"] == "passed"
+    assert events[-1][3]["score"] == 100
+    assert events[-1][3]["findings"] == []
 
 
 def test_process_pdf_skips_structured_validation(monkeypatch) -> None:

@@ -108,6 +108,23 @@ def test_string_amount_with_comma_is_parsed_as_positive() -> None:
     assert "missing_total_amount" not in {finding.code for finding in result.findings}
 
 
+def test_us_style_mixed_separator_amount_preserves_magnitude() -> None:
+    result = ControlEngine().evaluate(
+        _metadata(),
+        {
+            "supplier": "Supplier GmbH",
+            "total_amount": "6,234.56",
+            "currency": "EUR",
+            "invoice_number": "INV-001",
+        },
+    )
+
+    assert result.status == ControlStatus.REVIEW_REQUIRED
+    assert result.score == 85
+    assert [finding.code for finding in result.findings] == ["high_amount_review"]
+    assert result.findings[0].details["amount"] == 6234.56
+
+
 def test_to_audit_details_contains_stable_finding_codes() -> None:
     result = ControlEngine().evaluate(
         _metadata(),

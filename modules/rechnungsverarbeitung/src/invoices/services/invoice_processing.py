@@ -137,12 +137,14 @@ def process_invoice_upload(
         }
 
     # AI Data Extraction — extract supplier, amount, dates
-    extracted_details: dict[str, object] = {}
+    extracted_details: dict[str, object] | None = None
     try:
         extractor = AIExtractionService()
         extraction = extractor.extract(payload, file_name, mime_type)
         if extraction and hasattr(extraction, "to_dict"):
-            extracted_details = extraction.to_dict()
+            raw_extracted_details = extraction.to_dict()
+            if any(value not in (None, "", [], {}) for value in raw_extracted_details.values()):
+                extracted_details = raw_extracted_details
         if extraction.supplier or extraction.total_amount_gross:
             _update_extracted_fields(metadata.id, metadata.tenant_id, extraction)
             metadata.status = 'suggested'
