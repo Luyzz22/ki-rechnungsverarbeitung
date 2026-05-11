@@ -8,6 +8,7 @@ from typing import BinaryIO
 
 from shared.tenant.context import TenantContext
 from modules.rechnungsverarbeitung.src.invoices.models import InvoiceDocumentMetadata
+from modules.rechnungsverarbeitung.src.invoices.services.control_engine import ControlEngine
 from modules.rechnungsverarbeitung.src.invoices.services.erechnung_hub import ERechnungHubService
 from modules.rechnungsverarbeitung.src.invoices.services.ai_extraction import AIExtractionService
 from modules.rechnungsverarbeitung.src.invoices.services.file_storage import FileStorageService
@@ -85,6 +86,7 @@ def process_invoice_upload(
         extra_details={"detected_format": detected_format, "payload_sha256": payload_sha256},
     )
 
+    validation_details: dict[str, object] = {}
     if detected_format in STRUCTURED_FORMATS:
         _, _, report = hub.validate_structured_invoice(
             document_id=metadata.id,
@@ -111,6 +113,13 @@ def process_invoice_upload(
                 "payload_sha256": payload_sha256,
             },
         )
+        validation_details = {
+            "status": report.status,
+            "warnings": report.warnings,
+            "errors": report.errors,
+            "engine": report.engine,
+            "config_version": report.config_version,
+        }
     else:
         log_invoice_event_from_metadata(
             metadata=metadata,
@@ -120,11 +129,22 @@ def process_invoice_upload(
             message="Structured validation skipped for non-XML invoice format",
             extra_details={"reason": "non_structured_format", "detected_format": detected_format, "payload_sha256": payload_sha256},
         )
+        validation_details = {
+            "status": "skipped",
+            "warnings": [],
+            "errors": [],
+            "reason": "non_structured_format",
+        }
 
     # AI Data Extraction — extract supplier, amount, dates
+    extracted_details: dict[str, object] | None = None
     try:
         extractor = AIExtractionService()
         extraction = extractor.extract(payload, file_name, mime_type)
+        if extraction and hasattr(extraction, "to_dict"):
+            raw_extracted_details = extraction.to_dict()
+            if any(value not in (None, "", [], {}) for value in raw_extracted_details.values()):
+                extracted_details = raw_extracted_details
         if extraction.supplier or extraction.total_amount_gross:
             _update_extracted_fields(metadata.id, metadata.tenant_id, extraction)
             metadata.status = 'suggested'
@@ -140,6 +160,24 @@ def process_invoice_upload(
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f'AI extraction failed: {e}')
+
+    try:
+        control_result = ControlEngine().evaluate(
+            metadata=metadata,
+            extracted=extracted_details,
+            validation=validation_details,
+        )
+        log_invoice_event_from_metadata(
+            metadata=metadata,
+            event_type="flowcheck_controls_evaluated",
+            status_from=metadata.status,
+            status_to=metadata.status,
+            message=control_result.summary,
+            extra_details=control_result.to_audit_details(),
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"FlowCheck control evaluation failed: {e}")
 
     return metadata
 
