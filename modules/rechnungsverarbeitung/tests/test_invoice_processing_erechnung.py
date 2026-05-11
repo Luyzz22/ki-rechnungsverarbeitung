@@ -1,9 +1,43 @@
 from __future__ import annotations
 
 from io import BytesIO
+import sys
+import types
+
+try:
+    from lxml import etree as _unused_etree  # noqa: F401
+except ModuleNotFoundError:
+    lxml_module = types.ModuleType("lxml")
+    etree_module = types.ModuleType("lxml.etree")
+    lxml_module.etree = etree_module
+    sys.modules.setdefault("lxml", lxml_module)
+    sys.modules.setdefault("lxml.etree", etree_module)
 
 from modules.rechnungsverarbeitung.src.invoices.services import invoice_processing
-from modules.rechnungsverarbeitung.src.invoices.services.kosit_validator import KositValidationResult
+
+
+class DummyValidationReport:
+    def __init__(self) -> None:
+        self.status = "passed"
+        self.errors: list[str] = []
+        self.warnings: list[str] = []
+        self.engine = "kosit"
+        self.config_version = "xrechnung-3.0.1"
+        self.raw_output = ""
+
+
+class EmptyExtraction:
+    supplier = None
+    total_amount_gross = None
+    currency = "EUR"
+
+    def to_dict(self) -> dict:
+        return {}
+
+
+class EmptyAIExtractionService:
+    def extract(self, file_content: bytes, file_name: str, mime_type: str) -> EmptyExtraction:
+        return EmptyExtraction()
 
 
 def test_process_structured_invoice_validation_pass(monkeypatch) -> None:
@@ -37,17 +71,11 @@ def test_process_structured_invoice_validation_pass(monkeypatch) -> None:
             return (
                 None,
                 None,
-                KositValidationResult(
-                    status="passed",
-                    errors=[],
-                    warnings=[],
-                    engine="kosit",
-                    config_version="xrechnung-3.0.1",
-                    raw_output="",
-                ),
+                DummyValidationReport(),
             )
 
     monkeypatch.setattr(invoice_processing, "ERechnungHubService", DummyHub)
+    monkeypatch.setattr(invoice_processing, "AIExtractionService", EmptyAIExtractionService)
 
     metadata = invoice_processing.process_invoice_upload(
         file_stream=BytesIO(b"<rsm:CrossIndustryInvoice/>"),
@@ -63,9 +91,12 @@ def test_process_structured_invoice_validation_pass(monkeypatch) -> None:
         "upload_received",
         "format_classified",
         "validation_completed",
+        "flowcheck_controls_evaluated",
     ]
-    assert all("payload_sha256" in event[3] for event in events)
+    assert all("payload_sha256" in event[3] for event in events[:3])
     assert events[2][3]["validation_status"] == "passed"
+    assert events[-1][0] == "flowcheck_controls_evaluated"
+    assert {"score", "status", "findings"}.issubset(events[-1][3])
 
 
 def test_process_pdf_skips_structured_validation(monkeypatch) -> None:
@@ -96,6 +127,7 @@ def test_process_pdf_skips_structured_validation(monkeypatch) -> None:
             raise AssertionError("must not be called for pdf_other")
 
     monkeypatch.setattr(invoice_processing, "ERechnungHubService", DummyHub)
+    monkeypatch.setattr(invoice_processing, "AIExtractionService", EmptyAIExtractionService)
 
     metadata = invoice_processing.process_invoice_upload(
         file_stream=BytesIO(b"%PDF-1.7"),
@@ -111,5 +143,88 @@ def test_process_pdf_skips_structured_validation(monkeypatch) -> None:
         "upload_received",
         "format_classified",
         "validation_skipped",
+        "flowcheck_controls_evaluated",
     ]
     assert events[2][3]["reason"] == "non_structured_format"
+    assert events[-1][0] == "flowcheck_controls_evaluated"
+    assert {"score", "status", "findings"}.issubset(events[-1][3])
+
+
+def test_process_pdf_flowcheck_passes_with_extracted_invoice_data(monkeypatch) -> None:
+    events: list[tuple[str, str | None, str | None, dict]] = []
+    persisted_statuses: list[str] = []
+    updated_fields: list[tuple[str, str, object]] = []
+
+    monkeypatch.setattr(
+        invoice_processing.TenantContext,
+        "get_current_tenant",
+        staticmethod(lambda: "tenant-c"),
+    )
+
+    def capture_persist(metadata):
+        persisted_statuses.append(metadata.status)
+
+    monkeypatch.setattr(invoice_processing, "_persist_metadata", capture_persist)
+
+    def capture_event(metadata, event_type, status_from, status_to, message=None, extra_details=None):
+        events.append((event_type, status_from, status_to, extra_details or {}))
+
+    monkeypatch.setattr(invoice_processing, "log_invoice_event_from_metadata", capture_event)
+
+    def capture_update(document_id: str, tenant_id: str, extraction) -> None:
+        updated_fields.append((document_id, tenant_id, extraction))
+
+    monkeypatch.setattr(invoice_processing, "_update_extracted_fields", capture_update)
+
+    class DummyHub:
+        def detect_invoice_format(self, content: bytes, filename: str = "") -> str:
+            return "pdf_other"
+
+        def validate_structured_invoice(self, *, document_id: str, tenant_id: str, xml_content: bytes):
+            raise AssertionError("must not be called for pdf_other")
+
+    class DummyExtraction:
+        supplier = "Supplier GmbH"
+        total_amount_gross = 1234.56
+        currency = "EUR"
+        invoice_number = "INV-001"
+        tax_amount = None
+        invoice_date = None
+        due_date = None
+
+        def to_dict(self) -> dict:
+            return {
+                "supplier": self.supplier,
+                "total_amount_gross": self.total_amount_gross,
+                "currency": self.currency,
+                "invoice_number": self.invoice_number,
+            }
+
+    class DummyAIExtractionService:
+        def extract(self, file_content: bytes, file_name: str, mime_type: str) -> DummyExtraction:
+            return DummyExtraction()
+
+    monkeypatch.setattr(invoice_processing, "ERechnungHubService", DummyHub)
+    monkeypatch.setattr(invoice_processing, "AIExtractionService", DummyAIExtractionService)
+
+    metadata = invoice_processing.process_invoice_upload(
+        file_stream=BytesIO(b"%PDF-1.7"),
+        file_name="invoice.pdf",
+        mime_type="application/pdf",
+        uploaded_by="user-3",
+    )
+
+    assert metadata.document_type == "pdf_other"
+    assert metadata.status == "suggested"
+    assert persisted_statuses == ["classified", "suggested"]
+    assert len(updated_fields) == 1
+    assert [event[0] for event in events] == [
+        "upload_received",
+        "format_classified",
+        "validation_skipped",
+        "ai_extraction_completed",
+        "flowcheck_controls_evaluated",
+    ]
+    assert events[-1][3]["status"] == "passed"
+    assert events[-1][3]["score"] == 100
+    assert events[-1][3]["findings"] == []
