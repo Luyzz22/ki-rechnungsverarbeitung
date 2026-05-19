@@ -9,6 +9,7 @@ from typing import BinaryIO
 from shared.tenant.context import TenantContext
 from modules.rechnungsverarbeitung.src.invoices.models import InvoiceDocumentMetadata
 from modules.rechnungsverarbeitung.src.invoices.services.control_engine import ControlEngine
+from modules.rechnungsverarbeitung.src.invoices.services.policy_engine import PolicyEngine
 from modules.rechnungsverarbeitung.src.invoices.services.erechnung_hub import ERechnungHubService
 from modules.rechnungsverarbeitung.src.invoices.services.ai_extraction import AIExtractionService
 from modules.rechnungsverarbeitung.src.invoices.services.file_storage import FileStorageService
@@ -20,6 +21,59 @@ from modules.rechnungsverarbeitung.src.invoices.services.invoice_logging import 
 
 
 STRUCTURED_FORMATS = {"xrechnung", "zugferd", "xml_other"}
+
+
+def _build_policy_context(
+    tenant_id: str,
+    reference_at: datetime | None = None,
+) -> dict[str, object]:
+    """Load tenant budget snapshot for policy evaluation; empty when unavailable."""
+    try:
+        from shared.db.session import get_session
+        from sqlalchemy import text
+
+        ref = reference_at or datetime.utcnow()
+        jahr = ref.year
+        monat = ref.month
+
+        with get_session() as session:
+            budget_limit = session.execute(
+                text("""
+                    SELECT COALESCE(SUM(mb.betrag), 0)
+                    FROM budget_kategorien bk
+                    LEFT JOIN monats_budgets mb ON mb.kategorie_id = bk.id
+                        AND mb.jahr = :j AND mb.monat = :m AND mb.tenant_id = :t
+                    WHERE bk.tenant_id = :t AND bk.aktiv = TRUE
+                """),
+                {"t": tenant_id, "j": jahr, "m": monat},
+            ).scalar()
+
+            budget_actual = session.execute(
+                text("""
+                    SELECT COALESCE(SUM(total_amount), 0)
+                    FROM invoices
+                    WHERE tenant_id = :t
+                      AND EXTRACT(YEAR FROM uploaded_at) = :j
+                      AND EXTRACT(MONTH FROM uploaded_at) = :m
+                      AND total_amount IS NOT NULL
+                """),
+                {"t": tenant_id, "j": jahr, "m": monat},
+            ).scalar()
+
+        limit_val = float(budget_limit or 0)
+        actual_val = float(budget_actual or 0)
+        if limit_val <= 0:
+            return {}
+
+        return {
+            "budget_limit": limit_val,
+            "budget_actual": actual_val,
+            "budget_category": f"{jahr}-{monat:02d}",
+        }
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Policy context load failed: {e}")
+        return {}
 
 
 def process_invoice_upload(
@@ -178,6 +232,27 @@ def process_invoice_upload(
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f"FlowCheck control evaluation failed: {e}")
+
+    try:
+        policy_result = PolicyEngine().evaluate(
+            metadata=metadata,
+            extracted=extracted_details,
+            policy_context=_build_policy_context(
+                metadata.tenant_id,
+                reference_at=metadata.uploaded_at,
+            ),
+        )
+        log_invoice_event_from_metadata(
+            metadata=metadata,
+            event_type="flowcheck.policy.evaluated",
+            status_from=metadata.status,
+            status_to=metadata.status,
+            message=policy_result.summary,
+            extra_details=policy_result.to_audit_details(),
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"FlowCheck policy evaluation failed: {e}")
 
     return metadata
 
