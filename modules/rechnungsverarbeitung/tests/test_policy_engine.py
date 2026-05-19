@@ -118,6 +118,37 @@ def test_amount_review_threshold_warning() -> None:
     assert result.findings[0].details["threshold"] == 5000.0
 
 
+def test_amount_thousands_dot_format_triggers_review() -> None:
+    result = PolicyEngine().evaluate(
+        _metadata(),
+        {
+            "supplier": "Supplier GmbH",
+            "total_amount": "6.000",
+            "currency": "EUR",
+            "invoice_number": "INV-001",
+        },
+    )
+
+    assert result.status == PolicyStatus.REVIEW_REQUIRED
+    assert [f.code for f in result.findings] == ["policy_amount_review_threshold_exceeded"]
+    assert result.findings[0].details["amount"] == 6000.0
+
+
+def test_amount_thousands_comma_format_triggers_review() -> None:
+    result = PolicyEngine().evaluate(
+        _metadata(),
+        {
+            "supplier": "Supplier GmbH",
+            "total_amount": "6,000",
+            "currency": "EUR",
+            "invoice_number": "INV-001",
+        },
+    )
+
+    assert result.status == PolicyStatus.REVIEW_REQUIRED
+    assert result.findings[0].details["amount"] == 6000.0
+
+
 def test_amount_block_threshold_critical() -> None:
     cfg = PolicyConfig(amount_review_threshold=10_000.0, amount_block_threshold=8000.0)
     result = PolicyEngine().evaluate(

@@ -243,3 +243,71 @@ def test_process_pdf_flowcheck_passes_with_extracted_invoice_data(monkeypatch) -
     assert events[-1][0] == "flowcheck.policy.evaluated"
     assert events[-1][3]["status"] == "passed"
     assert events[-1][3]["findings"] == []
+
+
+def test_process_pdf_policy_uses_budget_context(monkeypatch) -> None:
+    events: list[tuple[str, str | None, str | None, dict]] = []
+
+    monkeypatch.setattr(
+        invoice_processing.TenantContext,
+        "get_current_tenant",
+        staticmethod(lambda: "tenant-d"),
+    )
+    monkeypatch.setattr(invoice_processing, "_persist_metadata", lambda metadata: None)
+
+    def capture_event(metadata, event_type, status_from, status_to, message=None, extra_details=None):
+        events.append((event_type, status_from, status_to, extra_details or {}))
+
+    monkeypatch.setattr(invoice_processing, "log_invoice_event_from_metadata", capture_event)
+    monkeypatch.setattr(invoice_processing, "_update_extracted_fields", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        invoice_processing,
+        "_build_policy_context",
+        lambda tenant_id, reference_at=None: {
+            "budget_actual": 9500,
+            "budget_limit": 10000,
+            "budget_category": "opex",
+        },
+    )
+
+    class DummyHub:
+        def detect_invoice_format(self, content: bytes, filename: str = "") -> str:
+            return "pdf_other"
+
+        def validate_structured_invoice(self, *, document_id: str, tenant_id: str, xml_content: bytes):
+            raise AssertionError("must not be called for pdf_other")
+
+    class DummyExtraction:
+        supplier = "Supplier GmbH"
+        total_amount_gross = 600
+        currency = "EUR"
+        invoice_number = "INV-001"
+
+        def to_dict(self) -> dict:
+            return {
+                "supplier": self.supplier,
+                "total_amount_gross": self.total_amount_gross,
+                "currency": self.currency,
+                "invoice_number": self.invoice_number,
+            }
+
+    class DummyAIExtractionService:
+        def extract(self, file_content: bytes, file_name: str, mime_type: str) -> DummyExtraction:
+            return DummyExtraction()
+
+    monkeypatch.setattr(invoice_processing, "ERechnungHubService", DummyHub)
+    monkeypatch.setattr(invoice_processing, "AIExtractionService", DummyAIExtractionService)
+
+    invoice_processing.process_invoice_upload(
+        file_stream=BytesIO(b"%PDF-1.7"),
+        file_name="invoice.pdf",
+        mime_type="application/pdf",
+        uploaded_by="user-4",
+    )
+
+    policy_event = events[-1]
+    assert policy_event[0] == "flowcheck.policy.evaluated"
+    assert policy_event[3]["status"] == "violated"
+    assert any(
+        finding["code"] == "policy_budget_limit_exceeded" for finding in policy_event[3]["findings"]
+    )

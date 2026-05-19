@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field as dataclass_field
 from enum import Enum
 from typing import Any, Mapping
 
 from modules.rechnungsverarbeitung.src.invoices.models import InvoiceDocumentMetadata
+
+_THOUSANDS_COMMA_PATTERN = re.compile(r"^\d{1,3}(?:,\d{3})+$")
+_THOUSANDS_DOT_PATTERN = re.compile(r"^\d{1,3}(?:\.\d{3})+$")
 
 
 class ControlSeverity(str, Enum):
@@ -214,8 +218,14 @@ def _parse_amount(value: Any) -> float | None:
                 normalized = normalized.replace(".", "").replace(",", ".")
             else:
                 normalized = normalized.replace(",", "")
-        else:
-            normalized = normalized.replace(",", ".")
+        elif "," in normalized:
+            if _THOUSANDS_COMMA_PATTERN.fullmatch(normalized):
+                normalized = normalized.replace(",", "")
+            else:
+                normalized = normalized.replace(",", ".")
+        elif "." in normalized:
+            if _THOUSANDS_DOT_PATTERN.fullmatch(normalized):
+                normalized = normalized.replace(".", "")
         try:
             return float(normalized)
         except ValueError:
