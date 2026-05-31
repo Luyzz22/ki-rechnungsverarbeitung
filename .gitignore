@@ -128,3 +128,6 @@ evidence/
 exports/
 ..bfg-report/
 phase0-deploy.sh
+
+# Beispielkonfiguration darf eingecheckt werden
+!.env.example
