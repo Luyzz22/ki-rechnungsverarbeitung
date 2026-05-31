@@ -55,6 +55,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from database import save_job, save_invoices, get_job, get_all_jobs, get_statistics, get_invoices_by_job
+from database import get_db_path
 from notifications import send_sendgrid_email
 from category_ai import predict_category
 from logging.handlers import RotatingFileHandler
@@ -948,7 +949,7 @@ def get_user_info(user_id):
         return {"id": 0, "email": "", "name": "User", "is_admin": False, "plan": "Free"}
     
     try:
-        conn = sqlite3.connect("invoices.db", check_same_thread=False)
+        conn = sqlite3.connect(get_db_path(), check_same_thread=False)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute("SELECT id, email, name, is_admin FROM users WHERE id = ?", (user_id,))
@@ -1084,7 +1085,7 @@ async def download_monthly_mbr(request: Request, year: int = None, month: int = 
     try:
         from mbr.generator import generate_presentation
 
-        conn = sqlite3.connect("invoices.db", check_same_thread=False)
+        conn = sqlite3.connect(get_db_path(), check_same_thread=False)
         pptx_bytes = generate_presentation(
             conn, 
             api_key=api_key, 
@@ -6103,7 +6104,7 @@ async def datev_export_page(request: Request):
     user_info = get_user_info(user_id)
     
     # Get invoices for export
-    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
         SELECT i.id, i.rechnungsnummer, i.datum, i.rechnungsaussteller, 
@@ -6153,12 +6154,12 @@ async def export_to_datev(request: Request):
         return JSONResponse({"error": "Keine Rechnungen ausgewählt"}, status_code=400)
     
     # Load invoices
-    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
     placeholders = ','.join(['?' for _ in invoice_ids])
     # DSGVO: Nur Rechnungen des eingeloggten Users (Admins sehen alle)
-    from database import is_admin_or_owner
+    from rbac import is_admin_or_owner
     if is_admin_or_owner(user_id):
         cursor.execute(f"""
             SELECT * FROM invoices WHERE id IN ({placeholders})
@@ -6166,7 +6167,7 @@ async def export_to_datev(request: Request):
     else:
         cursor.execute(f"""
             SELECT i.* FROM invoices i
-            JOIN jobs j ON i.job_id = j.id
+            JOIN jobs j ON i.job_id = j.job_id
             WHERE i.id IN ({placeholders}) AND j.user_id = ?
         """, invoice_ids + [user_id])
     
@@ -6274,15 +6275,15 @@ async def preview_datev_export(request: Request, invoice_id: int):
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
     
-    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     # DSGVO: User darf nur eigene Rechnungen sehen
-    from database import is_admin_or_owner
+    from rbac import is_admin_or_owner
     if is_admin_or_owner(user_id):
         cursor.execute("SELECT * FROM invoices WHERE id = ?", (invoice_id,))
     else:
         cursor.execute("""SELECT i.* FROM invoices i 
-            JOIN jobs j ON i.job_id = j.id 
+            JOIN jobs j ON i.job_id = j.job_id 
             WHERE i.id = ? AND j.user_id = ?""", (invoice_id, user_id))
     row = cursor.fetchone()
     conn.close()
@@ -6410,16 +6411,16 @@ async def suggest_kontierung(request: Request):
         return JSONResponse({"error": "invoice_id erforderlich"}, status_code=400)
     
     # Lade Rechnung (DSGVO: User-Filter)
-    conn = sqlite3.connect("invoices.db", check_same_thread=False)
+    conn = sqlite3.connect(get_db_path(), check_same_thread=False)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    from database import is_admin_or_owner
+    from rbac import is_admin_or_owner
     user_id = request.session.get("user_id")
     if user_id and is_admin_or_owner(user_id):
         cursor.execute("SELECT * FROM invoices WHERE id = ?", (invoice_id,))
     else:
         cursor.execute("""SELECT i.* FROM invoices i
-            JOIN jobs j ON i.job_id = j.id
+            JOIN jobs j ON i.job_id = j.job_id
             WHERE i.id = ? AND j.user_id = ?""", (invoice_id, user_id))
     row = cursor.fetchone()
     conn.close()
@@ -6525,7 +6526,7 @@ async def get_kontierung_historie(request: Request, limit: int = 50):
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
     
-    conn = sqlite3.connect("invoices.db", check_same_thread=False)
+    conn = sqlite3.connect(get_db_path(), check_same_thread=False)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -6785,7 +6786,7 @@ from sevdesk import create_sevdesk_client, SevdeskInvoiceSync, test_sevdesk_conn
 
 # Integration settings table
 def init_integrations_table():
-    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS integrations (
@@ -6817,7 +6818,7 @@ async def integrations_page(request: Request):
     
     user_info = get_user_info(user_id)
     
-    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM integrations WHERE org_id = 1")
     rows = cursor.fetchall()
@@ -6873,7 +6874,7 @@ async def save_integration(request: Request):
     api_key = data.get('api_key')
     enabled = data.get('enabled', False)
     
-    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO integrations (org_id, provider, api_key, enabled, updated_at)
@@ -6901,7 +6902,7 @@ async def sync_to_integration(request: Request):
     provider = data.get('provider')
     invoice_ids = data.get('invoice_ids', [])
     
-    conn = sqlite3.connect("invoices.db", check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT api_key FROM integrations WHERE org_id = 1 AND provider = ? AND enabled = 1", (provider,))
     row = cursor.fetchone()
@@ -6913,13 +6914,13 @@ async def sync_to_integration(request: Request):
     api_key = row['api_key']
     placeholders = ','.join(['?' for _ in invoice_ids])
     # DSGVO: User-Filter auf Rechnungen
-    from database import is_admin_or_owner
+    from rbac import is_admin_or_owner
     user_id = request.session.get("user_id")
     if user_id and is_admin_or_owner(user_id):
         cursor.execute(f"SELECT * FROM invoices WHERE id IN ({placeholders})", invoice_ids)
     else:
         cursor.execute(f"""SELECT i.* FROM invoices i
-            JOIN jobs j ON i.job_id = j.id
+            JOIN jobs j ON i.job_id = j.job_id
             WHERE i.id IN ({placeholders}) AND j.user_id = ?""", invoice_ids + [user_id])
     invoices = [dict(r) for r in cursor.fetchall()]
     conn.close()
