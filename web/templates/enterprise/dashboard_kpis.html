@@ -1,0 +1,51 @@
+{% extends "enterprise/_base.html" %}
+{% block title %}Enterprise Dashboard – SBS{% endblock %}
+{% block content %}
+<h1 class="ent-h1">Enterprise Dashboard</h1>
+<p class="ent-sub">Kennzahlen Ihres Mandanten – tenant-isoliert ausgewertet.</p>
+
+<div class="kpi-grid">
+  <div class="card">
+    <div class="kpi-label">Rechnungen heute</div>
+    <div class="kpi-value">{{ kpis.count_today }}</div>
+  </div>
+  <div class="card">
+    <div class="kpi-label">Rechnungen Monat</div>
+    <div class="kpi-value">{{ kpis.count_month }}</div>
+  </div>
+  <div class="card">
+    <div class="kpi-label">Rechnungen Quartal</div>
+    <div class="kpi-value">{{ kpis.count_quarter }}</div>
+  </div>
+  <div class="card">
+    <div class="kpi-label">Automatisierungsquote</div>
+    <div class="kpi-value">{{ kpis.automation_rate }}%</div>
+    <div class="kpi-note">Anteil ohne manuelle Korrektur</div>
+  </div>
+  <div class="card">
+    <div class="kpi-label">Offene Freigaben</div>
+    <div class="kpi-value {% if kpis.open_approvals %}alert{% endif %}">{{ kpis.open_approvals }}</div>
+    {% if kpis.oldest_age_hours is not none %}
+    <div class="kpi-note">Älteste seit {{ kpis.oldest_age_hours }} h offen</div>
+    {% else %}
+    <div class="kpi-note">Keine ausstehenden Freigaben</div>
+    {% endif %}
+  </div>
+  <div class="card">
+    <div class="kpi-label">Anomalie-Alerts</div>
+    <div class="kpi-value {% if kpis.anomaly_alerts %}alert{% endif %}">{{ kpis.anomaly_alerts }}</div>
+    <div class="kpi-note">Lieferanten mit hohem Risiko</div>
+  </div>
+</div>
+
+<h2 class="section-title">30-Tage-Trend · Verarbeitungsvolumen</h2>
+<div class="card">
+  {{ trend_svg | safe }}
+</div>
+
+<p class="muted" style="margin-top:18px;">
+  <a class="sort-link" href="/freigaben">→ Freigaben</a> ·
+  <a class="sort-link" href="/lieferanten">→ Lieferanten</a> ·
+  <a class="sort-link" href="/audit">→ Audit-Trail</a>
+</p>
+{% endblock %}

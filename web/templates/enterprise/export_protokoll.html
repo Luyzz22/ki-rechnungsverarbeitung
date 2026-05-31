@@ -1,0 +1,27 @@
+{% extends "enterprise/_base.html" %}
+{% block title %}Export-Protokoll – SBS{% endblock %}
+{% block content %}
+<h1 class="ent-h1">GoBD Export-Protokoll</h1>
+<p class="ent-sub">SHA-256-Prüfsummen, Zeitstempel und User je Export-Datei.</p>
+
+{% if entries %}
+<table class="ent">
+  <thead><tr><th>Zeitpunkt</th><th>Typ</th><th>Datei</th><th>Größe</th><th>Zeilen</th><th>SHA-256</th><th>User</th></tr></thead>
+  <tbody>
+  {% for e in entries %}
+    <tr>
+      <td>{{ e.created_at }}</td>
+      <td>{{ e.export_type }}</td>
+      <td>{{ e.file_name or "–" }}</td>
+      <td>{{ e.byte_size or 0 }} B</td>
+      <td>{{ e.row_count if e.row_count is not none else "–" }}</td>
+      <td><code class="hash">{{ e.sha256 }}</code></td>
+      <td>{{ e.user_id if e.user_id is not none else "–" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="card"><p class="muted">Noch keine Exporte protokolliert.</p></div>
+{% endif %}
+{% endblock %}

@@ -106,9 +106,15 @@ class Zahlungsvorschlag:
 class ZahlungsService:
     """Service für Zahlungsoptimierung und Skonto-Management"""
     
-    def __init__(self, db_path: str = "invoices.db"):
+    def __init__(self, db_path: str = None):
+        if db_path is None:
+            try:
+                from database import get_db_path
+                db_path = get_db_path()
+            except Exception:
+                db_path = "invoices.db"
         self.db_path = db_path
-    
+
     def _get_connection(self):
         conn = sqlite3.connect(self.db_path, check_same_thread=False)
         conn.row_factory = sqlite3.Row

@@ -285,7 +285,30 @@ def init_rbac_tables():
     """Initialisiert RBAC Tabellen und Standard-Rollen"""
     conn = get_connection()
     cursor = conn.cursor()
-    
+
+    # Tabellen anlegen, falls nicht vorhanden (Fresh-Install-Robustheit)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS roles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            display_name TEXT,
+            description TEXT,
+            permissions TEXT,
+            color TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_roles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            role_id INTEGER NOT NULL,
+            assigned_by INTEGER,
+            assigned_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, role_id)
+        )
+    """)
+
     # Füge fehlende Rollen hinzu
     default_roles = [
         ('owner', 'Owner', 'Vollzugriff inkl. Abrechnung', '{"all": true}', '#7C3AED'),
