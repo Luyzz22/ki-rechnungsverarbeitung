@@ -229,7 +229,8 @@ class BudgetService:
         # Prüfe ob benötigte Tabellen existieren
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='invoices'")
         if not cursor.fetchone():
-            self._create_demo_ist_werte(conn, jahr or datetime.now().year)
+            # Keine Rechnungsdaten vorhanden – Ist-Werte bleiben leer (kein Crash)
+            logger.warning("update_ist_werte: Tabelle 'invoices' fehlt – überspringe Ist-Wert-Berechnung")
             conn.close()
             return
         

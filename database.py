@@ -44,6 +44,12 @@ def get_connection():
     return conn
 
 
+def get_db_path() -> str:
+    """Public helper: kanonischer Pfad zur SQLite-DB (für Module mit eigener
+    Connection wie approval.py / zahlungs_service.py)."""
+    return str(_ensure_db_path())
+
+
 def _is_bcrypt_hash(value: str | None) -> bool:
     """Return True when value looks like a bcrypt hash."""
     if not value:
@@ -1038,12 +1044,35 @@ def init_users_table():
         )
     ''')
     
+    # Fehlende User-Spalten idempotent ergänzen (Fresh-Install-Robustheit)
+    cursor.execute("PRAGMA table_info(users)")
+    user_cols = [col[1] for col in cursor.fetchall()]
+    if 'is_admin' not in user_cols:
+        cursor.execute('ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0')
+    if 'totp_enabled' not in user_cols:
+        cursor.execute('ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0')
+
+    # Export-Historie (von /exports und Export-Funktionen genutzt)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS export_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            job_id TEXT,
+            export_type TEXT,
+            filename TEXT,
+            file_size INTEGER,
+            invoice_count INTEGER,
+            total_amount REAL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     # Add user_id to jobs table if not exists
     cursor.execute("PRAGMA table_info(jobs)")
     columns = [col[1] for col in cursor.fetchall()]
     if 'user_id' not in columns:
         cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
-    
+
     conn.commit()
     # Cache invalidieren nach neuen Invoices
     invalidate_cache("statistics")
@@ -1157,12 +1186,35 @@ def init_users_table():
         )
     ''')
     
+    # Fehlende User-Spalten idempotent ergänzen (Fresh-Install-Robustheit)
+    cursor.execute("PRAGMA table_info(users)")
+    user_cols = [col[1] for col in cursor.fetchall()]
+    if 'is_admin' not in user_cols:
+        cursor.execute('ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0')
+    if 'totp_enabled' not in user_cols:
+        cursor.execute('ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0')
+
+    # Export-Historie (von /exports und Export-Funktionen genutzt)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS export_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            job_id TEXT,
+            export_type TEXT,
+            filename TEXT,
+            file_size INTEGER,
+            invoice_count INTEGER,
+            total_amount REAL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     # Add user_id to jobs table if not exists
     cursor.execute("PRAGMA table_info(jobs)")
     columns = [col[1] for col in cursor.fetchall()]
     if 'user_id' not in columns:
         cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
-    
+
     conn.commit()
     # Cache invalidieren nach neuen Invoices
     invalidate_cache("statistics")
