@@ -248,6 +248,13 @@ try:
 except Exception as _ent_exc:  # pragma: no cover - defensive
     app_logger.error("Enterprise-Router konnte nicht geladen werden: %s", _ent_exc)
 
+# Deutsche Alias-Routen (/upload, /rechnungen, /rechnung/{id}, /export, /preise)
+try:
+    from customer_routes import router as customer_router
+    app.include_router(customer_router)
+except Exception as _cust_exc:  # pragma: no cover - defensive
+    app_logger.error("Customer-Router konnte nicht geladen werden: %s", _cust_exc)
+
 @app.get("/landing")
 async def landing_page():
     """Landing Page für Marketing"""
@@ -7161,21 +7168,26 @@ async def mbr_page(request: Request):
     user_info = get_user_info(user_id)
     
     # Get available months with data for this user
-    conn = sqlite3.connect("invoices.db", check_same_thread=False)
+    from database import get_db_path
+    conn = sqlite3.connect(get_db_path(), check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    available_months = []
     try:
         cursor = conn.execute("""
-            SELECT DISTINCT 
+            SELECT DISTINCT
                 strftime('%Y', rechnungs_datum) as year,
                 strftime('%m', rechnungs_datum) as month,
                 COUNT(*) as invoice_count
-            FROM rechnungen 
+            FROM rechnungen
             WHERE user_id = ? AND rechnungs_datum IS NOT NULL
             GROUP BY year, month
             ORDER BY year DESC, month DESC
             LIMIT 24
         """, (user_id,))
         available_months = [dict(r) for r in cursor.fetchall()]
+    except sqlite3.OperationalError:
+        # Legacy-Tabelle 'rechnungen' nicht vorhanden – leere Liste, kein Crash
+        available_months = []
     finally:
         conn.close()
     
@@ -7270,3 +7282,13 @@ async def internal_spend_supplier(name: str, request: Request):
         raise HTTPException(status_code=401, detail="Not authenticated")
     user_id = request.session["user_id"]
     return {"status": "success", "data": get_supplier_deep_dive(name)}
+
+
+# ============================================================
+# Alias-Endpunkte für POST-Pfade (Onboarding-Kompatibilität)
+# ============================================================
+# POST /upload  → identisch zu POST /api/upload
+app.add_api_route("/upload", upload_files, methods=["POST"], tags=["Jobs"])
+
+# POST /api/datev/preview → identisch zur GET-Vorschau (gleiche Logik)
+app.add_api_route("/api/datev/preview", preview_datev_export, methods=["POST"], tags=["DATEV"])
