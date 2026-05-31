@@ -177,6 +177,18 @@ async def validation_handler(request, exc: ValidationError):
     app_logger.warning(f"Validation error: {exc.message}")
     return JSONResponse(status_code=422, content=exc.to_dict())
 
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request, exc: Exception):
+    """Fängt sonst unbehandelte Fehler ab – KEINE Stack-Traces/Internas in der
+    Response. HTTPException/Validation werden von ihren spezifischeren Handlern
+    verarbeitet und erreichen diesen Handler nicht.
+    """
+    app_logger.exception(f"Unhandled exception on {request.method} {request.url.path}")
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Interner Serverfehler", "code": "internal_error"},
+    )
+
 @app.middleware("http")
 async def add_security_headers(request, call_next):
     """Fügt Security Headers zu allen Responses hinzu"""
@@ -186,6 +198,22 @@ async def add_security_headers(request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    # HSTS – erzwingt HTTPS (Auslieferung erfolgt über Nginx/TLS)
+    response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+    # CSP – bewusst kompatibel gehalten (inline-Styles/Skripte des Bestands-UI
+    # bleiben erlaubt), blockiert aber Objekt-Einbettung und Framing durch Dritte.
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; "
+        "style-src 'self' 'unsafe-inline' https:; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' data: https:; "
+        "connect-src 'self' https:; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "frame-ancestors 'self'",
+    )
     return response
 
 @app.middleware("http")
