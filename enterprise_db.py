@@ -241,6 +241,55 @@ def init_enterprise_schema() -> None:
         """
     )
 
+    # Legacy-Freigabe-Tabellen (von approval.py genutzt; sonst nirgends angelegt)
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS approval_rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER,
+            name TEXT,
+            min_amount REAL DEFAULT 0,
+            max_amount REAL,
+            required_role TEXT,
+            auto_approve INTEGER DEFAULT 0,
+            priority INTEGER DEFAULT 0,
+            is_active INTEGER DEFAULT 1,
+            created_by INTEGER,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS approval_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            invoice_id INTEGER,
+            user_id INTEGER,
+            action TEXT,
+            old_status TEXT,
+            new_status TEXT,
+            comment TEXT,
+            ip_address TEXT,
+            user_agent TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS approval_delegations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            delegator_id INTEGER,
+            delegate_id INTEGER,
+            is_active INTEGER DEFAULT 1,
+            valid_from TEXT,
+            valid_until TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    _ensure_column(cursor, "users", "approval_limit", "REAL")
+
     # Spend-Alerts (vom Dashboard abgefragt; sonst nur von spend_analytics angelegt)
     cursor.execute(
         """

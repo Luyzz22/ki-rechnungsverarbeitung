@@ -1051,6 +1051,8 @@ def init_users_table():
         cursor.execute('ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0')
     if 'totp_enabled' not in user_cols:
         cursor.execute('ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0')
+    if 'approval_limit' not in user_cols:
+        cursor.execute('ALTER TABLE users ADD COLUMN approval_limit REAL')
 
     # Export-Historie (von /exports und Export-Funktionen genutzt)
     cursor.execute('''
@@ -1193,6 +1195,8 @@ def init_users_table():
         cursor.execute('ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0')
     if 'totp_enabled' not in user_cols:
         cursor.execute('ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0')
+    if 'approval_limit' not in user_cols:
+        cursor.execute('ALTER TABLE users ADD COLUMN approval_limit REAL')
 
     # Export-Historie (von /exports und Export-Funktionen genutzt)
     cursor.execute('''

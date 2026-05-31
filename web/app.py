@@ -246,9 +246,6 @@ try:
     from enterprise_routes import router as enterprise_router
     init_enterprise_schema()
     app.include_router(enterprise_router)
-    # Legacy-Freigabe-Tabellen (approval_rules/-history/-delegations) beim Start anlegen
-    from approval import get_approval_manager
-    get_approval_manager()
 except Exception as _ent_exc:  # pragma: no cover - defensive
     app_logger.error("Enterprise-Router konnte nicht geladen werden: %s", _ent_exc)
 
