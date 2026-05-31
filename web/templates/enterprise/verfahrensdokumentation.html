@@ -1,0 +1,47 @@
+{% extends "enterprise/_base.html" %}
+{% block title %}Verfahrensdokumentation – SBS{% endblock %}
+{% block content %}
+<h1 class="ent-h1">Verfahrensdokumentation (GoBD)</h1>
+<p class="ent-sub">Dokumentation der KI-gestützten Rechnungsverarbeitung gemäß GoBD.</p>
+
+<div class="card">
+  <h2 class="section-title" style="margin-top:0">1. Zweck und Geltungsbereich</h2>
+  <p>Diese Verfahrensdokumentation beschreibt das eingesetzte DV-Verfahren zur
+  Erfassung, Verarbeitung, Prüfung, Freigabe, Aufbewahrung und Auswertung von
+  Eingangsrechnungen gemäß den „Grundsätzen zur ordnungsmäßigen Führung und
+  Aufbewahrung von Büchern, Aufzeichnungen und Unterlagen in elektronischer Form
+  sowie zum Datenzugriff“ (GoBD).</p>
+
+  <h2 class="section-title">2. Verfahrensablauf</h2>
+  <ol>
+    <li><strong>Eingang/Upload:</strong> Rechnungen (PDF, Bild, E-Rechnung/XRechnung/ZUGFeRD) werden hochgeladen und protokolliert.</li>
+    <li><strong>KI-Extraktion:</strong> Rechnungsdaten werden automatisiert ausgelesen (OCR/LLM).</li>
+    <li><strong>Validierung:</strong> Plausibilitäts-, Duplikats- und 3-Wege-Prüfungen.</li>
+    <li><strong>Freigabe:</strong> Mehrstufiger, betragsabhängiger Freigabe-Workflow.</li>
+    <li><strong>Festschreibung:</strong> Freigegebene Rechnungen werden unveränderbar gesetzt (read-only).</li>
+    <li><strong>Export/Buchung:</strong> Übergabe an DATEV u.a.; jeder Export wird mit SHA-256-Prüfsumme protokolliert.</li>
+    <li><strong>Aufbewahrung:</strong> Revisionssichere Speicherung über die gesetzliche Frist (Standard 10 Jahre).</li>
+  </ol>
+
+  <h2 class="section-title">3. Unveränderbarkeit (GoBD)</h2>
+  <p>Verarbeitete bzw. freigegebene Rechnungen werden technisch gegen Änderungen
+  gesperrt. Ein physisches Löschen ist nicht vorgesehen; Korrekturen erfolgen
+  ausschließlich nachvollziehbar (Soft-Delete mit Begründung, vollständige Protokollierung).</p>
+
+  <h2 class="section-title">4. Audit-Trail</h2>
+  <p>Sämtliche relevanten Aktionen (Upload, KI-Extraktion, Validierung, Freigabe,
+  Ablehnung, Export, Login/Logout, Einstellungsänderungen) werden im append-only
+  Audit-Trail revisionssicher und unveränderbar aufgezeichnet.</p>
+
+  <h2 class="section-title">5. Internes Kontrollsystem (IKS)</h2>
+  <p>Zugriffsschutz (Authentifizierung, rollenbasierte Berechtigungen),
+  Mandantentrennung (tenant-isolierte Datenhaltung) sowie Vier-Augen-Prinzip im
+  Freigabe-Workflow stellen die Ordnungsmäßigkeit sicher.</p>
+
+  <h2 class="section-title">6. Aufbewahrung & Datensicherung</h2>
+  <p>Die Daten werden über die gesetzliche Aufbewahrungsfrist gespeichert und durch
+  regelmäßige Backups gesichert. Aufbewahrungsfristen sind pro Mandant konfigurierbar.</p>
+
+  <p class="muted" style="margin-top:24px;">Stand: automatisch generierte Fassung · SBS Deutschland</p>
+</div>
+{% endblock %}

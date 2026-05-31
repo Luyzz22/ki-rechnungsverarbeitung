@@ -1,0 +1,46 @@
+{% extends "enterprise/_base.html" %}
+{% block title %}DSGVO-Einstellungen – SBS{% endblock %}
+{% block content %}
+<h1 class="ent-h1">DSGVO – Aufbewahrung & Betroffenenrechte</h1>
+<p class="ent-sub">Aufbewahrungsfristen und DSGVO-Funktionen Ihres Mandanten.</p>
+
+<h2 class="section-title">Aufbewahrungsfrist (Löschkonzept)</h2>
+<div class="card">
+  <form method="post" action="/dsgvo/einstellungen">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <p>Aufbewahrungsfrist:
+      <input type="number" name="retention_years" min="1" max="30" value="{{ retention_years }}"> Jahre
+      <span class="muted">(GoBD-Standard: 10 Jahre)</span>
+    </p>
+    <button class="btn btn-primary" type="submit">Speichern</button>
+  </form>
+  <p class="muted" style="margin-top:12px;">
+    Abgelaufene Rechnungen werden durch den geplanten Bereinigungs-Task GoBD-konform
+    soft-gelöscht (kein physisches Löschen).
+  </p>
+</div>
+
+<h2 class="section-title">Betroffenenrechte</h2>
+<div class="card">
+  <p><strong>Recht auf Auskunft (Art. 15):</strong>
+    <a class="btn btn-light" href="/api/dsgvo/auskunft/{{ user.id }}">Eigene Daten als JSON</a>
+  </p>
+  <p style="margin-top:12px;"><strong>Recht auf Löschung (Art. 17):</strong>
+    <button class="btn btn-reject" type="button" onclick="dsgvoDelete()">Konto anonymisieren</button>
+  </p>
+  <p class="muted">Anonymisierung statt physischem Löschen – Rechnungen bleiben aus GoBD-Gründen erhalten.</p>
+</div>
+
+<script>
+function dsgvoDelete() {
+  if (!confirm('Konto wirklich anonymisieren? Dies kann nicht rückgängig gemacht werden.')) return;
+  fetch('/api/dsgvo/loeschung/{{ user.id }}', {
+    method: 'DELETE',
+    headers: { 'X-CSRF-Token': '{{ csrf_token }}' }
+  }).then(r => r.json()).then(d => {
+    alert(d.hinweis || 'Anonymisierung durchgeführt.');
+    window.location = '/logout';
+  }).catch(() => alert('Fehler bei der Anonymisierung.'));
+}
+</script>
+{% endblock %}

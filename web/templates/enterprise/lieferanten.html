@@ -1,0 +1,36 @@
+{% extends "enterprise/_base.html" %}
+{% block title %}Lieferanten – SBS{% endblock %}
+{% block content %}
+<h1 class="ent-h1">Lieferanten-Übersicht</h1>
+<p class="ent-sub">Alle Lieferanten Ihres Mandanten mit Volumen und Risiko-Score.</p>
+
+<div class="toolbar">
+  <span class="muted">Sortieren:</span>
+  <a class="sort-link {% if sort == 'volumen' %}active{% endif %}" href="/lieferanten?sort=volumen">Volumen</a>
+  <a class="sort-link {% if sort == 'risiko' %}active{% endif %}" href="/lieferanten?sort=risiko">Risiko</a>
+  <a class="sort-link {% if sort == 'name' %}active{% endif %}" href="/lieferanten?sort=name">Name</a>
+</div>
+
+{% if suppliers %}
+<table class="ent">
+  <thead>
+    <tr><th>Lieferant</th><th>Rechnungen</th><th>Gesamtvolumen</th><th>Ø-Betrag</th>
+        <th>Letzte Rechnung</th><th>Risiko</th></tr>
+  </thead>
+  <tbody>
+  {% for s in suppliers %}
+    <tr>
+      <td><a class="sort-link" href="/lieferanten/{{ s.name | urlencode }}">{{ s.name }}</a></td>
+      <td>{{ s.count }}</td>
+      <td>{{ "%.2f"|format(s.total) }} €</td>
+      <td>{{ "%.2f"|format(s.avg) }} €</td>
+      <td>{{ s.last_date or "–" }}</td>
+      <td><span class="badge {{ s.risk_label }}">{{ s.risk_label }} ({{ s.risk_score }})</span></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="card"><p class="muted">Noch keine Lieferantendaten vorhanden.</p></div>
+{% endif %}
+{% endblock %}

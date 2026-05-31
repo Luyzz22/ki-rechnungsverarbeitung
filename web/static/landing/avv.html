@@ -10,7 +10,7 @@
 <body>
 <main class="wrap">
   <h1>Auftragsverarbeitungsvertrag (AVV) – Entwurf</h1>
-  <p><span class="tag">Stand: 22.03.2026</span></p>
+  <p><span class="tag">Stand: 31.05.2026</span></p>
 
   <div class="box warn">
     <strong>Wichtiger Hinweis:</strong> Dieser Text ist ein technischer Arbeitsentwurf und keine finale Vertragsfassung. Vor Nutzung: juristisch prüfen, DSB prüfen.
@@ -32,16 +32,37 @@
   <div class="box">
     <h2>3. Technische und organisatorische Maßnahmen (TOMs)</h2>
     <ul>
-      <li>Zugriffsschutz mit Rollen-/Rechtekonzept.</li>
-      <li>Protokollierung (Audit-Trail) relevanter Aktionen.</li>
-      <li>Verschlüsselung von Übertragung und Speicherung.</li>
+      <li>Zugriffsschutz mit Rollen-/Rechtekonzept (RBAC).</li>
+      <li>Mandantentrennung (tenant-isolierte Datenhaltung).</li>
+      <li>Append-only Audit-Trail relevanter Aktionen (revisionssicher).</li>
+      <li>GoBD-Unveränderbarkeit verarbeiteter Rechnungen (read-only, kein physisches Löschen).</li>
+      <li>Verschlüsselung von Übertragung (TLS) und Speicherung.</li>
       <li>Backup- und Wiederherstellungsprozesse.</li>
     </ul>
   </div>
 
   <div class="box">
-    <h2>4. Unterauftragsverarbeiter</h2>
-    <p>Liste und Änderungen werden transparent dokumentiert und vertraglich geregelt. Drittlandtransfers nur mit gültiger Rechtsgrundlage.</p>
+    <h2>4. Unterauftragsverarbeiter (Subprocessors)</h2>
+    <p>Folgende Unterauftragsverarbeiter werden eingesetzt. Änderungen werden mit
+    angemessener Vorankündigung mitgeteilt. Drittlandtransfers erfolgen nur mit
+    gültiger Rechtsgrundlage (z.B. EU-Standardvertragsklauseln).</p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+      <thead>
+        <tr style="background:#0f172a;color:#fff">
+          <th style="text-align:left;padding:8px">Dienstleister</th>
+          <th style="text-align:left;padding:8px">Zweck</th>
+          <th style="text-align:left;padding:8px">Standort</th>
+          <th style="text-align:left;padding:8px">Rechtsgrundlage Drittland</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0">DigitalOcean LLC</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">Hosting / Infrastruktur</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">EU (Frankfurt)</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">EU-Region, SCC</td></tr>
+        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0">OpenAI Ireland Ltd.</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">KI-gestützte Rechnungsextraktion</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">EU / USA</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">SCC, DPA</td></tr>
+        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0">Twilio Inc. (SendGrid)</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">Transaktions-E-Mails / Benachrichtigungen</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">USA</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">SCC, DPF</td></tr>
+        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0">Google Ireland Ltd.</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">SSO / OAuth-Anmeldung</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">EU / USA</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">SCC, DPF</td></tr>
+        <tr><td style="padding:8px">Microsoft Ireland Operations Ltd.</td><td style="padding:8px">SSO / Entra ID (optional)</td><td style="padding:8px">EU / USA</td><td style="padding:8px">SCC, DPF</td></tr>
+      </tbody>
+    </table>
   </div>
 
   <div class="box">

@@ -239,6 +239,15 @@ app.include_router(budget_router)
 app.include_router(oauth_router)
 app.include_router(invoice_router)  # NEU
 
+# Enterprise-Features (Phase 4 UI + Phase 5 GoBD/Audit/DSGVO)
+try:
+    from enterprise_db import init_enterprise_schema
+    from enterprise_routes import router as enterprise_router
+    init_enterprise_schema()
+    app.include_router(enterprise_router)
+except Exception as _ent_exc:  # pragma: no cover - defensive
+    app_logger.error("Enterprise-Router konnte nicht geladen werden: %s", _ent_exc)
+
 @app.get("/landing")
 async def landing_page():
     """Landing Page für Marketing"""

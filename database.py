@@ -155,6 +155,13 @@ def init_database():
     
     conn.commit()
 
+    # Enterprise-Schema (Phase 4 + 5): Freigabe, Audit, GoBD, DSGVO
+    try:
+        from enterprise_db import init_enterprise_schema
+        init_enterprise_schema()
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning("Enterprise-Schema Init übersprungen: %s", exc)
+
     # Webhook für neue Rechnungen
     try:
         from api_nexus import fire_webhook_event
