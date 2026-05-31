@@ -75,7 +75,7 @@ def init_enterprise_schema() -> None:
     # --- Phase 4b: Freigabe-Workflow -------------------------------------
     cursor.execute(
         """
-        CREATE TABLE IF NOT EXISTS approval_rules (
+        CREATE TABLE IF NOT EXISTS freigabe_rules (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tenant_id INTEGER NOT NULL,
             threshold REAL NOT NULL,
@@ -88,7 +88,7 @@ def init_enterprise_schema() -> None:
     )
     cursor.execute(
         """
-        CREATE TABLE IF NOT EXISTS approval_log (
+        CREATE TABLE IF NOT EXISTS freigabe_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tenant_id INTEGER NOT NULL,
             invoice_id INTEGER NOT NULL,
@@ -102,7 +102,7 @@ def init_enterprise_schema() -> None:
     )
     cursor.execute(
         """
-        CREATE TABLE IF NOT EXISTS approval_requests (
+        CREATE TABLE IF NOT EXISTS freigabe_requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tenant_id INTEGER NOT NULL,
             invoice_id INTEGER NOT NULL,
@@ -178,9 +178,9 @@ def init_enterprise_schema() -> None:
 
     # --- Indizes (tenant_id) ---------------------------------------------
     for table in (
-        "approval_rules",
-        "approval_log",
-        "approval_requests",
+        "freigabe_rules",
+        "freigabe_log",
+        "freigabe_requests",
         "audit_events",
         "export_protocol",
         "invoice_deletions",
@@ -189,7 +189,7 @@ def init_enterprise_schema() -> None:
             f"CREATE INDEX IF NOT EXISTS ix_{table}_tenant_id ON {table}(tenant_id)"
         )
     cursor.execute(
-        "CREATE INDEX IF NOT EXISTS ix_approval_requests_status ON approval_requests(tenant_id, status)"
+        "CREATE INDEX IF NOT EXISTS ix_freigabe_requests_status ON freigabe_requests(tenant_id, status)"
     )
     cursor.execute(
         "CREATE INDEX IF NOT EXISTS ix_audit_events_created ON audit_events(tenant_id, created_at)"
@@ -209,6 +209,56 @@ def init_enterprise_schema() -> None:
     _ensure_column(cursor, "invoices", "deleted_reason", "TEXT")
     _ensure_column(cursor, "invoices", "anonymized", "INTEGER DEFAULT 0")
     _ensure_column(cursor, "invoices", "manual_correction", "INTEGER DEFAULT 0")
+
+    # --- Legacy-Kompatibilität (Fresh-Install-Robustheit) ----------------
+    # Freigabe-/Zahlungs-Spalten auf invoices (von approval.py genutzt)
+    _ensure_column(cursor, "invoices", "assigned_to", "INTEGER")
+    _ensure_column(cursor, "invoices", "approved_by", "INTEGER")
+    _ensure_column(cursor, "invoices", "approved_at", "TEXT")
+    _ensure_column(cursor, "invoices", "rejected_by", "INTEGER")
+    _ensure_column(cursor, "invoices", "rejected_at", "TEXT")
+    _ensure_column(cursor, "invoices", "approval_comment", "TEXT")
+    _ensure_column(cursor, "invoices", "payment_status", "TEXT")
+    _ensure_column(cursor, "invoices", "paid_at", "TEXT")
+
+    # Zahlungsbedingungen (von zahlungs_service.py genutzt, sonst nirgends angelegt)
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS zahlungsbedingungen (
+            invoice_id INTEGER PRIMARY KEY,
+            faelligkeit TEXT,
+            skonto_prozent REAL,
+            skonto_tage INTEGER,
+            skonto_datum TEXT,
+            skonto_betrag REAL,
+            zahlungsziel_tage INTEGER,
+            zahlungsstatus TEXT DEFAULT 'offen',
+            geplantes_zahldatum TEXT,
+            empfehlung TEXT,
+            empfehlung_grund TEXT,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+    # Spend-Alerts (vom Dashboard abgefragt; sonst nur von spend_analytics angelegt)
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS spend_alerts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            alert_id TEXT UNIQUE,
+            alert_type TEXT,
+            severity TEXT,
+            title TEXT,
+            message TEXT,
+            data_json TEXT,
+            acknowledged INTEGER DEFAULT 0,
+            acknowledged_by INTEGER,
+            acknowledged_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
 
     conn.commit()
     conn.close()

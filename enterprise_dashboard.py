@@ -83,7 +83,7 @@ def get_kpis(tenant_id: int) -> Dict[str, Any]:
         cursor.execute(
             """
             SELECT COUNT(*), MIN(created_at)
-            FROM approval_requests
+            FROM freigabe_requests
             WHERE tenant_id = ? AND status = 'offen'
             """,
             (int(tenant_id),),

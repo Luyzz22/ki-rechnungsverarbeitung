@@ -11,9 +11,9 @@ Eine Rechnung durchläuft kumulativ alle Stufen bis zur zuständigen Ebene:
 z.B. 15.000€ → Sachbearbeiter → Teamleiter → Geschäftsführung.
 
 Tabellen (siehe enterprise_db):
-- approval_rules     (tenant_id, threshold, role, stage_order)
-- approval_log       (invoice_id, user_id, action, timestamp)
-- approval_requests  (Status/Stufen-Tracking)
+- freigabe_rules     (tenant_id, threshold, role, stage_order)
+- freigabe_log       (invoice_id, user_id, action, timestamp)
+- freigabe_requests  (Status/Stufen-Tracking)
 
 Eskalation: Freigaben, die > 48h offen sind, werden mit einem Flag markiert
 (und optional per E-Mail eskaliert).
@@ -55,13 +55,13 @@ def ensure_default_rules(tenant_id: int) -> None:
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT COUNT(*) FROM approval_rules WHERE tenant_id = ?", (int(tenant_id),)
+        "SELECT COUNT(*) FROM freigabe_rules WHERE tenant_id = ?", (int(tenant_id),)
     )
     if cursor.fetchone()[0] == 0:
         for r in DEFAULT_RULES:
             cursor.execute(
                 """
-                INSERT INTO approval_rules (tenant_id, threshold, role, stage_order, active)
+                INSERT INTO freigabe_rules (tenant_id, threshold, role, stage_order, active)
                 VALUES (?, ?, ?, ?, 1)
                 """,
                 (int(tenant_id), r["threshold"], r["role"], r["stage_order"]),
@@ -78,7 +78,7 @@ def get_rules(tenant_id: int) -> List[Rule]:
     cursor.execute(
         """
         SELECT threshold, role, stage_order
-        FROM approval_rules
+        FROM freigabe_rules
         WHERE tenant_id = ? AND active = 1
         ORDER BY stage_order ASC, threshold ASC
         """,
@@ -93,11 +93,11 @@ def save_rules(tenant_id: int, rules: List[Dict[str, Any]]) -> None:
     """Ersetzt die Freigaberegeln eines Tenants (Konfiguration aus der UI)."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM approval_rules WHERE tenant_id = ?", (int(tenant_id),))
+    cursor.execute("DELETE FROM freigabe_rules WHERE tenant_id = ?", (int(tenant_id),))
     for idx, r in enumerate(sorted(rules, key=lambda x: float(x["threshold"]))):
         cursor.execute(
             """
-            INSERT INTO approval_rules (tenant_id, threshold, role, stage_order, active)
+            INSERT INTO freigabe_rules (tenant_id, threshold, role, stage_order, active)
             VALUES (?, ?, ?, ?, 1)
             """,
             (int(tenant_id), float(r["threshold"]), str(r["role"]), idx),
@@ -124,7 +124,7 @@ def _log(cursor, tenant_id: int, invoice_id: int, user_id: Optional[int],
          action: str, stage: Optional[int], comment: Optional[str]) -> None:
     cursor.execute(
         """
-        INSERT INTO approval_log (tenant_id, invoice_id, user_id, action, stage, comment, timestamp)
+        INSERT INTO freigabe_log (tenant_id, invoice_id, user_id, action, stage, comment, timestamp)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         (int(tenant_id), int(invoice_id), user_id, action, stage, comment,
@@ -143,7 +143,7 @@ def submit_for_approval(tenant_id: int, invoice_id: int, amount: float,
     cursor = conn.cursor()
     cursor.execute(
         """
-        INSERT INTO approval_requests
+        INSERT INTO freigabe_requests
             (tenant_id, invoice_id, amount, current_stage, required_role, status, created_at, updated_at)
         VALUES (?, ?, ?, 0, ?, 'offen', ?, ?)
         """,
@@ -180,7 +180,7 @@ def get_open_approvals(tenant_id: int) -> List[Dict[str, Any]]:
         SELECT ar.id AS request_id, ar.invoice_id, ar.amount, ar.current_stage,
                ar.required_role, ar.status, ar.escalated, ar.created_at,
                i.rechnungsnummer, i.rechnungsaussteller
-        FROM approval_requests ar
+        FROM freigabe_requests ar
         LEFT JOIN invoices i ON ar.invoice_id = i.id
         WHERE ar.tenant_id = ? AND ar.status = 'offen'
         ORDER BY ar.created_at ASC
@@ -204,7 +204,7 @@ def get_open_approvals(tenant_id: int) -> List[Dict[str, Any]]:
 
 def _get_request(cursor, tenant_id: int, request_id: int) -> Optional[Dict[str, Any]]:
     cursor.execute(
-        "SELECT id, invoice_id, amount, current_stage, status FROM approval_requests "
+        "SELECT id, invoice_id, amount, current_stage, status FROM freigabe_requests "
         "WHERE id = ? AND tenant_id = ?",
         (int(request_id), int(tenant_id)),
     )
@@ -233,7 +233,7 @@ def approve(tenant_id: int, request_id: int, user_id: int,
     if current + 1 < len(stages):
         next_role = stages[current + 1].role
         cursor.execute(
-            "UPDATE approval_requests SET current_stage = ?, required_role = ?, updated_at = ? "
+            "UPDATE freigabe_requests SET current_stage = ?, required_role = ?, updated_at = ? "
             "WHERE id = ?",
             (current + 1, next_role, datetime.now().isoformat(timespec="seconds"), request_id),
         )
@@ -248,7 +248,7 @@ def approve(tenant_id: int, request_id: int, user_id: int,
 
     # letzte Stufe genehmigt
     cursor.execute(
-        "UPDATE approval_requests SET status = 'freigegeben', updated_at = ? WHERE id = ?",
+        "UPDATE freigabe_requests SET status = 'freigegeben', updated_at = ? WHERE id = ?",
         (datetime.now().isoformat(timespec="seconds"), request_id),
     )
     try:
@@ -277,7 +277,7 @@ def reject(tenant_id: int, request_id: int, user_id: int,
 
     _log(cursor, tenant_id, req["invoice_id"], user_id, "rejected", req["current_stage"], comment)
     cursor.execute(
-        "UPDATE approval_requests SET status = 'abgelehnt', updated_at = ? WHERE id = ?",
+        "UPDATE freigabe_requests SET status = 'abgelehnt', updated_at = ? WHERE id = ?",
         (datetime.now().isoformat(timespec="seconds"), request_id),
     )
     try:
@@ -302,7 +302,7 @@ def check_escalations(tenant_id: Optional[int] = None, notify: bool = False) -> 
     cursor = conn.cursor()
 
     query = (
-        "SELECT id, tenant_id, invoice_id, required_role FROM approval_requests "
+        "SELECT id, tenant_id, invoice_id, required_role FROM freigabe_requests "
         "WHERE status = 'offen' AND escalated = 0 AND created_at <= ?"
     )
     params: List[Any] = [cutoff]
@@ -314,7 +314,7 @@ def check_escalations(tenant_id: Optional[int] = None, notify: bool = False) -> 
 
     for row in pending:
         cursor.execute(
-            "UPDATE approval_requests SET escalated = 1, escalated_at = ? WHERE id = ?",
+            "UPDATE freigabe_requests SET escalated = 1, escalated_at = ? WHERE id = ?",
             (datetime.now().isoformat(timespec="seconds"), row["id"]),
         )
         _log(cursor, row["tenant_id"], row["invoice_id"], None, "escalated",

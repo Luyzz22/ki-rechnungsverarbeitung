@@ -61,13 +61,77 @@ class ApprovalRule:
 class ApprovalManager:
     """Manages invoice approval workflows"""
     
-    def __init__(self, db_path: str = "invoices.db"):
+    def __init__(self, db_path: str = None):
+        if db_path is None:
+            try:
+                from database import get_db_path
+                db_path = get_db_path()
+            except Exception:
+                db_path = "invoices.db"
         self.db_path = db_path
-    
+        try:
+            self._ensure_schema()
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning("ApprovalManager schema init: %s", exc)
+
     def _get_conn(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
+
+    def _ensure_schema(self) -> None:
+        """Legt die (Legacy-)Freigabe-Tabellen idempotent an (Fresh-Install)."""
+        conn = self._get_conn()
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS approval_rules (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                org_id INTEGER,
+                name TEXT,
+                min_amount REAL DEFAULT 0,
+                max_amount REAL,
+                required_role TEXT,
+                auto_approve INTEGER DEFAULT 0,
+                priority INTEGER DEFAULT 0,
+                is_active INTEGER DEFAULT 1,
+                created_by INTEGER,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS approval_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                invoice_id INTEGER,
+                user_id INTEGER,
+                action TEXT,
+                old_status TEXT,
+                new_status TEXT,
+                comment TEXT,
+                ip_address TEXT,
+                user_agent TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS approval_delegations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                delegator_id INTEGER,
+                delegate_id INTEGER,
+                is_active INTEGER DEFAULT 1,
+                valid_from TEXT,
+                valid_until TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # users.approval_limit (für Delegations-/Limit-Logik)
+        cursor.execute("PRAGMA table_info(users)")
+        if "approval_limit" not in [c[1] for c in cursor.fetchall()]:
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN approval_limit REAL")
+            except sqlite3.OperationalError:
+                pass
+        conn.commit()
+        conn.close()
     
     # =========================================================================
     # INVOICE STATUS MANAGEMENT
@@ -651,7 +715,7 @@ class ApprovalManager:
 # Singleton instance
 _approval_manager = None
 
-def get_approval_manager(db_path: str = "invoices.db") -> ApprovalManager:
+def get_approval_manager(db_path: str = None) -> ApprovalManager:
     global _approval_manager
     if _approval_manager is None:
         _approval_manager = ApprovalManager(db_path)

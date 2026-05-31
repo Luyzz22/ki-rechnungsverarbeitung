@@ -150,7 +150,7 @@ def test_escalation_after_48h(db, add_invoice):
     # künstlich altern lassen
     old = (datetime.now() - timedelta(hours=72)).isoformat(timespec="seconds")
     conn = database.get_connection()
-    conn.execute("UPDATE approval_requests SET created_at = ? WHERE id = ?", (old, res["request_id"]))
+    conn.execute("UPDATE freigabe_requests SET created_at = ? WHERE id = ?", (old, res["request_id"]))
     conn.commit()
     conn.close()
 
