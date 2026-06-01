@@ -256,6 +256,13 @@ try:
 except Exception as _cust_exc:  # pragma: no cover - defensive
     app_logger.error("Customer-Router konnte nicht geladen werden: %s", _cust_exc)
 
+# Frontend-JSON-API (Bearer-Auth) für die Next.js-SPA unter /api/app
+try:
+    from api_frontend import router as frontend_api_router
+    app.include_router(frontend_api_router)
+except Exception as _fe_exc:  # pragma: no cover - defensive
+    app_logger.error("Frontend-API-Router konnte nicht geladen werden: %s", _fe_exc)
+
 @app.get("/landing")
 async def landing_page():
     """Landing Page für Marketing"""
@@ -2958,7 +2965,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://sbsdeutschland.com", "https://app.sbsdeutschland.com", "https://sbsnexus.de", "https://www.sbsnexus.de", "http://localhost:3000", "http://localhost:3001"],
+    allow_origins=["https://sbsdeutschland.com", "https://app.sbsdeutschland.com", "https://sbsnexus.de", "https://www.sbsnexus.de", "https://belegflow-ai.de", "https://www.belegflow-ai.de", "http://localhost:3000", "http://localhost:3001"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],

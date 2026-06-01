@@ -16,6 +16,8 @@ app.add_middleware(
         "http://localhost:3001",
         "https://sbsnexus.de",
         "https://www.sbsnexus.de",
+        "https://belegflow-ai.de",
+        "https://www.belegflow-ai.de",
     ],
     allow_credentials=True,
     allow_methods=["*"],
