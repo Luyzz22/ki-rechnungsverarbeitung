@@ -37,7 +37,20 @@ def _ensure_db_path() -> Path:
         return DB_PATH
 
 def get_connection():
-    """Get database connection"""
+    """Get database connection.
+
+    Wenn ``DATABASE_URL`` (PostgreSQL/Neon) gesetzt ist, wird eine
+    kompatibilitätsgewrappte psycopg-Verbindung zurückgegeben (``?``→``%s``,
+    sqlite3.Row-ähnliche Zeilen). Andernfalls SQLite (Default für lokale
+    Entwicklung / Bestand).
+    """
+    try:
+        from db_compat import is_postgres, connect_postgres
+        if is_postgres():
+            return connect_postgres()
+    except Exception as exc:  # pragma: no cover - Fallback auf SQLite
+        logger.error("PostgreSQL-Verbindung fehlgeschlagen, nutze SQLite: %s", exc)
+
     db_path = _ensure_db_path()
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
