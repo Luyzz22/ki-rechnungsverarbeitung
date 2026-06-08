@@ -561,13 +561,15 @@ class InvoiceToBuchungConverter:
         beschreibung = (invoice_data.get('verwendungszweck', '') or '').lower()
         
         # Artikel-Text hinzufügen
-        artikel = invoice_data.get('artikel', [])
+        artikel = invoice_data.get('artikel') or []
         if isinstance(artikel, str):
             try:
                 artikel = json.loads(artikel)
             except:
                 artikel = []
-        
+        if not isinstance(artikel, (list, tuple)):
+            artikel = []
+
         artikel_text = ' '.join([str(a.get('beschreibung', '')) for a in artikel if isinstance(a, dict)]).lower()
         combined = f"{supplier} {beschreibung} {artikel_text}"
         

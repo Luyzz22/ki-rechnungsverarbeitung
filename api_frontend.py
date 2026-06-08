@@ -29,10 +29,14 @@ Endpunkte:
 from __future__ import annotations
 
 import logging
+import os
 import re
-from typing import Any, Dict, Optional
+import tempfile
+import uuid
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
 
 import approval_workflow
@@ -263,7 +267,8 @@ async def api_freigabe_reject(request: Request, request_id: int):
     comment = None
     try:
         body = await request.json()
-        comment = body.get("comment")
+        # Frontend sendet { grund }, Abwärtskompatibilität: comment
+        comment = body.get("grund") or body.get("comment")
     except Exception:
         pass
     result = approval_workflow.reject(tid, request_id, tid, comment=comment)
@@ -294,3 +299,185 @@ async def api_audit_csv(request: Request, action: str = "", date_from: str = "",
                                        date_from=date_from or None, date_to=date_to or None)
     return Response(content=csv_data, media_type="text/csv",
                     headers={"Content-Disposition": 'attachment; filename="audit_trail.csv"'})
+
+
+# ---------------------------------------------------------------------------
+# Upload (multipart) – startet die KI-Pipeline
+# ---------------------------------------------------------------------------
+@router.post("/upload")
+async def api_upload(request: Request, files: List[UploadFile] = File(...)):
+    """Nimmt eine oder mehrere PDF-Rechnungen entgegen und startet die
+    Verarbeitung. Antwort: { id, status: "processing" }."""
+    tid = _require_tenant(request)
+
+    # Upload-Verzeichnis (gleiche Konvention wie web/app.py)
+    base = os.getenv("UPLOAD_DIR") or os.path.join(os.getcwd(), "web", "uploads")
+    job_id = str(uuid.uuid4())
+    job_dir = os.path.join(base, job_id)
+    os.makedirs(job_dir, exist_ok=True)
+
+    saved = []
+    for f in files:
+        if not (f.filename or "").lower().endswith((".pdf", ".png", ".jpg", ".jpeg")):
+            continue
+        dest = os.path.join(job_dir, os.path.basename(f.filename))
+        with open(dest, "wb") as out:
+            out.write(await f.read())
+        saved.append(dest)
+
+    if not saved:
+        raise HTTPException(status_code=400, detail="Keine gültige Datei (PDF/Bild) hochgeladen")
+
+    # Job persistieren (tenant-isoliert über jobs.user_id)
+    from database import save_job
+    save_job(
+        job_id,
+        {
+            "created_at": datetime.now().isoformat(),
+            "status": "processing",
+            "total_files": len(saved),
+            "upload_path": job_dir,
+        },
+        user_id=tid,
+    )
+    audit_events.log_event(tid, audit_events.AuditEvent.UPLOAD, user_id=tid,
+                           entity_type="job", entity_id=job_id, details={"files": len(saved)})
+
+    # KI-Pipeline best-effort anstoßen (nutzt die bestehende Verarbeitung).
+    # Schlägt der Anstoß fehl (z. B. fehlende API-Keys), bleibt der Job
+    # 'processing' und kann später erneut verarbeitet werden.
+    try:
+        import threading
+
+        from web.app import processing_jobs, process_invoices_background
+
+        processing_jobs[job_id] = {
+            "user_id": tid, "status": "processing",
+            "files": [{"filename": os.path.basename(p)} for p in saved],
+            "created_at": datetime.now().isoformat(), "path": job_dir,
+            "total": len(saved), "successful": 0, "failed": [], "failed_count": 0,
+            "total_amount": 0.0, "stats": {},
+        }
+
+        def _run():
+            import asyncio
+            try:
+                asyncio.run(process_invoices_background(job_id))
+            except Exception as exc:  # pragma: no cover
+                logger.warning("Upload-Pipeline job=%s Fehler: %s", job_id, exc)
+
+        threading.Thread(target=_run, daemon=True).start()
+    except Exception as exc:  # pragma: no cover - Pipeline optional
+        logger.info("Upload-Pipeline nicht angestoßen (%s)", exc)
+
+    return JSONResponse(status_code=202, content={
+        "id": job_id, "job_id": job_id, "status": "processing", "files": len(saved)})
+
+
+# ---------------------------------------------------------------------------
+# DATEV
+# ---------------------------------------------------------------------------
+def _tenant_invoices(tid: int, invoice_ids: Optional[List[int]] = None) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    conn.row_factory = lambda c, r: {col[0]: r[i] for i, col in enumerate(c.description)}
+    cur = conn.cursor()
+    sql = (
+        "SELECT i.* FROM invoices i JOIN jobs j ON i.job_id = j.job_id "
+        "WHERE j.user_id = ? AND COALESCE(i.deleted, 0) = 0"
+    )
+    params: List[Any] = [int(tid)]
+    if invoice_ids:
+        placeholders = ",".join("?" for _ in invoice_ids)
+        sql += f" AND i.id IN ({placeholders})"
+        params.extend(int(x) for x in invoice_ids)
+    cur.execute(sql, params)
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+
+@router.get("/datev/preview")
+async def api_datev_preview(request: Request, invoice_id: int):
+    """DATEV-Buchungsvorschau für eine Rechnung (tenant-isoliert)."""
+    tid = _require_tenant(request)
+    rows = _tenant_invoices(tid, [invoice_id])
+    if not rows:
+        raise HTTPException(status_code=404, detail="Rechnung nicht gefunden")
+    invoice = rows[0]
+
+    from datev import InvoiceToBuchungConverter, Kontenrahmen
+
+    converter = InvoiceToBuchungConverter(Kontenrahmen.SKR03)
+    buchungen = []
+    for b in converter.convert(invoice):
+        buchungen.append({
+            "umsatz": str(b.umsatz),
+            "soll_haben": b.soll_haben,
+            "konto": b.konto,
+            "gegenkonto": b.gegenkonto,
+            "belegdatum": b.belegdatum.isoformat() if getattr(b, "belegdatum", None) else None,
+            "belegnummer": b.belegnummer,
+            "buchungstext": b.buchungstext,
+            "steuerschluessel": b.steuerschluessel,
+        })
+    return {
+        "invoice": {
+            "id": invoice.get("id"),
+            "rechnungsnummer": invoice.get("rechnungsnummer"),
+            "rechnungsaussteller": invoice.get("rechnungsaussteller"),
+            "betrag_brutto": invoice.get("betrag_brutto"),
+        },
+        "buchungen": buchungen,
+        "detected_account": converter.detect_account(invoice),
+    }
+
+
+@router.post("/datev/export")
+async def api_datev_export(request: Request):
+    """Erzeugt einen DATEV EXTF-700-Export (CSV) und protokolliert ihn (GoBD).
+
+    Body optional: { "invoice_ids": [..] } – sonst alle (nicht gelöschten)
+    Rechnungen des Mandanten.
+    """
+    tid = _require_tenant(request)
+    invoice_ids = None
+    try:
+        body = await request.json()
+        invoice_ids = body.get("invoice_ids") or None
+    except Exception:
+        pass
+
+    invoices = _tenant_invoices(tid, invoice_ids)
+    if not invoices:
+        raise HTTPException(status_code=404, detail="Keine Rechnungen für den Export gefunden")
+
+    from datev import DatevExportConfig, Kontenrahmen, export_invoices_to_datev_csv
+
+    config = DatevExportConfig(
+        berater_nummer=os.getenv("DATEV_BERATER_NR", "1000"),
+        mandanten_nummer=os.getenv("DATEV_MANDANT_NR", str(tid)),
+        wirtschaftsjahr_beginn=date(date.today().year, 1, 1),
+        kontenrahmen=Kontenrahmen.SKR03,
+    )
+
+    tmp_path = os.path.join(tempfile.gettempdir(), f"EXTF_{tid}_{uuid.uuid4().hex}.csv")
+    export_invoices_to_datev_csv(invoices, config, tmp_path)
+    with open(tmp_path, "rb") as fh:
+        content = fh.read()
+    try:
+        os.remove(tmp_path)
+    except OSError:  # pragma: no cover
+        pass
+
+    # GoBD: Export mit SHA-256 protokollieren
+    try:
+        import gobd
+
+        gobd.record_export(tid, "datev", content, file_name="EXTF_Buchungen.csv",
+                           row_count=len(invoices), user_id=tid)
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Export-Protokoll fehlgeschlagen: %s", exc)
+
+    filename = f"EXTF_Buchungen_{datetime.now():%Y%m%d_%H%M%S}.csv"
+    return Response(content=content, media_type="text/csv",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})

@@ -111,3 +111,92 @@ def test_audit_csv(client, token):
     r = client.get("/api/app/audit/export.csv", headers=_auth(token))
     assert r.status_code == 200
     assert "text/csv" in r.headers.get("content-type", "")
+
+
+# ---------------------------------------------------------------------------
+# Teil 2: neue Endpoints (upload, datev, reject grund)
+# ---------------------------------------------------------------------------
+def _tenant_id(client, token):
+    return client.get("/api/app/me", headers=_auth(token)).json()["user"]["id"]
+
+
+def _seed_invoice(client, token, **over):
+    """Legt Job + Rechnung für den eingeloggten Tenant an, gibt invoice_id zurück."""
+    import database
+    tid = _tenant_id(client, token)
+    conn = database.get_connection()
+    cur = conn.cursor()
+    job_id = f"job-seed-{over.get('nr','1')}"
+    cur.execute("INSERT OR IGNORE INTO jobs (job_id, user_id, created_at) VALUES (?,?,?)",
+                (job_id, tid, "2026-01-01T00:00:00"))
+    cur.execute(
+        """INSERT INTO invoices
+           (job_id, rechnungsnummer, datum, rechnungsaussteller, betrag_brutto,
+            betrag_netto, mwst_betrag, mwst_satz, waehrung, status, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+        (job_id, over.get("nr", "R-1"), "2026-01-15", over.get("supplier", "Acme GmbH"),
+         119.0, 100.0, 19.0, 19.0, "EUR", over.get("status", "approved"), "2026-01-15T10:00:00"),
+    )
+    inv_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return inv_id
+
+
+def test_upload_creates_job(client, token):
+    files = {"files": ("rechnung.pdf", b"%PDF-1.4 minimal", "application/pdf")}
+    r = client.post("/api/app/upload", headers=_auth(token), files=files)
+    assert r.status_code == 202, r.text
+    body = r.json()
+    assert body["status"] == "processing"
+    assert body["id"] and body["id"] == body["job_id"]
+
+
+def test_upload_rejects_non_document(client, token):
+    files = {"files": ("notes.txt", b"hello", "text/plain")}
+    r = client.post("/api/app/upload", headers=_auth(token), files=files)
+    assert r.status_code == 400
+
+
+def test_upload_requires_auth(client):
+    files = {"files": ("rechnung.pdf", b"%PDF-1.4", "application/pdf")}
+    assert client.post("/api/app/upload", files=files).status_code == 401
+
+
+def test_datev_preview_404(client, token):
+    assert client.get("/api/app/datev/preview?invoice_id=999999",
+                      headers=_auth(token)).status_code == 404
+
+
+def test_datev_preview_ok(client, token):
+    inv = _seed_invoice(client, token, nr="PREV-1")
+    r = client.get(f"/api/app/datev/preview?invoice_id={inv}", headers=_auth(token))
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["invoice"]["id"] == inv
+    assert isinstance(body["buchungen"], list) and len(body["buchungen"]) >= 1
+
+
+def test_datev_export_csv(client, token):
+    _seed_invoice(client, token, nr="EXP-1")
+    r = client.post("/api/app/datev/export", headers=_auth(token), json={})
+    assert r.status_code == 200, r.text
+    assert "text/csv" in r.headers.get("content-type", "")
+    assert r.content  # nicht leer
+
+
+def test_datev_export_no_invoices_for_ids(client, token):
+    r = client.post("/api/app/datev/export", headers=_auth(token),
+                    json={"invoice_ids": [999999]})
+    assert r.status_code == 404
+
+
+def test_reject_with_grund(client, token):
+    import approval_workflow
+    tid = _tenant_id(client, token)
+    inv = _seed_invoice(client, token, nr="REJ-1", status="neu")
+    res = approval_workflow.submit_for_approval(tid, inv, 500.0, user_id=tid, notify=False)
+    r = client.post(f"/api/app/freigaben/{res['request_id']}/reject",
+                    headers=_auth(token), json={"grund": "Doppelerfassung"})
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "abgelehnt"
