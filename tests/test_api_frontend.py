@@ -143,13 +143,51 @@ def _seed_invoice(client, token, **over):
     return inv_id
 
 
-def test_upload_creates_job(client, token):
-    files = {"files": ("rechnung.pdf", b"%PDF-1.4 minimal", "application/pdf")}
+def _make_pdf(text="Rechnung Nr. 2026-001\nAcme GmbH\nGesamtbetrag: 119,00 EUR"):
+    import io
+    from reportlab.pdfgen import canvas
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf)
+    y = 800
+    for line in text.split("\n"):
+        c.drawString(80, y, line)
+        y -= 20
+    c.save()
+    return buf.getvalue()
+
+
+def test_upload_runs_pipeline(client, token, monkeypatch):
+    import invoice_extraction
+    # KI-Aufruf mocken (kein API-Key nötig)
+    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text: {
+        "rechnungsaussteller": "Acme GmbH", "rechnungsnummer": "2026-001",
+        "datum": "2026-01-15", "betrag_brutto": "119,00", "betrag_netto": "100,00",
+        "mwst_betrag": "19,00", "mwst_satz": "19.0", "steuernummer": "12/345/67890",
+        "iban": "DE89370400440532013000", "waehrung": "EUR",
+    })
+    files = {"files": ("rechnung.pdf", _make_pdf(), "application/pdf")}
     r = client.post("/api/app/upload", headers=_auth(token), files=files)
-    assert r.status_code == 202, r.text
+    assert r.status_code == 200, r.text
     body = r.json()
-    assert body["status"] == "processing"
-    assert body["id"] and body["id"] == body["job_id"]
+    assert body["id"] == body["job_id"]
+    assert body["status"] == "verarbeitet"
+    inv = body["invoices"][0]
+    assert inv["status"] == "verarbeitet"
+    # Invoice-Record wurde aktualisiert
+    detail = client.get(f"/api/app/invoices/{inv['id']}", headers=_auth(token)).json()
+    assert detail["rechnungsaussteller"] == "Acme GmbH"
+    assert detail["betrag_brutto"] == 119.0
+
+
+def test_upload_without_llm_sets_error(client, token, monkeypatch):
+    import invoice_extraction
+    def _raise(text):
+        raise invoice_extraction.NoLLMConfigured("kein key")
+    monkeypatch.setattr(invoice_extraction, "_call_llm", _raise)
+    files = {"files": ("r.pdf", _make_pdf(), "application/pdf")}
+    r = client.post("/api/app/upload", headers=_auth(token), files=files)
+    assert r.status_code == 200
+    assert r.json()["invoices"][0]["status"] == "fehler"
 
 
 def test_upload_rejects_non_document(client, token):

@@ -302,15 +302,18 @@ async def api_audit_csv(request: Request, action: str = "", date_from: str = "",
 
 
 # ---------------------------------------------------------------------------
-# Upload (multipart) – startet die KI-Pipeline
+# Upload (multipart) – KI-Extraktions-Pipeline (synchron, MVP)
 # ---------------------------------------------------------------------------
 @router.post("/upload")
 async def api_upload(request: Request, files: List[UploadFile] = File(...)):
-    """Nimmt eine oder mehrere PDF-Rechnungen entgegen und startet die
-    Verarbeitung. Antwort: { id, status: "processing" }."""
+    """Nimmt PDF-Rechnungen entgegen, speichert sie, legt je Datei einen
+    Invoice-Record an und durchläuft synchron die KI-Pipeline
+    (Text → KI-Extraktion → Validierung → Kontierung → DB-Update).
+
+    Antwort: { id, job_id, status, invoices: [...] }.
+    """
     tid = _require_tenant(request)
 
-    # Upload-Verzeichnis (gleiche Konvention wie web/app.py)
     base = os.getenv("UPLOAD_DIR") or os.path.join(os.getcwd(), "web", "uploads")
     job_id = str(uuid.uuid4())
     job_dir = os.path.join(base, job_id)
@@ -328,50 +331,61 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
     if not saved:
         raise HTTPException(status_code=400, detail="Keine gültige Datei (PDF/Bild) hochgeladen")
 
-    # Job persistieren (tenant-isoliert über jobs.user_id)
     from database import save_job
-    save_job(
-        job_id,
-        {
-            "created_at": datetime.now().isoformat(),
-            "status": "processing",
-            "total_files": len(saved),
-            "upload_path": job_dir,
-        },
-        user_id=tid,
-    )
+    save_job(job_id, {"created_at": datetime.now().isoformat(), "status": "processing",
+                      "total_files": len(saved), "upload_path": job_dir}, user_id=tid)
     audit_events.log_event(tid, audit_events.AuditEvent.UPLOAD, user_id=tid,
                            entity_type="job", entity_id=job_id, details={"files": len(saved)})
 
-    # KI-Pipeline best-effort anstoßen (nutzt die bestehende Verarbeitung).
-    # Schlägt der Anstoß fehl (z. B. fehlende API-Keys), bleibt der Job
-    # 'processing' und kann später erneut verarbeitet werden.
-    try:
-        import threading
+    import invoice_extraction
+    invoice_extraction.ensure_extraction_columns()
 
-        from web.app import processing_jobs, process_invoices_background
+    results = []
+    for path in saved:
+        # Invoice-Record anlegen (Status processing)
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO invoices (job_id, status, created_at, tenant_id) VALUES (?, 'processing', ?, ?)",
+            (job_id, datetime.now().isoformat(), tid),
+        )
+        invoice_id = cur.lastrowid
+        conn.commit()
+        conn.close()
 
-        processing_jobs[job_id] = {
-            "user_id": tid, "status": "processing",
-            "files": [{"filename": os.path.basename(p)} for p in saved],
-            "created_at": datetime.now().isoformat(), "path": job_dir,
-            "total": len(saved), "successful": 0, "failed": [], "failed_count": 0,
-            "total_amount": 0.0, "stats": {},
-        }
+        # Pipeline synchron ausführen (crasht nie – Status spiegelt Fehler)
+        try:
+            outcome = invoice_extraction.process_pdf(path)
+        except Exception as exc:  # pragma: no cover - defensive
+            outcome = {"status": "fehler", "error": str(exc), "fields": {},
+                       "validation": None, "kontierung": None}
+        try:
+            invoice_extraction.update_invoice_record(invoice_id, outcome)
+        except Exception as exc:  # pragma: no cover
+            logger.error("update_invoice_record id=%s: %s", invoice_id, exc)
 
-        def _run():
-            import asyncio
-            try:
-                asyncio.run(process_invoices_background(job_id))
-            except Exception as exc:  # pragma: no cover
-                logger.warning("Upload-Pipeline job=%s Fehler: %s", job_id, exc)
+        audit_events.log_event(tid, audit_events.AuditEvent.KI_EXTRAKTION, user_id=tid,
+                               entity_type="invoice", entity_id=invoice_id,
+                               details={"status": outcome.get("status")})
+        results.append({
+            "id": invoice_id,
+            "datei": os.path.basename(path),
+            "status": outcome.get("status"),
+            "validierung_ok": (outcome.get("validation") or {}).get("ok"),
+            "error": outcome.get("error"),
+        })
 
-        threading.Thread(target=_run, daemon=True).start()
-    except Exception as exc:  # pragma: no cover - Pipeline optional
-        logger.info("Upload-Pipeline nicht angestoßen (%s)", exc)
+    statuses = {r["status"] for r in results}
+    if statuses == {"verarbeitet"}:
+        overall = "verarbeitet"
+    elif "verarbeitet" in statuses:
+        overall = "teilweise_verarbeitet"
+    else:
+        overall = "fehler"
 
-    return JSONResponse(status_code=202, content={
-        "id": job_id, "job_id": job_id, "status": "processing", "files": len(saved)})
+    return JSONResponse(status_code=200, content={
+        "id": job_id, "job_id": job_id, "status": overall,
+        "files": len(saved), "invoices": results})
 
 
 # ---------------------------------------------------------------------------
@@ -447,9 +461,10 @@ async def api_datev_export(request: Request):
     except Exception:
         pass
 
-    invoices = _tenant_invoices(tid, invoice_ids)
+    invoices = [i for i in _tenant_invoices(tid, invoice_ids)
+                if i.get("betrag_brutto") is not None]
     if not invoices:
-        raise HTTPException(status_code=404, detail="Keine Rechnungen für den Export gefunden")
+        raise HTTPException(status_code=404, detail="Keine exportierbaren Rechnungen gefunden")
 
     from datev import DatevExportConfig, Kontenrahmen, export_invoices_to_datev_csv
 
