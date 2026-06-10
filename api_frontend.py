@@ -236,6 +236,53 @@ async def api_invoice_detail(request: Request, invoice_id: int):
     return row
 
 
+@router.get("/invoices/{invoice_id}/pdf")
+async def api_invoice_pdf(request: Request, invoice_id: int):
+    """Liefert die Original-PDF einer Rechnung (tenant-isoliert).
+
+    Auflösung: gespeicherter datei_pfad → sonst PDF im Upload-Verzeichnis des
+    zugehörigen Jobs. Niemals Dateien fremder Mandanten.
+    """
+    from fastapi.responses import FileResponse
+
+    tid = _require_tenant(request)
+    conn = get_connection()
+    conn.row_factory = lambda c, r: {col[0]: r[i] for i, col in enumerate(c.description)}
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT i.job_id, i.datei_pfad, j.upload_path
+        FROM invoices i JOIN jobs j ON i.job_id = j.job_id
+        WHERE i.id = ? AND j.user_id = ?
+        """,
+        (invoice_id, tid),
+    )
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Rechnung nicht gefunden")
+
+    # 1) direkt gespeicherter Pfad
+    candidates = []
+    if row.get("datei_pfad"):
+        candidates.append(row["datei_pfad"])
+    # 2) Upload-Verzeichnis des Jobs (erste PDF)
+    job_dirs = [d for d in (row.get("upload_path"),
+                            os.path.join(os.getenv("UPLOAD_DIR") or os.path.join(os.getcwd(), "web", "uploads"),
+                                         str(row.get("job_id") or ""))) if d]
+    for d in job_dirs:
+        if os.path.isdir(d):
+            for name in sorted(os.listdir(d)):
+                if name.lower().endswith(".pdf"):
+                    candidates.append(os.path.join(d, name))
+
+    for path in candidates:
+        if path and os.path.isfile(path):
+            return FileResponse(path, media_type="application/pdf",
+                                filename=os.path.basename(path))
+    raise HTTPException(status_code=404, detail="PDF nicht gefunden")
+
+
 # ---------------------------------------------------------------------------
 # Freigaben
 # ---------------------------------------------------------------------------
@@ -346,8 +393,9 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
         conn = get_connection()
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO invoices (job_id, status, created_at, tenant_id) VALUES (?, 'processing', ?, ?)",
-            (job_id, datetime.now().isoformat(), tid),
+            "INSERT INTO invoices (job_id, status, created_at, tenant_id, datei_pfad) "
+            "VALUES (?, 'processing', ?, ?, ?)",
+            (job_id, datetime.now().isoformat(), tid, path),
         )
         invoice_id = cur.lastrowid
         conn.commit()
@@ -367,6 +415,18 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
         audit_events.log_event(tid, audit_events.AuditEvent.KI_EXTRAKTION, user_id=tid,
                                entity_type="invoice", entity_id=invoice_id,
                                details={"status": outcome.get("status")})
+
+        # Erfolgreich verarbeitete Rechnungen automatisch zur Freigabe einreichen
+        # (damit die Freigabe-Queue /api/app/freigaben echte Einträge zeigt)
+        if outcome.get("status") == "verarbeitet":
+            betrag = (outcome.get("fields") or {}).get("betrag_brutto")
+            if betrag is not None:
+                try:
+                    approval_workflow.submit_for_approval(tid, invoice_id, float(betrag),
+                                                          user_id=tid, notify=False)
+                except Exception as exc:  # pragma: no cover
+                    logger.warning("Auto-Freigabe invoice=%s: %s", invoice_id, exc)
+
         results.append({
             "id": invoice_id,
             "datei": os.path.basename(path),

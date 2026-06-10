@@ -238,3 +238,51 @@ def test_reject_with_grund(client, token):
                     headers=_auth(token), json={"grund": "Doppelerfassung"})
     assert r.status_code == 200, r.text
     assert r.json()["status"] == "abgelehnt"
+
+
+# ---------------------------------------------------------------------------
+# PDF-Serving + Auto-Freigabe nach Upload
+# ---------------------------------------------------------------------------
+def _mock_llm(monkeypatch, nr="PDF-1", brutto="119,00"):
+    import invoice_extraction
+    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text: {
+        "rechnungsaussteller": "Acme GmbH", "rechnungsnummer": nr,
+        "datum": "2026-01-15", "betrag_brutto": brutto, "mwst_satz": "19.0",
+        "steuernummer": "12/345/67890",
+    })
+
+
+def test_invoice_pdf_served(client, token, monkeypatch):
+    _mock_llm(monkeypatch, nr="PDF-OK")
+    files = {"files": ("meine_rechnung.pdf", _make_pdf(), "application/pdf")}
+    inv = client.post("/api/app/upload", headers=_auth(token), files=files).json()["invoices"][0]
+    r = client.get(f"/api/app/invoices/{inv['id']}/pdf", headers=_auth(token))
+    assert r.status_code == 200, r.text
+    assert r.headers.get("content-type", "").startswith("application/pdf")
+    assert r.content[:4] == b"%PDF"
+
+
+def test_invoice_pdf_tenant_isolated(client, token, monkeypatch):
+    _mock_llm(monkeypatch, nr="PDF-ISO")
+    files = {"files": ("r.pdf", _make_pdf(), "application/pdf")}
+    inv = client.post("/api/app/upload", headers=_auth(token), files=files).json()["invoices"][0]
+    # zweiter Tenant darf die PDF NICHT sehen
+    other = client.post("/api/app/register", json={
+        "email": "other-tenant@test.de", "password": "Test1234"}).json()["token"]
+    r = client.get(f"/api/app/invoices/{inv['id']}/pdf", headers=_auth(other))
+    assert r.status_code == 404
+
+
+def test_invoice_pdf_404_unknown(client, token):
+    assert client.get("/api/app/invoices/999999/pdf", headers=_auth(token)).status_code == 404
+
+
+def test_upload_auto_submits_freigabe(client, token, monkeypatch):
+    _mock_llm(monkeypatch, nr="FREI-1")
+    files = {"files": ("f.pdf", _make_pdf(), "application/pdf")}
+    inv = client.post("/api/app/upload", headers=_auth(token), files=files).json()["invoices"][0]
+    items = client.get("/api/app/freigaben", headers=_auth(token)).json()["items"]
+    mine = [i for i in items if i["invoice_id"] == inv["id"]]
+    assert mine, "verarbeitete Rechnung muss in der Freigabe-Queue stehen"
+    assert mine[0]["required_role"] == "Sachbearbeiter"
+    assert mine[0]["status"] == "offen"
