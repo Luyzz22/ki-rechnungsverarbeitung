@@ -22,9 +22,15 @@ _DB_FILE = Path(os.environ["INVOICE_DB_PATH"])
 @pytest.fixture(autouse=True)
 def _pin_db():
     """DB-Pfad-Resolver vor JEDEM Test auf diese Modul-DB fixieren (verhindert
-    Leaks durch andere Test-Module, die _ensure_db_path global überschreiben)."""
+    Leaks durch andere Test-Module, die _ensure_db_path global überschreiben).
+    Setzt zudem den Auth-Rate-Limiter zurück (sonst Flakiness über Tests)."""
     import database
     database._ensure_db_path = lambda: _DB_FILE
+    try:
+        import rate_limiter
+        rate_limiter.limiter.requests.clear()
+    except Exception:
+        pass
     yield
 
 
@@ -286,3 +292,38 @@ def test_upload_auto_submits_freigabe(client, token, monkeypatch):
     assert mine, "verarbeitete Rechnung muss in der Freigabe-Queue stehen"
     assert mine[0]["required_role"] == "Sachbearbeiter"
     assert mine[0]["status"] == "offen"
+
+
+# ---------------------------------------------------------------------------
+# Security-Hardening: Rate-Limit, Passwort-Policy, Upload-Validierung
+# ---------------------------------------------------------------------------
+def test_login_rate_limited(client):
+    # 5 erlaubt (auth: 5/min), der 6. Versuch → 429
+    for _ in range(5):
+        client.post("/api/app/login", json={"email": "x@y.de", "password": "nope"})
+    r = client.post("/api/app/login", json={"email": "x@y.de", "password": "nope"})
+    assert r.status_code == 429
+
+
+def test_register_password_policy(client):
+    # zu schwach (kein Großbuchstabe/Zahl)
+    r = client.post("/api/app/register", json={"email": "weak@test.de", "password": "weakling"})
+    assert r.status_code == 400
+    # ok
+    r2 = client.post("/api/app/register", json={"email": "strong@test.de", "password": "Strong123"})
+    assert r2.status_code == 201, r2.text
+
+
+def test_upload_rejects_disallowed_type(client, token):
+    files = {"files": ("script.exe", b"MZ", "application/octet-stream")}
+    r = client.post("/api/app/upload", headers=_auth(token), files=files)
+    assert r.status_code == 400
+
+
+def test_upload_rejects_too_large(client, token, monkeypatch):
+    import api_frontend
+    monkeypatch.setattr(api_frontend, "UPLOAD_MAX_BYTES", 1024)  # 1 KB Limit
+    big = b"%PDF-1.4" + b"0" * 2048
+    files = {"files": ("big.pdf", big, "application/pdf")}
+    r = client.post("/api/app/upload", headers=_auth(token), files=files)
+    assert r.status_code == 413

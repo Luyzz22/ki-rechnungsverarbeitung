@@ -51,6 +51,37 @@ router = APIRouter(prefix="/api/app", tags=["Frontend-API"])
 
 _PW_MIN = 8
 
+# Upload-Hardening
+UPLOAD_MAX_BYTES = int(os.getenv("UPLOAD_MAX_BYTES", str(10 * 1024 * 1024)))  # 10 MB
+UPLOAD_ALLOWED_EXT = {".pdf", ".xml", ".jpg", ".jpeg", ".png", ".tiff", ".tif"}
+
+
+def _rate_limit_auth(request: Request) -> None:
+    """Per-IP Rate-Limit für Auth-Endpunkte (5/min, via rate_limiter).
+
+    HTTPException(429) wird durchgereicht; andere Fehler werden ignoriert,
+    damit der Login bei Limiter-Problemen nicht hart bricht.
+    """
+    try:
+        from rate_limiter import check_rate_limit
+        check_rate_limit(request, "auth")
+    except HTTPException:
+        raise
+    except Exception as exc:  # pragma: no cover - Limiter optional
+        logger.debug("rate_limit skip: %s", exc)
+
+
+def _check_password_policy(password: str) -> None:
+    """Passwort-Richtlinie konsistent zum restlichen Bestand."""
+    if len(password) < _PW_MIN:
+        raise HTTPException(status_code=400, detail=f"Passwort muss mindestens {_PW_MIN} Zeichen haben")
+    if not re.search(r"[A-Z]", password):
+        raise HTTPException(status_code=400, detail="Passwort muss einen Großbuchstaben enthalten")
+    if not re.search(r"[a-z]", password):
+        raise HTTPException(status_code=400, detail="Passwort muss einen Kleinbuchstaben enthalten")
+    if not re.search(r"\d", password):
+        raise HTTPException(status_code=400, detail="Passwort muss eine Zahl enthalten")
+
 
 # ---------------------------------------------------------------------------
 # Auth-Helfer (Bearer-Token, Fallback Session)
@@ -108,6 +139,7 @@ def _issue_token(user_id: int, email: str, name: str = None) -> str:
 async def api_login(request: Request):
     from database import verify_user
 
+    _rate_limit_auth(request)
     body = await request.json()
     email = (body.get("email") or "").strip()
     password = body.get("password") or ""
@@ -127,6 +159,7 @@ async def api_login(request: Request):
 async def api_register(request: Request):
     from database import create_user, email_exists
 
+    _rate_limit_auth(request)
     body = await request.json()
     email = (body.get("email") or "").strip()
     password = body.get("password") or ""
@@ -137,8 +170,7 @@ async def api_register(request: Request):
         raise HTTPException(status_code=400, detail="E-Mail und Passwort erforderlich")
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         raise HTTPException(status_code=400, detail="Ungültige E-Mail-Adresse")
-    if len(password) < _PW_MIN:
-        raise HTTPException(status_code=400, detail=f"Passwort muss mindestens {_PW_MIN} Zeichen haben")
+    _check_password_policy(password)
     if email_exists(email):
         raise HTTPException(status_code=409, detail="E-Mail bereits registriert")
 
@@ -368,15 +400,25 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
 
     saved = []
     for f in files:
-        if not (f.filename or "").lower().endswith((".pdf", ".png", ".jpg", ".jpeg")):
-            continue
+        ext = os.path.splitext(f.filename or "")[1].lower()
+        if ext not in UPLOAD_ALLOWED_EXT:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Dateityp {ext or '?'} nicht erlaubt. Erlaubt: PDF, XML, JPG, PNG, TIFF",
+            )
+        content = await f.read()
+        if len(content) > UPLOAD_MAX_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Datei zu groß (max. {UPLOAD_MAX_BYTES // (1024 * 1024)} MB)",
+            )
         dest = os.path.join(job_dir, os.path.basename(f.filename))
         with open(dest, "wb") as out:
-            out.write(await f.read())
+            out.write(content)
         saved.append(dest)
 
     if not saved:
-        raise HTTPException(status_code=400, detail="Keine gültige Datei (PDF/Bild) hochgeladen")
+        raise HTTPException(status_code=400, detail="Keine gültige Datei hochgeladen")
 
     from database import save_job
     save_job(job_id, {"created_at": datetime.now().isoformat(), "status": "processing",
