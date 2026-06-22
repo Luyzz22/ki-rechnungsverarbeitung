@@ -263,6 +263,13 @@ try:
 except Exception as _fe_exc:  # pragma: no cover - defensive
     app_logger.error("Frontend-API-Router konnte nicht geladen werden: %s", _fe_exc)
 
+# Öffentlicher, login-freier E-Rechnungs-Validierungs-Endpoint /api/public/validate
+try:
+    from public_validate import router as public_validate_router
+    app.include_router(public_validate_router)
+except Exception as _pv_exc:  # pragma: no cover - defensive
+    app_logger.error("Public-Validate-Router konnte nicht geladen werden: %s", _pv_exc)
+
 @app.get("/landing")
 async def landing_page():
     """Landing Page für Marketing"""
