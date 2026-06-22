@@ -318,6 +318,7 @@ async def public_validate(request: Request, file: UploadFile = File(...)):
             "warnings": len(val["warnings"]),
             "format": fmt,
             "profile": profile,
+            "engine": val["engine"],  # transparent: 'kosit' (echtes Prüftool) | 'kosit-python' (Fallback)
         },
         "messages": val["messages"],
         "readable": readable,

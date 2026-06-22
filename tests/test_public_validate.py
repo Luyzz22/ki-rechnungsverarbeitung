@@ -159,3 +159,8 @@ def test_rate_limit_429_with_retry_after(client):
     r = _post(client, "ok.xml", VALID_UBL.encode(), "application/xml")
     assert r.status_code == 429
     assert r.headers.get("Retry-After")
+
+
+def test_summary_exposes_engine(client):
+    body = _post(client, "ok.xml", VALID_UBL.encode(), "application/xml").json()
+    assert body["summary"]["engine"] in ("kosit", "kosit-python")
