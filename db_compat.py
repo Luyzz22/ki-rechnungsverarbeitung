@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from typing import Any, List, Optional, Sequence
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,60 @@ def is_postgres() -> bool:
     """True, wenn auf PostgreSQL gefahren werden soll (DATABASE_URL gesetzt)."""
     url = database_url()
     return bool(url) and url.startswith(("postgres://", "postgresql://"))
+
+
+# ---------------------------------------------------------------------------
+# DDL-Übersetzung  (SQLite-CREATE-Syntax → PostgreSQL)
+# ---------------------------------------------------------------------------
+# SQLite: `id INTEGER PRIMARY KEY AUTOINCREMENT`  →  PostgreSQL: `id SERIAL PRIMARY KEY`
+# Case-insensitiv und tolerant gegenüber Mehrfach-Whitespace/Zeilenumbrüchen.
+_AUTOINCREMENT_RE = re.compile(
+    r"\bINTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b",
+    re.IGNORECASE,
+)
+# Defensive: ein evtl. allein stehendes AUTOINCREMENT (PostgreSQL kennt es nicht).
+_BARE_AUTOINCREMENT_RE = re.compile(r"\s+AUTOINCREMENT\b", re.IGNORECASE)
+
+# `PRAGMA table_info(<tabelle>)` (SQLite) → information_schema-Abfrage (PostgreSQL).
+_PRAGMA_TABLE_INFO_RE = re.compile(
+    r"^\s*PRAGMA\s+table_info\s*\(\s*[\"'`\[]?(?P<table>\w+)[\"'`\]]?\s*\)\s*;?\s*$",
+    re.IGNORECASE,
+)
+# Spaltenreihenfolge identisch zu SQLite (cid, name, type, notnull, dflt_value, pk),
+# damit Bestandscode wie ``col[1]`` (Spaltenname) unverändert funktioniert.
+# Wichtig: column_name/data_type sind PostgreSQL-Domains über ``name`` und
+# werden von psycopg sonst als bytes geliefert → explizit nach ``text`` casten,
+# damit Bestandscode (``'is_admin' in cols``) als str vergleicht.
+_PRAGMA_TABLE_INFO_SQL = (
+    "SELECT (ordinal_position - 1) AS cid, "
+    "column_name::text AS name, "
+    "data_type::text AS type, "
+    "CASE WHEN is_nullable = 'NO' THEN 1 ELSE 0 END AS notnull, "
+    "column_default::text AS dflt_value, "
+    "0 AS pk "
+    "FROM information_schema.columns "
+    "WHERE table_name = %s AND table_schema = 'public' "
+    "ORDER BY ordinal_position"
+)
+
+
+def translate_ddl(sql: str) -> str:
+    """Übersetzt SQLite-DDL-Eigenheiten nach PostgreSQL.
+
+    Aktuell abgedeckt:
+    - ``INTEGER PRIMARY KEY AUTOINCREMENT`` → ``SERIAL PRIMARY KEY``
+      (PostgreSQL kennt kein ``AUTOINCREMENT``; ``SERIAL`` erzeugt die
+      äquivalente Auto-Increment-Sequenz für die ``id``-Spalte).
+
+    Andere Anweisungen bleiben unverändert; insbesondere wird nichts
+    übersetzt, wenn keines der Muster vorkommt (kein Risiko für DML).
+    """
+    translated = _AUTOINCREMENT_RE.sub("SERIAL PRIMARY KEY", sql)
+    # Falls AUTOINCREMENT in einer anderen Konstellation auftaucht: entfernen,
+    # damit PostgreSQL nicht am unbekannten Schlüsselwort scheitert.
+    if "AUTOINCREMENT" in translated.upper():
+        translated = _BARE_AUTOINCREMENT_RE.sub("", translated)
+    return translated
 
 
 # ---------------------------------------------------------------------------
@@ -140,10 +195,18 @@ class PgCursor:
 
     # -- Kern --------------------------------------------------------------
     def execute(self, sql: str, params: Sequence[Any] | None = None):
-        translated = translate_placeholders(sql)
+        # `PRAGMA table_info(...)` → echte information_schema-Abfrage, damit
+        # nachfolgende fetchall()/col[1]-Zugriffe Spalteninfos liefern.
+        m = _PRAGMA_TABLE_INFO_RE.match(sql)
+        if m:
+            self._cur.execute(_PRAGMA_TABLE_INFO_SQL, [m.group("table")])
+            return self
+
+        # Erst DDL (CREATE-Syntax) portieren, dann Platzhalter übersetzen.
+        translated = translate_placeholders(translate_ddl(sql))
         stripped = translated.lstrip().lower()
 
-        # PRAGMA → No-Op (PostgreSQL kennt kein PRAGMA)
+        # Übrige PRAGMA → No-Op (PostgreSQL kennt kein PRAGMA)
         if stripped.startswith("pragma"):
             return self
 
@@ -169,7 +232,7 @@ class PgCursor:
         return self
 
     def executemany(self, sql: str, seq):
-        self._cur.executemany(translate_placeholders(sql), seq)
+        self._cur.executemany(translate_placeholders(translate_ddl(sql)), seq)
         return self
 
     def fetchone(self):
