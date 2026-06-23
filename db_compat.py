@@ -98,6 +98,30 @@ def translate_ddl(sql: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# DML-Übersetzung: SQLite `INSERT OR IGNORE` → PostgreSQL `ON CONFLICT DO NOTHING`
+# ---------------------------------------------------------------------------
+# Generisch und sicher: `INSERT OR IGNORE` ignoriert Zeilen, die irgendeine
+# UNIQUE/PK-Constraint verletzen – exakt das Verhalten von `ON CONFLICT DO
+# NOTHING`. (Demgegenüber ist `INSERT OR REPLACE` NICHT generisch übersetzbar,
+# da das Konflikt-Ziel/UPDATE-Set unbekannt ist – bleibt Call-Site-Aufgabe.)
+_INSERT_OR_IGNORE_RE = re.compile(r"^(\s*)INSERT\s+OR\s+IGNORE\s+INTO\b", re.IGNORECASE)
+
+
+def translate_dml(sql: str) -> str:
+    """Übersetzt `INSERT OR IGNORE INTO ...` → `INSERT INTO ... ON CONFLICT DO NOTHING`.
+
+    Andere Statements bleiben unverändert. ``ON CONFLICT DO NOTHING`` wird ans
+    Ende gehängt (vor ein evtl. später ergänztes ``RETURNING`` der lastrowid-
+    Emulation), damit valides PostgreSQL entsteht.
+    """
+    if _INSERT_OR_IGNORE_RE.match(sql):
+        sql = _INSERT_OR_IGNORE_RE.sub(r"\1INSERT INTO", sql, count=1)
+        sql = sql.rstrip().rstrip(";").rstrip()
+        sql = sql + " ON CONFLICT DO NOTHING"
+    return sql
+
+
+# ---------------------------------------------------------------------------
 # Platzhalter-Übersetzung  ?  →  %s   (und  %  →  %%)
 # ---------------------------------------------------------------------------
 def translate_placeholders(sql: str) -> str:
@@ -202,8 +226,8 @@ class PgCursor:
             self._cur.execute(_PRAGMA_TABLE_INFO_SQL, [m.group("table")])
             return self
 
-        # Erst DDL (CREATE-Syntax) portieren, dann Platzhalter übersetzen.
-        translated = translate_placeholders(translate_ddl(sql))
+        # Erst DDL (CREATE) + DML (INSERT OR IGNORE) portieren, dann Platzhalter.
+        translated = translate_placeholders(translate_ddl(translate_dml(sql)))
         stripped = translated.lstrip().lower()
 
         # Übrige PRAGMA → No-Op (PostgreSQL kennt kein PRAGMA)
@@ -232,7 +256,7 @@ class PgCursor:
         return self
 
     def executemany(self, sql: str, seq):
-        self._cur.executemany(translate_placeholders(translate_ddl(sql)), seq)
+        self._cur.executemany(translate_placeholders(translate_ddl(translate_dml(sql))), seq)
         return self
 
     def fetchone(self):
