@@ -21,7 +21,7 @@ import re
 import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime, date
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 from enum import Enum
 from typing import Dict, List, Optional, Tuple, Any
 from xml.etree import ElementTree as ET
@@ -561,13 +561,15 @@ class InvoiceToBuchungConverter:
         beschreibung = (invoice_data.get('verwendungszweck', '') or '').lower()
         
         # Artikel-Text hinzufügen
-        artikel = invoice_data.get('artikel', [])
+        artikel = invoice_data.get('artikel') or []
         if isinstance(artikel, str):
             try:
                 artikel = json.loads(artikel)
             except:
                 artikel = []
-        
+        if not isinstance(artikel, (list, tuple)):
+            artikel = []
+
         artikel_text = ' '.join([str(a.get('beschreibung', '')) for a in artikel if isinstance(a, dict)]).lower()
         combined = f"{supplier} {beschreibung} {artikel_text}"
         
@@ -619,13 +621,24 @@ class InvoiceToBuchungConverter:
         """
         buchungen = []
         
-        # Parse Beträge
-        brutto = Decimal(str(invoice_data.get('betrag_brutto', 0)))
-        mwst_satz = float(invoice_data.get('mwst_satz', 19))
-        
+        # Parse Beträge (defensiv: None/leer → 0)
+        def _dec(value, default="0"):
+            if value is None or value == "":
+                return Decimal(default)
+            try:
+                return Decimal(str(value))
+            except (InvalidOperation, ValueError, TypeError):
+                return Decimal(default)
+
+        brutto = _dec(invoice_data.get('betrag_brutto'))
+        try:
+            mwst_satz = float(invoice_data.get('mwst_satz') or 19)
+        except (ValueError, TypeError):
+            mwst_satz = 19.0
+
         netto = invoice_data.get('betrag_netto')
         if netto:
-            netto = Decimal(str(netto))
+            netto = _dec(netto)
         else:
             netto = brutto / (1 + Decimal(str(mwst_satz)) / 100)
             netto = netto.quantize(Decimal("0.01"), ROUND_HALF_UP)

@@ -57,3 +57,7 @@ python-pptx>=1.0.0
 pytz>=2025.1
 tqdm>=4.67.0
 schedule>=1.2.0,<2.0
+
+# Öffentlicher Validierungs-Endpoint
+defusedxml>=0.7.1
+pikepdf>=8.0.0

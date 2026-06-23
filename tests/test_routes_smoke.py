@@ -21,16 +21,27 @@ os.environ["INVOICE_DB_PATH"] = os.path.join(tempfile.mkdtemp(), "routes_smoke.d
 web_app = pytest.importorskip("web.app", reason="App-Abhängigkeiten nicht installiert")
 fastapi_testclient = pytest.importorskip("fastapi.testclient")
 
+from pathlib import Path  # noqa: E402
+
+_DB_FILE = Path(os.environ["INVOICE_DB_PATH"])
+
+
+@pytest.fixture(autouse=True)
+def _pin_db():
+    """DB-Pfad-Resolver vor JEDEM Test fixieren (verhindert Leaks durch andere
+    Test-Module, die _ensure_db_path global überschreiben)."""
+    import database
+    database._ensure_db_path = lambda: _DB_FILE
+    yield
+
 
 @pytest.fixture(scope="module")
 def client():
     # DB-Pfad deterministisch fixieren (unabhängig von Import-Reihenfolge), da
     # get_connection() den Pfad zur Laufzeit über _ensure_db_path() auflöst.
     import database
-    from pathlib import Path
-    db_path = Path(os.environ["INVOICE_DB_PATH"])
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    database._ensure_db_path = lambda: db_path
+    _DB_FILE.parent.mkdir(parents=True, exist_ok=True)
+    database._ensure_db_path = lambda: _DB_FILE
 
     from database import init_database, init_users_table
     init_database()
