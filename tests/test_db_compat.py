@@ -248,3 +248,22 @@ def test_insert_or_ignore_on_postgres():
         conn.commit()
         cur.execute("SELECT COUNT(*) FROM roles_t")
         assert cur.fetchone()[0] == 1
+
+
+@pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt (echte Postgres-Instanz nötig)")
+def test_insert_or_ignore_on_table_without_id_column():
+    """Regression (PR-Review): INSERT OR IGNORE darf auf Tabellen OHNE id-Spalte
+    (PK z. B. job_id) NICHT an der RETURNING-id-Emulation scheitern."""
+    psycopg = pytest.importorskip("psycopg")
+    import db_compat as dbc
+
+    with dbc.PgConnection(psycopg.connect(_PG_URL, row_factory=dbc._hybrid_row_factory)) as conn:
+        cur = conn.cursor()
+        cur.execute("DROP TABLE IF EXISTS jobs_t")
+        cur.execute("CREATE TABLE jobs_t (job_id TEXT PRIMARY KEY, status TEXT)")
+        cur.execute("INSERT OR IGNORE INTO jobs_t (job_id, status) VALUES (?, ?)", ("J1", "new"))
+        cur.execute("INSERT OR IGNORE INTO jobs_t (job_id, status) VALUES (?, ?)", ("J1", "dup"))  # Konflikt
+        conn.commit()
+        cur.execute("SELECT COUNT(*) FROM jobs_t")
+        assert cur.fetchone()[0] == 1
+        assert cur.lastrowid is None  # keine id-Emulation für ON CONFLICT DO NOTHING

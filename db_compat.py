@@ -234,8 +234,18 @@ class PgCursor:
         if stripped.startswith("pragma"):
             return self
 
-        # INSERT ohne RETURNING → RETURNING id ergänzen, um lastrowid zu liefern
-        emulate_lastrowid = stripped.startswith("insert") and "returning" not in stripped
+        # INSERT ohne RETURNING → RETURNING id ergänzen, um lastrowid zu liefern.
+        # ABER NICHT bei `ON CONFLICT DO NOTHING` (aus INSERT OR IGNORE): das ist
+        # idempotentes Seeding ohne lastrowid-Bedarf, der Konfliktfall liefert
+        # ohnehin keine Zeile, und `RETURNING id` würde bei Tabellen ohne
+        # id-Spalte (z. B. jobs mit job_id-PK) einen UndefinedColumn werfen und
+        # die Transaktion abbrechen (Fallback-Retry scheitert dann am aborted tx).
+        on_conflict_nothing = "on conflict do nothing" in stripped
+        emulate_lastrowid = (
+            stripped.startswith("insert")
+            and "returning" not in stripped
+            and not on_conflict_nothing
+        )
         try:
             if emulate_lastrowid:
                 self._cur.execute(translated.rstrip().rstrip(";") + " RETURNING id", params or [])
@@ -246,6 +256,8 @@ class PgCursor:
                     self.lastrowid = None
             else:
                 self._cur.execute(translated, params or [])
+                if on_conflict_nothing:
+                    self.lastrowid = None
         except Exception:
             # Fallback: ohne RETURNING erneut versuchen (z. B. Tabelle ohne id)
             if emulate_lastrowid:
