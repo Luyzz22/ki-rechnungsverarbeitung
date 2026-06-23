@@ -118,7 +118,12 @@ def _require_tenant(request: Request) -> int:
 def _user_dict(user_id: int) -> Dict[str, Any]:
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, email, name, company, COALESCE(is_admin, 0) FROM users WHERE id = ?", (user_id,))
+    # is_admin NICHT per COALESCE(.., 0) lesen: auf PostgreSQL ist die Spalte je
+    # nach Herkunft boolean (Bestand) ODER integer (Fresh-Install via
+    # init_database). COALESCE mit Integer-Literal wirft dort DatatypeMismatch
+    # (boolean vs integer); ein FALSE-Literal bräche umgekehrt den Integer-Fall.
+    # Spalte roh lesen, Default/Typ in Python normalisieren (bool(None) == False).
+    cur.execute("SELECT id, email, name, company, is_admin FROM users WHERE id = ?", (user_id,))
     row = cur.fetchone()
     conn.close()
     if not row:
