@@ -164,3 +164,21 @@ def test_rate_limit_429_with_retry_after(client):
 def test_summary_exposes_engine(client):
     body = _post(client, "ok.xml", VALID_UBL.encode(), "application/xml").json()
     assert body["summary"]["engine"] in ("kosit", "kosit-python")
+
+
+def test_engine_kosit_when_service_wired(client, monkeypatch):
+    """End-to-End: bei erreichbarem KoSIT-Daemon weist summary.engine 'kosit' aus."""
+    import requests
+    monkeypatch.setenv("KOSIT_VALIDATOR_URL", "http://kosit-validator:8080")
+    accept = (
+        b'<rep:report xmlns:rep="http://www.xoev.de/de/validator/varl/1">'
+        b'<rep:assessment><rep:accept/></rep:assessment></rep:report>'
+    )
+
+    class _R:
+        status_code = 200
+        content = accept
+
+    monkeypatch.setattr(requests, "post", lambda *a, **k: _R())
+    body = _post(client, "ok.xml", VALID_UBL.encode(), "application/xml").json()
+    assert body["summary"]["engine"] == "kosit"

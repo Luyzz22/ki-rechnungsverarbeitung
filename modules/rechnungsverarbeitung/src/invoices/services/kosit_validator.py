@@ -12,6 +12,7 @@ the PEPPOL validation service.
 from __future__ import annotations
 
 import logging
+import os
 import re
 import shutil
 import subprocess
@@ -65,10 +66,22 @@ class KoSITValidator:
         binary: str = "kosit-validator",
         timeout_seconds: int = 10,
         config_version: str = "xrechnung-3.0.1",
+        service_url: str | None = None,
+        service_connect_timeout: float = 5.0,
     ) -> None:
         self.binary = binary
         self.timeout_seconds = timeout_seconds
         self.config_version = config_version
+        # Echtes KoSIT-Prüftool im Daemon-Modus (validationtool -D) per HTTP.
+        # Default aus Umgebung (docker-compose/Server setzt KOSIT_VALIDATOR_URL).
+        self.service_url = service_url if service_url is not None else os.environ.get("KOSIT_VALIDATOR_URL")
+        # Strikter Connect-Timeout → bei Nichterreichbarkeit schneller, sauberer Fallback.
+        try:
+            self.service_connect_timeout = float(
+                os.environ.get("KOSIT_VALIDATOR_CONNECT_TIMEOUT", service_connect_timeout)
+            )
+        except (TypeError, ValueError):
+            self.service_connect_timeout = service_connect_timeout
 
     def validate(self, xml_content: str | bytes) -> ValidationResult:
         result = ValidationResult()
@@ -165,6 +178,20 @@ class KoSITValidator:
         report_dir = Path(report_dir)
         report_dir.mkdir(parents=True, exist_ok=True)
 
+        # 1) Bevorzugt: echtes KoSIT-Prüftool über HTTP-Daemon (KOSIT_VALIDATOR_URL).
+        #    Bei Nichterreichbarkeit/Timeout -> None -> sauberer Fallback unten.
+        if self.service_url:
+            try:
+                xml_bytes = invoice_path.read_bytes()
+            except OSError as exc:
+                logger.warning("kosit: could not read invoice for service call: %s", exc)
+                xml_bytes = None
+            if xml_bytes is not None:
+                svc = self._validate_via_service(xml_bytes, self.service_url)
+                if svc is not None:
+                    return svc
+
+        # 2) Fallback: lokales KoSIT-Binary, falls installiert.
         if shutil.which(self.binary) is None:
             return KositValidationResult(
                 status="warning",
@@ -218,6 +245,93 @@ class KoSITValidator:
             engine="kosit",
             config_version=self.config_version,
             raw_output=raw_output.strip(),
+        )
+
+    def _validate_via_service(self, xml_bytes: bytes, base_url: str) -> KositValidationResult | None:
+        """POST the document to the KoSIT validationtool daemon (``-D``) and parse
+        the VARL report it returns.
+
+        Returns a :class:`KositValidationResult` (``engine='kosit'``) on a usable
+        HTTP response, or ``None`` when the service is unreachable / errors out, so
+        the caller can fall back cleanly to the binary or Python path.
+        """
+        try:
+            import requests
+        except Exception:  # pragma: no cover - requests is a declared dependency
+            logger.warning("kosit: requests not available, skipping HTTP service")
+            return None
+
+        url = base_url.rstrip("/") + "/"
+        try:
+            resp = requests.post(
+                url,
+                data=xml_bytes,
+                headers={"Content-Type": "application/xml"},
+                # (connect, read): strikt -> Nichterreichbarkeit scheitert schnell.
+                timeout=(self.service_connect_timeout, float(self.timeout_seconds)),
+            )
+        except requests.RequestException as exc:
+            logger.warning("kosit service unreachable (%s) – falling back", type(exc).__name__)
+            return None
+
+        if resp.status_code != 200 or not resp.content:
+            logger.warning("kosit service returned HTTP %s – falling back", resp.status_code)
+            return None
+
+        return self._parse_varl_report(resp.content)
+
+    def _parse_varl_report(self, report_bytes: bytes) -> KositValidationResult:
+        """Parse a KoSIT VARL report (XXE-safe). ``accept`` -> passed, ``reject`` -> failed."""
+        parser = etree.XMLParser(
+            resolve_entities=False, no_network=True, load_dtd=False, huge_tree=False
+        )
+        raw = report_bytes[:4000].decode("utf-8", errors="ignore")
+        try:
+            root = etree.fromstring(report_bytes, parser)
+        except etree.XMLSyntaxError:
+            return KositValidationResult(
+                status="failed",
+                errors=["KoSIT-Service lieferte einen ungültigen Report."],
+                warnings=[],
+                engine="kosit",
+                config_version=self.config_version,
+                raw_output=raw,
+            )
+
+        accepted = bool(root.xpath("//*[local-name()='accept']"))
+        rejected = bool(root.xpath("//*[local-name()='reject']"))
+
+        errors: list[str] = []
+        warnings: list[str] = []
+        for msg in root.xpath("//*[local-name()='message']"):
+            level = (msg.get("level") or "").lower()
+            text = " ".join((msg.text or "").split())
+            code = msg.get("code")
+            if code and code not in text:
+                text = f"{code}: {text}" if text else code
+            if not text:
+                continue
+            if level in ("error", "fatal"):
+                errors.append(text)
+            elif level == "warning":
+                warnings.append(text)
+
+        if rejected:
+            status = "failed"
+            if not errors:
+                errors.append("KoSIT: Dokument wurde abgelehnt (reject).")
+        elif accepted:
+            status = "passed"
+        else:
+            status = "failed" if errors else "passed"
+
+        return KositValidationResult(
+            status=status,
+            errors=errors,
+            warnings=warnings,
+            engine="kosit",
+            config_version=self.config_version,
+            raw_output=raw,
         )
 
 # Backward compatibility alias
