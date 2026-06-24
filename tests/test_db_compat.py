@@ -338,3 +338,103 @@ def test_dashboard_and_supplier_reads_on_timestamp_schema(monkeypatch):
     suppliers = supplier_overview.get_suppliers(1)
     assert len(suppliers) == 3
     assert all(isinstance(s["last_date"], str) for s in suppliers)  # date-Objekt[:10] gefixt
+
+
+# ===========================================================================
+# Postgres-Kompatibilitäts-Sweep
+# ===========================================================================
+@pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt")
+def test_plain_insert_into_idless_table_no_crash():
+    """Write-500-Fix: plain INSERT in Tabelle ohne id-Spalte (job_id-PK) darf
+    NICHT an der RETURNING-id-Emulation scheitern."""
+    pytest.importorskip("psycopg")
+    with _force(_PG_URL) as conn:
+        cur = conn.cursor()
+        cur.execute("DROP TABLE IF EXISTS jobs_w")
+        cur.execute("CREATE TABLE jobs_w (job_id TEXT PRIMARY KEY, status TEXT)")
+        cur.execute("INSERT INTO jobs_w (job_id, status) VALUES (?, ?)", ("J1", "new"))
+        conn.commit()
+        assert cur.lastrowid is None
+        cur.execute("SELECT COUNT(*) FROM jobs_w")
+        assert cur.fetchone()[0] == 1
+        # Tabelle MIT id liefert weiterhin lastrowid
+        cur.execute("DROP TABLE IF EXISTS with_id")
+        cur.execute("CREATE TABLE with_id (id SERIAL PRIMARY KEY, name TEXT)")
+        cur.execute("INSERT INTO with_id (name) VALUES (?)", ("x",))
+        assert cur.lastrowid == 1
+
+
+@pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt")
+def test_insert_or_replace_on_pk_unique_and_no_constraint():
+    """INSERT OR REPLACE → ON CONFLICT: PK-Ziel, UNIQUE-Ziel, und Fallback ohne
+    Constraint (kein Crash)."""
+    pytest.importorskip("psycopg")
+    with _force(_PG_URL) as conn:
+        cur = conn.cursor()
+        # PK-Ziel
+        cur.execute("DROP TABLE IF EXISTS rj")
+        cur.execute("CREATE TABLE rj (job_id TEXT PRIMARY KEY, status TEXT)")
+        cur.execute("INSERT OR REPLACE INTO rj (job_id, status) VALUES (?, ?)", ("J", "a"))
+        cur.execute("INSERT OR REPLACE INTO rj (job_id, status) VALUES (?, ?)", ("J", "b"))
+        conn.commit()
+        cur.execute("SELECT status FROM rj WHERE job_id='J'")
+        assert cur.fetchone()[0] == "b"
+        cur.execute("SELECT COUNT(*) FROM rj"); assert cur.fetchone()[0] == 1
+        # UNIQUE-Ziel (PK id, aber Konflikt auf UNIQUE supplier)
+        cur.execute("DROP TABLE IF EXISTS rsp")
+        cur.execute("CREATE TABLE rsp (id SERIAL PRIMARY KEY, supplier TEXT UNIQUE, cnt INTEGER)")
+        cur.execute("INSERT OR REPLACE INTO rsp (supplier, cnt) VALUES (?, ?)", ("ACME", 1))
+        cur.execute("INSERT OR REPLACE INTO rsp (supplier, cnt) VALUES (?, ?)", ("ACME", 9))
+        conn.commit()
+        cur.execute("SELECT cnt FROM rsp WHERE supplier='ACME'"); assert cur.fetchone()[0] == 9
+        cur.execute("SELECT COUNT(*) FROM rsp"); assert cur.fetchone()[0] == 1
+        # Fallback: keine Constraint → reiner INSERT, kein Crash
+        cur.execute("DROP TABLE IF EXISTS rnoc")
+        cur.execute("CREATE TABLE rnoc (a TEXT, b TEXT)")
+        cur.execute("INSERT OR REPLACE INTO rnoc (a, b) VALUES (?, ?)", ("x", "y"))
+        conn.commit()
+        cur.execute("SELECT COUNT(*) FROM rnoc"); assert cur.fetchone()[0] == 1
+
+
+@pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt")
+def test_sqlite_datetime_functions_translated():
+    """strftime/datetime('now')/date('now') laufen auf Postgres."""
+    pytest.importorskip("psycopg")
+    with _force(_PG_URL) as conn:
+        cur = conn.cursor()
+        cur.execute("DROP TABLE IF EXISTS dtf")
+        cur.execute("CREATE TABLE dtf (id SERIAL PRIMARY KEY, created_at timestamp, datum date)")
+        cur.execute("INSERT INTO dtf (created_at, datum) VALUES ('2026-03-15 09:00:00', '2026-03-15')")
+        conn.commit()
+        cur.execute("SELECT strftime('%Y-%m', created_at) FROM dtf"); assert cur.fetchone()[0] == "2026-03"
+        cur.execute("SELECT strftime('%Y', datum), strftime('%m', datum) FROM dtf")
+        y, mo = cur.fetchone(); assert (y, mo) == ("2026", "03")
+        # 'now' + Modifikatoren
+        cur.execute("SELECT COUNT(*) FROM dtf WHERE created_at >= datetime('now', ?)", ("-100 years",))
+        assert cur.fetchone()[0] == 1
+        cur.execute("SELECT COUNT(*) FROM dtf WHERE datum >= date('now', '-100 years')")
+        assert cur.fetchone()[0] == 1
+        cur.execute("SELECT date('now', 'start of month') <= CURRENT_DATE"); assert cur.fetchone()[0] is True
+
+
+@pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt")
+def test_boolean_is_admin_write_and_read_universal():
+    """Boolean-Writes/Reads funktionieren für boolean UND integer is_admin:
+    Write als String '1'/'0' (Assignment-Cast), Read via CAST(... AS INTEGER)."""
+    pytest.importorskip("psycopg")
+    for ctype in ("boolean", "integer"):
+        with _force(_PG_URL) as conn:
+            cur = conn.cursor()
+            cur.execute("DROP TABLE IF EXISTS uadm")
+            cur.execute(f"CREATE TABLE uadm (id SERIAL PRIMARY KEY, is_admin {ctype})")
+            # Write wie api_nexus: str(int(...))
+            cur.execute("INSERT INTO uadm (is_admin) VALUES (?)", (str(int(True)),))
+            cur.execute("UPDATE uadm SET is_admin = ? WHERE id = ?", (str(int(False)), 1))
+            conn.commit()
+            # Read wie api_nexus/approval: CAST(is_admin AS INTEGER) = 1
+            cur.execute("SELECT COUNT(*) FROM uadm WHERE CAST(is_admin AS INTEGER) = 1")
+            assert cur.fetchone()[0] == 0, f"{ctype}: nach Update auf 0 darf kein Admin matchen"
+            cur.execute("UPDATE uadm SET is_admin = ? WHERE id = ?", (str(int(True)), 1))
+            conn.commit()
+            cur.execute("SELECT COUNT(*) FROM uadm WHERE CAST(is_admin AS INTEGER) = 1")
+            assert cur.fetchone()[0] == 1, f"{ctype}: Admin-Read muss matchen"

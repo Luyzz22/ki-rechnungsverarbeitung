@@ -11,6 +11,7 @@ import logging
 import sqlite3
 import json
 from typing import Optional
+from database import get_connection  # routet auf Postgres (DATABASE_URL) bzw. SQLite
 from fastapi import APIRouter, HTTPException, Header, Request
 from pydantic import BaseModel
 
@@ -291,7 +292,7 @@ async def get_stats():
     """Dashboard Statistiken"""
     try:
         import sqlite3
-        conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+        conn = get_connection()
         cursor = conn.cursor()
         
         # Rechnungen zählen
@@ -336,7 +337,7 @@ async def get_stats():
     """Dashboard Statistiken"""
     try:
         import sqlite3
-        conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM invoices")
         invoice_count = cursor.fetchone()[0]
@@ -368,7 +369,7 @@ async def login(request: LoginRequest):
     import sqlite3
     from database import _verify_password_hash
 
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -384,7 +385,7 @@ async def login(request: LoginRequest):
     user_id, email, name, password_hash, is_admin = user
     
     # Check email verification
-    conn2 = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn2 = get_connection()
     cursor2 = conn2.cursor()
     cursor2.execute("SELECT email_verified FROM users WHERE id = ?", (user_id,))
     verified = cursor2.fetchone()
@@ -398,7 +399,7 @@ async def login(request: LoginRequest):
         raise HTTPException(status_code=401, detail="Ungültige Anmeldedaten")
     
     # Update last_login
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     if needs_rehash:
         cursor.execute(
@@ -434,7 +435,7 @@ async def get_current_user(authorization: str = Header(None)):
     user_id = parts[1]
     
     import sqlite3
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, email, name, is_admin FROM users WHERE id = ?", (user_id,))
     user = cursor.fetchone()
@@ -455,7 +456,7 @@ async def get_user_stats(user_id: int):
     """User-spezifische Dashboard Statistiken"""
     try:
         import sqlite3
-        conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+        conn = get_connection()
         cursor = conn.cursor()
         
         # Rechnungen für diesen User
@@ -503,7 +504,7 @@ async def list_users(authorization: str = Header(None)):
     
     token = authorization.replace("Bearer ", ""); user_id = token.split("_")[1] if token.startswith("sbs_") else "1"
     
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     
     # Check if admin
@@ -550,7 +551,7 @@ async def create_user(request: CreateUserRequest, authorization: str = Header(No
     
     admin_id = authorization.split("_")[1]
     
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("SELECT is_admin FROM users WHERE id = ?", (admin_id,))
@@ -565,7 +566,7 @@ async def create_user(request: CreateUserRequest, authorization: str = Header(No
         cursor.execute("""
             INSERT INTO users (email, name, password_hash, is_admin, is_active)
             VALUES (?, ?, ?, ?, 1)
-        """, (request.email, request.name, password_hash, int(request.is_admin)))
+        """, (request.email, request.name, password_hash, str(int(request.is_admin))))
         conn.commit()
         new_id = cursor.lastrowid
         conn.close()
@@ -584,7 +585,7 @@ async def delete_user(user_id: int, authorization: str = Header(None)):
     
     admin_id = authorization.split("_")[1]
     
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("SELECT is_admin FROM users WHERE id = ?", (admin_id,))
@@ -627,7 +628,7 @@ async def reset_password(request: ResetPasswordRequest, authorization: str = Hea
     
     admin_id = authorization.split("_")[1]
     
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("SELECT is_admin FROM users WHERE id = ?", (admin_id,))
@@ -671,7 +672,7 @@ async def update_user(user_id: int, request: UpdateUserRequest, authorization: s
     
     admin_id = authorization.split("_")[1]
     
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("SELECT is_admin FROM users WHERE id = ?", (admin_id,))
@@ -679,7 +680,7 @@ async def update_user(user_id: int, request: UpdateUserRequest, authorization: s
     if not result or not result[0]:
         raise HTTPException(status_code=403, detail="Keine Admin-Berechtigung")
     
-    cursor.execute("UPDATE users SET name = ?, is_admin = ? WHERE id = ?", (request.name, int(request.is_admin), user_id))
+    cursor.execute("UPDATE users SET name = ?, is_admin = ? WHERE id = ?", (request.name, str(int(request.is_admin)), user_id))
     conn.commit()
     conn.close()
     
@@ -690,7 +691,7 @@ async def get_user_activity(user_id: int):
     """Letzte Aktivitäten eines Users"""
     import sqlite3
     
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     
     # Letzte Rechnungen
@@ -739,7 +740,7 @@ async def register(request: RegisterRequest):
     if len(request.password) < 6:
         raise HTTPException(status_code=400, detail="Passwort muss mindestens 6 Zeichen haben")
     
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     
     # Check if email exists
@@ -840,7 +841,7 @@ async def forgot_password(request: ForgotPasswordRequest):
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
     
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("SELECT id, name FROM users WHERE email = ?", (request.email,))
@@ -896,7 +897,7 @@ async def reset_password_with_token(request: ResetPasswordTokenRequest):
     if len(request.new_password) < 6:
         raise HTTPException(status_code=400, detail="Passwort muss mindestens 6 Zeichen haben")
     
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -931,7 +932,7 @@ async def verify_email(token: str):
     """E-Mail verifizieren"""
     import sqlite3
     
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("SELECT id, name FROM users WHERE verification_token = ?", (token,))
@@ -983,7 +984,7 @@ async def get_monthly_stats(user_id: int):
     import sqlite3
     from datetime import datetime, timedelta
     
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     
     # Letzte 6 Monate
@@ -1011,7 +1012,7 @@ async def admin_stats():
     import sqlite3
     from datetime import datetime, timedelta
     
-    conn = sqlite3.connect("/var/www/invoice-app/invoices.db")
+    conn = get_connection()
     cursor = conn.cursor()
     
     # Total Users
@@ -1078,7 +1079,7 @@ async def get_notifications(user_id: int, authorization: str = Header(None)):
     """User Notifications abrufen"""
     import sqlite3
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     
     # Ensure notifications table exists
@@ -1131,7 +1132,7 @@ async def mark_notification_read(notification_id: int, authorization: str = Head
     """Notification als gelesen markieren"""
     import sqlite3
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('UPDATE notifications SET is_read = 1 WHERE id = ?', (notification_id,))
     conn.commit()
@@ -1145,7 +1146,7 @@ async def mark_all_read(user_id: int, authorization: str = Header(None)):
     """Alle Notifications als gelesen markieren"""
     import sqlite3
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('UPDATE notifications SET is_read = 1 WHERE user_id = ?', (user_id,))
     conn.commit()
@@ -1159,7 +1160,7 @@ async def create_notification(data: dict, authorization: str = Header(None)):
     """Notification erstellen (für System/Admin)"""
     import sqlite3
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -1179,7 +1180,7 @@ def create_system_notification(user_id: int, type: str, title: str, message: str
     """Helper: Erstellt System-Notification"""
     import sqlite3
     try:
-        conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO notifications (user_id, type, title, message, link)
@@ -1200,11 +1201,11 @@ async def broadcast_notification(data: dict, authorization: str = Header(None)):
     if not authorization:
         raise HTTPException(status_code=401, detail="Nicht authentifiziert")
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     
     # Get all active users
-    cursor.execute('SELECT id FROM users WHERE is_active = 1')
+    cursor.execute('SELECT id FROM users WHERE CAST(is_active AS INTEGER) = 1')
     users = cursor.fetchall()
     
     count = 0
@@ -1235,9 +1236,9 @@ def notify_new_invoice(user_id: int, invoice_number: str, amount: float):
 def notify_new_user_to_admins(new_user_name: str, new_user_email: str):
     """Benachrichtigt alle Admins über neue Registrierung"""
     import sqlite3
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT id FROM users WHERE is_admin = 1')
+    cursor.execute('SELECT id FROM users WHERE CAST(is_admin AS INTEGER) = 1')
     admins = cursor.fetchall()
     conn.close()
     
@@ -1276,7 +1277,7 @@ def log_audit(user_id: int, user_email: str, action: str, resource_type: str = N
     """Audit Log Eintrag erstellen"""
     import sqlite3
     try:
-        conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO audit_logs (user_id, user_email, action, resource_type, resource_id, details, ip_address)
@@ -1299,7 +1300,7 @@ async def get_audit_logs(authorization: str = Header(None), limit: int = 100, of
     token = authorization.replace("Bearer ", "")
     user_id = token.split("_")[1] if token.startswith("sbs_") else None
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     
     # Check admin
@@ -1354,7 +1355,7 @@ async def export_audit_logs(authorization: str = Header(None), days: int = 30):
     token = authorization.replace("Bearer ", "")
     user_id = token.split("_")[1] if token.startswith("sbs_") else None
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     
     # Check admin
@@ -1433,7 +1434,7 @@ def notify_user_with_email(user_id: int, type: str, title: str, message: str, li
     create_system_notification(user_id, type, title, message, link)
     
     # Get user email
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('SELECT email FROM users WHERE id = ?', (user_id,))
     user = cursor.fetchone()
@@ -1469,7 +1470,7 @@ async def list_webhooks(authorization: str = Header(None)):
     if not authorization:
         raise HTTPException(status_code=401, detail="Nicht authentifiziert")
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -1499,7 +1500,7 @@ async def create_webhook(data: dict, authorization: str = Header(None)):
     if not authorization:
         raise HTTPException(status_code=401, detail="Nicht authentifiziert")
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -1521,7 +1522,7 @@ async def delete_webhook(webhook_id: int, authorization: str = Header(None)):
     if not authorization:
         raise HTTPException(status_code=401, detail="Nicht authentifiziert")
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('DELETE FROM webhooks WHERE id = ?', (webhook_id,))
     conn.commit()
@@ -1535,7 +1536,7 @@ async def test_webhook(webhook_id: int, authorization: str = Header(None)):
     """Webhook testen"""
     import sqlite3
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('SELECT url FROM webhooks WHERE id = ?', (webhook_id,))
     row = cursor.fetchone()
@@ -1553,9 +1554,9 @@ def fire_webhook_event(event: str, data: dict):
     import sqlite3
     import time
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT id, url, events FROM webhooks WHERE is_active = 1')
+    cursor.execute('SELECT id, url, events FROM webhooks WHERE CAST(is_active AS INTEGER) = 1')
     webhooks = cursor.fetchall()
     conn.close()
     
@@ -1578,7 +1579,7 @@ def log_webhook_call(webhook_id: int, event: str, status: str, response_code: in
     import sqlite3
     import json
     try:
-        conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO webhook_logs (webhook_id, event, status, response_code, response_time_ms, error_message, payload)
@@ -1609,7 +1610,7 @@ async def get_webhook_stats(authorization: str = Header(None)):
     
     admin_id = authorization.split("_")[1]
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -1763,7 +1764,7 @@ async def list_maintenance_requests(
     if not user:
         raise HTTPException(status_code=401, detail="Invalid API key")
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -1808,7 +1809,7 @@ async def get_maintenance_request(
     if not user:
         raise HTTPException(status_code=401, detail="Invalid API key")
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -1883,7 +1884,7 @@ async def get_maintenance_stats(authorization: str = Header(None)):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid API key")
     
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     
     # Total requests

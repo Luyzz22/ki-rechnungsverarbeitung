@@ -27,6 +27,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+from collections import OrderedDict
 from typing import Any, List, Optional, Sequence
 
 logger = logging.getLogger(__name__)
@@ -122,6 +123,134 @@ def translate_dml(sql: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# SQLite-Datums-/Zeitfunktionen → PostgreSQL
+# ---------------------------------------------------------------------------
+# Übersetzt strftime()/datetime()/date() inkl. 'now'-Basis und Modifikatoren
+# (Literal '-7 days', Parameter ?, Konkatenation '-' || ? || ' months',
+# 'start of month'). Läuft NUR auf dem Postgres-Pfad – SQLite bleibt unberührt.
+_DT_FUNC_RE = re.compile(r"\b(strftime|datetime|date)\s*\(", re.IGNORECASE)
+
+# strftime-Formatcodes → to_char-Pattern (längste zuerst ersetzen!)
+_STRFTIME_FMT = [
+    ("%Y-%m-%d", "YYYY-MM-DD"), ("%Y-%m", "YYYY-MM"), ("%d.%m.%Y", "DD.MM.YYYY"),
+    ("%H:%M:%S", "HH24:MI:SS"), ("%H:%M", "HH24:MI"),
+    ("%Y", "YYYY"), ("%m", "MM"), ("%d", "DD"), ("%H", "HH24"), ("%M", "MI"), ("%S", "SS"),
+]
+
+
+def _split_sql_args(s: str) -> List[str]:
+    """Splittet Top-Level-Argumente (Komma) unter Beachtung von Klammern/Strings."""
+    args: List[str] = []
+    buf: List[str] = []
+    depth = 0
+    in_str = False
+    quote = ""
+    i, n = 0, len(s)
+    while i < n:
+        ch = s[i]
+        if in_str:
+            buf.append(ch)
+            if ch == quote:
+                if i + 1 < n and s[i + 1] == quote:
+                    buf.append(s[i + 1]); i += 2; continue
+                in_str = False
+            i += 1; continue
+        if ch in ("'", '"'):
+            in_str = True; quote = ch; buf.append(ch)
+        elif ch == "(":
+            depth += 1; buf.append(ch)
+        elif ch == ")":
+            depth -= 1; buf.append(ch)
+        elif ch == "," and depth == 0:
+            args.append("".join(buf).strip()); buf = []
+        else:
+            buf.append(ch)
+        i += 1
+    if buf:
+        args.append("".join(buf).strip())
+    return args
+
+
+def _is_now(arg: str) -> bool:
+    return arg.strip().strip("'\"").lower() == "now"
+
+
+def _apply_modifier(base: str, mod: str) -> str:
+    """SQLite-Datumsmodifikator → PostgreSQL (Intervall bzw. 'start of ...')."""
+    low = mod.strip().strip("'\"").lower()
+    if low.startswith("start of "):
+        unit = low.split("start of ", 1)[1].strip()  # month/year/day
+        return f"date_trunc('{unit}', {base})"
+    # Literal '-7 days' / Parameter ? / Konkatenation: generisch als INTERVAL casten
+    return f"({base} + CAST({mod.strip()} AS INTERVAL))"
+
+
+def _strftime_to_char(fmt: str, base: str) -> str:
+    inner = fmt.strip().strip("'\"")
+    if inner == "%w":  # SQLite-Wochentag 0..6 (So..Sa) == Postgres EXTRACT(DOW)
+        return f"CAST(EXTRACT(DOW FROM {base}) AS INTEGER)"
+    pat = inner
+    for a, b in _STRFTIME_FMT:
+        pat = pat.replace(a, b)
+    return f"to_char({base}, '{pat}')"
+
+
+def _render_dt(fname: str, args: List[str]) -> str:
+    if not args:
+        return f"{fname}()"
+    if fname in ("datetime", "date"):
+        base_arg = args[0].strip()
+        if _is_now(base_arg):
+            base = "CURRENT_TIMESTAMP" if fname == "datetime" else "CURRENT_DATE"
+        else:
+            base = f"CAST({base_arg} AS {'timestamp' if fname == 'datetime' else 'date'})"
+        for mod in args[1:]:
+            base = _apply_modifier(base, mod)
+        return base
+    # strftime(fmt, X [, modifiers...])
+    fmt = args[0]
+    x = args[1].strip() if len(args) > 1 else "'now'"
+    base = "CURRENT_TIMESTAMP" if _is_now(x) else f"CAST({x} AS timestamp)"
+    for mod in args[2:]:
+        base = _apply_modifier(base, mod)
+    return _strftime_to_char(fmt, base)
+
+
+def translate_sqlite_datetime(sql: str) -> str:
+    """Ersetzt strftime/datetime/date-Aufrufe durch PostgreSQL-Äquivalente."""
+    if not _DT_FUNC_RE.search(sql):
+        return sql
+    out: List[str] = []
+    i, n = 0, len(sql)
+    while i < n:
+        m = _DT_FUNC_RE.search(sql, i)
+        if not m:
+            out.append(sql[i:]); break
+        out.append(sql[i:m.start()])
+        fname = m.group(1).lower()
+        # passende schließende Klammer suchen (Strings/Verschachtelung beachten)
+        k = m.end(); depth = 1; in_str = False; quote = ""
+        while k < n and depth > 0:
+            ch = sql[k]
+            if in_str:
+                if ch == quote:
+                    if k + 1 < n and sql[k + 1] == quote:
+                        k += 2; continue
+                    in_str = False
+            elif ch in ("'", '"'):
+                in_str = True; quote = ch
+            elif ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+            k += 1
+        inner = sql[m.end():k - 1]
+        out.append(_render_dt(fname, _split_sql_args(inner)))
+        i = k
+    return "".join(out)
+
+
+# ---------------------------------------------------------------------------
 # Platzhalter-Übersetzung  ?  →  %s   (und  %  →  %%)
 # ---------------------------------------------------------------------------
 def translate_placeholders(sql: str) -> str:
@@ -208,6 +337,80 @@ def _hybrid_row_factory(cursor):
 
 
 # ---------------------------------------------------------------------------
+# Schema-Introspektion (gecacht pro Tabelle) – für RETURNING-id-Emulation
+# und INSERT OR REPLACE → ON CONFLICT.
+# ---------------------------------------------------------------------------
+_schema_cache: dict = {}
+
+_INSERT_TABLE_RE = re.compile(r"^\s*INSERT\s+(?:OR\s+\w+\s+)?INTO\s+[\"'`]?(\w+)", re.IGNORECASE)
+_INSERT_COLS_RE = re.compile(r"^\s*INSERT\s+(?:OR\s+\w+\s+)?INTO\s+[\"'`]?\w+[\"'`]?\s*\(([^)]*)\)", re.IGNORECASE)
+_INSERT_OR_REPLACE_RE = re.compile(r"^(\s*)INSERT\s+OR\s+REPLACE\s+INTO\b", re.IGNORECASE)
+
+
+def _load_table_meta(cur, table: str) -> dict:
+    cur.execute(
+        "SELECT column_name FROM information_schema.columns "
+        "WHERE table_schema='public' AND table_name=%s ORDER BY ordinal_position",
+        (table,),
+    )
+    cols = [r[0] for r in cur.fetchall()]
+    cur.execute(
+        """
+        SELECT kcu.column_name, tc.constraint_name,
+               (tc.constraint_type = 'PRIMARY KEY') AS is_pk
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+         AND tc.table_schema = kcu.table_schema
+        WHERE tc.table_schema='public' AND tc.table_name=%s
+          AND tc.constraint_type IN ('PRIMARY KEY', 'UNIQUE')
+        ORDER BY is_pk DESC, tc.constraint_name, kcu.ordinal_position
+        """,
+        (table,),
+    )
+    groups: "OrderedDict[str, list]" = OrderedDict()
+    for col, cname, _is_pk in cur.fetchall():
+        groups.setdefault(cname, []).append(col)
+    return {"cols": [c.lower() for c in cols], "uniques": [g for g in groups.values()]}
+
+
+def _table_meta(cur, table: str) -> dict:
+    meta = _schema_cache.get(table)
+    if meta is None:
+        try:
+            meta = _load_table_meta(cur, table)
+        except Exception:  # pragma: no cover - Introspektion darf nie hart brechen
+            meta = {"cols": [], "uniques": []}
+        _schema_cache[table] = meta
+    return meta
+
+
+def _insert_table(sql: str):
+    m = _INSERT_TABLE_RE.match(sql)
+    return m.group(1) if m else None
+
+
+def _build_on_conflict(cur, table: str, insert_cols: list) -> str:
+    """Baut die ON-CONFLICT-Klausel für INSERT OR REPLACE.
+
+    Wählt die erste PK/UNIQUE-Constraint, deren Spalten vollständig in der
+    Insert-Spaltenliste vorkommen, und aktualisiert die übrigen Spalten aus
+    EXCLUDED. Ohne passende Constraint: leere Klausel (Fallback = reiner INSERT;
+    verhindert den Syntaxfehler, repliziert REPLACE aber nicht – siehe Doku)."""
+    lower = [c.lower() for c in insert_cols]
+    meta = _table_meta(cur, table)
+    for key in meta["uniques"]:
+        keyl = [k.lower() for k in key]
+        if all(k in lower for k in keyl):
+            updates = [c for c in lower if c not in keyl]
+            if not updates:
+                return f" ON CONFLICT ({', '.join(keyl)}) DO NOTHING"
+            sets = ", ".join(f"{c} = EXCLUDED.{c}" for c in updates)
+            return f" ON CONFLICT ({', '.join(keyl)}) DO UPDATE SET {sets}"
+    return ""  # keine passende Constraint → reiner INSERT (Fallback)
+
+
+# ---------------------------------------------------------------------------
 # Connection-/Cursor-Wrapper
 # ---------------------------------------------------------------------------
 class PgCursor:
@@ -226,8 +429,25 @@ class PgCursor:
             self._cur.execute(_PRAGMA_TABLE_INFO_SQL, [m.group("table")])
             return self
 
-        # Erst DDL (CREATE) + DML (INSERT OR IGNORE) portieren, dann Platzhalter.
-        translated = translate_placeholders(translate_ddl(translate_dml(sql)))
+        # INSERT OR REPLACE → INSERT ... ON CONFLICT (...) DO UPDATE (Constraint-aware).
+        # Muss vor der Platzhalter-Übersetzung die Original-Spaltenliste lesen.
+        on_conflict_clause = ""
+        if _INSERT_OR_REPLACE_RE.match(sql):
+            cm = _INSERT_COLS_RE.match(sql)
+            table = _insert_table(sql)
+            if cm and table:
+                cols = [c.strip().strip('"\'`') for c in cm.group(1).split(",") if c.strip()]
+                on_conflict_clause = _build_on_conflict(self._cur, table, cols)
+            sql = _INSERT_OR_REPLACE_RE.sub(r"\1INSERT INTO", sql, count=1)
+
+        # DDL (CREATE) + DML (INSERT OR IGNORE) + Datums-/Zeitfunktionen portieren,
+        # dann Platzhalter (?→%s). Reihenfolge: Datum vor Platzhaltern (sonst würden
+        # strftime-Prozentzeichen verdoppelt).
+        translated = translate_placeholders(
+            translate_sqlite_datetime(translate_ddl(translate_dml(sql)))
+        )
+        if on_conflict_clause:
+            translated = translated.rstrip().rstrip(";").rstrip() + on_conflict_clause
         stripped = translated.lstrip().lower()
 
         # Übrige PRAGMA → No-Op (PostgreSQL kennt kein PRAGMA)
@@ -235,40 +455,35 @@ class PgCursor:
             return self
 
         # INSERT ohne RETURNING → RETURNING id ergänzen, um lastrowid zu liefern.
-        # ABER NICHT bei `ON CONFLICT DO NOTHING` (aus INSERT OR IGNORE): das ist
-        # idempotentes Seeding ohne lastrowid-Bedarf, der Konfliktfall liefert
-        # ohnehin keine Zeile, und `RETURNING id` würde bei Tabellen ohne
-        # id-Spalte (z. B. jobs mit job_id-PK) einen UndefinedColumn werfen und
-        # die Transaktion abbrechen (Fallback-Retry scheitert dann am aborted tx).
-        on_conflict_nothing = "on conflict do nothing" in stripped
+        # NUR wenn die Zieltabelle eine Spalte `id` hat (sonst UndefinedColumn →
+        # aborted tx). Nicht bei ON CONFLICT (idempotent / Konflikt liefert keine Zeile).
+        has_on_conflict = "on conflict" in stripped
         emulate_lastrowid = (
             stripped.startswith("insert")
             and "returning" not in stripped
-            and not on_conflict_nothing
+            and not has_on_conflict
         )
-        try:
-            if emulate_lastrowid:
-                self._cur.execute(translated.rstrip().rstrip(";") + " RETURNING id", params or [])
-                try:
-                    row = self._cur.fetchone()
-                    self.lastrowid = row[0] if row else None
-                except Exception:
-                    self.lastrowid = None
-            else:
-                self._cur.execute(translated, params or [])
-                if on_conflict_nothing:
-                    self.lastrowid = None
-        except Exception:
-            # Fallback: ohne RETURNING erneut versuchen (z. B. Tabelle ohne id)
-            if emulate_lastrowid:
-                self._cur.execute(translated, params or [])
+        if emulate_lastrowid:
+            table = _insert_table(translated)
+            if not (table and "id" in _table_meta(self._cur, table)["cols"]):
+                emulate_lastrowid = False  # keine id-Spalte → keine RETURNING-Emulation
+
+        if emulate_lastrowid:
+            self._cur.execute(translated.rstrip().rstrip(";") + " RETURNING id", params or [])
+            try:
+                row = self._cur.fetchone()
+                self.lastrowid = row[0] if row else None
+            except Exception:
                 self.lastrowid = None
-            else:
-                raise
+        else:
+            self._cur.execute(translated, params or [])
+            self.lastrowid = None
         return self
 
     def executemany(self, sql: str, seq):
-        self._cur.executemany(translate_placeholders(translate_ddl(translate_dml(sql))), seq)
+        self._cur.executemany(
+            translate_placeholders(translate_sqlite_datetime(translate_ddl(translate_dml(sql)))), seq
+        )
         return self
 
     def fetchone(self):
