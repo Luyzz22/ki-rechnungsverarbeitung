@@ -133,12 +133,12 @@ def get_trend(tenant_id: int, days: int = 30) -> List[Dict[str, Any]]:
     since = (date.today() - timedelta(days=days - 1)).isoformat()
     cursor.execute(
         """
-        SELECT substr(COALESCE(i.created_at, j.created_at), 1, 10) AS day, COUNT(*) AS cnt
+        SELECT substr(CAST(COALESCE(i.created_at, j.created_at) AS TEXT), 1, 10) AS day, COUNT(*) AS cnt
         FROM invoices i
         JOIN jobs j ON i.job_id = j.job_id
         WHERE j.user_id = ?
           AND COALESCE(i.deleted, 0) = 0
-          AND substr(COALESCE(i.created_at, j.created_at), 1, 10) >= ?
+          AND substr(CAST(COALESCE(i.created_at, j.created_at) AS TEXT), 1, 10) >= ?
         GROUP BY day
         """,
         (int(tenant_id), since),
