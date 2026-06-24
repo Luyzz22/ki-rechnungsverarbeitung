@@ -267,3 +267,74 @@ def test_insert_or_ignore_on_table_without_id_column():
         cur.execute("SELECT COUNT(*) FROM jobs_t")
         assert cur.fetchone()[0] == 1
         assert cur.lastrowid is None  # keine id-Emulation für ON CONFLICT DO NOTHING
+
+
+@pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt (echte Postgres-Instanz nötig)")
+def test_date_timestamp_columns_returned_as_iso_strings():
+    """date/timestamp-Spalten werden als ISO-Strings geliefert (SQLite-kompatibel),
+    nicht als date/datetime-Objekte → Bestandscode wie last_date[:10] funktioniert."""
+    pytest.importorskip("psycopg")
+
+    with _force(_PG_URL) as conn:
+        cur = conn.cursor()
+        cur.execute("DROP TABLE IF EXISTS dt_t")
+        cur.execute("CREATE TABLE dt_t (id SERIAL PRIMARY KEY, d date, ts timestamp)")
+        cur.execute("INSERT INTO dt_t (d, ts) VALUES (?, ?)", ("2026-01-15", "2026-01-15 09:00:00"))
+        conn.commit()
+        cur.execute("SELECT d, ts FROM dt_t")
+        d, ts = cur.fetchone()
+        assert isinstance(d, str) and d[:10] == "2026-01-15"
+        assert isinstance(ts, str) and ts[:10] == "2026-01-15"
+
+
+def _force(url):
+    """PG-Verbindung mit String-Datums-Loadern, unabhängig von DATABASE_URL."""
+    import psycopg
+    import db_compat as dbc
+    raw = psycopg.connect(url, row_factory=dbc._hybrid_row_factory)
+    dbc._register_text_datetime_loaders(raw)
+    return dbc.PgConnection(raw)
+
+
+@pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt (echte Postgres-Instanz nötig)")
+def test_dashboard_and_supplier_reads_on_timestamp_schema(monkeypatch):
+    """Reproduktion Produktion (Neon): KPI-/Lieferanten-Reads dürfen NICHT an
+    SQLite-Datumsfunktionen / date-Objekten scheitern, wenn die Spalten echte
+    date/timestamp-Typen sind. Erwartet: Ergebnisse mit Daten, kein Crash."""
+    psycopg = pytest.importorskip("psycopg")
+    monkeypatch.setenv("DATABASE_URL", _PG_URL)  # get_connection() → Postgres
+
+    # Minimal-Schema im Neon-Stil: date/timestamp-typisierte Spalten
+    with psycopg.connect(_PG_URL) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DROP TABLE IF EXISTS invoices CASCADE; DROP TABLE IF EXISTS jobs CASCADE;")
+            cur.execute("CREATE TABLE jobs (job_id TEXT PRIMARY KEY, created_at timestamp, user_id integer)")
+            cur.execute("""CREATE TABLE invoices (
+                id SERIAL PRIMARY KEY, job_id TEXT, rechnungsnummer TEXT,
+                datum date, rechnungsaussteller TEXT, betrag_brutto real,
+                betrag_netto real, mwst_betrag real, waehrung TEXT,
+                created_at timestamp, status TEXT, deleted integer DEFAULT 0,
+                manual_correction integer DEFAULT 0)""")
+            cur.execute("INSERT INTO jobs VALUES ('J1', '2026-06-01 10:00:00', 1)")
+            for i in range(17):
+                d = f"2026-{(i % 6) + 1:02d}-15"
+                cur.execute(
+                    "INSERT INTO invoices (job_id,rechnungsnummer,datum,rechnungsaussteller,"
+                    "betrag_brutto,betrag_netto,mwst_betrag,waehrung,created_at,status) "
+                    "VALUES ('J1',%s,%s,%s,%s,%s,16,'EUR',%s,'approved')",
+                    (f"RE-{i:03d}", d, ["Alpha", "Beta", "Gamma"][i % 3], 100.0 + i, 84.0 + i, d + " 09:00:00"),
+                )
+        conn.commit()
+
+    import importlib
+    import enterprise_dashboard, supplier_overview
+    importlib.reload(enterprise_dashboard)
+    importlib.reload(supplier_overview)
+
+    kpis = enterprise_dashboard.get_kpis(1)
+    assert kpis["total_invoices"] == 17
+    assert len(kpis["trend"]) == 30          # get_trend: substr(CAST(... AS TEXT),..) ok
+
+    suppliers = supplier_overview.get_suppliers(1)
+    assert len(suppliers) == 3
+    assert all(isinstance(s["last_date"], str) for s in suppliers)  # date-Objekt[:10] gefixt

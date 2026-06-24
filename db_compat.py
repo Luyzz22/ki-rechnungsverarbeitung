@@ -325,9 +325,39 @@ class PgConnection:
         self.close()
 
 
+# OIDs der PostgreSQL-Datums-/Zeit-Typen (date, time, timestamp, timestamptz, timetz).
+_DATETIME_OIDS = (1082, 1083, 1114, 1184, 1266)
+
+
+def _register_text_datetime_loaders(conn) -> None:
+    """Liefert Datums-/Zeit-Spalten als ISO-Strings statt date/datetime-Objekte.
+
+    Der Bestandscode stammt aus der SQLite-Welt, in der Datumswerte als TEXT
+    gespeichert sind. Er erwartet daher durchgängig Strings (z. B. ``last_date[:10]``,
+    ``datetime.fromisoformat(...)``, lexikografische ``max()``-Vergleiche). Auf
+    PostgreSQL/Neon sind diese Spalten echte date/timestamp-Typen → psycopg liefert
+    sonst date/datetime-Objekte und der Code bricht (``'datetime.date' object is not
+    subscriptable`` u. ä.). Diese Loader stellen das SQLite-Verhalten generisch wieder
+    her, ohne jede Call-Site einzeln anfassen zu müssen.
+    """
+    from psycopg.adapt import Loader
+
+    class _TextDateLoader(Loader):
+        def load(self, data):
+            if data is None:
+                return None
+            if isinstance(data, (bytes, bytearray, memoryview)):
+                return bytes(data).decode()
+            return data
+
+    for oid in _DATETIME_OIDS:
+        conn.adapters.register_loader(oid, _TextDateLoader)
+
+
 def connect_postgres() -> PgConnection:
     """Öffnet eine PostgreSQL-Verbindung (psycopg3) mit HybridRow-Factory."""
     import psycopg  # lokal importiert, damit SQLite-Betrieb psycopg nicht braucht
 
     raw = psycopg.connect(database_url(), row_factory=_hybrid_row_factory)
+    _register_text_datetime_loaders(raw)
     return PgConnection(raw)

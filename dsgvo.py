@@ -165,7 +165,7 @@ def run_retention_cleanup(tenant_id: Optional[int] = None) -> Dict[str, Any]:
                 deleted_reason = COALESCE(deleted_reason, 'Aufbewahrungsfrist abgelaufen (DSGVO)')
             WHERE COALESCE(deleted, 0) = 0
               AND job_id IN (SELECT job_id FROM jobs WHERE user_id = ?)
-              AND COALESCE(datum, substr(created_at, 1, 10)) < ?
+              AND COALESCE(CAST(datum AS TEXT), substr(CAST(created_at AS TEXT), 1, 10)) < ?
             """,
             (tid, cutoff),
         )
