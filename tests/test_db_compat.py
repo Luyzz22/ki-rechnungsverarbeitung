@@ -438,3 +438,66 @@ def test_boolean_is_admin_write_and_read_universal():
             conn.commit()
             cur.execute("SELECT COUNT(*) FROM uadm WHERE CAST(is_admin AS INTEGER) = 1")
             assert cur.fetchone()[0] == 1, f"{ctype}: Admin-Read muss matchen"
+
+
+@pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt")
+def test_named_endpoint_service_paths_on_postgres(monkeypatch):
+    """Produktions-Endpoints (DATEV-Export, Audit, Freigaben, Upload/Job-Anlage,
+    GoBD-Protokoll) gegen echtes Postgres: keine SQLite-only-500er mehr."""
+    psycopg = pytest.importorskip("psycopg")
+    monkeypatch.setenv("DATABASE_URL", _PG_URL)
+    from datetime import date
+
+    with psycopg.connect(_PG_URL) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+        conn.commit()
+
+    import importlib
+    import database
+    importlib.reload(database)
+    database.init_database()
+    uid = database.create_user("ep@test.de", "Secret123!", "EP", "ACME")
+
+    with psycopg.connect(_PG_URL) as conn:
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO jobs (job_id, created_at, status, user_id) VALUES (%s,%s,%s,%s)",
+                        ("J1", "2026-06-01T10:00:00", "completed", uid))
+            for i in range(5):
+                d = f"2026-0{(i % 5) + 1}-15"
+                cur.execute(
+                    "INSERT INTO invoices (job_id,rechnungsnummer,datum,rechnungsaussteller,"
+                    "betrag_brutto,betrag_netto,mwst_betrag,mwst_satz,waehrung,tenant_id,created_at,status,deleted) "
+                    "VALUES ('J1',%s,%s,%s,%s,%s,19,19,'EUR',%s,%s,'approved',0)",
+                    (f"RE-{i}", d, ["Alpha", "Beta"][i % 2], 119.0 + i, 100.0 + i, uid, d + "T09:00:00"),
+                )
+        conn.commit()
+
+    import api_frontend, approval_workflow, audit_events, gobd
+    for mod in (api_frontend, approval_workflow, audit_events, gobd):
+        importlib.reload(mod)
+
+    # Freigaben + Audit (Reads mit Datums-/Filter-SQL)
+    assert isinstance(approval_workflow.get_open_approvals(uid), list)
+    assert audit_events.count_events(uid) >= 0
+    assert isinstance(audit_events.query_events(uid, limit=10, offset=0), list)
+    assert "zeitstempel" in audit_events.export_csv(uid)
+
+    # Upload/Job-Anlage: save_job nutzt INSERT OR REPLACE INTO jobs (job_id-PK)
+    database.save_job("J1", {"created_at": "2026-06-02T10:00:00", "status": "processing",
+                             "total_files": 1, "upload_path": "/tmp"}, user_id=uid)
+    audit_events.log_event(uid, audit_events.AuditEvent.UPLOAD, user_id=uid,
+                           entity_type="job", entity_id="J1", details={"files": 1})
+
+    # DATEV-Export: Read + CSV-Erzeugung + GoBD-Protokoll (RETURNING id)
+    invoices = [i for i in api_frontend._tenant_invoices(uid, None) if i.get("betrag_brutto") is not None]
+    assert len(invoices) == 5
+    from datev import DatevExportConfig, Kontenrahmen, export_invoices_to_datev_csv
+    cfg = DatevExportConfig(berater_nummer="1000", mandanten_nummer=str(uid),
+                            wirtschaftsjahr_beginn=date(2026, 1, 1), kontenrahmen=Kontenrahmen.SKR03)
+    import tempfile, os
+    p = os.path.join(tempfile.gettempdir(), f"extf_{uid}.csv")
+    export_invoices_to_datev_csv(invoices, cfg, p)
+    assert os.path.getsize(p) > 0
+    rec = gobd.record_export(uid, "datev", b"x;y", file_name="x.csv", row_count=5, user_id=uid)
+    assert rec and rec.get("id")
