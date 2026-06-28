@@ -61,6 +61,7 @@ from category_ai import predict_category
 from logging.handlers import RotatingFileHandler
 import sys
 import json
+from shared.secure_logging import safe_log
 
 # Logging Setup
 log_formatter = logging.Formatter(
@@ -490,7 +491,7 @@ async def process_invoices_background(job_id: str):
             
             if is_einv and einv_data.get('rechnungsnummer') and einv_data.get('betrag_brutto'):
                 # E-Rechnung erkannt - nutze strukturierte Daten (spart KI-Kosten!)
-                app_logger.info(f"📋 E-Rechnung erkannt: {einv_data.get('profile', 'Unknown')} - {pdf_path.name}")
+                safe_log(app_logger, logging.INFO, "einvoice_detected", profile=einv_data.get("profile", "Unknown"), document_id=pdf_path.name)
                 data = einv_data
                 data['extraction_method'] = 'einvoice'
                 data['ki_score'] = 99  # Strukturierte Daten = höchste Confidence
@@ -504,8 +505,10 @@ async def process_invoices_background(job_id: str):
             # invoice.filename = pdf_path.name
             data["filename"] = pdf_path.name
             return ("success", data, pdf_path.name)
+        except InferencePolicyDeniedError as e:
+            return ("policy_denied", e.to_safe_dict(), pdf_path.name)
         except Exception as e:
-            return ("error", str(e), pdf_path.name)
+            return ("error", type(e).__name__, pdf_path.name)
     
     # Use ThreadPoolExecutor for parallel processing
     max_workers = min(12, total_files) if total_files > 0 else 1
@@ -518,9 +521,26 @@ async def process_invoices_background(job_id: str):
             
             if status == "success" and data:
                 results.append(data)
+            elif status == "policy_denied":
+                failed.append(filename)
+                safe_log(
+                    app_logger,
+                    logging.WARNING,
+                    "invoice_processing_policy_denied",
+                    job_id=job_id,
+                    document_id=filename,
+                    error_code=data.get("error_code") if isinstance(data, dict) else "INFERENCE_POLICY_DENIED",
+                )
             else:
                 failed.append(filename if status == "success" else f"{filename}: {data}")
-                app_logger.warning(f"Invoice failed: {filename} - {data if status != 'success' else 'empty result'}", extra={"job_id": job_id, "filename": filename})
+                safe_log(
+                    app_logger,
+                    logging.WARNING,
+                    "invoice_processing_failed",
+                    job_id=job_id,
+                    document_id=filename,
+                    error_code=data if status != "success" else "empty_result",
+                )
             
             # Update progress
             processing_jobs[job_id]["processed"] = len(results) + len(failed)
@@ -549,7 +569,7 @@ async def process_invoices_background(job_id: str):
                 exported_files['datev'] = datev_file
             
         except Exception as e:
-            app_logger.error(f"Export error: {e}")
+            safe_log(app_logger, logging.ERROR, "export_failed", error_code=type(e).__name__)
     
     # Email Notification
     try:
@@ -558,7 +578,7 @@ async def process_invoices_background(job_id: str):
         if notification_config.get('email', {}).get('enabled', False):
             send_notifications(config.config, stats, exported_files)
     except Exception as e:
-        app_logger.error(f"Notification error: {e}")
+        safe_log(app_logger, logging.ERROR, "notification_failed", error_code=type(e).__name__)
     
     # Update job with results
     processing_jobs[job_id].update({
@@ -577,9 +597,9 @@ async def process_invoices_background(job_id: str):
     log_job_event(app_logger, job_id, "completed", total=total_files, successful=len(results), failed=len(failed))
     
     # Save to database
-    logger.info(f"💾 Saving job {job_id} with {len(results)} results")
+    safe_log(logger, logging.INFO, "job_save_started", job_id=job_id, result_count=len(results))
     save_job(job_id, processing_jobs[job_id], processing_jobs[job_id].get("user_id"))
-    logger.info(f"✅ Job saved, now saving invoices")
+    safe_log(logger, logging.INFO, "job_saved")
     # --- E-Rechnungs-Metadaten anreichern ---------------------------
     enriched_results = []
     for invoice in results:
@@ -602,11 +622,11 @@ async def process_invoices_background(job_id: str):
         enriched_results.append(invoice)
     # ---------------------------------------------------------------
     if results:
-        logger.info(f"💾 Saving {len(results)} invoices to database")
+        safe_log(logger, logging.INFO, "invoice_save_started", invoice_count=len(results))
         save_invoices(job_id, enriched_results)
         # Low-Confidence Warnung prüfen
         check_low_confidence(job_id, enriched_results, config.config if config else None)
-        logger.info(f"✅ Invoices saved successfully")
+        safe_log(logger, logging.INFO, "invoice_save_completed")
         
         # Check for duplicates (Hash + AI)
         from database import get_invoices_by_job
@@ -633,10 +653,10 @@ async def process_invoices_background(job_id: str):
         
         total_issues = duplicate_count + similar_count
         if total_issues > 0:
-            logger.warning(f"⚠️ {duplicate_count} exact + {similar_count} similar duplicate(s) detected!")
+            safe_log(logger, logging.WARNING, "duplicates_detected", duplicate_count=duplicate_count, similar_count=similar_count)
             processing_jobs[job_id]['duplicates_detected'] = total_issues
     else:
-        logger.warning("⚠️ No results to save!")
+        safe_log(logger, logging.WARNING, "no_invoice_results_to_save")
     
     # Auto-Kategorisierung
     try:
@@ -646,9 +666,11 @@ async def process_invoices_background(job_id: str):
         for invoice in saved_invoices:
             category_id, confidence, reasoning = predict_category(invoice, job.get("user_id"))
             assign_category_to_invoice(invoice['id'], category_id, confidence, 'ai')
-            logger.info(f"📊 Invoice {invoice['id']}: Category {category_id} (conf: {confidence:.2f})")
+            safe_log(logger, logging.INFO, "invoice_category_assigned", invoice_id=invoice["id"], category_id=category_id, confidence=round(confidence, 2))
+    except InferencePolicyDeniedError:
+        raise
     except Exception as e:
-        logger.warning(f"Auto-categorization failed: {e}")
+        safe_log(logger, logging.WARNING, "auto_categorization_failed", error_code=type(e).__name__)
 
     
     # Track invoice usage
@@ -2016,7 +2038,7 @@ async def demo_upload_live(request: Request, file: UploadFile = File(...)):
             data['extraction_method'] = 'einvoice'
             data['confidence'] = 99
         else:
-            data = processor.process_invoice(pdf_path)
+            data = processor.process_invoice(pdf_path, data_class="demo")
             data['extraction_method'] = 'ki'
             if 'confidence' not in data:
                 data['confidence'] = data.get('ki_score', 85)
@@ -2050,7 +2072,7 @@ async def demo_upload_live(request: Request, file: UploadFile = File(...)):
             if datev_path:
                 exported_files['datev'] = datev_path
         except Exception as e:
-            app_logger.warning(f"Export creation failed: {e}")
+            safe_log(app_logger, logging.WARNING, "demo_export_creation_failed", error_code=type(e).__name__)
         
         # 4. Job-Daten vorbereiten
         job_data = {
@@ -2066,26 +2088,33 @@ async def demo_upload_live(request: Request, file: UploadFile = File(...)):
             "total_amount": total_brutto,
             "stats": stats,
             "exported_files": exported_files,
-            "demo_mode": True
+            "demo_mode": True,
+            "data_class": data.get("data_class", "demo"),
+            "inference_profile": data.get("inference_profile", "standard"),
+            "provider_selected": data.get("provider_selected", ""),
+            "policy_version": data.get("policy_version", ""),
+            "policy_decision": data.get("policy_decision", "not_evaluated"),
         }
         
         # 5. ENTERPRISE: Job in Datenbank speichern
         save_job(demo_job_id, job_data, user_id)
-        app_logger.info(f"✅ Demo job saved: {demo_job_id}")
+        safe_log(app_logger, logging.INFO, "demo_job_saved", job_id=demo_job_id)
         
         # 6. ENTERPRISE: Rechnungen in Datenbank speichern
         save_invoices(demo_job_id, results)
-        app_logger.info(f"✅ Demo invoices saved for job: {demo_job_id}")
+        safe_log(app_logger, logging.INFO, "demo_invoices_saved", job_id=demo_job_id)
         
         # 7. ENTERPRISE: Auto-Kategorisierung (wie normaler Upload)
         try:
             saved_invoices = get_invoices_by_job(demo_job_id)
             for invoice in saved_invoices:
-                category_id, confidence, reasoning = predict_category(invoice, user_id)
+                category_id, confidence, reasoning = predict_category(invoice, user_id, data_class="demo")
                 assign_category_to_invoice(invoice['id'], category_id, confidence, 'ai')
-                app_logger.info(f"📊 Demo Invoice {invoice['id']}: Category {category_id} (conf: {confidence:.2f})")
+                safe_log(app_logger, logging.INFO, "demo_invoice_category_assigned", invoice_id=invoice["id"], category_id=category_id, confidence=round(confidence, 2))
+        except InferencePolicyDeniedError:
+            raise
         except Exception as e:
-            app_logger.warning(f"Demo auto-categorization failed: {e}")
+            safe_log(app_logger, logging.WARNING, "demo_auto_categorization_failed", error_code=type(e).__name__)
         
         # 8. Job auch in RAM speichern (für sofortige Anzeige)
         processing_jobs[demo_job_id] = job_data
@@ -4433,6 +4462,14 @@ from typing import Any, Dict, List, Tuple
 from openai import OpenAI
 import os
 import math
+from shared.data_classification import classify_invoice_data, resolve_inference_profile
+from shared.inference_policy import (
+    DataClass,
+    InferencePolicyDeniedError,
+    InferenceProvider,
+    assert_inference_allowed,
+)
+from shared.secure_logging import log_inference_event
 
 _finance_copilot_client: OpenAI | None = None
 
@@ -4661,6 +4698,8 @@ def run_finance_copilot_llm(
     days: int,
     snapshot: Dict[str, Any],
     focus: str | None = None,
+    data_class: str | None = None,
+    inference_profile: str | None = None,
 ) -> Tuple[str, List[str]]:
     """
     Erzeugt eine CFO-taugliche Antwort auf Basis des Finance-Snapshots.
@@ -4671,6 +4710,14 @@ def run_finance_copilot_llm(
 
     focus = (focus or "auto").strip().lower()
     snapshot_summary = _build_snapshot_summary(snapshot, days)
+    resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+    resolved_profile = resolve_inference_profile(inference_profile)
+    decision = assert_inference_allowed(
+        data_class=resolved_data_class,
+        inference_profile=resolved_profile,
+        provider=InferenceProvider.OPENAI_DIRECT,
+        purpose="finance_copilot",
+    )
 
     user_prompt = f"""
 Nutzerfrage:
@@ -4701,6 +4748,15 @@ Aufgabe:
     )
 
     answer = (resp.choices[0].message.content or "").strip()
+    log_inference_event(
+        app_logger,
+        event="finance_copilot_completed",
+        provider=InferenceProvider.OPENAI_DIRECT.value,
+        model="gpt-4.1-mini",
+        data_class=decision.data_class,
+        inference_profile=decision.inference_profile,
+        policy_decision=decision.policy_decision,
+    )
     suggested = _suggest_followups(question, snapshot, days)
 
     return answer, suggested
@@ -4771,6 +4827,8 @@ async def api_finance_copilot_query(request: Request, payload: FinanceCopilotReq
             snapshot=snapshot,
             focus=focus,
         )
+    except InferencePolicyDeniedError as exc:
+        raise HTTPException(status_code=403, detail=exc.to_safe_dict()) from exc
     except Exception as exc:  # noqa: F841
         app_logger.exception("Finance copilot LLM error")
         raise HTTPException(
@@ -5708,6 +5766,13 @@ WEITERE KENNZAHLEN:
     
     try:
         # LLM-Anfrage
+        demo_profile = resolve_inference_profile()
+        demo_decision = assert_inference_allowed(
+            data_class=DataClass.DEMO,
+            inference_profile=demo_profile,
+            provider=InferenceProvider.OPENAI_DIRECT,
+            purpose="finance_copilot_demo",
+        )
         client = _get_finance_copilot_client()
         
         system_prompt = """Du bist der Finance Copilot von SBS Deutschland - ein KI-Assistent für CFOs und Finanzteams.
@@ -5735,9 +5800,17 @@ WICHTIG: Dies ist eine Demo mit Beispieldaten. Erwähne das NICHT in deiner Antw
             temperature=0.3,
             max_tokens=800
         )
+        log_inference_event(
+            app_logger,
+            event="finance_copilot_demo_completed",
+            provider=InferenceProvider.OPENAI_DIRECT.value,
+            model="gpt-4.1-mini",
+            data_class=demo_decision.data_class,
+            inference_profile=demo_decision.inference_profile,
+            policy_decision=demo_decision.policy_decision,
+        )
         
         answer = response.choices[0].message.content.strip()
-        
         # Nutzung aufzeichnen
         if not is_admin:
             logged_question = question.replace("\r", " ").replace("\n", " ")[:200]
@@ -5772,7 +5845,9 @@ WICHTIG: Dies ist eine Demo mit Beispieldaten. Erwähne das NICHT in deiner Antw
             "remaining": remaining,
             "suggested_questions": suggested
         }
-        
+
+    except InferencePolicyDeniedError as exc:
+        return JSONResponse(status_code=403, content=exc.to_safe_dict())
     except Exception:
         app_logger.warning("Copilot demo query failed")
         return JSONResponse(status_code=500, content={"error": "Analyse fehlgeschlagen"})
@@ -7129,6 +7204,14 @@ TOP LIEFERANTEN:
         try:
             sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
             from llm_router import LLMRouter
+            cfo_chat_data_class = classify_invoice_data()
+            cfo_chat_profile = resolve_inference_profile()
+            assert_inference_allowed(
+                data_class=cfo_chat_data_class,
+                inference_profile=cfo_chat_profile,
+                provider=InferenceProvider.OPENAI_DIRECT,
+                purpose="legacy_cfo_chat",
+            )
             
             system_prompt = f"""Du bist der SBS AI CFO - ein intelligenter Finanzassistent.
 Antworte kurz, präzise und professionell auf Deutsch.
@@ -7143,16 +7226,18 @@ Beantworte die Frage des Users basierend auf diesen Daten."""
                 provider="openai",
                 model="gpt-4o"
             )
+        except InferencePolicyDeniedError as exc:
+            return JSONResponse(status_code=403, content=exc.to_safe_dict())
         except Exception as llm_error:
-            print(f"LLM Error: {llm_error}")
+            safe_log(app_logger, logging.WARNING, "legacy_cfo_chat_llm_failed", error_code=type(llm_error).__name__)
             # Fallback ohne KI
             response = f"📊 Basierend auf aktuellen Daten: {total_invoices} Rechnungen mit {total_amount:,.2f} EUR Gesamtvolumen. {open_count} Rechnungen sind noch offen."
         
         return JSONResponse({"response": response})
         
     except Exception as e:
-        print(f"Chat Error: {e}")
-        return JSONResponse({"response": f"Entschuldigung, ein Fehler ist aufgetreten: {str(e)}"})
+        safe_log(app_logger, logging.ERROR, "legacy_cfo_chat_failed", error_code=type(e).__name__)
+        return JSONResponse({"response": "Entschuldigung, ein Fehler ist aufgetreten."})
 
 
 # ============================================================

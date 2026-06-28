@@ -21,6 +21,13 @@ from dotenv import load_dotenv
 from sqlalchemy import text
 
 from shared.db.session import get_session
+from shared.data_classification import classify_invoice_data, resolve_inference_profile
+from shared.inference_policy import (
+    InferencePolicyDeniedError,
+    InferenceProvider,
+    assert_inference_allowed,
+)
+from shared.secure_logging import log_inference_event, safe_log
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -172,12 +179,17 @@ Das System hat einen 9-Status Workflow: uploaded → classified → validated �
         question: str,
         tenant_id: str,
         conversation_history: list[dict] | None = None,
+        data_class: str | None = None,
+        inference_profile: str | None = None,
     ) -> dict[str, Any]:
         """Process a chat question and return AI-generated answer.
 
         Returns:
             dict with keys: answer, sources, suggested_questions, model, context_used
         """
+        resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+        resolved_profile = resolve_inference_profile(inference_profile)
+
         # 1. Gather DB context
         summary = self._get_invoice_summary(tenant_id)
         kontierung = self._get_kontierung_stats(tenant_id)
@@ -210,9 +222,17 @@ LETZTE EVENTS:
         messages.append({"role": "user", "content": f"{context}\n\nFRAGE: {question}"})
 
         # 3. Try Gemini first, then Claude
-        answer, model = self._call_gemini(messages)
+        answer, model = self._call_gemini(
+            messages,
+            data_class=resolved_data_class,
+            inference_profile=resolved_profile,
+        )
         if not answer:
-            answer, model = self._call_claude(messages)
+            answer, model = self._call_claude(
+                messages,
+                data_class=resolved_data_class,
+                inference_profile=resolved_profile,
+            )
         if not answer:
             answer = self._fallback_answer(question, summary, kontierung)
             model = "rules-v1"
@@ -232,14 +252,27 @@ LETZTE EVENTS:
             "timestamp": datetime.utcnow().isoformat(),
         }
 
-    def _call_gemini(self, messages: list[dict]) -> tuple[str, str]:
+    def _call_gemini(
+        self,
+        messages: list[dict],
+        data_class: str | None = None,
+        inference_profile: str | None = None,
+    ) -> tuple[str, str]:
         """Call Gemini 2.0 Flash."""
         if not self.gemini_key:
             return "", ""
         try:
             from google import genai
 
-            client = genai.Client(api_key=self.gemini_key)
+            resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+            resolved_profile = resolve_inference_profile(inference_profile)
+            decision = assert_inference_allowed(
+                data_class=resolved_data_class,
+                inference_profile=resolved_profile,
+                provider=InferenceProvider.GEMINI_DIRECT,
+                purpose="finance_copilot",
+            )
+
             model = genai.GenerativeModel(
                 "gemini-2.5-flash",
                 system_instruction=self._build_system_prompt(),
@@ -253,17 +286,42 @@ LETZTE EVENTS:
 
             chat = model.start_chat(history=history)
             response = chat.send_message(messages[-1]["content"])
+            log_inference_event(
+                logger,
+                event="finance_copilot_completed",
+                provider=InferenceProvider.GEMINI_DIRECT.value,
+                model="gemini-2.5-flash",
+                data_class=decision.data_class,
+                inference_profile=decision.inference_profile,
+                policy_decision=decision.policy_decision,
+            )
             return response.text, "gemini-2.5-flash"
+        except InferencePolicyDeniedError:
+            raise
         except Exception as e:
-            logger.warning(f"gemini_copilot_error: {e}")
+            safe_log(logger, logging.WARNING, "gemini_copilot_error", error_code=type(e).__name__)
             return "", ""
 
-    def _call_claude(self, messages: list[dict]) -> tuple[str, str]:
+    def _call_claude(
+        self,
+        messages: list[dict],
+        data_class: str | None = None,
+        inference_profile: str | None = None,
+    ) -> tuple[str, str]:
         """Call Claude Sonnet as fallback."""
         if not self.anthropic_key:
             return "", ""
         try:
             import anthropic
+
+            resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+            resolved_profile = resolve_inference_profile(inference_profile)
+            decision = assert_inference_allowed(
+                data_class=resolved_data_class,
+                inference_profile=resolved_profile,
+                provider=InferenceProvider.ANTHROPIC_DIRECT,
+                purpose="finance_copilot",
+            )
 
             client = anthropic.Anthropic(api_key=self.anthropic_key)
             response = client.messages.create(
@@ -272,9 +330,20 @@ LETZTE EVENTS:
                 system=self._build_system_prompt(),
                 messages=messages,
             )
+            log_inference_event(
+                logger,
+                event="finance_copilot_completed",
+                provider=InferenceProvider.ANTHROPIC_DIRECT.value,
+                model="claude-sonnet-4-20250514",
+                data_class=decision.data_class,
+                inference_profile=decision.inference_profile,
+                policy_decision=decision.policy_decision,
+            )
             return response.content[0].text, "claude-sonnet-4"
+        except InferencePolicyDeniedError:
+            raise
         except Exception as e:
-            logger.warning(f"claude_copilot_error: {e}")
+            safe_log(logger, logging.WARNING, "claude_copilot_error", error_code=type(e).__name__)
             return "", ""
 
     def _fallback_answer(

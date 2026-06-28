@@ -13,6 +13,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
+from shared.inference_policy import POLICY_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,43 @@ def get_db_path() -> str:
     """Public helper: kanonischer Pfad zur SQLite-DB (für Module mit eigener
     Connection wie approval.py / zahlungs_service.py)."""
     return str(_ensure_db_path())
+
+
+def _ensure_inference_policy_columns(cursor: sqlite3.Cursor) -> None:
+    """Add phase-1 inference policy metadata columns idempotently."""
+    defaults = {
+        "data_class": "'invoice_confidential'",
+        "inference_profile": "'standard'",
+        "provider_selected": "''",
+        "policy_version": "''",
+        "policy_decision": "'not_evaluated'",
+    }
+
+    for table in ("jobs", "invoices"):
+        cursor.execute(f"PRAGMA table_info({table})")
+        existing = {col[1] for col in cursor.fetchall()}
+        for column, default in defaults.items():
+            if column not in existing:
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} TEXT DEFAULT {default}")
+
+
+def _ensure_invoice_storage_columns(cursor: sqlite3.Cursor) -> None:
+    """Add legacy invoice columns expected by save_invoices idempotently."""
+    definitions = {
+        "content_hash": "TEXT DEFAULT ''",
+        "source_format": "TEXT DEFAULT 'pdf'",
+        "einvoice_raw_xml": "TEXT DEFAULT ''",
+        "einvoice_profile": "TEXT DEFAULT ''",
+        "einvoice_valid": "INTEGER DEFAULT 0",
+        "einvoice_validation_message": "TEXT DEFAULT ''",
+        "confidence": "REAL DEFAULT 0",
+    }
+
+    cursor.execute("PRAGMA table_info(invoices)")
+    existing = {col[1] for col in cursor.fetchall()}
+    for column, definition in definitions.items():
+        if column not in existing:
+            cursor.execute(f"ALTER TABLE invoices ADD COLUMN {column} {definition}")
 
 
 def _is_bcrypt_hash(value: str | None) -> bool:
@@ -158,6 +196,8 @@ def init_database():
             FOREIGN KEY (job_id) REFERENCES jobs(job_id)
         )
     ''')
+    _ensure_invoice_storage_columns(cursor)
+    _ensure_inference_policy_columns(cursor)
     
     conn.commit()
 
@@ -201,8 +241,10 @@ def save_job(job_id: str, job_data: Dict, user_id: int = None):
         INSERT OR REPLACE INTO jobs (
             job_id, created_at, completed_at, status, total_files,
             successful, failed_count, total_amount, total_netto, total_mwst,
-            average_amount, exported_files, upload_path, failed_list, user_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            average_amount, exported_files, upload_path, failed_list, user_id,
+            data_class, inference_profile, provider_selected, policy_version,
+            policy_decision
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         job_id,
         job_data.get('created_at', datetime.now().isoformat()),
@@ -218,7 +260,12 @@ def save_job(job_id: str, job_data: Dict, user_id: int = None):
         exported_files,
         job_data.get('path', ''),
         failed_list,
-        user_id
+        user_id,
+        job_data.get("data_class", "invoice_confidential"),
+        job_data.get("inference_profile", "standard"),
+        job_data.get("provider_selected", ""),
+        job_data.get("policy_version", POLICY_VERSION),
+        job_data.get("policy_decision", "not_evaluated"),
     ))
     
     conn.commit()
@@ -283,10 +330,12 @@ def save_invoices(job_id: str, results: List[Dict]):
                 mwst_betrag, mwst_satz, waehrung, iban, bic, steuernummer, ust_idnr,
                 zahlungsbedingungen, artikel, verwendungszweck, content_hash,
                 source_format, einvoice_raw_xml, einvoice_profile,
-                einvoice_valid, einvoice_validation_message, confidence
+                einvoice_valid, einvoice_validation_message, confidence,
+                data_class, inference_profile, provider_selected, policy_version,
+                policy_decision
             ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
             """,
             (
@@ -322,6 +371,11 @@ def save_invoices(job_id: str, results: List[Dict]):
                 einvoice_valid,
                 einvoice_validation_message,
                 invoice.get("confidence", 0.0),
+                invoice.get("data_class", "invoice_confidential"),
+                invoice.get("inference_profile", "standard"),
+                invoice.get("provider_selected", invoice.get("ai_model_used", "")),
+                invoice.get("policy_version", POLICY_VERSION),
+                invoice.get("policy_decision", "not_evaluated"),
             ),
         )
 

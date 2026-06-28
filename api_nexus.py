@@ -13,6 +13,8 @@ import json
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Header, Request
 from pydantic import BaseModel
+from shared.inference_policy import InferencePolicyDeniedError
+from shared.secure_logging import safe_log
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/nexus", tags=["Nexus Gateway Integration"])
@@ -164,8 +166,8 @@ def extract_text_from_content(content: str, encoding: str, filename: str = None)
             return text
             
         except Exception as e:
-            logger.error(f"Dekodierungsfehler: {e}")
-            raise HTTPException(status_code=400, detail=f"Dekodierungsfehler: {str(e)}")
+            safe_log(logger, logging.ERROR, "nexus_decode_failed", error_code=type(e).__name__)
+            raise HTTPException(status_code=400, detail="Dekodierungsfehler")
     
     else:
         raise HTTPException(status_code=400, detail=f"Unbekanntes Encoding: {encoding}")
@@ -181,7 +183,7 @@ async def process_invoice(request: InvoiceProcessRequest, x_api_key: str = Heade
         if not text or len(text.strip()) < 30:
             raise HTTPException(status_code=400, detail="Zu wenig Text extrahiert")
         
-        logger.info(f"Processing invoice: {len(text)} chars")
+        safe_log(logger, logging.INFO, "nexus_invoice_processing_started", char_count=len(text))
         
         try:
             from llm_router import extract_invoice_data, pick_provider_model
@@ -191,7 +193,7 @@ async def process_invoice(request: InvoiceProcessRequest, x_api_key: str = Heade
         complexity = min(100, len(text) // 50)
         provider, model = pick_provider_model(complexity)
         
-        logger.info(f"Selected: {provider}/{model}")
+        safe_log(logger, logging.INFO, "nexus_invoice_model_selected", provider=provider, model=model)
         
         result = extract_invoice_data(text, provider, model)
         
@@ -206,11 +208,13 @@ async def process_invoice(request: InvoiceProcessRequest, x_api_key: str = Heade
             message=f"Verarbeitet mit {provider.upper()}"
         )
         
+    except InferencePolicyDeniedError as e:
+        raise HTTPException(status_code=403, detail=e.to_safe_dict()) from e
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Fehler: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_log(logger, logging.ERROR, "nexus_invoice_processing_failed", error_code=type(e).__name__)
+        raise HTTPException(status_code=500, detail="processing_failed")
 
 
 @router.post("/classify-document", response_model=DocumentClassifyResponse)
@@ -257,8 +261,8 @@ async def classify_document(request: DocumentClassifyRequest, x_api_key: str = H
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Fehler: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_log(logger, logging.ERROR, "nexus_document_classification_failed", error_code=type(e).__name__)
+        raise HTTPException(status_code=500, detail="classification_failed")
 
 
 @router.get("/health")

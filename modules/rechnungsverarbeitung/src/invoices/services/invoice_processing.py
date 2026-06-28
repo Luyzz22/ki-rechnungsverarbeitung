@@ -7,6 +7,9 @@ from datetime import datetime
 from typing import BinaryIO
 
 from shared.tenant.context import TenantContext
+from shared.data_classification import classify_invoice_data, resolve_inference_profile
+from shared.inference_policy import InferencePolicyDeniedError, InferenceProvider, POLICY_VERSION
+from shared.secure_logging import safe_log
 from modules.rechnungsverarbeitung.src.invoices.models import InvoiceDocumentMetadata
 from modules.rechnungsverarbeitung.src.invoices.services.control_engine import ControlEngine
 from modules.rechnungsverarbeitung.src.invoices.services.policy_engine import PolicyEngine
@@ -21,6 +24,38 @@ from modules.rechnungsverarbeitung.src.invoices.services.invoice_logging import 
 
 
 STRUCTURED_FORMATS = {"xrechnung", "zugferd", "xml_other"}
+
+
+def _provider_selected_from_model(model: str | None) -> str:
+    model_value = (model or "").lower()
+    if "gemini" in model_value:
+        return InferenceProvider.GEMINI_DIRECT.value
+    if "claude" in model_value:
+        return InferenceProvider.ANTHROPIC_DIRECT.value
+    if "gpt" in model_value or "openai" in model_value:
+        return InferenceProvider.OPENAI_DIRECT.value
+    return ""
+
+
+def _safe_extraction_event_details(extraction) -> dict[str, object]:
+    details = extraction.to_dict() if hasattr(extraction, "to_dict") else {}
+    data_class = classify_invoice_data()
+    inference_profile = resolve_inference_profile()
+    fields_present = sorted(
+        key
+        for key, value in details.items()
+        if value not in (None, "", [], {})
+    )
+    return {
+        "model": getattr(extraction, "model", "unknown"),
+        "confidence": getattr(extraction, "confidence", 0.0),
+        "fields_present": fields_present,
+        "data_class": getattr(data_class, "value", str(data_class)),
+        "inference_profile": getattr(inference_profile, "value", str(inference_profile)),
+        "provider_selected": _provider_selected_from_model(getattr(extraction, "model", "")),
+        "policy_version": POLICY_VERSION,
+        "policy_decision": "allowed",
+    }
 
 
 def _build_policy_context(
@@ -72,7 +107,7 @@ def _build_policy_context(
         }
     except Exception as e:
         import logging
-        logging.getLogger(__name__).warning(f"Policy context load failed: {e}")
+        safe_log(logging.getLogger(__name__), logging.WARNING, "policy_context_load_failed", error_code=type(e).__name__)
         return {}
 
 
@@ -108,7 +143,7 @@ def process_invoice_upload(
         storage_path = fs.store(metadata.tenant_id, document_id, file_name, payload)
     except Exception as e:
         import logging
-        logging.getLogger(__name__).warning(f'File storage failed: {e}')
+        safe_log(logging.getLogger(__name__), logging.WARNING, "file_storage_failed", error_code=type(e).__name__)
         storage_path = None
 
     if hasattr(file_stream, "seek"):
@@ -192,9 +227,17 @@ def process_invoice_upload(
 
     # AI Data Extraction — extract supplier, amount, dates
     extracted_details: dict[str, object] | None = None
+    data_class = classify_invoice_data()
+    inference_profile = resolve_inference_profile()
     try:
         extractor = AIExtractionService()
-        extraction = extractor.extract(payload, file_name, mime_type)
+        extraction = extractor.extract(
+            payload,
+            file_name,
+            mime_type,
+            data_class=data_class,
+            inference_profile=inference_profile,
+        )
         if extraction and hasattr(extraction, "to_dict"):
             raw_extracted_details = extraction.to_dict()
             if any(value not in (None, "", [], {}) for value in raw_extracted_details.values()):
@@ -208,12 +251,22 @@ def process_invoice_upload(
                 event_type='ai_extraction_completed',
                 status_from='classified',
                 status_to='suggested',
-                message=f'AI extracted: {extraction.supplier} | {extraction.total_amount_gross} {extraction.currency}',
-                extra_details=extraction.to_dict(),
+                message='AI extraction completed',
+                extra_details=_safe_extraction_event_details(extraction),
             )
+    except InferencePolicyDeniedError as e:
+        log_invoice_event_from_metadata(
+            metadata=metadata,
+            event_type="inference_policy_denied",
+            status_from=metadata.status,
+            status_to=metadata.status,
+            message="Inference policy denied",
+            extra_details=e.to_safe_dict(),
+        )
+        raise
     except Exception as e:
         import logging
-        logging.getLogger(__name__).warning(f'AI extraction failed: {e}')
+        logging.getLogger(__name__).warning("AI extraction failed: %s", type(e).__name__)
 
     try:
         control_result = ControlEngine().evaluate(
@@ -231,7 +284,7 @@ def process_invoice_upload(
         )
     except Exception as e:
         import logging
-        logging.getLogger(__name__).warning(f"FlowCheck control evaluation failed: {e}")
+        safe_log(logging.getLogger(__name__), logging.WARNING, "flowcheck_control_evaluation_failed", error_code=type(e).__name__)
 
     try:
         policy_result = PolicyEngine().evaluate(
@@ -252,7 +305,7 @@ def process_invoice_upload(
         )
     except Exception as e:
         import logging
-        logging.getLogger(__name__).warning(f"FlowCheck policy evaluation failed: {e}")
+        safe_log(logging.getLogger(__name__), logging.WARNING, "flowcheck_policy_evaluation_failed", error_code=type(e).__name__)
 
     return metadata
 

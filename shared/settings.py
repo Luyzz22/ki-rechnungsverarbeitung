@@ -17,6 +17,16 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://localhost:5432/sbs_nexus"
     openai_api_key: str = ""
     anthropic_api_key: str = ""
+    flowcheck_default_inference_profile: str = "standard"
+    flowcheck_policy_enforcement: str = "block"
+    azure_openai_endpoint: str = ""
+    azure_openai_deployment: str = ""
+    azure_openai_api_version: str = ""
+    azure_openai_auth_mode: str = "managed_identity"
+    local_llm_base_url: str = ""
+    local_llm_api_key: str = ""
+    local_llm_model: str = ""
+    local_ocr_enabled: bool = False
     smtp_server: str = ""
     smtp_port: int = 587
     smtp_username: str = ""

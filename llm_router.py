@@ -10,11 +10,26 @@ import logging
 from typing import Dict, Any, Tuple
 from anthropic import Anthropic
 from openai import OpenAI
+from shared.data_classification import classify_invoice_data, resolve_inference_profile
+from shared.inference_policy import (
+    InferencePolicyDeniedError,
+    InferenceProvider,
+    assert_inference_allowed,
+)
+from shared.secure_logging import log_inference_event, safe_log
 
 logger = logging.getLogger(__name__)
 
 _openai_client: OpenAI | None = None
 _anthropic_client: Anthropic | None = None
+
+
+def _legacy_provider_to_policy(provider: str) -> InferenceProvider:
+    if provider == "anthropic":
+        return InferenceProvider.ANTHROPIC_DIRECT
+    if provider == "openai":
+        return InferenceProvider.OPENAI_DIRECT
+    raise ValueError(f"Unknown provider: {provider}")
 
 
 def get_openai_client() -> OpenAI:
@@ -739,10 +754,34 @@ KORREKTE EXTRAKTION:
 Gib NUR valides JSON zurück. Keine Erklärungen. Sei präzise. Sei vollständig."""
 
 
-def extract_invoice_data(text: str, provider: str, model: str) -> dict:
+def extract_invoice_data(
+    text: str,
+    provider: str,
+    model: str,
+    data_class: str | None = None,
+    inference_profile: str | None = None,
+) -> dict:
     """
     Extrahiert Rechnungsdaten mit Expert-Level Prompts
     """
+    resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+    resolved_profile = resolve_inference_profile(inference_profile)
+    provider_identity = _legacy_provider_to_policy(provider)
+    decision = assert_inference_allowed(
+        data_class=resolved_data_class,
+        inference_profile=resolved_profile,
+        provider=provider_identity,
+        purpose="invoice_llm_extraction",
+    )
+    log_inference_event(
+        logger,
+        event="inference_policy_allowed",
+        provider=provider_identity.value,
+        model=model,
+        data_class=decision.data_class,
+        inference_profile=decision.inference_profile,
+        policy_decision=decision.policy_decision,
+    )
     try:
         if provider == "anthropic":
             messages = [
@@ -786,13 +825,15 @@ def extract_invoice_data(text: str, provider: str, model: str) -> dict:
         
         data = json.loads(content)
         
-        # DEBUG: Validierung temporär ausgeschaltet!
-        logger.info(f"🔍 DEBUG: Keys: {list(data.keys())}")
-        logger.info(f"🔍 DEBUG: betrag_brutto = {data.get('betrag_brutto')}")
-        logger.info(f"🔍 DEBUG: betrag_brutto = {data.get('betrag_brutto')}")
-        logger.info(f"🔍 DEBUG: rechnungsaussteller = {data.get('rechnungsaussteller')}")
-        logger.info(f"🔍 DEBUG: steuernummer = {data.get('steuernummer')}")
-        logger.info(f"🔍 DEBUG: ust_idnr = {data.get('ust_idnr')}")
+        safe_log(
+            logger,
+            logging.INFO,
+            "invoice_extraction_response_parsed",
+            provider=provider_identity.value,
+            model=model,
+            policy_decision=decision.policy_decision,
+            fields_present=sorted(data.keys()),
+        )
         
         # VALIDIERUNG AUSGESCHALTET
         # if 'betrag_brutto' not in data or not data['betrag_brutto']:
@@ -800,8 +841,20 @@ def extract_invoice_data(text: str, provider: str, model: str) -> dict:
         #     return None
         return data
         
+    except InferencePolicyDeniedError:
+        raise
     except Exception as e:
-        logger.error(f"Fehler bei Datenextraktion: {e}")
+        log_inference_event(
+            logger,
+            event="invoice_extraction_failed",
+            provider=provider_identity.value,
+            model=model,
+            data_class=decision.data_class,
+            inference_profile=decision.inference_profile,
+            policy_decision=decision.policy_decision,
+            error_code=type(e).__name__,
+            level=logging.ERROR,
+        )
         return None
 
 
@@ -832,7 +885,11 @@ def pick_provider_model(complexity_score: int) -> Tuple[str, str]:
 import base64
 from pathlib import Path
 
-def extract_with_vision(pdf_path: str) -> dict:
+def extract_with_vision(
+    pdf_path: str,
+    data_class: str | None = None,
+    inference_profile: str | None = None,
+) -> dict:
     """
     Extrahiert Rechnungsdaten via GPT-4o Vision.
     Konvertiert PDF zu Bild und sendet an Vision-API.
@@ -843,6 +900,23 @@ def extract_with_vision(pdf_path: str) -> dict:
     Returns:
         dict mit extrahierten Daten oder None bei Fehler
     """
+    resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+    resolved_profile = resolve_inference_profile(inference_profile)
+    decision = assert_inference_allowed(
+        data_class=resolved_data_class,
+        inference_profile=resolved_profile,
+        provider=InferenceProvider.OPENAI_DIRECT,
+        purpose="invoice_vision_extraction",
+    )
+    log_inference_event(
+        logger,
+        event="inference_policy_allowed",
+        provider=InferenceProvider.OPENAI_DIRECT.value,
+        model="gpt-4o",
+        data_class=decision.data_class,
+        inference_profile=decision.inference_profile,
+        policy_decision=decision.policy_decision,
+    )
     try:
         from pdf2image import convert_from_path
         
@@ -859,7 +933,7 @@ def extract_with_vision(pdf_path: str) -> dict:
         images[0].save(img_buffer, format='PNG')
         img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
         
-        logger.info(f"Vision: Bild erstellt ({len(img_base64) // 1024} KB)")
+        safe_log(logger, logging.INFO, "vision_image_prepared", image_kb=len(img_base64) // 1024)
         
         # Vision-Prompt (kompakt)
         vision_prompt = """Analysiere dieses Rechnungsbild und extrahiere ALLE Daten als JSON:
@@ -927,15 +1001,42 @@ WICHTIG:
         data = json.loads(content)
         data['extraction_method'] = 'vision'
         
-        logger.info(f"✅ Vision-Extraktion erfolgreich: {data.get('rechnungsnummer', 'unbekannt')}")
+        log_inference_event(
+            logger,
+            event="vision_extraction_success",
+            provider=InferenceProvider.OPENAI_DIRECT.value,
+            model="gpt-4o",
+            data_class=decision.data_class,
+            inference_profile=decision.inference_profile,
+            policy_decision=decision.policy_decision,
+        )
         return data
         
+    except InferencePolicyDeniedError:
+        raise
     except Exception as e:
-        logger.error(f"❌ Vision-Extraktion fehlgeschlagen: {e}")
+        log_inference_event(
+            logger,
+            event="vision_extraction_failed",
+            provider=InferenceProvider.OPENAI_DIRECT.value,
+            model="gpt-4o",
+            data_class=decision.data_class,
+            inference_profile=decision.inference_profile,
+            policy_decision=decision.policy_decision,
+            error_code=type(e).__name__,
+            level=logging.ERROR,
+        )
         return None
 
 
-def extract_invoice_data_with_fallback(text: str, pdf_path: str, provider: str, model: str) -> dict:
+def extract_invoice_data_with_fallback(
+    text: str,
+    pdf_path: str,
+    provider: str,
+    model: str,
+    data_class: str | None = None,
+    inference_profile: str | None = None,
+) -> dict:
     """
     Extrahiert Rechnungsdaten mit Vision-Fallback.
     
@@ -953,7 +1054,13 @@ def extract_invoice_data_with_fallback(text: str, pdf_path: str, provider: str, 
     """
     # Normale Extraktion versuchen wenn genug Text
     if text and len(text) > 200:
-        result = extract_invoice_data(text, provider, model)
+        result = extract_invoice_data(
+            text,
+            provider,
+            model,
+            data_class=data_class,
+            inference_profile=inference_profile,
+        )
         
         if result:
             # Confidence prüfen
@@ -966,13 +1073,23 @@ def extract_invoice_data_with_fallback(text: str, pdf_path: str, provider: str, 
         logger.warning(f"Wenig Text ({len(text) if text else 0} chars), versuche Vision...")
     
     # Vision-Fallback
-    vision_result = extract_with_vision(pdf_path)
+    vision_result = extract_with_vision(
+        pdf_path,
+        data_class=data_class,
+        inference_profile=inference_profile,
+    )
     
     if vision_result:
         return vision_result
     
     # Falls Vision auch fehlschlägt, Text-Ergebnis zurückgeben (falls vorhanden)
     if text and len(text) > 50:
-        return extract_invoice_data(text, provider, model)
+        return extract_invoice_data(
+            text,
+            provider,
+            model,
+            data_class=data_class,
+            inference_profile=inference_profile,
+        )
     
     return None

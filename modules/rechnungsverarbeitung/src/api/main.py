@@ -1226,6 +1226,7 @@ async def validate_invoice(
 from modules.rechnungsverarbeitung.src.invoices.services.ai_kontierung import (
     AIKontierungService,
 )
+from shared.inference_policy import InferencePolicyDeniedError
 
 ai_kontierung = AIKontierungService()
 
@@ -1271,10 +1272,13 @@ async def suggest_kontierung(
                     pass
             skr = "SKR03"
 
-        result = ai_kontierung.suggest(
-            invoice_data=inv_data,
-            skr=skr,
-        )
+        try:
+            result = ai_kontierung.suggest(
+                invoice_data=inv_data,
+                skr=skr,
+            )
+        except InferencePolicyDeniedError as exc:
+            raise HTTPException(status_code=403, detail=exc.to_safe_dict()) from exc
 
         current_status = invoice.status
 
@@ -1405,11 +1409,14 @@ async def copilot_chat(
     user: UserAuth = Depends(get_current_user),
 ):
     """AI Finance Copilot – ask questions about your invoices."""
-    result = copilot_service.chat(
-        question=body.question,
-        tenant_id=user.tenant_id,
-        conversation_history=body.conversation_history,
-    )
+    try:
+        result = copilot_service.chat(
+            question=body.question,
+            tenant_id=user.tenant_id,
+            conversation_history=body.conversation_history,
+        )
+    except InferencePolicyDeniedError as exc:
+        raise HTTPException(status_code=403, detail=exc.to_safe_dict()) from exc
     return result
 
 

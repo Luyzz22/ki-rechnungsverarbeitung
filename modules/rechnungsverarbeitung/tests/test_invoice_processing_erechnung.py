@@ -36,7 +36,17 @@ class EmptyExtraction:
 
 
 class EmptyAIExtractionService:
-    def extract(self, file_content: bytes, file_name: str, mime_type: str) -> EmptyExtraction:
+    def extract(
+        self,
+        file_content: bytes,
+        file_name: str,
+        mime_type: str,
+        *,
+        data_class=None,
+        inference_profile=None,
+    ) -> EmptyExtraction:
+        assert getattr(data_class, "value", data_class) == "invoice_confidential"
+        assert getattr(inference_profile, "value", inference_profile) == "standard"
         return EmptyExtraction()
 
 
@@ -211,7 +221,17 @@ def test_process_pdf_flowcheck_passes_with_extracted_invoice_data(monkeypatch) -
             }
 
     class DummyAIExtractionService:
-        def extract(self, file_content: bytes, file_name: str, mime_type: str) -> DummyExtraction:
+        def extract(
+            self,
+            file_content: bytes,
+            file_name: str,
+            mime_type: str,
+            *,
+            data_class=None,
+            inference_profile=None,
+        ) -> DummyExtraction:
+            assert getattr(data_class, "value", data_class) == "invoice_confidential"
+            assert getattr(inference_profile, "value", inference_profile) == "standard"
             return DummyExtraction()
 
     monkeypatch.setattr(invoice_processing, "ERechnungHubService", DummyHub)
@@ -292,7 +312,17 @@ def test_process_pdf_policy_uses_budget_context(monkeypatch) -> None:
             }
 
     class DummyAIExtractionService:
-        def extract(self, file_content: bytes, file_name: str, mime_type: str) -> DummyExtraction:
+        def extract(
+            self,
+            file_content: bytes,
+            file_name: str,
+            mime_type: str,
+            *,
+            data_class=None,
+            inference_profile=None,
+        ) -> DummyExtraction:
+            assert getattr(data_class, "value", data_class) == "invoice_confidential"
+            assert getattr(inference_profile, "value", inference_profile) == "standard"
             return DummyExtraction()
 
     monkeypatch.setattr(invoice_processing, "ERechnungHubService", DummyHub)

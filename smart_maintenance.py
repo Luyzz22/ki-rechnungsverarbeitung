@@ -15,12 +15,23 @@ import json
 import os
 import base64
 import httpx
+import logging
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from shared.inference_policy import (
+    DataClass,
+    InferencePolicyDeniedError,
+    InferenceProvider,
+    assert_inference_allowed,
+)
+from shared.data_classification import resolve_inference_profile
+from shared.secure_logging import log_inference_event, safe_log
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 # Gemini Configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
@@ -35,7 +46,12 @@ def get_gemini_client():
 # PART 1: Visual Part Recognition (Gemini Vision)
 # ============================================================================
 
-async def recognize_part_from_image(image_base64: str, context: str = "") -> Dict[str, Any]:
+async def recognize_part_from_image(
+    image_base64: str,
+    context: str = "",
+    data_class: str | None = None,
+    inference_profile: str | None = None,
+) -> Dict[str, Any]:
     """
     Verwendet Gemini 1.5 Pro Vision um ein Teil aus einem Foto zu erkennen.
     
@@ -55,6 +71,14 @@ async def recognize_part_from_image(image_base64: str, context: str = "") -> Dic
         return {"error": "Gemini API not configured", "part_number": None}
     
     try:
+        resolved_data_class = data_class or DataClass.INTERNAL
+        resolved_profile = resolve_inference_profile(inference_profile)
+        decision = assert_inference_allowed(
+            data_class=resolved_data_class,
+            inference_profile=resolved_profile,
+            provider=InferenceProvider.GEMINI_DIRECT,
+            purpose="smart_maintenance_part_recognition",
+        )
         # Using google-genai client (model specified in generate_content call)
         
         prompt = f"""Du bist ein Experte für industrielle Ersatzteile im deutschen Maschinenbau.
@@ -103,11 +127,28 @@ Antworte AUSSCHLIESSLICH als JSON:
         
         result = json.loads(response_text.strip())
         result["raw_response"] = response.text
+        log_inference_event(
+            logger,
+            event="smart_maintenance_part_recognition_completed",
+            provider=InferenceProvider.GEMINI_DIRECT.value,
+            model="gemini-2.0-flash",
+            data_class=decision.data_class,
+            inference_profile=decision.inference_profile,
+            policy_decision=decision.policy_decision,
+        )
         return result
-        
-    except Exception as e:
+
+    except InferencePolicyDeniedError as e:
         return {
-            "error": str(e),
+            "error": e.error_code,
+            "policy": e.to_safe_dict(),
+            "part_number": None,
+            "confidence": 0,
+        }
+    except Exception as e:
+        safe_log(logger, logging.ERROR, "smart_maintenance_part_recognition_failed", error_code=type(e).__name__)
+        return {
+            "error": type(e).__name__,
             "part_number": None,
             "part_name": "Unbekannt",
             "confidence": 0
@@ -635,11 +676,16 @@ def get_hydraulikdoc_analyzer():
         )
         return analyzer
     except Exception as e:
-        print(f"HydraulikDoc Analyzer nicht verfügbar: {e}")
+        safe_log(logger, logging.WARNING, "hydraulikdoc_analyzer_unavailable", error_code=type(e).__name__)
         return None
 
 
-async def analyze_part_with_hydraulikdoc(image_base64: str, context: str = "") -> Dict[str, Any]:
+async def analyze_part_with_hydraulikdoc(
+    image_base64: str,
+    context: str = "",
+    data_class: str | None = None,
+    inference_profile: str | None = None,
+) -> Dict[str, Any]:
     """
     Analysiert Teil-Bild mit HydraulikDoc's Gemini 2.5 Pro
     
@@ -652,9 +698,22 @@ async def analyze_part_with_hydraulikdoc(image_base64: str, context: str = "") -
     
     if not analyzer:
         # Fallback auf standard recognize_part_from_image
-        return await recognize_part_from_image(image_base64, context)
+        return await recognize_part_from_image(
+            image_base64,
+            context,
+            data_class=data_class,
+            inference_profile=inference_profile,
+        )
     
     try:
+        resolved_data_class = data_class or DataClass.INTERNAL
+        resolved_profile = resolve_inference_profile(inference_profile)
+        decision = assert_inference_allowed(
+            data_class=resolved_data_class,
+            inference_profile=resolved_profile,
+            provider=InferenceProvider.GEMINI_DIRECT,
+            purpose="hydraulikdoc_part_analysis",
+        )
         # HydraulikDoc-spezifischer Prompt
         prompt = f"""Du bist ein Experte für industrielle Hydraulik- und Maschinenkomponenten.
         
@@ -722,13 +781,34 @@ Antworte NUR als JSON:
         result = json.loads(response_text.strip())
         result["hydraulikdoc_analysis"] = True
         result["model_used"] = "gemini-2.0-flash"
-        
+        log_inference_event(
+            logger,
+            event="hydraulikdoc_part_analysis_completed",
+            provider=InferenceProvider.GEMINI_DIRECT.value,
+            model="gemini-2.0-flash",
+            data_class=decision.data_class,
+            inference_profile=decision.inference_profile,
+            policy_decision=decision.policy_decision,
+        )
+
         return result
-        
+
+    except InferencePolicyDeniedError as e:
+        return {
+            "error": e.error_code,
+            "policy": e.to_safe_dict(),
+            "part_number": None,
+            "confidence": 0,
+        }
     except Exception as e:
-        print(f"HydraulikDoc Analysis Error: {e}")
+        safe_log(logger, logging.ERROR, "hydraulikdoc_part_analysis_failed", error_code=type(e).__name__)
         # Fallback
-        return await recognize_part_from_image(image_base64, context)
+        return await recognize_part_from_image(
+            image_base64,
+            context,
+            data_class=data_class,
+            inference_profile=inference_profile,
+        )
 
 
 # ============================================================================
