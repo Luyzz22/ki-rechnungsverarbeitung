@@ -48,6 +48,7 @@ DIRECT_INFERENCE_PATTERNS = [
     re.compile(pattern)
     for pattern in (
         r"\bfrom\s+openai\s+import\s+OpenAI\b",
+        r"\bfrom\s+openai\s+import\s+AzureOpenAI\b",
         r"\bfrom\s+anthropic\s+import\s+Anthropic\b",
         r"\bimport\s+anthropic\b",
         r"\bfrom\s+google\s+import\s+genai\b",
@@ -57,6 +58,7 @@ DIRECT_INFERENCE_PATTERNS = [
         r"\.messages\.create\(",
         r"\.models\.generate_content\(",
         r"\bLLMRouter\.generate_response\(",
+        r"\bDocumentIntelligenceClient\b",
         r"\bpytesseract\.image_to_(?:data|string)\(",
         r"\bconvert_from_path\(",
     )
@@ -98,6 +100,28 @@ def test_active_direct_inference_files_use_central_guard():
             missing_guard.append(path.relative_to(REPO_ROOT).as_posix())
 
     assert missing_guard == []
+
+
+def test_azure_provider_adapters_use_guard_and_do_not_fallback_to_direct():
+    adapter_paths = [
+        REPO_ROOT / "shared/providers/azure_openai_provider.py",
+        REPO_ROOT / "shared/providers/azure_document_intelligence_provider.py",
+    ]
+    forbidden_direct_symbols = [
+        "OPENAI_DIRECT",
+        "ANTHROPIC_DIRECT",
+        "GEMINI_DIRECT",
+        "get_openai_client",
+        "get_anthropic_client",
+        "google.genai",
+    ]
+
+    for path in adapter_paths:
+        text = path.read_text(encoding="utf-8")
+        assert "assert_inference_allowed" in text
+        assert text.index("assert_inference_allowed") < text.index("client.")
+        for symbol in forbidden_direct_symbols:
+            assert symbol not in text
 
 
 def test_no_active_file_hardcodes_direct_provider_endpoint_urls():

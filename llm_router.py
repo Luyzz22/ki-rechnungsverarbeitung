@@ -16,6 +16,7 @@ from shared.inference_policy import (
     InferenceProvider,
     assert_inference_allowed,
 )
+from shared.providers.provider_factory import select_provider_for_purpose
 from shared.secure_logging import log_inference_event, safe_log
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,20 @@ def _legacy_provider_to_policy(provider: str) -> InferenceProvider:
     if provider == "openai":
         return InferenceProvider.OPENAI_DIRECT
     raise ValueError(f"Unknown provider: {provider}")
+
+
+def resolve_policy_provider(
+    *,
+    data_class: str,
+    inference_profile: str,
+    purpose: str,
+) -> InferenceProvider:
+    """Resolve the policy-approved provider identity without creating a client."""
+    return select_provider_for_purpose(
+        data_class=data_class,
+        inference_profile=inference_profile,
+        purpose=purpose,
+    )
 
 
 def get_openai_client() -> OpenAI:

@@ -83,11 +83,18 @@ def resolve_provider_configured(
     if provider_enum == InferenceProvider.GEMINI_DIRECT:
         return bool(source.get("GEMINI_API_KEY") or source.get("GOOGLE_API_KEY"))
     if provider_enum == InferenceProvider.AZURE_OPENAI_EU:
-        return bool(source.get("AZURE_OPENAI_ENDPOINT") and source.get("AZURE_OPENAI_DEPLOYMENT"))
+        return (
+            str(source.get("FLOWCHECK_AZURE_ADAPTERS_ENABLED", "")).strip().lower() in {"1", "true", "yes", "on"}
+            and str(source.get("FLOWCHECK_AZURE_AUTH_MODE", "entra")).strip().lower() == "entra"
+            and bool(source.get("AZURE_OPENAI_ENDPOINT") and source.get("AZURE_OPENAI_DEPLOYMENT"))
+            and bool(source.get("FLOWCHECK_AZURE_ENDPOINT_HOST_ALLOWLIST"))
+        )
     if provider_enum == InferenceProvider.AZURE_DOCUMENT_INTELLIGENCE_EU:
-        return bool(
-            source.get("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")
-            or source.get("AZURE_FORM_RECOGNIZER_ENDPOINT")
+        return (
+            str(source.get("FLOWCHECK_AZURE_ADAPTERS_ENABLED", "")).strip().lower() in {"1", "true", "yes", "on"}
+            and str(source.get("FLOWCHECK_AZURE_AUTH_MODE", "entra")).strip().lower() == "entra"
+            and bool(source.get("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"))
+            and bool(source.get("FLOWCHECK_AZURE_ENDPOINT_HOST_ALLOWLIST"))
         )
     if provider_enum == InferenceProvider.LOCAL_OPENAI_COMPAT:
         return bool(source.get("LOCAL_LLM_BASE_URL") and source.get("LOCAL_LLM_MODEL"))
