@@ -501,3 +501,47 @@ def test_named_endpoint_service_paths_on_postgres(monkeypatch):
     assert os.path.getsize(p) > 0
     rec = gobd.record_export(uid, "datev", b"x;y", file_name="x.csv", row_count=5, user_id=uid)
     assert rec and rec.get("id")
+
+
+@pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt")
+def test_mixed_type_created_at_coalesce(monkeypatch):
+    """Produktions-500: invoices.created_at (timestamp) und jobs.created_at (text)
+    haben auf Neon UNTERSCHIEDLICHE Typen → COALESCE(i.created_at, j.created_at)
+    wirft DatatypeMismatch. Fix: beide Operanden CAST(... AS TEXT). Erwartet:
+    KPI-/Lieferanten-/Invoices-Reads liefern Daten, kein Crash."""
+    psycopg = pytest.importorskip("psycopg")
+    monkeypatch.setenv("DATABASE_URL", _PG_URL)
+
+    with psycopg.connect(_PG_URL) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+        conn.commit()
+    import importlib, database
+    importlib.reload(database)
+    database.init_database()
+    uid = database.create_user("mix@test.de", "Secret123!", "M", "ACME")
+
+    with psycopg.connect(_PG_URL) as conn:
+        with conn.cursor() as cur:
+            # Typ-Mismatch erzeugen: invoices.created_at → timestamp, jobs.created_at bleibt text
+            cur.execute("ALTER TABLE invoices ALTER COLUMN created_at TYPE timestamp USING created_at::timestamp")
+            cur.execute("INSERT INTO jobs (job_id,created_at,status,user_id) VALUES ('J1','2026-06-01T10:00:00','completed',%s)", (uid,))
+            for i in range(6):
+                d = f"2026-0{(i % 6) + 1}-15"
+                cur.execute(
+                    "INSERT INTO invoices (job_id,rechnungsnummer,datum,rechnungsaussteller,"
+                    "betrag_brutto,betrag_netto,mwst_betrag,waehrung,tenant_id,created_at,status,deleted) "
+                    "VALUES ('J1',%s,%s,%s,%s,%s,16,'EUR',%s,%s,'approved',0)",
+                    (f"RE-{i}", d, ["Alpha", "Beta", "Gamma"][i % 3], 119.0 + i, 100.0 + i, uid, d + " 09:00:00"),
+                )
+        conn.commit()
+
+    import enterprise_dashboard, supplier_overview
+    importlib.reload(enterprise_dashboard); importlib.reload(supplier_overview)
+
+    kpis = enterprise_dashboard.get_kpis(uid)          # _count_since + get_trend (COALESCE)
+    assert kpis["total_invoices"] == 6
+    assert len(kpis["trend"]) == 30                     # get_trend lief (COALESCE-Mismatch gefixt)
+    suppliers = supplier_overview.get_suppliers(uid)    # _fetch_invoices COALESCE
+    assert len(suppliers) == 3
+    assert all(isinstance(s["last_date"], str) for s in suppliers)
