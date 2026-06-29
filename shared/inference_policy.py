@@ -24,6 +24,7 @@ class DataClass(str, Enum):
 
 class InferenceProfile(str, Enum):
     STANDARD = "standard"
+    EU_REGIONAL_CLOUD = "eu_regional_cloud"
     PROFESSIONAL_SECRECY = "professional_secrecy"
     SOVEREIGN = "sovereign"
 
@@ -69,8 +70,16 @@ PROFESSIONAL_SECRECY_PROVIDERS = frozenset(
     }
 )
 
+EU_REGIONAL_CLOUD_PROVIDERS = frozenset(
+    {
+        InferenceProvider.AZURE_OPENAI_EU,
+        InferenceProvider.AZURE_DOCUMENT_INTELLIGENCE_EU,
+    }
+)
+
 ALLOWED_PROVIDERS_BY_PROFILE: dict[InferenceProfile, frozenset[InferenceProvider]] = {
     InferenceProfile.STANDARD: frozenset(InferenceProvider),
+    InferenceProfile.EU_REGIONAL_CLOUD: EU_REGIONAL_CLOUD_PROVIDERS,
     InferenceProfile.PROFESSIONAL_SECRECY: PROFESSIONAL_SECRECY_PROVIDERS,
     InferenceProfile.SOVEREIGN: LOCAL_ONLY_PROVIDERS,
 }

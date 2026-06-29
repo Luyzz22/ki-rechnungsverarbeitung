@@ -6,6 +6,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any
+from urllib.parse import urlparse
 
 from shared.inference_policy import (
     DataClass,
@@ -15,6 +16,7 @@ from shared.inference_policy import (
 )
 from shared.providers.provider_factory import AzureProviderError, resolve_azure_document_intelligence_config
 from shared.providers.azure_identity import resolve_azure_credential
+from shared.provider_governance import assert_provider_governance_allowed
 from shared.secure_logging import log_inference_event
 
 
@@ -89,6 +91,16 @@ class AzureDocumentIntelligenceProvider:
             purpose=purpose,
         )
         config = resolve_azure_document_intelligence_config(settings=self.settings, env=self.env)
+        assert_provider_governance_allowed(
+            data_class=data_class,
+            inference_profile=inference_profile,
+            provider=self.provider,
+            purpose=purpose,
+            endpoint_host=urlparse(config.endpoint).hostname or "",
+            model_deployment_id=config.model,
+            settings=self.settings,
+            env=self.env,
+        )
         client = self._build_client(config)
 
         try:

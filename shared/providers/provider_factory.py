@@ -238,6 +238,8 @@ def select_provider_for_purpose(
 
     if profile == InferenceProfile.STANDARD:
         provider = InferenceProvider.OPENAI_DIRECT
+    elif profile == InferenceProfile.EU_REGIONAL_CLOUD:
+        provider = InferenceProvider.AZURE_DOCUMENT_INTELLIGENCE_EU if is_document_analysis else InferenceProvider.AZURE_OPENAI_EU
     elif profile == InferenceProfile.PROFESSIONAL_SECRECY:
         provider = InferenceProvider.AZURE_DOCUMENT_INTELLIGENCE_EU if is_document_analysis else InferenceProvider.AZURE_OPENAI_EU
     elif profile == InferenceProfile.SOVEREIGN:

@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     flowcheck_default_inference_profile: str = "standard"
     flowcheck_policy_enforcement: str = "block"
     flowcheck_runtime_env: str = ""
+    flowcheck_require_eu_regional_cloud_in_production: bool = False
+    flowcheck_provider_governance_enforcement: str = "block"
+    flowcheck_cloud_processing_region: str = "UNSET"
+    flowcheck_provider_deployment_config: str = ""
+    flowcheck_provider_endpoint_host_allowlist: str = ""
     flowcheck_azure_adapters_enabled: bool = False
     flowcheck_azure_auth_mode: str = "entra"
     flowcheck_azure_identity_mode: str = "managed_identity"
