@@ -7131,9 +7131,19 @@ Beantworte die Frage des Users basierend auf diesen Daten."""
         return JSONResponse({"response": f"Entschuldigung, ein Fehler ist aufgetreten: {str(e)}"})
 
 
-# ============================================================
-# MBR ENTERPRISE PAGE
-# ============================================================
+# ══════════════════════════════════════════════════════════════════════════════
+# NEXUS GATEWAY INTEGRATION
+# ══════════════════════════════════════════════════════════════════════════════
+import sys
+sys.path.insert(0, "/var/www/invoice-app")
+try:
+    from api_nexus import router as nexus_router
+    app.include_router(nexus_router)
+    print("✅ Nexus Gateway API aktiviert: /api/nexus/*")
+except ImportError as e:
+    print(f"⚠️ Nexus Gateway nicht verfügbar: {e}")
+
+
 @app.get("/spend-analytics", response_class=HTMLResponse)
 async def spend_analytics_page(request: Request):
     """Spend Intelligence Dashboard"""
