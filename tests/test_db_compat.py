@@ -588,6 +588,44 @@ def test_boolean_columns_generic_coalesce_compare_write():
 
 
 @pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt")
+def test_boolean_rewrite_scoped_to_owning_table():
+    """PR-Review (Codex P2): gleicher Spaltenname, unterschiedlicher Typ je Tabelle.
+    users.is_active=boolean, approval_rules.is_active=integer → der Rewrite darf
+    NUR die boolean-Tabelle treffen, sonst bricht UPDATE approval_rules SET is_active=0."""
+    psycopg = pytest.importorskip("psycopg")
+    import db_compat as dbc
+
+    with _force(_PG_URL) as conn:
+        cur = conn.cursor()
+        for t in ("u_t", "ar_t", "inv_t"):
+            cur.execute(f"DROP TABLE IF EXISTS {t}")
+        cur.execute("CREATE TABLE u_t (id SERIAL PRIMARY KEY, is_active boolean DEFAULT TRUE)")
+        cur.execute("CREATE TABLE ar_t (id SERIAL PRIMARY KEY, is_active integer DEFAULT 1)")
+        cur.execute("CREATE TABLE inv_t (id SERIAL PRIMARY KEY, deleted boolean DEFAULT FALSE)")
+        conn.commit()
+        raw = cur._cur
+
+        # integer-Spalte (ar_t.is_active) NICHT umschreiben – weder Write noch bare Compare
+        assert dbc.translate_boolean_ops(raw, "UPDATE ar_t SET is_active = 0 WHERE id = 5") == \
+               "UPDATE ar_t SET is_active = 0 WHERE id = 5"
+        assert dbc.translate_boolean_ops(raw, "SELECT id FROM ar_t WHERE is_active = 1") == \
+               "SELECT id FROM ar_t WHERE is_active = 1"
+        # boolean-Spalte (u_t.is_active) qualifiziert umschreiben
+        assert "CAST(u.is_active AS INTEGER) = 1" in \
+               dbc.translate_boolean_ops(raw, "SELECT u.id FROM u_t u WHERE u.is_active = 1")
+        # boolean-Write inv_t.deleted
+        assert "CAST(1 AS BOOLEAN)" in dbc.translate_boolean_ops(raw, "UPDATE inv_t SET deleted = 1 WHERE id = 5")
+
+        # Funktional: der zuvor brechende approval-Write läuft jetzt durch
+        cur.execute("INSERT INTO ar_t (is_active) VALUES (?)", (1,))
+        conn.commit()
+        cur.execute("UPDATE ar_t SET is_active = 0 WHERE id = ?", (1,))
+        conn.commit()
+        cur.execute("SELECT is_active FROM ar_t WHERE id = ?", (1,))
+        assert int(cur.fetchone()[0]) == 0
+
+
+@pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt")
 def test_boolean_deleted_endpoints(monkeypatch):
     """/api/app/invoices (inkl. ?status & ?limit=500), /lieferanten, /dashboard/kpis
     liefern 200 + Daten, wenn invoices.deleted auf Postgres boolean ist."""
