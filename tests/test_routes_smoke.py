@@ -76,7 +76,7 @@ PAGES_200 = [
     "/exports", "/lieferanten", "/audit", "/verfahrensdokumentation",
     "/gobd/export-protokoll", "/landing", "/sicherheit", "/compliance",
     "/avv", "/api", "/preise", "/pricing", "/profile", "/settings",
-    "/approvals", "/zahlungen", "/budget", "/mbr", "/health",
+    "/approvals", "/zahlungen", "/budget", "/health",
 ]
 
 # Alias-Pfade, die sinnvoll weiterleiten (3xx) müssen
