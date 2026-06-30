@@ -1099,7 +1099,13 @@ async def download_monthly_mbr(request: Request, year: int = None, month: int = 
     try:
         from mbr.generator import generate_presentation
 
-        conn = get_connection()
+        # MBR-Datenschicht (mbr/data.py) erwartet das Legacy-Schema `rechnungen`
+        # (Spalten rechnungs_datum/netto_betrag/brutto_betrag/lieferant/kategorie_id),
+        # das NICHT der kanonischen `invoices`-Tabelle entspricht. Bis zur eigenen
+        # MBR→invoices-Migration bewusst auf SQLite (get_db_path) statt Neon; sonst
+        # bricht der Export (relation "rechnungen" does not exist). Siehe PR-Notiz.
+        conn = sqlite3.connect(get_db_path())
+        conn.row_factory = sqlite3.Row
         pptx_bytes = generate_presentation(
             conn, 
             api_key=api_key, 
@@ -5411,14 +5417,15 @@ async def get_subscription_info(request: Request):
         conn = get_connection()
         cursor = conn.cursor()
         
-        # Prüfe product_subscriptions
+        # Prüfe product_subscriptions (Spalten product/plan – siehe
+        # multi_product_subscriptions.init_product_subscriptions_table)
         cursor.execute("""
-            SELECT product_id, plan_name, status, usage_limit, usage_current 
-            FROM product_subscriptions 
+            SELECT product, plan, status, usage_limit, usage_current
+            FROM product_subscriptions
             WHERE user_id = ? AND status = 'active'
         """, (request.session["user_id"],))
         rows = cursor.fetchall()
-        
+
         if rows:
             for row in rows:
                 product_id, plan_name, status, limit, current = row
@@ -5427,7 +5434,7 @@ async def get_subscription_info(request: Request):
                     "name": product_names.get(product_id, product_id),
                     "plan": plan_name,
                     "status": status,
-                    "usage": f"{current}/{limit}" if limit > 0 else "Unbegrenzt"
+                    "usage": f"{current}/{limit}" if (limit or 0) > 0 else "Unbegrenzt"
                 })
             
             # Setze Plan basierend auf höchstem aktiven Plan
