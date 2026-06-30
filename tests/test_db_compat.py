@@ -4,6 +4,12 @@ import os
 import subprocess
 import sys
 
+# Für Endpoint-Boot (web.app) in den PG-Integrationstests benötigt:
+os.environ.setdefault("ENVIRONMENT", "development")
+os.environ.setdefault("SESSION_SECRET_KEY", "test-secret-key")
+os.environ.setdefault("SECRET_KEY", "test-secret-key")
+os.environ.setdefault("JWT_SECRET", "test-secret-key")
+
 import pytest
 
 from db_compat import (
@@ -224,13 +230,11 @@ def test_user_read_works_on_boolean_is_admin():
             assert row is not None
             assert bool(row[2]) is True, f"is_admin ({col_type}) nicht als True gelesen"
 
-            # Gegenprobe: das alte COALESCE(is_admin, 0) bricht je nach Typ
-            with pytest.raises(psycopg.errors.DatatypeMismatch):
-                cur2 = conn.cursor()
-                lit = "0" if col_type == "boolean" else "FALSE"
-                cur2.execute(f"SELECT COALESCE(is_admin, {lit}) FROM users_bool_t")
-                cur2.fetchone()
-            conn.rollback()
+            # COALESCE(is_admin, 0) läuft jetzt für boolean UND integer durch:
+            # der generische Boolean-Translator castet boolean-Spalten zu INTEGER.
+            cur2 = conn.cursor()
+            cur2.execute("SELECT COALESCE(is_admin, 0) FROM users_bool_t")
+            assert int(cur2.fetchone()[0]) == 1, f"COALESCE(is_admin,0) für {col_type} fehlgeschlagen"
 
 
 @pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt (echte Postgres-Instanz nötig)")
@@ -545,3 +549,119 @@ def test_mixed_type_created_at_coalesce(monkeypatch):
     suppliers = supplier_overview.get_suppliers(uid)    # _fetch_invoices COALESCE
     assert len(suppliers) == 3
     assert all(isinstance(s["last_date"], str) for s in suppliers)
+
+
+@pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt")
+def test_boolean_columns_generic_coalesce_compare_write():
+    """Generisch: boolean-Spalten (introspektiert) werden in COALESCE/Vergleich/
+    Zuweisung typkonsistent gemacht. Numerische Spalten bleiben unberührt; auf
+    integer-Spalten (Fresh-Install) findet KEIN Rewrite statt."""
+    psycopg = pytest.importorskip("psycopg")
+    import db_compat as dbc
+
+    with _force(_PG_URL) as conn:
+        cur = conn.cursor()
+        cur.execute("DROP TABLE IF EXISTS bcol")
+        cur.execute("CREATE TABLE bcol (id SERIAL PRIMARY KEY, deleted boolean DEFAULT FALSE, "
+                    "betrag real, is_active boolean DEFAULT TRUE)")
+        conn.commit()
+        raw = cur._cur
+        # 1) COALESCE(<bool>, <int>) → CAST AS INTEGER
+        assert "CAST(deleted AS INTEGER)" in dbc.translate_boolean_ops(raw, "SELECT COALESCE(deleted, 0) FROM bcol")
+        # 2) Vergleich
+        assert "CAST(b.is_active AS INTEGER) = 1" in dbc.translate_boolean_ops(raw, "SELECT 1 FROM bcol b WHERE b.is_active = 1")
+        # 3) Write: SET <bool> = <int> → CAST(<int> AS BOOLEAN)
+        assert "CAST(1 AS BOOLEAN)" in dbc.translate_boolean_ops(raw, "UPDATE bcol SET deleted = 1 WHERE id = 5")
+        # 4) Numerische Spalte unberührt
+        assert dbc.translate_boolean_ops(raw, "SELECT COALESCE(betrag, 0) FROM bcol") == "SELECT COALESCE(betrag, 0) FROM bcol"
+
+        # End-to-End: COALESCE-Filter + Write + Vergleich gegen echte boolean-Spalten
+        cur.execute("INSERT INTO bcol (betrag) VALUES (?)", (100.0,))   # deleted default FALSE
+        cur.execute("INSERT INTO bcol (betrag) VALUES (?)", (200.0,))
+        conn.commit()
+        cur.execute("UPDATE bcol SET deleted = 1 WHERE id = ?", (2,))   # Write boolean
+        conn.commit()
+        cur.execute("SELECT COUNT(*) FROM bcol WHERE COALESCE(deleted, 0) = 0")  # read filter
+        assert cur.fetchone()[0] == 1
+        cur.execute("SELECT COUNT(*) FROM bcol WHERE is_active = 1")    # bare compare
+        assert cur.fetchone()[0] == 2
+
+
+@pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt")
+def test_boolean_rewrite_scoped_to_owning_table():
+    """PR-Review (Codex P2): gleicher Spaltenname, unterschiedlicher Typ je Tabelle.
+    users.is_active=boolean, approval_rules.is_active=integer → der Rewrite darf
+    NUR die boolean-Tabelle treffen, sonst bricht UPDATE approval_rules SET is_active=0."""
+    psycopg = pytest.importorskip("psycopg")
+    import db_compat as dbc
+
+    with _force(_PG_URL) as conn:
+        cur = conn.cursor()
+        for t in ("u_t", "ar_t", "inv_t"):
+            cur.execute(f"DROP TABLE IF EXISTS {t}")
+        cur.execute("CREATE TABLE u_t (id SERIAL PRIMARY KEY, is_active boolean DEFAULT TRUE)")
+        cur.execute("CREATE TABLE ar_t (id SERIAL PRIMARY KEY, is_active integer DEFAULT 1)")
+        cur.execute("CREATE TABLE inv_t (id SERIAL PRIMARY KEY, deleted boolean DEFAULT FALSE)")
+        conn.commit()
+        raw = cur._cur
+
+        # integer-Spalte (ar_t.is_active) NICHT umschreiben – weder Write noch bare Compare
+        assert dbc.translate_boolean_ops(raw, "UPDATE ar_t SET is_active = 0 WHERE id = 5") == \
+               "UPDATE ar_t SET is_active = 0 WHERE id = 5"
+        assert dbc.translate_boolean_ops(raw, "SELECT id FROM ar_t WHERE is_active = 1") == \
+               "SELECT id FROM ar_t WHERE is_active = 1"
+        # boolean-Spalte (u_t.is_active) qualifiziert umschreiben
+        assert "CAST(u.is_active AS INTEGER) = 1" in \
+               dbc.translate_boolean_ops(raw, "SELECT u.id FROM u_t u WHERE u.is_active = 1")
+        # boolean-Write inv_t.deleted
+        assert "CAST(1 AS BOOLEAN)" in dbc.translate_boolean_ops(raw, "UPDATE inv_t SET deleted = 1 WHERE id = 5")
+
+        # Funktional: der zuvor brechende approval-Write läuft jetzt durch
+        cur.execute("INSERT INTO ar_t (is_active) VALUES (?)", (1,))
+        conn.commit()
+        cur.execute("UPDATE ar_t SET is_active = 0 WHERE id = ?", (1,))
+        conn.commit()
+        cur.execute("SELECT is_active FROM ar_t WHERE id = ?", (1,))
+        assert int(cur.fetchone()[0]) == 0
+
+
+@pytest.mark.skipif(not _PG_URL, reason="TEST_DATABASE_URL nicht gesetzt")
+def test_boolean_deleted_endpoints(monkeypatch):
+    """/api/app/invoices (inkl. ?status & ?limit=500), /lieferanten, /dashboard/kpis
+    liefern 200 + Daten, wenn invoices.deleted auf Postgres boolean ist."""
+    psycopg = pytest.importorskip("psycopg")
+    monkeypatch.setenv("DATABASE_URL", _PG_URL)
+    with psycopg.connect(_PG_URL) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+        conn.commit()
+    import importlib, database
+    importlib.reload(database); database.init_database()
+    uid = database.create_user("bep@test.de", "Secret123!", "B", "ACME")
+    with psycopg.connect(_PG_URL) as conn:
+        with conn.cursor() as cur:
+            cur.execute("ALTER TABLE invoices ALTER COLUMN deleted DROP DEFAULT")
+            cur.execute("ALTER TABLE invoices ALTER COLUMN deleted TYPE boolean USING (COALESCE(deleted,0)<>0)")
+            cur.execute("ALTER TABLE invoices ALTER COLUMN deleted SET DEFAULT FALSE")
+            cur.execute("INSERT INTO jobs (job_id,created_at,status,user_id) VALUES ('J1','2026-06-15T10:00:00','completed',%s)", (uid,))
+            for i in range(6):
+                d = f"2026-06-{10 + i:02d}"
+                cur.execute(
+                    "INSERT INTO invoices (job_id,rechnungsnummer,datum,rechnungsaussteller,betrag_brutto,"
+                    "betrag_netto,mwst_betrag,waehrung,tenant_id,created_at,status) "
+                    "VALUES ('J1',%s,%s,%s,%s,%s,19,'EUR',%s,%s,'verarbeitet')",
+                    (f"RE-{i}", d, ["Alpha", "Beta"][i % 2], 119.0 + i, 100.0 + i, uid, d + " 09:00:00"),
+                )
+        conn.commit()
+
+    from fastapi.testclient import TestClient
+    import web.app as wa, api_frontend
+    monkeypatch.setattr(api_frontend, "_require_tenant", lambda r: uid)
+    from shared_auth import create_sso_token
+    cl = TestClient(wa.app, raise_server_exceptions=False)
+    h = {"Authorization": f"Bearer {create_sso_token(uid, 'bep@test.de', 'B')}"}
+    for p in ["/api/app/invoices", "/api/app/invoices?status=verarbeitet",
+              "/api/app/invoices?limit=500", "/api/app/lieferanten", "/api/app/dashboard/kpis"]:
+        r = cl.get(p, headers=h)
+        assert r.status_code == 200, f"{p} -> {r.status_code}: {r.text[:200]}"
+    assert cl.get("/api/app/invoices", headers=h).json()["total"] == 6

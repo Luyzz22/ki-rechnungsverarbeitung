@@ -27,6 +27,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import weakref
 from collections import OrderedDict
 from typing import Any, List, Optional, Sequence
 
@@ -411,6 +412,141 @@ def _build_on_conflict(cur, table: str, insert_cols: list) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Boolean-Spalten generisch typkonsistent machen (gegen DatatypeMismatch).
+# ---------------------------------------------------------------------------
+# Der Bestandscode behandelt Flags (deleted, is_admin, is_active, gobd_locked, …)
+# als Integer (SQLite-Welt): COALESCE(deleted, 0), deleted = 0, SET deleted = 1.
+# Auf PostgreSQL/Neon sind diese Spalten teils echte boolean → Postgres wirft
+# DatatypeMismatch (boolean vs integer). Statt jede Stelle einzeln zu fixen,
+# erkennen wir per Schema-Introspektion, welche Spalten in DIESER DB tatsächlich
+# boolean sind, und casten nur diese typkonsistent:
+#   COALESCE(<bool>, <int>)  → COALESCE(CAST(<bool> AS INTEGER), <int>)
+#   <bool> <cmp> <int>       → CAST(<bool> AS INTEGER) <cmp> <int>   (Lesen)
+#   SET <bool> = <int>       → SET <bool> = CAST(<int> AS BOOLEAN)   (Schreiben)
+# Da nur wirklich-boolean Spalten umgeschrieben werden, bleibt der Integer-/
+# Fresh-Install-Fall unberührt (Spalte nicht im Set → kein Rewrite) und der
+# SQLite-Pfad ohnehin (Übersetzung läuft nur im PgCursor).
+# WICHTIG: Spaltennamen werden TABELLENGENAU aufgelöst (gleicher Name kann in
+# Tabelle A boolean und in Tabelle B integer sein, z. B. users.is_active vs.
+# approval_rules.is_active). Pro Query werden die referenzierten Tabellen/Aliasse
+# bestimmt und nur Referenzen umgeschrieben, deren konkrete Tabelle die Spalte
+# wirklich als boolean führt. Pro-Verbindung gecacht (WeakKeyDictionary).
+_bool_cols_cache: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
+
+# SQL-Schlüsselwörter, die nie ein Tabellen-Alias sind.
+_SQL_KEYWORDS = {
+    "where", "on", "set", "group", "order", "having", "join", "left", "right",
+    "inner", "outer", "full", "cross", "using", "limit", "values", "returning",
+    "and", "or", "as", "union", "select", "from", "into", "update", "delete", "natural",
+}
+_TABLE_RE = re.compile(r"\b(?:FROM|JOIN|UPDATE|INTO)\s+([a-zA-Z_]\w*)(?:\s+(?:AS\s+)?([a-zA-Z_]\w*))?", re.IGNORECASE)
+
+
+def _bool_cols_by_table(cur) -> dict:
+    """{tabelle: set(boolean-Spalten)} für die Verbindung des Cursors (gecacht)."""
+    try:
+        conn = cur.connection
+    except Exception:  # pragma: no cover
+        conn = None
+    if conn is not None:
+        cached = _bool_cols_cache.get(conn)
+        if cached is not None:
+            return cached
+    by_table: dict = {}
+    try:
+        cur.execute(
+            "SELECT table_name, column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND data_type='boolean'"
+        )
+        for table, col in cur.fetchall():
+            by_table.setdefault(table, set()).add(col)
+    except Exception:  # pragma: no cover
+        by_table = {}
+    if conn is not None and by_table:  # nur cachen, wenn nicht-leer (Tabellen evtl. noch nicht da)
+        try:
+            _bool_cols_cache[conn] = by_table
+        except TypeError:  # pragma: no cover
+            pass
+    return by_table
+
+
+def _resolve_query_tables(sql: str):
+    """Liefert (alias→tabelle inkl. tabelle→tabelle, set referenzierter Tabellen)."""
+    alias_map: dict = {}
+    tables: set = set()
+    for m in _TABLE_RE.finditer(sql):
+        table = m.group(1)
+        tables.add(table)
+        alias_map[table.lower()] = table
+        alias = m.group(2)
+        if alias and alias.lower() not in _SQL_KEYWORDS:
+            alias_map[alias.lower()] = table
+    return alias_map, tables
+
+
+def translate_boolean_ops(cur, sql: str) -> str:
+    """Macht boolean-Spalten (tabellengenau) in COALESCE/Vergleich/Zuweisung typkonsistent."""
+    # DDL ändert das Schema → gecachtes Boolean-Mapping der Verbindung verwerfen
+    # (und nichts übersetzen; CREATE/ALTER/DROP enthalten keine zu fixenden Bool-Ops).
+    if sql.lstrip()[:6].lower().startswith(("create", "alter", "drop", "trunca")):
+        try:
+            _bool_cols_cache.pop(cur.connection, None)
+        except Exception:  # pragma: no cover
+            pass
+        return sql
+    by_table = _bool_cols_by_table(cur)
+    if not by_table:
+        return sql
+    low = sql.lower()
+    all_bool_names = {c for cols in by_table.values() for c in cols}
+    if not any(n in low for n in all_bool_names):  # keine boolean-Spalte referenziert
+        return sql
+
+    alias_map, tables = _resolve_query_tables(sql)
+    # Menge der konkreten Boolean-Referenzstrings dieser Query
+    bool_refs: set = set()
+    for name, table in alias_map.items():
+        for col in by_table.get(table, ()):
+            bool_refs.add(f"{name}.{col}")          # qualifiziert: alias.col / tabelle.col
+    if len(tables) == 1:                            # unqualifiziert nur eindeutig (eine Tabelle)
+        for col in by_table.get(next(iter(tables)), ()):
+            bool_refs.add(col)
+    if not bool_refs:
+        return sql
+
+    alt = "|".join(re.escape(r) for r in sorted(bool_refs, key=len, reverse=True))
+    ref = rf"((?<![\w.])(?:{alt})\b)"
+
+    # 1) COALESCE(<bool>, <int>) → COALESCE(CAST(<bool> AS INTEGER), <int>)
+    sql = re.sub(rf"COALESCE\(\s*{ref}\s*,\s*(\d+)\s*\)",
+                 r"COALESCE(CAST(\1 AS INTEGER), \2)", sql, flags=re.IGNORECASE)
+
+    # SET-Region einer UPDATE-Anweisung bestimmen (Schreib- vs. Lese-Kontext trennen)
+    set_span = None
+    if re.match(r"\s*UPDATE\b", sql, re.IGNORECASE):
+        ms = re.search(r"\bSET\b", sql, re.IGNORECASE)
+        if ms:
+            mw = re.search(r"\bWHERE\b", sql[ms.end():], re.IGNORECASE)
+            set_span = (ms.end(), ms.end() + mw.start() if mw else len(sql))
+
+    # 2) Schreiben: SET <bool> = <int> → SET <bool> = CAST(<int> AS BOOLEAN)
+    if set_span:
+        seg = sql[set_span[0]:set_span[1]]
+        seg = re.sub(rf"{ref}\s*=\s*(\d+)\b",
+                     r"\1 = CAST(\2 AS BOOLEAN)", seg, flags=re.IGNORECASE)
+        sql = sql[:set_span[0]] + seg + sql[set_span[1]:]
+
+    # 3) Lesen: <bool> <cmp> <int> → CAST(<bool> AS INTEGER) <cmp> <int> (außerhalb SET-Region)
+    cmp_re = re.compile(rf"{ref}\s*(=|<>|!=|>=|<=|>|<)\s*(\d+)\b", re.IGNORECASE)
+    repl = lambda m: f"CAST({m.group(1)} AS INTEGER) {m.group(2)} {m.group(3)}"
+    if set_span:
+        sql = sql[:set_span[1]] + cmp_re.sub(repl, sql[set_span[1]:])
+    else:
+        sql = cmp_re.sub(repl, sql)
+    return sql
+
+
+# ---------------------------------------------------------------------------
 # Connection-/Cursor-Wrapper
 # ---------------------------------------------------------------------------
 class PgCursor:
@@ -446,6 +582,8 @@ class PgCursor:
         translated = translate_placeholders(
             translate_sqlite_datetime(translate_ddl(translate_dml(sql)))
         )
+        # Boolean-Spalten (Schema-introspektiert) typkonsistent machen.
+        translated = translate_boolean_ops(self._cur, translated)
         if on_conflict_clause:
             translated = translated.rstrip().rstrip(";").rstrip() + on_conflict_clause
         stripped = translated.lstrip().lower()
