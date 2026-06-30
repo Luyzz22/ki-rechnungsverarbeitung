@@ -68,7 +68,7 @@ module aiServices 'modules/ai-services.bicep' = {
     documentIntelligenceAccountName: documentIntelligenceAccountName
     azureOpenAiCustomSubdomain: azureOpenAiCustomSubdomain
     documentIntelligenceCustomSubdomain: documentIntelligenceCustomSubdomain
-    publicNetworkAccess: networkTransition.outputs.publicNetworkAccess
+    publicNetworkAccess: networkMode == 'TRANSITIONAL_STATIC_EGRESS' ? 'Enabled' : 'Disabled'
     networkAcls: networkTransition.outputs.networkAcls
     azureOpenAiDeploymentName: azureOpenAiDeploymentName
     azureOpenAiModelName: azureOpenAiModelName

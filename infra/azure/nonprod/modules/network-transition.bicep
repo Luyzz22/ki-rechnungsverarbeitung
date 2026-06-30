@@ -10,6 +10,11 @@ param privateDnsZoneResourceIds array
 param privateEndpointConnectionResourceIds array
 
 var isTransitionalStaticEgress = networkMode == 'TRANSITIONAL_STATIC_EGRESS'
+var transitionalIpRules = [
+  for cidr in allowedHetznerEgressCidrs: {
+    value: cidr
+  }
+]
 
 // Transitional static egress is Non-Production-only and must be paired with
 // exact Hetzner egress CIDRs. The local validator blocks empty and allow-all
@@ -17,11 +22,7 @@ var isTransitionalStaticEgress = networkMode == 'TRANSITIONAL_STATIC_EGRESS'
 var transitionalNetworkAcls = {
   defaultAction: 'Deny'
   bypass: 'None'
-  ipRules: [
-    for cidr in allowedHetznerEgressCidrs: {
-      value: cidr
-    }
-  ]
+  ipRules: transitionalIpRules
   virtualNetworkRules: []
 }
 
