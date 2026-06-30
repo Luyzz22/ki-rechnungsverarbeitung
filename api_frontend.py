@@ -240,7 +240,7 @@ async def api_invoices(request: Request, status: str = "", q: str = "",
         SELECT i.id, i.rechnungsnummer, i.datum, i.rechnungsaussteller,
                i.betrag_brutto, i.betrag_netto, i.mwst_betrag, i.waehrung,
                COALESCE(i.status, 'neu') AS status,
-               COALESCE(i.created_at, j.created_at) AS created_at
+               COALESCE(CAST(i.created_at AS TEXT), CAST(j.created_at AS TEXT)) AS created_at
         FROM invoices i JOIN jobs j ON i.job_id = j.job_id
         WHERE {where_sql}
         ORDER BY created_at DESC, i.id DESC
