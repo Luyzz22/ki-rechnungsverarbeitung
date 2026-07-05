@@ -517,6 +517,22 @@ def _tenant_invoices(tid: int, invoice_ids: Optional[List[int]] = None) -> List[
     return rows
 
 
+def _strict_int(v: Any) -> Optional[int]:
+    """Nimmt NUR echte Ganzzahlen an (int oder Integer-String). Lehnt bool,
+    float/Dezimal (z. B. 1.9) und nicht-numerische Werte ab → der Aufrufer
+    liefert dann 422 statt 500 bzw. einer falschen (gerundeten) invoice_id."""
+    if isinstance(v, bool) or v is None:
+        return None
+    if isinstance(v, int):
+        return v
+    if isinstance(v, str):
+        s = v.strip()
+        digits = s[1:] if s[:1] in ("+", "-") else s
+        if digits.isdigit():
+            return int(s)
+    return None
+
+
 def _datev_preview(tid: int, invoice_id: int) -> Dict[str, Any]:
     """Tenant-isolierte DATEV-Buchungsvorschau für eine Rechnung.
 
@@ -569,12 +585,12 @@ async def api_datev_preview_post(request: Request, invoice_id: Optional[int] = N
     if invoice_id is None:
         try:
             body = await request.json()
-            invoice_id = (body or {}).get("invoice_id")
         except Exception:
-            invoice_id = None
+            body = None
+        invoice_id = _strict_int(body.get("invoice_id") if isinstance(body, dict) else None)
     if invoice_id is None:
-        raise HTTPException(status_code=422, detail="invoice_id erforderlich")
-    return _datev_preview(tid, int(invoice_id))
+        raise HTTPException(status_code=422, detail="invoice_id (ganze Zahl) erforderlich")
+    return _datev_preview(tid, invoice_id)
 
 
 @router.post("/datev/export")

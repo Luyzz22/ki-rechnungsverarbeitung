@@ -350,3 +350,11 @@ def test_datev_preview_accepts_post(client, token):
 def test_datev_preview_post_requires_auth(client):
     r = client.post("/api/app/datev/preview", json={"invoice_id": 1})
     assert r.status_code == 401
+
+
+@pytest.mark.parametrize("bad", [1.9, "1.9", True, "abc", "1e3", "", None])
+def test_datev_preview_post_rejects_invalid_invoice_id(client, token, bad):
+    """Body-invoice_id wird streng validiert: kein 500 und keine stille Rundung
+    (1.9/true → 1). Ungültige Werte → 422, nicht falsche/gerundete Rechnung."""
+    r = client.post("/api/app/datev/preview", headers=_auth(token), json={"invoice_id": bad})
+    assert r.status_code == 422, f"{bad!r} -> {r.status_code}: {r.text[:120]}"
