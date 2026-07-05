@@ -517,10 +517,11 @@ def _tenant_invoices(tid: int, invoice_ids: Optional[List[int]] = None) -> List[
     return rows
 
 
-@router.get("/datev/preview")
-async def api_datev_preview(request: Request, invoice_id: int):
-    """DATEV-Buchungsvorschau für eine Rechnung (tenant-isoliert)."""
-    tid = _require_tenant(request)
+def _datev_preview(tid: int, invoice_id: int) -> Dict[str, Any]:
+    """Tenant-isolierte DATEV-Buchungsvorschau für eine Rechnung.
+
+    GoBD-/revisionsrelevant: Vorschau-Logik ausschließlich hier, damit GET- und
+    POST-Route exakt dieselbe Umwandlung nutzen (keine Duplizierung)."""
     rows = _tenant_invoices(tid, [invoice_id])
     if not rows:
         raise HTTPException(status_code=404, detail="Rechnung nicht gefunden")
@@ -551,6 +552,29 @@ async def api_datev_preview(request: Request, invoice_id: int):
         "buchungen": buchungen,
         "detected_account": converter.detect_account(invoice),
     }
+
+
+@router.get("/datev/preview")
+async def api_datev_preview(request: Request, invoice_id: int):
+    """DATEV-Buchungsvorschau für eine Rechnung (tenant-isoliert)."""
+    return _datev_preview(_require_tenant(request), invoice_id)
+
+
+@router.post("/datev/preview")
+async def api_datev_preview_post(request: Request, invoice_id: Optional[int] = None):
+    """POST-Variante derselben Vorschau – das Frontend ruft /api/app/datev/preview
+    per POST auf. `invoice_id` aus Query ODER JSON-Body akzeptieren; identische
+    Logik (kein Duplikat der GoBD-relevanten Umwandlung)."""
+    tid = _require_tenant(request)
+    if invoice_id is None:
+        try:
+            body = await request.json()
+            invoice_id = (body or {}).get("invoice_id")
+        except Exception:
+            invoice_id = None
+    if invoice_id is None:
+        raise HTTPException(status_code=422, detail="invoice_id erforderlich")
+    return _datev_preview(tid, int(invoice_id))
 
 
 @router.post("/datev/export")
