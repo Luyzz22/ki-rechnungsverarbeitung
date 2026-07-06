@@ -327,3 +327,34 @@ def test_upload_rejects_too_large(client, token, monkeypatch):
     files = {"files": ("big.pdf", big, "application/pdf")}
     r = client.post("/api/app/upload", headers=_auth(token), files=files)
     assert r.status_code == 413
+
+
+def test_datev_preview_accepts_post(client, token):
+    """Regression: Frontend ruft /api/app/datev/preview per POST – darf NICHT 405
+    liefern (Method-/Pfad-Mismatch). POST + GET zeigen auf dieselbe Logik."""
+    # POST ohne invoice_id → 422 (erreicht den Handler, kein 405)
+    r = client.post("/api/app/datev/preview", headers=_auth(token), json={})
+    assert r.status_code != 405, r.text
+    assert r.status_code == 422
+    # POST mit invoice_id (Body) auf fremde/nicht existente Rechnung → 404 (tenant-isoliert)
+    r = client.post("/api/app/datev/preview", headers=_auth(token), json={"invoice_id": 999999})
+    assert r.status_code == 404
+    # POST mit invoice_id als Query funktioniert ebenfalls
+    r = client.post("/api/app/datev/preview?invoice_id=999999", headers=_auth(token))
+    assert r.status_code == 404
+    # GET-Variante bleibt bestehen
+    r = client.get("/api/app/datev/preview?invoice_id=999999", headers=_auth(token))
+    assert r.status_code == 404
+
+
+def test_datev_preview_post_requires_auth(client):
+    r = client.post("/api/app/datev/preview", json={"invoice_id": 1})
+    assert r.status_code == 401
+
+
+@pytest.mark.parametrize("bad", [1.9, "1.9", True, "abc", "1e3", "", None])
+def test_datev_preview_post_rejects_invalid_invoice_id(client, token, bad):
+    """Body-invoice_id wird streng validiert: kein 500 und keine stille Rundung
+    (1.9/true → 1). Ungültige Werte → 422, nicht falsche/gerundete Rechnung."""
+    r = client.post("/api/app/datev/preview", headers=_auth(token), json={"invoice_id": bad})
+    assert r.status_code == 422, f"{bad!r} -> {r.status_code}: {r.text[:120]}"
