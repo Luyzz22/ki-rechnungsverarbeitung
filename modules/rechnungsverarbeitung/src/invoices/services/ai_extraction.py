@@ -24,6 +24,11 @@ from shared.inference_policy import (
     InferenceProvider,
     assert_inference_allowed,
 )
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
 from shared.secure_logging import log_inference_event, safe_log
 load_dotenv("/var/www/invoice-app/.env")
 
@@ -97,23 +102,31 @@ class AIExtractionService:
         mime_type: str,
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> ExtractionResult:
         """Extract invoice data from file content.
         
         Tries Gemini 2.5 Flash first (multimodal), falls back to Claude.
         """
         resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
 
         # Try Gemini 2.5 Flash (best for multimodal — PDFs + images)
         if self.gemini_key:
             try:
+                resolved_profile = assert_organization_inference_allowed(
+                    organization_context=organization_context,
+                    data_class=resolved_data_class,
+                    requested_inference_profile=requested_profile,
+                    provider=InferenceProvider.GEMINI_DIRECT,
+                )
                 result = self._extract_gemini(
                     file_content,
                     file_name,
                     mime_type,
                     data_class=resolved_data_class,
                     inference_profile=resolved_profile,
+                    organization_context=organization_context,
                 )
                 if result.supplier or result.total_amount_gross:
                     log_inference_event(
@@ -128,7 +141,7 @@ class AIExtractionService:
                         confidence=result.confidence,
                     )
                     return result
-            except InferencePolicyDeniedError:
+            except (InferencePolicyDeniedError, OrganizationContextError):
                 raise
             except Exception as e:
                 safe_log(logger, logging.WARNING, "gemini_extraction_failed", error_code=type(e).__name__)
@@ -136,12 +149,19 @@ class AIExtractionService:
         # Fallback to Claude (strong at structured data extraction)
         if self.anthropic_key:
             try:
+                resolved_profile = assert_organization_inference_allowed(
+                    organization_context=organization_context,
+                    data_class=resolved_data_class,
+                    requested_inference_profile=requested_profile,
+                    provider=InferenceProvider.ANTHROPIC_DIRECT,
+                )
                 result = self._extract_claude(
                     file_content,
                     file_name,
                     mime_type,
                     data_class=resolved_data_class,
                     inference_profile=resolved_profile,
+                    organization_context=organization_context,
                 )
                 if result.supplier or result.total_amount_gross:
                     log_inference_event(
@@ -156,7 +176,7 @@ class AIExtractionService:
                         confidence=result.confidence,
                     )
                     return result
-            except InferencePolicyDeniedError:
+            except (InferencePolicyDeniedError, OrganizationContextError):
                 raise
             except Exception as e:
                 safe_log(logger, logging.WARNING, "claude_extraction_failed", error_code=type(e).__name__)
@@ -171,12 +191,19 @@ class AIExtractionService:
         mime_type: str,
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> ExtractionResult:
         """Use Google Gemini 2.5 Flash for multimodal extraction."""
         from google import genai
 
         resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.GEMINI_DIRECT,
+        )
         decision = assert_inference_allowed(
             data_class=resolved_data_class,
             inference_profile=resolved_profile,
@@ -238,12 +265,19 @@ class AIExtractionService:
         mime_type: str,
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> ExtractionResult:
         """Use Anthropic Claude for extraction."""
         import anthropic
 
         resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.ANTHROPIC_DIRECT,
+        )
         decision = assert_inference_allowed(
             data_class=resolved_data_class,
             inference_profile=resolved_profile,

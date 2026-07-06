@@ -9,6 +9,7 @@ from typing import BinaryIO
 from shared.tenant.context import TenantContext
 from shared.data_classification import classify_invoice_data, resolve_inference_profile
 from shared.inference_policy import InferencePolicyDeniedError, InferenceProvider, POLICY_VERSION
+from shared.organization_context import OrganizationContextError, TrustedOrganizationContext
 from shared.secure_logging import safe_log
 from modules.rechnungsverarbeitung.src.invoices.models import InvoiceDocumentMetadata
 from modules.rechnungsverarbeitung.src.invoices.services.control_engine import ControlEngine
@@ -116,6 +117,7 @@ def process_invoice_upload(
     file_name: str,
     mime_type: str,
     uploaded_by: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> InvoiceDocumentMetadata:
     """
     Einstiegspunkt für neue Rechnungsuploads.
@@ -237,6 +239,7 @@ def process_invoice_upload(
             mime_type,
             data_class=data_class,
             inference_profile=inference_profile,
+            organization_context=organization_context,
         )
         if extraction and hasattr(extraction, "to_dict"):
             raw_extracted_details = extraction.to_dict()
@@ -254,7 +257,7 @@ def process_invoice_upload(
                 message='AI extraction completed',
                 extra_details=_safe_extraction_event_details(extraction),
             )
-    except InferencePolicyDeniedError as e:
+    except (InferencePolicyDeniedError, OrganizationContextError) as e:
         log_invoice_event_from_metadata(
             metadata=metadata,
             event_type="inference_policy_denied",

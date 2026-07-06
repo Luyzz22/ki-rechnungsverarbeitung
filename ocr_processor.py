@@ -15,6 +15,11 @@ from shared.inference_policy import (
     InferenceProvider,
     assert_inference_allowed,
 )
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
 from shared.secure_logging import log_inference_event, safe_log
 
 try:
@@ -62,6 +67,7 @@ class OCRProcessor:
         pdf_path: Path,
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> Optional[str]:
         """
         Extract text from scanned PDF using OCR
@@ -74,7 +80,14 @@ class OCRProcessor:
         """
         try:
             resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-            resolved_profile = resolve_inference_profile(inference_profile)
+            requested_profile = resolve_inference_profile(inference_profile)
+            resolved_profile = assert_organization_inference_allowed(
+                organization_context=organization_context,
+                data_class=resolved_data_class,
+                requested_inference_profile=requested_profile,
+                provider=InferenceProvider.LOCAL_OCR,
+                local_provider_available=True,
+            )
             decision = assert_inference_allowed(
                 data_class=resolved_data_class,
                 inference_profile=resolved_profile,
@@ -136,7 +149,7 @@ class OCRProcessor:
             )
             return full_text
 
-        except InferencePolicyDeniedError:
+        except (InferencePolicyDeniedError, OrganizationContextError):
             raise
         except Exception as e:
             safe_log(logger, logging.ERROR, "legacy_ocr_failed", document_id=pdf_path.name, error_code=type(e).__name__)
@@ -207,6 +220,7 @@ class OCRProcessor:
         normal_text: Optional[str],
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> Optional[str]:
         """
         Try normal extraction first, fall back to OCR if needed
@@ -230,6 +244,7 @@ class OCRProcessor:
                 pdf_path,
                 data_class=data_class,
                 inference_profile=inference_profile,
+                organization_context=organization_context,
             )
         
         # Not scanned, but extraction failed for other reasons
@@ -303,6 +318,7 @@ def extract_text_with_ocr_fallback(
     normal_text: Optional[str] = None,
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> Optional[str]:
     """
     Convenience function for OCR fallback
@@ -329,8 +345,9 @@ def extract_text_with_ocr_fallback(
             normal_text,
             data_class=data_class,
             inference_profile=inference_profile,
+            organization_context=organization_context,
         )
-    except InferencePolicyDeniedError:
+    except (InferencePolicyDeniedError, OrganizationContextError):
         raise
     except Exception as e:
         safe_log(logger, logging.ERROR, "ocr_processing_failed", error_code=type(e).__name__)

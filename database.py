@@ -88,6 +88,13 @@ def _ensure_invoice_storage_columns(cursor: sqlite3.Cursor) -> None:
             cursor.execute(f"ALTER TABLE invoices ADD COLUMN {column} {definition}")
 
 
+def _ensure_organization_processing_policy_schema(conn: sqlite3.Connection) -> None:
+    """Ensure the legacy organization table can store server-side processing policy."""
+    from shared.tenant_processing_policy import ensure_organization_processing_policy_schema
+
+    ensure_organization_processing_policy_schema(conn)
+
+
 def _is_bcrypt_hash(value: str | None) -> bool:
     """Return True when value looks like a bcrypt hash."""
     if not value:
@@ -198,6 +205,7 @@ def init_database():
     ''')
     _ensure_invoice_storage_columns(cursor)
     _ensure_inference_policy_columns(cursor)
+    _ensure_organization_processing_policy_schema(conn)
     
     conn.commit()
 
@@ -1107,6 +1115,8 @@ def init_users_table():
         cursor.execute('ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0')
     if 'approval_limit' not in user_cols:
         cursor.execute('ALTER TABLE users ADD COLUMN approval_limit REAL')
+    if 'current_org_id' not in user_cols:
+        cursor.execute('ALTER TABLE users ADD COLUMN current_org_id INTEGER')
 
     # Export-Historie (von /exports und Export-Funktionen genutzt)
     cursor.execute('''
@@ -1251,6 +1261,8 @@ def init_users_table():
         cursor.execute('ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0')
     if 'approval_limit' not in user_cols:
         cursor.execute('ALTER TABLE users ADD COLUMN approval_limit REAL')
+    if 'current_org_id' not in user_cols:
+        cursor.execute('ALTER TABLE users ADD COLUMN current_org_id INTEGER')
 
     # Export-Historie (von /exports und Export-Funktionen genutzt)
     cursor.execute('''

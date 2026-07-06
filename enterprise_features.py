@@ -18,6 +18,11 @@ from shared.inference_policy import (
     InferenceProvider,
     assert_inference_allowed,
 )
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
 from shared.secure_logging import log_inference_event, safe_log
 
 # Annahme: get_db() ist bereits definiert in enterprise_features.py
@@ -248,7 +253,11 @@ ensure_settings_columns()  # Stellt sicher dass DB-Schema aktuell ist
 # PHASE 1: AI INTELLIGENCE LAYER - GPT-4o Financial Analyst
 # =============================================================================
 
-def get_ai_financial_analysis(stats: dict, user_name: str) -> str:
+def get_ai_financial_analysis(
+    stats: dict,
+    user_name: str,
+    organization_context: TrustedOrganizationContext | None = None,
+) -> str:
     """
     Erzeugt eine intelligente CFO-Analyse via OpenAI GPT-4o.
     Enterprise Standard: Inklusive Error-Handling und Fallback.
@@ -266,7 +275,13 @@ def get_ai_financial_analysis(stats: dict, user_name: str) -> str:
         return f"Finanz-Update für {user_name}: Diese Woche wurden {stats.get('total_invoices')} Belege verarbeitet. Gesamtvolumen: {stats.get('total_brutto', 0):.2f}€."
 
     resolved_data_class = classify_invoice_data()
-    resolved_profile = resolve_inference_profile()
+    requested_profile = resolve_inference_profile()
+    resolved_profile = assert_organization_inference_allowed(
+        organization_context=organization_context,
+        data_class=resolved_data_class,
+        requested_inference_profile=requested_profile,
+        provider=InferenceProvider.OPENAI_DIRECT,
+    )
     decision = assert_inference_allowed(
         data_class=resolved_data_class,
         inference_profile=resolved_profile,
@@ -315,7 +330,7 @@ Regeln:
             policy_decision=decision.policy_decision,
         )
         return response.choices[0].message.content
-    except InferencePolicyDeniedError:
+    except (InferencePolicyDeniedError, OrganizationContextError):
         raise
     except Exception as e:
         safe_log(logging.getLogger(__name__), logging.ERROR, "weekly_financial_analysis_failed", error_code=type(e).__name__)

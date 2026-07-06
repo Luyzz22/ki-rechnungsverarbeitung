@@ -62,6 +62,12 @@ from logging.handlers import RotatingFileHandler
 import sys
 import json
 from shared.secure_logging import safe_log
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+    resolve_trusted_organization_context,
+)
 
 # Logging Setup
 log_formatter = logging.Formatter(
@@ -304,6 +310,27 @@ processing_jobs = {}
 app_start_time = __import__("time").time()
 
 
+def _organization_context_or_403(
+    request: Request,
+    *,
+    client_input: dict | None = None,
+    allow_demo_exception: bool = False,
+    demo_flow: bool = False,
+) -> TrustedOrganizationContext:
+    try:
+        context = resolve_trusted_organization_context(
+            session=request.session,
+            client_input=client_input,
+            allow_demo_exception=allow_demo_exception,
+            demo_flow=demo_flow,
+        )
+        if context is None:
+            raise OrganizationContextError("organization_context_missing")
+        return context
+    except OrganizationContextError as exc:
+        raise HTTPException(status_code=403, detail=exc.to_safe_dict()) from exc
+
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
 
@@ -337,6 +364,7 @@ async def upload_files(request: Request, files: List[UploadFile] = File(default=
     _require_csrf_token(request, _get_submitted_csrf_token(request))
 
     user_id = request.session["user_id"]
+    organization_context = _organization_context_or_403(request)
     
     # 2) Subscription-Check (Admins haben unbegrenzten Zugang)
     from database import check_invoice_limit
@@ -407,6 +435,7 @@ async def upload_files(request: Request, files: List[UploadFile] = File(default=
     # 4) Job in processing_jobs ablegen (RAM – wird von /api/process genutzt)
     processing_jobs[job_id] = {
         "user_id": user_id,
+        "organization_context": organization_context,
         "status": JobStatus.UPLOADED.value,
         "files": uploaded_files,
         "created_at": datetime.now().isoformat(),
@@ -440,7 +469,7 @@ async def upload_files(request: Request, files: List[UploadFile] = File(default=
         "subscription": dev_limit,
     }
 @app.post("/api/process/{job_id}", tags=["Jobs"])
-async def process_job(job_id: str, background_tasks: BackgroundTasks):
+async def process_job(job_id: str, background_tasks: BackgroundTasks, request: Request):
     """
     Process uploaded PDFs
     Returns immediately, processing happens in background
@@ -449,6 +478,10 @@ async def process_job(job_id: str, background_tasks: BackgroundTasks):
         raise JobNotFoundError(job_id)
     
     job = processing_jobs[job_id]
+    if "user_id" not in request.session or request.session["user_id"] != job.get("user_id"):
+        raise HTTPException(status_code=403, detail={"error_code": "ORG_CONTEXT_REQUIRED", "reason_code": "job_membership_required"})
+    if not job.get("organization_context"):
+        job["organization_context"] = _organization_context_or_403(request)
     
     if job["status"] == "processing":
         return {"status": "already_processing"}
@@ -470,6 +503,7 @@ async def process_invoices_background(job_id: str):
     log_job_event(app_logger, job_id, "processing_started")
     """Background task to process invoices with parallel processing"""
     job = processing_jobs[job_id]
+    organization_context = job.get("organization_context")
     upload_path = Path(job["path"])
     
     results = []
@@ -497,7 +531,7 @@ async def process_invoices_background(job_id: str):
                 data['ki_score'] = 99  # Strukturierte Daten = höchste Confidence
             else:
                 # Keine E-Rechnung - nutze KI-Extraktion
-                data = processor.process_invoice(pdf_path)
+                data = processor.process_invoice(pdf_path, organization_context=organization_context)
                 data['extraction_method'] = 'ki'
             
             # Invoice-Model für Validierung und Standardwerte
@@ -643,7 +677,11 @@ async def process_invoices_background(job_id: str):
             
             # Run AI similarity check (only if no hash duplicate found)
             if not duplicates:
-                dup_results = detect_all_duplicates(dict(inv), job.get('user_id'))
+                dup_results = detect_all_duplicates(
+                    dict(inv),
+                    job.get('user_id'),
+                    organization_context=organization_context,
+                )
                 if dup_results['similar']:
                     similar_count += len(dup_results['similar'])
                     # Save AI-detected similarities
@@ -664,7 +702,11 @@ async def process_invoices_background(job_id: str):
         # Hole die gespeicherten Invoices mit IDs
         saved_invoices = get_invoices_by_job(job_id)
         for invoice in saved_invoices:
-            category_id, confidence, reasoning = predict_category(invoice, job.get("user_id"))
+            category_id, confidence, reasoning = predict_category(
+                invoice,
+                job.get("user_id"),
+                organization_context=organization_context,
+            )
             assign_category_to_invoice(invoice['id'], category_id, confidence, 'ai')
             safe_log(logger, logging.INFO, "invoice_category_assigned", invoice_id=invoice["id"], category_id=category_id, confidence=round(confidence, 2))
     except InferencePolicyDeniedError:
@@ -2014,6 +2056,11 @@ async def demo_upload_live(request: Request, file: UploadFile = File(...)):
         )
     
     try:
+        organization_context = _organization_context_or_403(
+            request,
+            allow_demo_exception=True,
+            demo_flow=True,
+        )
         # Erstelle Demo-Job ID
         demo_job_id = f"demo-{str(uuid.uuid4())[:8]}"
         
@@ -2038,7 +2085,11 @@ async def demo_upload_live(request: Request, file: UploadFile = File(...)):
             data['extraction_method'] = 'einvoice'
             data['confidence'] = 99
         else:
-            data = processor.process_invoice(pdf_path, data_class="demo")
+            data = processor.process_invoice(
+                pdf_path,
+                data_class="demo",
+                organization_context=organization_context,
+            )
             data['extraction_method'] = 'ki'
             if 'confidence' not in data:
                 data['confidence'] = data.get('ki_score', 85)
@@ -2108,7 +2159,12 @@ async def demo_upload_live(request: Request, file: UploadFile = File(...)):
         try:
             saved_invoices = get_invoices_by_job(demo_job_id)
             for invoice in saved_invoices:
-                category_id, confidence, reasoning = predict_category(invoice, user_id, data_class="demo")
+                category_id, confidence, reasoning = predict_category(
+                    invoice,
+                    user_id,
+                    data_class="demo",
+                    organization_context=organization_context,
+                )
                 assign_category_to_invoice(invoice['id'], category_id, confidence, 'ai')
                 safe_log(app_logger, logging.INFO, "demo_invoice_category_assigned", invoice_id=invoice["id"], category_id=category_id, confidence=round(confidence, 2))
         except InferencePolicyDeniedError:
@@ -2800,9 +2856,10 @@ async def suggest_booking_account(request: Request):
     _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
+    organization_context = _organization_context_or_403(request, client_input=data)
     skr = data.get("skr", "SKR03")
     
-    result = suggest_account_with_llm(data, skr)
+    result = suggest_account_with_llm(data, skr, organization_context=organization_context)
     return result
 
 @app.post("/api/accounting/suggest/batch", tags=["Accounting"])
@@ -2813,10 +2870,16 @@ async def suggest_accounts_batch(request: Request):
     _require_csrf_token(request, _get_submitted_csrf_token(request))
     
     data = await request.json()
+    organization_context = _organization_context_or_403(request, client_input=data)
     invoices = data.get("invoices", [])
     skr = data.get("skr", "SKR03")
     
-    results = batch_suggest_accounts(invoices, request.session["user_id"], skr)
+    results = batch_suggest_accounts(
+        invoices,
+        request.session["user_id"],
+        skr,
+        organization_context=organization_context,
+    )
     return {"suggestions": results}
 
 @app.post("/api/accounting/learn", tags=["Accounting"])
@@ -4700,6 +4763,7 @@ def run_finance_copilot_llm(
     focus: str | None = None,
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> Tuple[str, List[str]]:
     """
     Erzeugt eine CFO-taugliche Antwort auf Basis des Finance-Snapshots.
@@ -4711,7 +4775,13 @@ def run_finance_copilot_llm(
     focus = (focus or "auto").strip().lower()
     snapshot_summary = _build_snapshot_summary(snapshot, days)
     resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-    resolved_profile = resolve_inference_profile(inference_profile)
+    requested_profile = resolve_inference_profile(inference_profile)
+    resolved_profile = assert_organization_inference_allowed(
+        organization_context=organization_context,
+        data_class=resolved_data_class,
+        requested_inference_profile=requested_profile,
+        provider=InferenceProvider.OPENAI_DIRECT,
+    )
     decision = assert_inference_allowed(
         data_class=resolved_data_class,
         inference_profile=resolved_profile,
@@ -4797,6 +4867,7 @@ async def api_finance_copilot_query(request: Request, payload: FinanceCopilotReq
     """
     # User-ID aus Session für Multi-Tenancy
     user_id = request.session.get("user_id")
+    organization_context = _organization_context_or_403(request, client_input=payload.model_dump())
     
     question = (payload.question or "").strip()
     days = int(payload.days or 90)
@@ -4826,6 +4897,7 @@ async def api_finance_copilot_query(request: Request, payload: FinanceCopilotReq
             days=days,
             snapshot=snapshot,
             focus=focus,
+            organization_context=organization_context,
         )
     except InferencePolicyDeniedError as exc:
         raise HTTPException(status_code=403, detail=exc.to_safe_dict()) from exc
@@ -5690,6 +5762,12 @@ async def copilot_demo_query(request: Request):
     # Parse Request
     try:
         data = await request.json()
+        organization_context = _organization_context_or_403(
+            request,
+            client_input=data,
+            allow_demo_exception=True,
+            demo_flow=True,
+        )
         question = str(data.get("question") or "").strip()
         question = question[:500]
     except Exception:
@@ -5767,6 +5845,13 @@ WEITERE KENNZAHLEN:
     try:
         # LLM-Anfrage
         demo_profile = resolve_inference_profile()
+        demo_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=DataClass.DEMO,
+            requested_inference_profile=demo_profile,
+            provider=InferenceProvider.OPENAI_DIRECT,
+            allow_demo_exception=True,
+        )
         demo_decision = assert_inference_allowed(
             data_class=DataClass.DEMO,
             inference_profile=demo_profile,
@@ -7153,6 +7238,7 @@ async def chat_with_cfo(request: Request):
     """Interaktiver CFO-Chat mit Echtzeit-Datenbankzugriff"""
     try:
         data = await request.json()
+        organization_context = _organization_context_or_403(request, client_input=data)
         user_msg = data.get('message', '')
         
         if not user_msg:
@@ -7206,6 +7292,12 @@ TOP LIEFERANTEN:
             from llm_router import LLMRouter
             cfo_chat_data_class = classify_invoice_data()
             cfo_chat_profile = resolve_inference_profile()
+            cfo_chat_profile = assert_organization_inference_allowed(
+                organization_context=organization_context,
+                data_class=cfo_chat_data_class,
+                requested_inference_profile=cfo_chat_profile,
+                provider=InferenceProvider.OPENAI_DIRECT,
+            )
             assert_inference_allowed(
                 data_class=cfo_chat_data_class,
                 inference_profile=cfo_chat_profile,

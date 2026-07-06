@@ -27,6 +27,11 @@ from shared.inference_policy import (
     InferenceProvider,
     assert_inference_allowed,
 )
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
 from shared.secure_logging import log_inference_event, safe_log
 
 load_dotenv()
@@ -181,6 +186,7 @@ Das System hat einen 9-Status Workflow: uploaded → classified → validated �
         conversation_history: list[dict] | None = None,
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> dict[str, Any]:
         """Process a chat question and return AI-generated answer.
 
@@ -188,7 +194,7 @@ Das System hat einen 9-Status Workflow: uploaded → classified → validated �
             dict with keys: answer, sources, suggested_questions, model, context_used
         """
         resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
 
         # 1. Gather DB context
         summary = self._get_invoice_summary(tenant_id)
@@ -225,13 +231,15 @@ LETZTE EVENTS:
         answer, model = self._call_gemini(
             messages,
             data_class=resolved_data_class,
-            inference_profile=resolved_profile,
+            inference_profile=requested_profile,
+            organization_context=organization_context,
         )
         if not answer:
             answer, model = self._call_claude(
                 messages,
                 data_class=resolved_data_class,
-                inference_profile=resolved_profile,
+                inference_profile=requested_profile,
+                organization_context=organization_context,
             )
         if not answer:
             answer = self._fallback_answer(question, summary, kontierung)
@@ -257,6 +265,7 @@ LETZTE EVENTS:
         messages: list[dict],
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> tuple[str, str]:
         """Call Gemini 2.0 Flash."""
         if not self.gemini_key:
@@ -265,7 +274,13 @@ LETZTE EVENTS:
             from google import genai
 
             resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-            resolved_profile = resolve_inference_profile(inference_profile)
+            requested_profile = resolve_inference_profile(inference_profile)
+            resolved_profile = assert_organization_inference_allowed(
+                organization_context=organization_context,
+                data_class=resolved_data_class,
+                requested_inference_profile=requested_profile,
+                provider=InferenceProvider.GEMINI_DIRECT,
+            )
             decision = assert_inference_allowed(
                 data_class=resolved_data_class,
                 inference_profile=resolved_profile,
@@ -296,7 +311,7 @@ LETZTE EVENTS:
                 policy_decision=decision.policy_decision,
             )
             return response.text, "gemini-2.5-flash"
-        except InferencePolicyDeniedError:
+        except (InferencePolicyDeniedError, OrganizationContextError):
             raise
         except Exception as e:
             safe_log(logger, logging.WARNING, "gemini_copilot_error", error_code=type(e).__name__)
@@ -307,6 +322,7 @@ LETZTE EVENTS:
         messages: list[dict],
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> tuple[str, str]:
         """Call Claude Sonnet as fallback."""
         if not self.anthropic_key:
@@ -315,7 +331,13 @@ LETZTE EVENTS:
             import anthropic
 
             resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-            resolved_profile = resolve_inference_profile(inference_profile)
+            requested_profile = resolve_inference_profile(inference_profile)
+            resolved_profile = assert_organization_inference_allowed(
+                organization_context=organization_context,
+                data_class=resolved_data_class,
+                requested_inference_profile=requested_profile,
+                provider=InferenceProvider.ANTHROPIC_DIRECT,
+            )
             decision = assert_inference_allowed(
                 data_class=resolved_data_class,
                 inference_profile=resolved_profile,
@@ -340,7 +362,7 @@ LETZTE EVENTS:
                 policy_decision=decision.policy_decision,
             )
             return response.content[0].text, "claude-sonnet-4"
-        except InferencePolicyDeniedError:
+        except (InferencePolicyDeniedError, OrganizationContextError):
             raise
         except Exception as e:
             safe_log(logger, logging.WARNING, "claude_copilot_error", error_code=type(e).__name__)

@@ -25,6 +25,11 @@ from shared.inference_policy import (
     POLICY_VERSION,
     assert_inference_allowed,
 )
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
 from shared.secure_logging import log_inference_event, safe_log
 
 # Load environment
@@ -189,6 +194,7 @@ class InvoiceProcessor:
         pdf_path: Path,
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> Optional[dict]:
         """
         Process a single invoice with Hybrid AI and Expert Prompts
@@ -200,7 +206,7 @@ class InvoiceProcessor:
             dict with extracted data or None on error
         """
         resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
 
         try:
             safe_log(logger, logging.INFO, "invoice_processing_started", document_id=pdf_path.name)
@@ -209,7 +215,8 @@ class InvoiceProcessor:
             text = extract_text_from_pdf(
                 pdf_path,
                 data_class=resolved_data_class,
-                inference_profile=resolved_profile,
+                inference_profile=requested_profile,
+                organization_context=organization_context,
             )
             if not text or len(text) < 50:
                 safe_log(logger, logging.WARNING, "invoice_processing_no_text", document_id=pdf_path.name)
@@ -220,6 +227,17 @@ class InvoiceProcessor:
             
             # Select model based on complexity
             provider, model = self.llm_router.pick_provider_model(complexity_score)
+            provider_identity = (
+                InferenceProvider.ANTHROPIC_DIRECT
+                if provider == "anthropic"
+                else InferenceProvider.OPENAI_DIRECT
+            )
+            resolved_profile = assert_organization_inference_allowed(
+                organization_context=organization_context,
+                data_class=resolved_data_class,
+                requested_inference_profile=requested_profile,
+                provider=provider_identity,
+            )
             
             safe_log(
                 logger,
@@ -239,6 +257,7 @@ class InvoiceProcessor:
                     model,
                     data_class=resolved_data_class,
                     inference_profile=resolved_profile,
+                    organization_context=organization_context,
                 )
                 
                 if not data:
@@ -274,7 +293,7 @@ class InvoiceProcessor:
 
                 return data
 
-            except InferencePolicyDeniedError as e:
+            except (InferencePolicyDeniedError, OrganizationContextError) as e:
                 log_inference_event(
                     logger,
                     event="invoice_processing_policy_denied",
@@ -298,7 +317,7 @@ class InvoiceProcessor:
                 )
                 return None
 
-        except InferencePolicyDeniedError:
+        except (InferencePolicyDeniedError, OrganizationContextError):
             raise
         except Exception as e:
             safe_log(logger, logging.ERROR, "invoice_processing_error", document_id=pdf_path.name, error_code=type(e).__name__)
@@ -308,6 +327,7 @@ def extract_text_from_pdf(
     pdf_path: str,
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> str:
     """
     Extract text from PDF using hybrid approach:
@@ -330,7 +350,14 @@ def extract_text_from_pdf(
     # METHODE 2: OCR (langsam aber findet ALLES, auch Bilder/Footer)
     try:
         resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.LOCAL_OCR,
+            local_provider_available=True,
+        )
         decision = assert_inference_allowed(
             data_class=resolved_data_class,
             inference_profile=resolved_profile,
@@ -357,6 +384,7 @@ def extract_text_from_pdf(
                 image,
                 data_class=resolved_data_class,
                 inference_profile=resolved_profile,
+                organization_context=organization_context,
             )
             page_ocr = result.get("text", "")
             log_inference_event(
@@ -387,7 +415,7 @@ def extract_text_from_pdf(
             text += "\n\n=== OCR FOOTER ===\n" + footer
             safe_log(logger, logging.INFO, "ocr_footer_appended", footer_char_count=len(footer))
 
-    except InferencePolicyDeniedError:
+    except (InferencePolicyDeniedError, OrganizationContextError):
         raise
     except Exception as e:
         safe_log(logger, logging.ERROR, "ocr_failed", error_code=type(e).__name__)

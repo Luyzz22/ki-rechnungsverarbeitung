@@ -13,6 +13,11 @@ from shared.inference_policy import (
     InferenceProvider,
     assert_inference_allowed,
 )
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
 from shared.secure_logging import log_inference_event, safe_log
 
 logger = logging.getLogger(__name__)
@@ -22,6 +27,7 @@ def predict_category(
     user_id: Optional[int] = None,
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> Tuple[int, float, str]:
     """
     Predict category for invoice using AI and learning history
@@ -75,7 +81,13 @@ Antworte NUR mit diesem JSON-Format (kein Markdown, keine Backticks):
 {{"category_id": 5, "confidence": 0.95, "reasoning": "EDEKA ist ein Lebensmittel-Einzelhändler"}}"""
 
         resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.ANTHROPIC_DIRECT,
+        )
         decision = assert_inference_allowed(
             data_class=resolved_data_class,
             inference_profile=resolved_profile,
@@ -118,7 +130,7 @@ Antworte NUR mit diesem JSON-Format (kein Markdown, keine Backticks):
 
         return category_id, confidence, reasoning
 
-    except InferencePolicyDeniedError as e:
+    except (InferencePolicyDeniedError, OrganizationContextError) as e:
         log_inference_event(
             logger,
             event="category_prediction_policy_denied",
@@ -134,7 +146,11 @@ Antworte NUR mit diesem JSON-Format (kein Markdown, keine Backticks):
         # Fallback: "Sonstiges" (ID 15)
         return 15, 0.3, "Automatische Kategorisierung fehlgeschlagen"
 
-def categorize_invoice_batch(invoices: List[Dict], user_id: Optional[int] = None) -> Dict[int, Dict]:
+def categorize_invoice_batch(
+    invoices: List[Dict],
+    user_id: Optional[int] = None,
+    organization_context: TrustedOrganizationContext | None = None,
+) -> Dict[int, Dict]:
     """
     Categorize multiple invoices
     
@@ -149,13 +165,17 @@ def categorize_invoice_batch(invoices: List[Dict], user_id: Optional[int] = None
             continue
             
         try:
-            category_id, confidence, reasoning = predict_category(invoice, user_id)
+            category_id, confidence, reasoning = predict_category(
+                invoice,
+                user_id,
+                organization_context=organization_context,
+            )
             results[invoice_id] = {
                 'category_id': category_id,
                 'confidence': confidence,
                 'reasoning': reasoning
             }
-        except InferencePolicyDeniedError:
+        except (InferencePolicyDeniedError, OrganizationContextError):
             raise
         except Exception as e:
             safe_log(

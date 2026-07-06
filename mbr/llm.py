@@ -12,6 +12,11 @@ from shared.inference_policy import (
     InferenceProvider,
     assert_inference_allowed,
 )
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
 from shared.secure_logging import log_inference_event, safe_log
 
 from .data import MBRData
@@ -88,6 +93,7 @@ def generate_narrative_via_llm(
     api_key: Optional[str] = None,
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> MBRNarrative:
     """
     Generate MBR narrative using OpenAI Chat Completions API.
@@ -95,7 +101,13 @@ def generate_narrative_via_llm(
     """
     try:
         resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.OPENAI_DIRECT,
+        )
         decision = assert_inference_allowed(
             data_class=resolved_data_class,
             inference_profile=resolved_profile,
@@ -163,7 +175,7 @@ def generate_narrative_via_llm(
             closing_statement=result.get("closing_statement", ""),
         )
         
-    except InferencePolicyDeniedError as e:
+    except (InferencePolicyDeniedError, OrganizationContextError) as e:
         log_inference_event(
             logger,
             event="mbr_narrative_policy_denied",

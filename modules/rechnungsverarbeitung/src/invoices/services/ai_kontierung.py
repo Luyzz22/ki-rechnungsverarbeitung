@@ -23,6 +23,11 @@ from shared.inference_policy import (
     InferenceProvider,
     assert_inference_allowed,
 )
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
 from shared.secure_logging import log_inference_event, safe_log
 
 logger = logging.getLogger(__name__)
@@ -94,6 +99,7 @@ class AIKontierungService:
         skr: str = "SKR03",
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> KontierungResult:
         """Generate account assignment suggestion.
 
@@ -105,18 +111,25 @@ class AIKontierungService:
             KontierungResult with suggested accounts and confidence.
         """
         resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
 
         # Try Gemini first
         if self.gemini_key:
             try:
+                resolved_profile = assert_organization_inference_allowed(
+                    organization_context=organization_context,
+                    data_class=resolved_data_class,
+                    requested_inference_profile=requested_profile,
+                    provider=InferenceProvider.GEMINI_DIRECT,
+                )
                 return self._suggest_gemini(
                     invoice_data,
                     skr,
                     data_class=resolved_data_class,
                     inference_profile=resolved_profile,
+                    organization_context=organization_context,
                 )
-            except InferencePolicyDeniedError:
+            except (InferencePolicyDeniedError, OrganizationContextError):
                 raise
             except Exception as e:
                 safe_log(logger, logging.WARNING, "gemini_kontierung_failed", error_code=type(e).__name__)
@@ -124,13 +137,20 @@ class AIKontierungService:
         # Fallback to Claude
         if self.anthropic_key:
             try:
+                resolved_profile = assert_organization_inference_allowed(
+                    organization_context=organization_context,
+                    data_class=resolved_data_class,
+                    requested_inference_profile=requested_profile,
+                    provider=InferenceProvider.ANTHROPIC_DIRECT,
+                )
                 return self._suggest_claude(
                     invoice_data,
                     skr,
                     data_class=resolved_data_class,
                     inference_profile=resolved_profile,
+                    organization_context=organization_context,
                 )
-            except InferencePolicyDeniedError:
+            except (InferencePolicyDeniedError, OrganizationContextError):
                 raise
             except Exception as e:
                 safe_log(logger, logging.WARNING, "claude_kontierung_failed", error_code=type(e).__name__)
@@ -144,12 +164,19 @@ class AIKontierungService:
         skr: str,
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> KontierungResult:
         """Use Google Gemini 2.0 Flash for kontierung."""
         from google import genai
 
         resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.GEMINI_DIRECT,
+        )
         decision = assert_inference_allowed(
             data_class=resolved_data_class,
             inference_profile=resolved_profile,
@@ -193,12 +220,19 @@ class AIKontierungService:
         skr: str,
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> KontierungResult:
         """Use Anthropic Claude as fallback."""
         import anthropic
 
         resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.ANTHROPIC_DIRECT,
+        )
         decision = assert_inference_allowed(
             data_class=resolved_data_class,
             inference_profile=resolved_profile,

@@ -12,6 +12,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from shared.inference_policy import DataClass, InferenceProfile, InferenceProvider, assert_inference_allowed
+from shared.organization_context import TrustedOrganizationContext, resolve_tenant_policy_for_context
 from shared.providers.azure_identity import (
     AzureProviderError,
     get_bool_config_value,
@@ -216,6 +217,11 @@ def select_provider_for_purpose(
     data_class: DataClass | str,
     inference_profile: InferenceProfile | str,
     purpose: str,
+    tenant_processing_policy: Any | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
+    settings: Any | None = None,
+    env: Mapping[str, str] | None = None,
+    local_provider_available: bool = False,
 ) -> InferenceProvider:
     """Select the intended provider identity without instantiating clients.
 
@@ -223,6 +229,18 @@ def select_provider_for_purpose(
     secrecy flows are routed to Azure identities by purpose. Sovereign flows are
     routed to local identities only.
     """
+    tenant_policy = tenant_processing_policy
+    if tenant_policy is not None or organization_context is not None:
+        from shared.tenant_processing_policy import assert_tenant_provider_allowed
+
+        if tenant_policy is None:
+            tenant_policy = resolve_tenant_policy_for_context(
+                organization_context,
+                settings=settings,
+                env=env,
+            )
+        inference_profile = tenant_policy.effective_inference_profile
+
     try:
         profile = inference_profile if isinstance(inference_profile, InferenceProfile) else InferenceProfile(str(inference_profile))
     except ValueError:
@@ -253,6 +271,12 @@ def select_provider_for_purpose(
         provider=provider,
         purpose=purpose,
     )
+    if tenant_policy is not None:
+        assert_tenant_provider_allowed(
+            tenant_policy,
+            provider=provider,
+            local_provider_available=local_provider_available,
+        )
     return provider
 
 

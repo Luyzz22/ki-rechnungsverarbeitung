@@ -44,6 +44,7 @@ class EmptyAIExtractionService:
         *,
         data_class=None,
         inference_profile=None,
+        organization_context=None,
     ) -> EmptyExtraction:
         assert getattr(data_class, "value", data_class) == "invoice_confidential"
         assert getattr(inference_profile, "value", inference_profile) == "standard"
@@ -229,6 +230,7 @@ def test_process_pdf_flowcheck_passes_with_extracted_invoice_data(monkeypatch) -
             *,
             data_class=None,
             inference_profile=None,
+            organization_context=None,
         ) -> DummyExtraction:
             assert getattr(data_class, "value", data_class) == "invoice_confidential"
             assert getattr(inference_profile, "value", inference_profile) == "standard"
@@ -320,6 +322,7 @@ def test_process_pdf_policy_uses_budget_context(monkeypatch) -> None:
             *,
             data_class=None,
             inference_profile=None,
+            organization_context=None,
         ) -> DummyExtraction:
             assert getattr(data_class, "value", data_class) == "invoice_confidential"
             assert getattr(inference_profile, "value", inference_profile) == "standard"

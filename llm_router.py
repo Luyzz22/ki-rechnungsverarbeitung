@@ -16,6 +16,11 @@ from shared.inference_policy import (
     InferenceProvider,
     assert_inference_allowed,
 )
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
 from shared.providers.provider_factory import select_provider_for_purpose
 from shared.secure_logging import log_inference_event, safe_log
 
@@ -38,12 +43,14 @@ def resolve_policy_provider(
     data_class: str,
     inference_profile: str,
     purpose: str,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> InferenceProvider:
     """Resolve the policy-approved provider identity without creating a client."""
     return select_provider_for_purpose(
         data_class=data_class,
         inference_profile=inference_profile,
         purpose=purpose,
+        organization_context=organization_context,
     )
 
 
@@ -775,13 +782,20 @@ def extract_invoice_data(
     model: str,
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> dict:
     """
     Extrahiert Rechnungsdaten mit Expert-Level Prompts
     """
     resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-    resolved_profile = resolve_inference_profile(inference_profile)
     provider_identity = _legacy_provider_to_policy(provider)
+    requested_profile = resolve_inference_profile(inference_profile)
+    resolved_profile = assert_organization_inference_allowed(
+        organization_context=organization_context,
+        data_class=resolved_data_class,
+        requested_inference_profile=requested_profile,
+        provider=provider_identity,
+    )
     decision = assert_inference_allowed(
         data_class=resolved_data_class,
         inference_profile=resolved_profile,
@@ -856,7 +870,7 @@ def extract_invoice_data(
         #     return None
         return data
         
-    except InferencePolicyDeniedError:
+    except (InferencePolicyDeniedError, OrganizationContextError):
         raise
     except Exception as e:
         log_inference_event(
@@ -904,6 +918,7 @@ def extract_with_vision(
     pdf_path: str,
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> dict:
     """
     Extrahiert Rechnungsdaten via GPT-4o Vision.
@@ -916,7 +931,13 @@ def extract_with_vision(
         dict mit extrahierten Daten oder None bei Fehler
     """
     resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-    resolved_profile = resolve_inference_profile(inference_profile)
+    requested_profile = resolve_inference_profile(inference_profile)
+    resolved_profile = assert_organization_inference_allowed(
+        organization_context=organization_context,
+        data_class=resolved_data_class,
+        requested_inference_profile=requested_profile,
+        provider=InferenceProvider.OPENAI_DIRECT,
+    )
     decision = assert_inference_allowed(
         data_class=resolved_data_class,
         inference_profile=resolved_profile,
@@ -1027,7 +1048,7 @@ WICHTIG:
         )
         return data
         
-    except InferencePolicyDeniedError:
+    except (InferencePolicyDeniedError, OrganizationContextError):
         raise
     except Exception as e:
         log_inference_event(
@@ -1051,6 +1072,7 @@ def extract_invoice_data_with_fallback(
     model: str,
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> dict:
     """
     Extrahiert Rechnungsdaten mit Vision-Fallback.
@@ -1075,6 +1097,7 @@ def extract_invoice_data_with_fallback(
             model,
             data_class=data_class,
             inference_profile=inference_profile,
+            organization_context=organization_context,
         )
         
         if result:
@@ -1092,6 +1115,7 @@ def extract_invoice_data_with_fallback(
         pdf_path,
         data_class=data_class,
         inference_profile=inference_profile,
+        organization_context=organization_context,
     )
     
     if vision_result:
@@ -1105,6 +1129,7 @@ def extract_invoice_data_with_fallback(
             model,
             data_class=data_class,
             inference_profile=inference_profile,
+            organization_context=organization_context,
         )
     
     return None

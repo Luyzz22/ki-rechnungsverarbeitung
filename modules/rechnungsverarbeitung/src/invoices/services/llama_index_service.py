@@ -18,6 +18,11 @@ from shared.inference_policy import (
     InferenceProvider,
     assert_inference_allowed,
 )
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
 from shared.secure_logging import log_inference_event, safe_log
 load_dotenv("/var/www/invoice-app/.env")
 
@@ -38,6 +43,7 @@ class LlamaIndexService:
         tenant_id: str,
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> int:
         """Build/rebuild the invoice index for a tenant."""
         try:
@@ -47,7 +53,13 @@ class LlamaIndexService:
             # Configure LLM
             if self.gemini_key:
                 resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-                resolved_profile = resolve_inference_profile(inference_profile)
+                requested_profile = resolve_inference_profile(inference_profile)
+                resolved_profile = assert_organization_inference_allowed(
+                    organization_context=organization_context,
+                    data_class=resolved_data_class,
+                    requested_inference_profile=requested_profile,
+                    provider=InferenceProvider.GEMINI_DIRECT,
+                )
                 decision = assert_inference_allowed(
                     data_class=resolved_data_class,
                     inference_profile=resolved_profile,
@@ -121,7 +133,7 @@ Dateiname: {r[1] or 'Unbekannt'}
                 safe_log(logger, logging.INFO, "invoice_rag_index_built", tenant_id=tenant_id, document_count=len(documents))
             return len(documents)
 
-        except InferencePolicyDeniedError:
+        except (InferencePolicyDeniedError, OrganizationContextError):
             raise
         except Exception as e:
             safe_log(logger, logging.WARNING, "llama_index_build_failed", error_code=type(e).__name__)
@@ -133,6 +145,7 @@ Dateiname: {r[1] or 'Unbekannt'}
         tenant_id: str,
         data_class: str | None = None,
         inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
     ) -> Optional[dict]:
         """Query the invoice index with natural language."""
         try:
@@ -141,13 +154,20 @@ Dateiname: {r[1] or 'Unbekannt'}
                     tenant_id,
                     data_class=data_class,
                     inference_profile=inference_profile,
+                    organization_context=organization_context,
                 )
                 if count == 0:
                     return None
 
             if self.gemini_key:
                 resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-                resolved_profile = resolve_inference_profile(inference_profile)
+                requested_profile = resolve_inference_profile(inference_profile)
+                resolved_profile = assert_organization_inference_allowed(
+                    organization_context=organization_context,
+                    data_class=resolved_data_class,
+                    requested_inference_profile=requested_profile,
+                    provider=InferenceProvider.GEMINI_DIRECT,
+                )
                 decision = assert_inference_allowed(
                     data_class=resolved_data_class,
                     inference_profile=resolved_profile,
@@ -177,7 +197,7 @@ Dateiname: {r[1] or 'Unbekannt'}
                 "sources": len(response.source_nodes) if hasattr(response, "source_nodes") else 0,
             }
 
-        except InferencePolicyDeniedError:
+        except (InferencePolicyDeniedError, OrganizationContextError):
             raise
         except Exception as e:
             safe_log(logger, logging.WARNING, "llama_index_query_failed", error_code=type(e).__name__)

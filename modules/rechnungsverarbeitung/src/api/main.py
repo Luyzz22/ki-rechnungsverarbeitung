@@ -29,6 +29,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from shared.settings import get_settings
+from shared.organization_context import OrganizationContextError, resolve_trusted_organization_context
 from shared.tenant.context import TenantContext
 from shared.db.session import get_session
 from modules.rechnungsverarbeitung.src.invoices.services.invoice_processing import (
@@ -181,6 +182,14 @@ def _resolve_tenant_for_authenticated_request(
     return canonical
 
 
+def _trusted_context_from_user(user: UserAuth, client_input: dict | None = None):
+    return resolve_trusted_organization_context(
+        authenticated_user_id=user.user_id,
+        authenticated_tenant_id=user.tenant_id,
+        client_input=client_input,
+    )
+
+
 def _get_invoice_or_404(session, document_id: str, tenant_id: str) -> Invoice:
     invoice: Invoice | None = (
         session.query(Invoice)
@@ -246,11 +255,13 @@ async def upload_invoice(
     file: UploadFile = File(...),
 ):
     _resolve_tenant_for_authenticated_request(x_tenant_id, user)
+    organization_context = _trusted_context_from_user(user)
     metadata = process_invoice_upload(
         file_stream=file.file,
         file_name=file.filename,
         mime_type=file.content_type or "application/octet-stream",
         uploaded_by=uploaded_by,
+        organization_context=organization_context,
     )
     return {
         "document_id": metadata.id,
@@ -475,6 +486,7 @@ async def upload_batch(
 ):
     """Upload multiple invoices at once (max 20 files)."""
     tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
+    organization_context = _trusted_context_from_user(user)
     form = await request.form()
     files = form.getlist("files")
     if not files:
@@ -491,6 +503,7 @@ async def upload_batch(
                 file_name=file_name,
                 mime_type=f.content_type or "application/pdf",
                 uploaded_by="batch-upload",
+                organization_context=organization_context,
             )
             results.append({"file_name": file_name, "document_id": metadata.id, "status": metadata.status, "success": True})
         except Exception as e:
@@ -1245,6 +1258,7 @@ async def suggest_kontierung(
 ):
     """AI-powered account assignment suggestion. Auto-loads from DB if no body."""
     tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
+    organization_context = _trusted_context_from_user(user, body.model_dump() if body else None)
 
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
@@ -1276,8 +1290,11 @@ async def suggest_kontierung(
             result = ai_kontierung.suggest(
                 invoice_data=inv_data,
                 skr=skr,
+                organization_context=organization_context,
             )
         except InferencePolicyDeniedError as exc:
+            raise HTTPException(status_code=403, detail=exc.to_safe_dict()) from exc
+        except OrganizationContextError as exc:
             raise HTTPException(status_code=403, detail=exc.to_safe_dict()) from exc
 
         current_status = invoice.status
@@ -1414,8 +1431,11 @@ async def copilot_chat(
             question=body.question,
             tenant_id=user.tenant_id,
             conversation_history=body.conversation_history,
+            organization_context=_trusted_context_from_user(user),
         )
     except InferencePolicyDeniedError as exc:
+        raise HTTPException(status_code=403, detail=exc.to_safe_dict()) from exc
+    except OrganizationContextError as exc:
         raise HTTPException(status_code=403, detail=exc.to_safe_dict()) from exc
     return result
 

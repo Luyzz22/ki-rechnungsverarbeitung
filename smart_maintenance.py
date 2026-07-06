@@ -28,6 +28,11 @@ from shared.inference_policy import (
     assert_inference_allowed,
 )
 from shared.data_classification import resolve_inference_profile
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
 from shared.secure_logging import log_inference_event, safe_log
 load_dotenv()
 
@@ -51,6 +56,7 @@ async def recognize_part_from_image(
     context: str = "",
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> Dict[str, Any]:
     """
     Verwendet Gemini 1.5 Pro Vision um ein Teil aus einem Foto zu erkennen.
@@ -72,7 +78,13 @@ async def recognize_part_from_image(
     
     try:
         resolved_data_class = data_class or DataClass.INTERNAL
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.GEMINI_DIRECT,
+        )
         decision = assert_inference_allowed(
             data_class=resolved_data_class,
             inference_profile=resolved_profile,
@@ -138,7 +150,7 @@ Antworte AUSSCHLIESSLICH als JSON:
         )
         return result
 
-    except InferencePolicyDeniedError as e:
+    except (InferencePolicyDeniedError, OrganizationContextError) as e:
         return {
             "error": e.error_code,
             "policy": e.to_safe_dict(),
@@ -685,6 +697,7 @@ async def analyze_part_with_hydraulikdoc(
     context: str = "",
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> Dict[str, Any]:
     """
     Analysiert Teil-Bild mit HydraulikDoc's Gemini 2.5 Pro
@@ -703,11 +716,18 @@ async def analyze_part_with_hydraulikdoc(
             context,
             data_class=data_class,
             inference_profile=inference_profile,
+            organization_context=organization_context,
         )
     
     try:
         resolved_data_class = data_class or DataClass.INTERNAL
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.GEMINI_DIRECT,
+        )
         decision = assert_inference_allowed(
             data_class=resolved_data_class,
             inference_profile=resolved_profile,
@@ -793,7 +813,7 @@ Antworte NUR als JSON:
 
         return result
 
-    except InferencePolicyDeniedError as e:
+    except (InferencePolicyDeniedError, OrganizationContextError) as e:
         return {
             "error": e.error_code,
             "policy": e.to_safe_dict(),
@@ -822,7 +842,8 @@ async def process_maintenance_request_v2(
     location: str = "",
     urgency: str = "normal",
     machine_id: str = None,
-    use_hydraulikdoc: bool = True
+    use_hydraulikdoc: bool = True,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> Dict:
     """
     Enhanced Maintenance Request Processing v2
@@ -852,9 +873,17 @@ async def process_maintenance_request_v2(
     try:
         # Step 1: Teil erkennen (HydraulikDoc oder Standard)
         if use_hydraulikdoc:
-            part_info = await analyze_part_with_hydraulikdoc(image_base64, technician_notes)
+            part_info = await analyze_part_with_hydraulikdoc(
+                image_base64,
+                technician_notes,
+                organization_context=organization_context,
+            )
         else:
-            part_info = await recognize_part_from_image(image_base64, technician_notes)
+            part_info = await recognize_part_from_image(
+                image_base64,
+                technician_notes,
+                organization_context=organization_context,
+            )
         
         result["part_recognition"] = part_info
         

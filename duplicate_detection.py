@@ -14,6 +14,11 @@ from shared.inference_policy import (
     InferenceProvider,
     assert_inference_allowed,
 )
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
 from shared.secure_logging import log_inference_event, safe_log
 
 logger = logging.getLogger(__name__)
@@ -161,6 +166,7 @@ def check_similarity_ai(
     user_id: int = None,
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> List[Dict]:
     """
     Use Claude to detect similar invoices
@@ -171,7 +177,13 @@ def check_similarity_ai(
     import os
     
     resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-    resolved_profile = resolve_inference_profile(inference_profile)
+    requested_profile = resolve_inference_profile(inference_profile)
+    resolved_profile = assert_organization_inference_allowed(
+        organization_context=organization_context,
+        data_class=resolved_data_class,
+        requested_inference_profile=requested_profile,
+        provider=InferenceProvider.ANTHROPIC_DIRECT,
+    )
     decision = assert_inference_allowed(
         data_class=resolved_data_class,
         inference_profile=resolved_profile,
@@ -275,7 +287,7 @@ Antworte NUR mit JSON:
         
         return similar
         
-    except InferencePolicyDeniedError as e:
+    except (InferencePolicyDeniedError, OrganizationContextError) as e:
         log_inference_event(
             logger,
             event="duplicate_similarity_policy_denied",
@@ -296,6 +308,7 @@ def detect_all_duplicates(
     user_id: int = None,
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> Dict:
     """
     Complete duplicate detection: hash + AI
@@ -318,6 +331,7 @@ def detect_all_duplicates(
         user_id,
         data_class=data_class,
         inference_profile=inference_profile,
+        organization_context=organization_context,
     )
     if similar:
         results['similar'] = similar

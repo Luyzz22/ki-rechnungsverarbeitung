@@ -16,6 +16,11 @@ from shared.inference_policy import (
     InferenceProvider,
     assert_inference_allowed,
 )
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
 from shared.secure_logging import log_inference_event, safe_log
 
 logger = logging.getLogger(__name__)
@@ -120,6 +125,7 @@ def ocr_with_fallback(
     image: Image.Image,
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> Dict:
     """
     Führt OCR mit mehreren Methoden durch und wählt das beste Ergebnis.
@@ -128,7 +134,14 @@ def ocr_with_fallback(
         Dict mit text, confidence, method
     """
     resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-    resolved_profile = resolve_inference_profile(inference_profile)
+    requested_profile = resolve_inference_profile(inference_profile)
+    resolved_profile = assert_organization_inference_allowed(
+        organization_context=organization_context,
+        data_class=resolved_data_class,
+        requested_inference_profile=requested_profile,
+        provider=InferenceProvider.LOCAL_OCR,
+        local_provider_available=True,
+    )
     decision = assert_inference_allowed(
         data_class=resolved_data_class,
         inference_profile=resolved_profile,
@@ -209,6 +222,7 @@ def extract_from_pdf_optimized(
     dpi: int = 200,
     data_class: str | None = None,
     inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> Dict:
     """
     Optimierte OCR-Extraktion aus PDF.
@@ -228,7 +242,14 @@ def extract_from_pdf_optimized(
     
     try:
         resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
-        resolved_profile = resolve_inference_profile(inference_profile)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.LOCAL_OCR,
+            local_provider_available=True,
+        )
         decision = assert_inference_allowed(
             data_class=resolved_data_class,
             inference_profile=resolved_profile,
@@ -249,6 +270,7 @@ def extract_from_pdf_optimized(
                 image,
                 data_class=resolved_data_class,
                 inference_profile=resolved_profile,
+                organization_context=organization_context,
             )
             
             if result['text']:
@@ -278,7 +300,7 @@ def extract_from_pdf_optimized(
             'char_count': len(combined_text)
         }
         
-    except InferencePolicyDeniedError:
+    except (InferencePolicyDeniedError, OrganizationContextError):
         raise
     except Exception as e:
         safe_log(logger, logging.ERROR, "optimized_pdf_ocr_failed", error_code=type(e).__name__)
