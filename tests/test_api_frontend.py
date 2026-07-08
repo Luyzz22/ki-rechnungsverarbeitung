@@ -138,10 +138,10 @@ def _seed_invoice(client, token, **over):
     cur.execute(
         """INSERT INTO invoices
            (job_id, rechnungsnummer, datum, rechnungsaussteller, betrag_brutto,
-            betrag_netto, mwst_betrag, mwst_satz, waehrung, status, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+            betrag_netto, mwst_betrag, mwst_satz, waehrung, status, created_at, tenant_id)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
         (job_id, over.get("nr", "R-1"), "2026-01-15", over.get("supplier", "Acme GmbH"),
-         119.0, 100.0, 19.0, 19.0, "EUR", over.get("status", "approved"), "2026-01-15T10:00:00"),
+         119.0, 100.0, 19.0, 19.0, "EUR", over.get("status", "approved"), "2026-01-15T10:00:00", tid),
     )
     inv_id = cur.lastrowid
     conn.commit()
@@ -358,3 +358,59 @@ def test_datev_preview_post_rejects_invalid_invoice_id(client, token, bad):
     (1.9/true → 1). Ungültige Werte → 422, nicht falsche/gerundete Rechnung."""
     r = client.post("/api/app/datev/preview", headers=_auth(token), json={"invoice_id": bad})
     assert r.status_code == 422, f"{bad!r} -> {r.status_code}: {r.text[:120]}"
+
+
+def test_invoices_visible_without_job_and_tenant_isolated(client):
+    """Regression: Rechnungen mit gesetztem tenant_id, aber OHNE zugehörige
+    jobs-Zeile (Produktionszustand: jobs leer) müssen sichtbar sein – der frühere
+    INNER JOIN auf jobs lieferte 0. Isolation läuft jetzt über i.tenant_id."""
+    import database
+    ta = client.post("/api/app/register", json={
+        "email": "orpha@test.de", "password": "Test1234", "name": "A", "company": "X"}).json()["token"]
+    tb = client.post("/api/app/register", json={
+        "email": "orphb@test.de", "password": "Test1234", "name": "B", "company": "Y"}).json()["token"]
+    tid_a = _tenant_id(client, ta)
+    conn = database.get_connection(); cur = conn.cursor()
+    # KEINE jobs-Zeile für diese job_id → Orphan-Rechnung wie in Produktion
+    cur.execute(
+        """INSERT INTO invoices
+           (job_id, rechnungsnummer, datum, rechnungsaussteller, betrag_brutto,
+            betrag_netto, mwst_betrag, waehrung, status, created_at, tenant_id)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+        ("kein-job-vorhanden", "ORPH-A", "2026-03-15", "Waise GmbH", 50.0, 42.0, 8.0,
+         "EUR", "verarbeitet", "2026-03-15T10:00:00", tid_a))
+    conn.commit(); conn.close()
+    # Tenant A sieht die Orphan-Rechnung (trotz leerer jobs-Tabelle)
+    a = client.get("/api/app/invoices?limit=500", headers=_auth(ta)).json()
+    assert "ORPH-A" in [i["rechnungsnummer"] for i in a["items"]], a["total"]
+    assert a["total"] >= 1
+    # Tenant B sieht sie NICHT (Isolation über i.tenant_id)
+    b = client.get("/api/app/invoices?limit=500", headers=_auth(tb)).json()
+    assert "ORPH-A" not in [i["rechnungsnummer"] for i in b["items"]]
+
+
+def test_invoices_classic_flow_visible_via_job_user_id(client):
+    """Regression (Codex P1): der klassische Upload-Flow schreibt invoices OHNE
+    tenant_id (Zuordnung nur über jobs.user_id). Diese müssen sichtbar bleiben
+    (LEFT JOIN + tenant-sicherer Fallback), aber tenant-isoliert."""
+    import database
+    ta = client.post("/api/app/register", json={
+        "email": "clsa@test.de", "password": "Test1234", "name": "A", "company": "X"}).json()["token"]
+    tb = client.post("/api/app/register", json={
+        "email": "clsb@test.de", "password": "Test1234", "name": "B", "company": "Y"}).json()["token"]
+    tid_a = _tenant_id(client, ta)
+    conn = database.get_connection(); cur = conn.cursor()
+    cur.execute("INSERT OR IGNORE INTO jobs (job_id, user_id, created_at) VALUES (?,?,?)",
+                ("classic-job-1", tid_a, "2026-02-01T00:00:00"))
+    # tenant_id NICHT gesetzt → Zuordnung nur über den Job
+    cur.execute(
+        """INSERT INTO invoices (job_id, rechnungsnummer, datum, rechnungsaussteller,
+           betrag_brutto, betrag_netto, mwst_betrag, waehrung, status)
+           VALUES (?,?,?,?,?,?,?,?,?)""",
+        ("classic-job-1", "CLASSIC-1", "2026-02-15", "Klassik GmbH", 60.0, 50.4, 9.6, "EUR", "verarbeitet"))
+    conn.commit(); conn.close()
+    a = client.get("/api/app/invoices?limit=500", headers=_auth(ta)).json()
+    assert "CLASSIC-1" in [i["rechnungsnummer"] for i in a["items"]], a["total"]
+    # Isolation: Tenant B sieht sie nicht
+    b = client.get("/api/app/invoices?limit=500", headers=_auth(tb)).json()
+    assert "CLASSIC-1" not in [i["rechnungsnummer"] for i in b["items"]]
