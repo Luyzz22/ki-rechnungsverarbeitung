@@ -540,19 +540,16 @@ def _strict_int(v: Any) -> Optional[int]:
     return None
 
 
-def _datev_preview(tid: int, invoice_id: int) -> Dict[str, Any]:
-    """Tenant-isolierte DATEV-Buchungsvorschau für eine Rechnung.
+# Exportierbare Rechnungsstatus für die Gesamt-/Batch-Vorschau (case-insensitive).
+# "verarbeitet" = fertig extrahiert, "approved"/"freigegeben" = nach Freigabe.
+_DATEV_EXPORTABLE_STATUSES = frozenset({"verarbeitet", "approved", "freigegeben"})
 
-    GoBD-/revisionsrelevant: Vorschau-Logik ausschließlich hier, damit GET- und
-    POST-Route exakt dieselbe Umwandlung nutzen (keine Duplizierung)."""
-    rows = _tenant_invoices(tid, [invoice_id])
-    if not rows:
-        raise HTTPException(status_code=404, detail="Rechnung nicht gefunden")
-    invoice = rows[0]
 
-    from datev import InvoiceToBuchungConverter, Kontenrahmen
+def _datev_buchungen(converter, invoice: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Wandelt EINE Rechnung in serialisierbare DATEV-Buchungssätze um.
 
-    converter = InvoiceToBuchungConverter(Kontenrahmen.SKR03)
+    Einzige Stelle der (GoBD-/revisionsrelevanten) Umwandlung – von Einzel- und
+    Batch-Vorschau gemeinsam genutzt, damit keine Logik dupliziert wird."""
     buchungen = []
     for b in converter.convert(invoice):
         buchungen.append({
@@ -565,6 +562,19 @@ def _datev_preview(tid: int, invoice_id: int) -> Dict[str, Any]:
             "buchungstext": b.buchungstext,
             "steuerschluessel": b.steuerschluessel,
         })
+    return buchungen
+
+
+def _datev_preview(tid: int, invoice_id: int) -> Dict[str, Any]:
+    """Tenant-isolierte DATEV-Buchungsvorschau für EINE Rechnung."""
+    rows = _tenant_invoices(tid, [invoice_id])
+    if not rows:
+        raise HTTPException(status_code=404, detail="Rechnung nicht gefunden")
+    invoice = rows[0]
+
+    from datev import InvoiceToBuchungConverter, Kontenrahmen
+
+    converter = InvoiceToBuchungConverter(Kontenrahmen.SKR03)
     return {
         "invoice": {
             "id": invoice.get("id"),
@@ -572,32 +582,82 @@ def _datev_preview(tid: int, invoice_id: int) -> Dict[str, Any]:
             "rechnungsaussteller": invoice.get("rechnungsaussteller"),
             "betrag_brutto": invoice.get("betrag_brutto"),
         },
-        "buchungen": buchungen,
+        "buchungen": _datev_buchungen(converter, invoice),
         "detected_account": converter.detect_account(invoice),
     }
 
 
+def _datev_preview_batch(tid: int) -> Dict[str, Any]:
+    """Gesamt-/Batch-Vorschau über ALLE exportierbaren Rechnungen des Mandanten.
+
+    Exportierbar = tenant-isoliert (``_tenant_invoices`` → COALESCE(i.tenant_id,
+    j.user_id)), nicht gelöscht, ``betrag_brutto`` gesetzt und Status
+    freigegeben/verarbeitet. Fremde Mandanten erhalten eine leere Vorschau."""
+    from datev import InvoiceToBuchungConverter, Kontenrahmen
+
+    converter = InvoiceToBuchungConverter(Kontenrahmen.SKR03)
+    rows = [
+        r for r in _tenant_invoices(tid)
+        if r.get("betrag_brutto") is not None
+        and str(r.get("status") or "").lower() in _DATEV_EXPORTABLE_STATUSES
+    ]
+    items: List[Dict[str, Any]] = []
+    all_buchungen: List[Dict[str, Any]] = []
+    for invoice in rows:
+        buchungen = _datev_buchungen(converter, invoice)
+        all_buchungen.extend(buchungen)
+        items.append({
+            "invoice": {
+                "id": invoice.get("id"),
+                "rechnungsnummer": invoice.get("rechnungsnummer"),
+                "rechnungsaussteller": invoice.get("rechnungsaussteller"),
+                "betrag_brutto": invoice.get("betrag_brutto"),
+            },
+            "buchungen": buchungen,
+            "detected_account": converter.detect_account(invoice),
+        })
+    return {
+        "batch": True,
+        "invoice_count": len(items),
+        "buchungen_count": len(all_buchungen),
+        "invoices": items,
+        "buchungen": all_buchungen,
+    }
+
+
 @router.get("/datev/preview")
-async def api_datev_preview(request: Request, invoice_id: int):
-    """DATEV-Buchungsvorschau für eine Rechnung (tenant-isoliert)."""
-    return _datev_preview(_require_tenant(request), invoice_id)
+async def api_datev_preview(request: Request, invoice_id: Optional[int] = None):
+    """DATEV-Buchungsvorschau (tenant-isoliert). Mit ``invoice_id`` → Einzel-
+    Vorschau; ohne → Gesamt-/Batch-Vorschau aller exportierbaren Rechnungen."""
+    tid = _require_tenant(request)
+    if invoice_id is None:
+        return _datev_preview_batch(tid)
+    return _datev_preview(tid, invoice_id)
 
 
 @router.post("/datev/preview")
 async def api_datev_preview_post(request: Request, invoice_id: Optional[int] = None):
-    """POST-Variante derselben Vorschau – das Frontend ruft /api/app/datev/preview
-    per POST auf. `invoice_id` aus Query ODER JSON-Body akzeptieren; identische
-    Logik (kein Duplikat der GoBD-relevanten Umwandlung)."""
+    """POST-Variante – das Frontend ruft /api/app/datev/preview per POST auf.
+
+    ``invoice_id`` aus Query ODER JSON-Body. Ist ein ``invoice_id`` angegeben →
+    Einzel-Vorschau (bei ungültigem Wert → 422). Fehlt ``invoice_id`` ganz →
+    Gesamt-/Batch-Vorschau (kein 422 mehr für den Seiten-Load)."""
     tid = _require_tenant(request)
-    if invoice_id is None:
-        try:
-            body = await request.json()
-        except Exception:
-            body = None
-        invoice_id = _strict_int(body.get("invoice_id") if isinstance(body, dict) else None)
-    if invoice_id is None:
-        raise HTTPException(status_code=422, detail="invoice_id (ganze Zahl) erforderlich")
-    return _datev_preview(tid, invoice_id)
+    # 1) Query-invoice_id (von FastAPI als int validiert) hat Vorrang.
+    if invoice_id is not None:
+        return _datev_preview(tid, invoice_id)
+    # 2) Body prüfen. Ist der Key vorhanden → strikt validieren (kein stilles
+    #    Runden/Fehlgriff); fehlt der Key ganz → Batch-Vorschau.
+    try:
+        body = await request.json()
+    except Exception:
+        body = None
+    if isinstance(body, dict) and "invoice_id" in body:
+        iid = _strict_int(body.get("invoice_id"))
+        if iid is None:
+            raise HTTPException(status_code=422, detail="invoice_id muss eine ganze Zahl sein")
+        return _datev_preview(tid, iid)
+    return _datev_preview_batch(tid)
 
 
 @router.post("/datev/export")
