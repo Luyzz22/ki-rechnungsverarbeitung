@@ -414,3 +414,93 @@ def test_invoices_classic_flow_visible_via_job_user_id(client):
     # Isolation: Tenant B sieht sie nicht
     b = client.get("/api/app/invoices?limit=500", headers=_auth(tb)).json()
     assert "CLASSIC-1" not in [i["rechnungsnummer"] for i in b["items"]]
+
+
+def test_invoices_tenant_id_takes_precedence_over_job_user_id(client):
+    """Isolation (COALESCE statt OR): Ist i.tenant_id gesetzt, entscheidet AUSSCHLIESSLICH
+    dieser Wert – ein fremder jobs.user_id darf nichts durchlassen. Eine Rechnung mit
+    i.tenant_id = B, deren Job aber A gehört (jobs.user_id = A), gehört NUR B. Das frühere
+    ``(i.tenant_id = ? OR j.user_id = ?)`` hätte sie fälschlich auch A gezeigt (Leak)."""
+    import database
+    ta = client.post("/api/app/register", json={
+        "email": "preca@test.de", "password": "Test1234", "name": "A", "company": "X"}).json()["token"]
+    tb = client.post("/api/app/register", json={
+        "email": "precb@test.de", "password": "Test1234", "name": "B", "company": "Y"}).json()["token"]
+    tid_a = _tenant_id(client, ta)
+    tid_b = _tenant_id(client, tb)
+    conn = database.get_connection(); cur = conn.cursor()
+    # Job gehört A …
+    cur.execute("INSERT OR IGNORE INTO jobs (job_id, user_id, created_at) VALUES (?,?,?)",
+                ("prec-job-owned-by-a", tid_a, "2026-05-01T00:00:00"))
+    # … aber die Rechnung trägt tenant_id = B → gehört NUR B.
+    cur.execute(
+        """INSERT INTO invoices
+           (job_id, rechnungsnummer, datum, rechnungsaussteller, betrag_brutto,
+            betrag_netto, mwst_betrag, waehrung, status, created_at, tenant_id)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+        ("prec-job-owned-by-a", "PREC-1", "2026-05-15", "Vorrang GmbH", 70.0, 58.8, 11.2,
+         "EUR", "verarbeitet", "2026-05-15T10:00:00", tid_b))
+    conn.commit(); conn.close()
+    # B (tenant_id) sieht sie
+    b = client.get("/api/app/invoices?limit=500", headers=_auth(tb)).json()
+    assert "PREC-1" in [i["rechnungsnummer"] for i in b["items"]], b["total"]
+    # A (nur Job-Owner) sieht sie NICHT – kein OR-Leak über jobs.user_id
+    a = client.get("/api/app/invoices?limit=500", headers=_auth(ta)).json()
+    assert "PREC-1" not in [i["rechnungsnummer"] for i in a["items"]]
+
+
+_FULL_INVOICES_SCHEMA = """
+    CREATE TABLE invoices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_id TEXT,
+        rechnungsnummer TEXT, datum TEXT, faelligkeitsdatum TEXT, zahlungsziel_tage INTEGER,
+        rechnungsaussteller TEXT, rechnungsaussteller_adresse TEXT,
+        rechnungsempfaenger TEXT, rechnungsempfaenger_adresse TEXT, kundennummer TEXT,
+        betrag_brutto REAL, betrag_netto REAL, mwst_betrag REAL, mwst_satz REAL,
+        waehrung TEXT, iban TEXT, bic TEXT, steuernummer TEXT, ust_idnr TEXT,
+        zahlungsbedingungen TEXT, artikel TEXT, verwendungszweck TEXT, content_hash TEXT,
+        source_format TEXT, einvoice_raw_xml TEXT, einvoice_profile TEXT,
+        einvoice_valid INTEGER, einvoice_validation_message TEXT, confidence REAL,
+        tenant_id INTEGER
+    )
+"""
+
+
+def test_save_invoices_sets_tenant_id_from_job(tmp_path, monkeypatch):
+    """P1-Folgefix: database.save_invoices (klassischer Flow) muss tenant_id direkt auf
+    die Rechnung schreiben – abgeleitet aus jobs.user_id –, damit neue Rechnungen sauber
+    zugeordnet sind und der tenant_id-NULL-Altbestand nicht weiterwächst. Eigene Voll-Schema-
+    DB, da die schlanke SPA-Test-DB die Migrations-Spalten (content_hash …) nicht führt."""
+    import sqlite3
+    import database
+    db_file = tmp_path / "save_invoices.db"
+    monkeypatch.setattr(database, "_ensure_db_path", lambda: db_file)
+    conn = sqlite3.connect(db_file)
+    conn.execute("CREATE TABLE jobs (job_id TEXT PRIMARY KEY, user_id INTEGER, created_at TEXT)")
+    conn.execute(_FULL_INVOICES_SCHEMA)
+    conn.execute("INSERT INTO jobs (job_id, user_id, created_at) VALUES (?,?,?)",
+                 ("save-inv-tenant-1", 4242, "2026-04-01T00:00:00"))
+    conn.commit(); conn.close()
+
+    database.save_invoices("save-inv-tenant-1", [{
+        "rechnungsnummer": "SAVE-1", "rechnungsaussteller": "Neu GmbH",
+        "betrag_brutto": 119.0, "betrag_netto": 100.0, "datum": "2026-04-15",
+    }])
+
+    conn = sqlite3.connect(db_file)
+    row = conn.execute(
+        "SELECT tenant_id FROM invoices WHERE job_id = ? AND rechnungsnummer = ?",
+        ("save-inv-tenant-1", "SAVE-1")).fetchone()
+    conn.close()
+    assert row is not None and row[0] is not None, "tenant_id muss beim Insert gesetzt sein"
+    assert int(row[0]) == 4242
+
+    # Explizit übergebener tenant_id hat Vorrang vor jobs.user_id
+    database.save_invoices("save-inv-tenant-1", [{
+        "rechnungsnummer": "SAVE-2", "rechnungsaussteller": "Neu GmbH", "betrag_brutto": 10.0,
+    }], tenant_id=99)
+    conn = sqlite3.connect(db_file)
+    row = conn.execute(
+        "SELECT tenant_id FROM invoices WHERE rechnungsnummer = ?", ("SAVE-2",)).fetchone()
+    conn.close()
+    assert row is not None and int(row[0]) == 99

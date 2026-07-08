@@ -241,8 +241,15 @@ def save_job(job_id: str, job_data: Dict, user_id: int = None):
     conn.close()
 
 
-def save_invoices(job_id: str, results: List[Dict]):
-    """Save invoice results for a job (inkl. E-Rechnungs-Metadaten)"""
+def save_invoices(job_id: str, results: List[Dict], tenant_id: Optional[int] = None):
+    """Save invoice results for a job (inkl. E-Rechnungs-Metadaten).
+
+    ``tenant_id`` wird direkt auf jeder Rechnung gesetzt, damit neue Rechnungen
+    sauber mandantenzugeordnet sind und der Read-Pfad nicht auf den
+    jobs.user_id-Legacy-Fallback angewiesen ist. Wird kein ``tenant_id``
+    übergeben, wird er aus ``jobs.user_id`` des zugehörigen Jobs abgeleitet
+    (der Job wird unmittelbar vor dieser Funktion gespeichert).
+    """
     from duplicate_detection import (
         generate_invoice_hash,
         check_duplicate_by_hash,
@@ -256,6 +263,22 @@ def save_invoices(job_id: str, results: List[Dict]):
     # benutzt jetzt DB_PATH => invoices.db
     conn = get_connection()
     cursor = conn.cursor()
+
+    # Tenant-Zuordnung ableiten (invoices.tenant_id ist INTEGER). Fällt der
+    # Job-Owner nicht auf einen int (z. B. "demo_user"), bleibt tenant_id NULL
+    # und der Read-Pfad greift weiterhin auf den jobs.user_id-Fallback zurück.
+    if tenant_id is None:
+        try:
+            cursor.execute("SELECT user_id FROM jobs WHERE job_id = ?", (job_id,))
+            jrow = cursor.fetchone()
+            if jrow is not None and jrow[0] is not None:
+                tenant_id = jrow[0]
+        except Exception:  # pragma: no cover - jobs evtl. nicht vorhanden
+            tenant_id = None
+    try:
+        tenant_id_val: Optional[int] = int(tenant_id) if tenant_id is not None else None
+    except (TypeError, ValueError):
+        tenant_id_val = None
 
     # Bestehende Rechnungen dieses Jobs löschen (Re-Processing)
     cursor.execute("DELETE FROM invoices WHERE job_id = ?", (job_id,))
@@ -296,10 +319,11 @@ def save_invoices(job_id: str, results: List[Dict]):
                 mwst_betrag, mwst_satz, waehrung, iban, bic, steuernummer, ust_idnr,
                 zahlungsbedingungen, artikel, verwendungszweck, content_hash,
                 source_format, einvoice_raw_xml, einvoice_profile,
-                einvoice_valid, einvoice_validation_message, confidence
+                einvoice_valid, einvoice_validation_message, confidence,
+                tenant_id
             ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?
             )
             """,
             (
@@ -335,6 +359,7 @@ def save_invoices(job_id: str, results: List[Dict]):
                 einvoice_valid,
                 einvoice_validation_message,
                 invoice.get("confidence", 0.0),
+                tenant_id_val,
             ),
         )
 

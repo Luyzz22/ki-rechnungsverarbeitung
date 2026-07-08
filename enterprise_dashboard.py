@@ -9,7 +9,8 @@ Tenant-isolierte Kennzahlen für das Dashboard:
 - Anomalie-Alerts (aktive Warnungen)
 - 30-Tage-Trend (Verarbeitungsvolumen) als einfaches SVG
 
-Tenant-Isolation: ``jobs.user_id = tenant_id``.
+Tenant-Isolation: ``COALESCE(invoices.tenant_id, jobs.user_id) = tenant_id``
+(tenant_id bevorzugt, jobs.user_id nur als Legacy-Fallback).
 """
 
 from __future__ import annotations
@@ -35,11 +36,11 @@ def _count_since(cursor, tenant_id: int, since_iso: str) -> int:
         SELECT COUNT(*)
         FROM invoices i
         LEFT JOIN jobs j ON i.job_id = j.job_id
-        WHERE (i.tenant_id = ? OR j.user_id = ?)
+        WHERE COALESCE(i.tenant_id, j.user_id) = ?
           AND COALESCE(i.deleted, 0) = 0
           AND COALESCE(CAST(i.created_at AS TEXT), CAST(j.created_at AS TEXT)) >= ?
         """,
-        (int(tenant_id), int(tenant_id), since_iso),
+        (int(tenant_id), since_iso),
     )
     return int(cursor.fetchone()[0] or 0)
 
@@ -66,10 +67,10 @@ def get_kpis(tenant_id: int) -> Dict[str, Any]:
                SUM(CASE WHEN COALESCE(i.manual_correction, 0) = 0 THEN 1 ELSE 0 END) AS automated
         FROM invoices i
         LEFT JOIN jobs j ON i.job_id = j.job_id
-        WHERE (i.tenant_id = ? OR j.user_id = ?)
+        WHERE COALESCE(i.tenant_id, j.user_id) = ?
           AND COALESCE(i.deleted, 0) = 0
         """,
-        (int(tenant_id), int(tenant_id)),
+        (int(tenant_id),),
     )
     row = cursor.fetchone()
     total = int(row[0] or 0)
@@ -136,12 +137,12 @@ def get_trend(tenant_id: int, days: int = 30) -> List[Dict[str, Any]]:
         SELECT substr(COALESCE(CAST(i.created_at AS TEXT), CAST(j.created_at AS TEXT)), 1, 10) AS day, COUNT(*) AS cnt
         FROM invoices i
         LEFT JOIN jobs j ON i.job_id = j.job_id
-        WHERE (i.tenant_id = ? OR j.user_id = ?)
+        WHERE COALESCE(i.tenant_id, j.user_id) = ?
           AND COALESCE(i.deleted, 0) = 0
           AND substr(COALESCE(CAST(i.created_at AS TEXT), CAST(j.created_at AS TEXT)), 1, 10) >= ?
         GROUP BY day
         """,
-        (int(tenant_id), int(tenant_id), since),
+        (int(tenant_id), since),
     )
     counts = {r[0]: int(r[1] or 0) for r in cursor.fetchall() if r[0]}
     conn.close()
