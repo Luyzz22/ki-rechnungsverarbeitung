@@ -9,7 +9,8 @@ Der Risiko-Score orientiert sich an den Heuristiken aus
 Betrags-Ausreißer, Rundbeträge), implementiert sie hier jedoch direkt auf dem
 SQLite-Schema der Hauptanwendung (Tabelle ``invoices`` + ``jobs``-JOIN).
 
-Tenant-Isolation: ``jobs.user_id = tenant_id``.
+Tenant-Isolation: ``COALESCE(invoices.tenant_id, jobs.user_id) = tenant_id``
+(tenant_id bevorzugt, jobs.user_id nur als Legacy-Fallback).
 """
 
 from __future__ import annotations
@@ -39,10 +40,10 @@ def _fetch_invoices(tenant_id: int) -> List[Dict[str, Any]]:
                COALESCE(CAST(i.created_at AS TEXT), CAST(j.created_at AS TEXT)) AS created_at
         FROM invoices i
         LEFT JOIN jobs j ON i.job_id = j.job_id
-        WHERE (i.tenant_id = ? OR j.user_id = ?)
+        WHERE COALESCE(i.tenant_id, j.user_id) = ?
           AND COALESCE(i.deleted, 0) = 0
         """,
-        (int(tenant_id), int(tenant_id)),
+        (int(tenant_id),),
     )
     rows = cursor.fetchall()
     conn.close()
