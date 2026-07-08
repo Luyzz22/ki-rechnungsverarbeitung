@@ -569,3 +569,33 @@ def test_datev_preview_batch_tenant_isolated(client):
     assert sb["invoice_count"] == 0
     assert sb["invoices"] == []
     assert "ISO-BATCH-1" not in [it["invoice"]["rechnungsnummer"] for it in sb["invoices"]]
+
+
+def test_datev_preview_and_export_scope_match(client):
+    """GoBD (Codex, als P1 behandelt): Batch-Vorschau UND Export müssen EXAKT
+    dieselbe Auswahlmenge nutzen. Rohzustände (neu/fehler) mit betrag_brutto
+    dürfen in KEINEM erscheinen – sonst exportiert der Nutzer Zeilen, die er nie
+    in der Vorschau gesehen hat. Prüft die Gleichheit, nicht nur > 0."""
+    tok = client.post("/api/app/register", json={
+        "email": "scopematch@test.de", "password": "Test1234", "name": "S", "company": "X"}).json()["token"]
+    # gemischte Status, ALLE mit betrag_brutto
+    _seed_invoice(client, tok, nr="SCOPE-APP", status="approved")
+    _seed_invoice(client, tok, nr="SCOPE-VER", status="verarbeitet")
+    _seed_invoice(client, tok, nr="SCOPE-NEU", status="neu")     # nicht exportierbar
+    _seed_invoice(client, tok, nr="SCOPE-ERR", status="fehler")  # nicht exportierbar
+
+    preview = client.post("/api/app/datev/preview", headers=_auth(tok), json={}).json()
+    preview_nums = {it["invoice"]["rechnungsnummer"] for it in preview["invoices"]}
+    assert preview_nums == {"SCOPE-APP", "SCOPE-VER"}, preview_nums
+    assert preview["invoice_count"] == 2
+
+    resp = client.post("/api/app/datev/export", headers=_auth(tok), json={})
+    assert resp.status_code == 200, resp.text
+    csv_text = resp.content.decode("utf-8", errors="replace")
+    seeded = ("SCOPE-APP", "SCOPE-VER", "SCOPE-NEU", "SCOPE-ERR")
+    export_nums = {n for n in seeded if n in csv_text}
+
+    # Deckungsgleich: exakt dieselbe Menge in Vorschau und Export-CSV
+    assert export_nums == preview_nums == {"SCOPE-APP", "SCOPE-VER"}
+    # Rohzustände in KEINEM von beiden
+    assert "SCOPE-NEU" not in csv_text and "SCOPE-ERR" not in csv_text

@@ -540,9 +540,25 @@ def _strict_int(v: Any) -> Optional[int]:
     return None
 
 
-# Exportierbare Rechnungsstatus für die Gesamt-/Batch-Vorschau (case-insensitive).
-# "verarbeitet" = fertig extrahiert, "approved"/"freigegeben" = nach Freigabe.
+# Exportierbare Rechnungsstatus (case-insensitive). "verarbeitet" = fertig
+# extrahiert, "approved"/"freigegeben" = nach Freigabe. Rohzustände wie "neu"
+# oder "fehler" gehören NICHT in einen DATEV-Stapel.
 _DATEV_EXPORTABLE_STATUSES = frozenset({"verarbeitet", "approved", "freigegeben"})
+
+
+def _datev_exportable(tid: int, invoice_ids: Optional[List[int]] = None) -> List[Dict[str, Any]]:
+    """Einzige Quelle der DATEV-Auswahlmenge – von Batch-Vorschau UND Export genutzt.
+
+    GoBD/Revision: Vorschau und Export MÜSSEN deckungsgleich sein (was der Nutzer
+    in der Vorschau sieht, wird exportiert – und umgekehrt). Exportierbar =
+    tenant-isoliert (``_tenant_invoices`` → COALESCE(i.tenant_id, j.user_id)),
+    nicht gelöscht, ``betrag_brutto`` gesetzt und Status ∈
+    ``_DATEV_EXPORTABLE_STATUSES``. ``invoice_ids`` schränkt zusätzlich ein."""
+    return [
+        r for r in _tenant_invoices(tid, invoice_ids)
+        if r.get("betrag_brutto") is not None
+        and str(r.get("status") or "").lower() in _DATEV_EXPORTABLE_STATUSES
+    ]
 
 
 def _datev_buchungen(converter, invoice: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -590,17 +606,12 @@ def _datev_preview(tid: int, invoice_id: int) -> Dict[str, Any]:
 def _datev_preview_batch(tid: int) -> Dict[str, Any]:
     """Gesamt-/Batch-Vorschau über ALLE exportierbaren Rechnungen des Mandanten.
 
-    Exportierbar = tenant-isoliert (``_tenant_invoices`` → COALESCE(i.tenant_id,
-    j.user_id)), nicht gelöscht, ``betrag_brutto`` gesetzt und Status
-    freigegeben/verarbeitet. Fremde Mandanten erhalten eine leere Vorschau."""
+    Nutzt dieselbe Auswahl wie der Export (``_datev_exportable``), damit Vorschau
+    und CSV deckungsgleich sind. Fremde Mandanten erhalten eine leere Vorschau."""
     from datev import InvoiceToBuchungConverter, Kontenrahmen
 
     converter = InvoiceToBuchungConverter(Kontenrahmen.SKR03)
-    rows = [
-        r for r in _tenant_invoices(tid)
-        if r.get("betrag_brutto") is not None
-        and str(r.get("status") or "").lower() in _DATEV_EXPORTABLE_STATUSES
-    ]
+    rows = _datev_exportable(tid)
     items: List[Dict[str, Any]] = []
     all_buchungen: List[Dict[str, Any]] = []
     for invoice in rows:
@@ -664,8 +675,8 @@ async def api_datev_preview_post(request: Request, invoice_id: Optional[int] = N
 async def api_datev_export(request: Request):
     """Erzeugt einen DATEV EXTF-700-Export (CSV) und protokolliert ihn (GoBD).
 
-    Body optional: { "invoice_ids": [..] } – sonst alle (nicht gelöschten)
-    Rechnungen des Mandanten.
+    Body optional: { "invoice_ids": [..] } – sonst alle exportierbaren
+    Rechnungen des Mandanten (gleiche Auswahl wie die Batch-Vorschau).
     """
     tid = _require_tenant(request)
     invoice_ids = None
@@ -675,8 +686,8 @@ async def api_datev_export(request: Request):
     except Exception:
         pass
 
-    invoices = [i for i in _tenant_invoices(tid, invoice_ids)
-                if i.get("betrag_brutto") is not None]
+    # Gleiche Auswahlmenge wie die Batch-Vorschau (GoBD: deckungsgleich).
+    invoices = _datev_exportable(tid, invoice_ids)
     if not invoices:
         raise HTTPException(status_code=404, detail="Keine exportierbaren Rechnungen gefunden")
 
