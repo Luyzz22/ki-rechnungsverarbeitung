@@ -332,10 +332,11 @@ def test_upload_rejects_too_large(client, token, monkeypatch):
 def test_datev_preview_accepts_post(client, token):
     """Regression: Frontend ruft /api/app/datev/preview per POST – darf NICHT 405
     liefern (Method-/Pfad-Mismatch). POST + GET zeigen auf dieselbe Logik."""
-    # POST ohne invoice_id → 422 (erreicht den Handler, kein 405)
+    # POST ohne invoice_id → 200 Batch-Vorschau (erreicht den Handler, kein 405/422)
     r = client.post("/api/app/datev/preview", headers=_auth(token), json={})
     assert r.status_code != 405, r.text
-    assert r.status_code == 422
+    assert r.status_code == 200, r.text
+    assert r.json().get("batch") is True
     # POST mit invoice_id (Body) auf fremde/nicht existente Rechnung → 404 (tenant-isoliert)
     r = client.post("/api/app/datev/preview", headers=_auth(token), json={"invoice_id": 999999})
     assert r.status_code == 404
@@ -504,3 +505,97 @@ def test_save_invoices_sets_tenant_id_from_job(tmp_path, monkeypatch):
         "SELECT tenant_id FROM invoices WHERE rechnungsnummer = ?", ("SAVE-2",)).fetchone()
     conn.close()
     assert row is not None and int(row[0]) == 99
+
+
+# ---------------------------------------------------------------------------
+# DATEV-Vorschau: invoice_id optional → Gesamt-/Batch-Vorschau
+# ---------------------------------------------------------------------------
+def test_datev_preview_batch_post_without_invoice_id(client, token):
+    """Regression: DATEV-Export-Seite lädt die Gesamt-Vorschau OHNE invoice_id.
+    Früher 422 (erzwungene invoice_id) → jetzt 200 Batch über alle exportierbaren
+    Rechnungen des Mandanten."""
+    inv = _seed_invoice(client, token, nr="BATCH-1", status="approved")
+    r = client.post("/api/app/datev/preview", headers=_auth(token), json={})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["batch"] is True
+    ids = [it["invoice"]["id"] for it in body["invoices"]]
+    assert inv in ids, body["invoice_count"]
+    assert body["invoice_count"] >= 1
+    # jede exportierbare Rechnung erzeugt mind. eine Buchung
+    assert body["buchungen_count"] >= 1
+    assert isinstance(body["buchungen"], list) and len(body["buchungen"]) >= 1
+
+
+def test_datev_preview_batch_get_without_invoice_id(client, token):
+    """GET-Variante ohne invoice_id liefert dieselbe Batch-Vorschau (kein 422)."""
+    _seed_invoice(client, token, nr="BATCH-GET-1", status="verarbeitet")
+    r = client.get("/api/app/datev/preview", headers=_auth(token))
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["batch"] is True
+    assert body["invoice_count"] >= 1
+    assert "BATCH-GET-1" in [it["invoice"]["rechnungsnummer"] for it in body["invoices"]]
+
+
+def test_datev_preview_single_still_works(client, token):
+    """Einzel-Vorschau bleibt unverändert: invoice_id gesetzt → genau diese Rechnung."""
+    inv = _seed_invoice(client, token, nr="SINGLE-1", status="approved")
+    # POST (Body)
+    r = client.post("/api/app/datev/preview", headers=_auth(token), json={"invoice_id": inv})
+    assert r.status_code == 200, r.text
+    assert r.json()["invoice"]["id"] == inv
+    assert "batch" not in r.json()
+    # GET (Query)
+    r = client.get(f"/api/app/datev/preview?invoice_id={inv}", headers=_auth(token))
+    assert r.status_code == 200, r.text
+    assert r.json()["invoice"]["id"] == inv
+
+
+def test_datev_preview_batch_tenant_isolated(client):
+    """Fremder Mandant ohne eigene Rechnungen → leere Batch-Vorschau (0), sieht
+    keine Rechnungen anderer Tenants."""
+    owner = client.post("/api/app/register", json={
+        "email": "batchowner@test.de", "password": "Test1234", "name": "O", "company": "X"}).json()["token"]
+    stranger = client.post("/api/app/register", json={
+        "email": "batchstranger@test.de", "password": "Test1234", "name": "S", "company": "Y"}).json()["token"]
+    _seed_invoice(client, owner, nr="ISO-BATCH-1", status="approved")
+    # Owner sieht seine Rechnung
+    ob = client.post("/api/app/datev/preview", headers=_auth(owner), json={}).json()
+    assert "ISO-BATCH-1" in [it["invoice"]["rechnungsnummer"] for it in ob["invoices"]]
+    # Fremder Tenant: leere Vorschau
+    sb = client.post("/api/app/datev/preview", headers=_auth(stranger), json={}).json()
+    assert sb["batch"] is True
+    assert sb["invoice_count"] == 0
+    assert sb["invoices"] == []
+    assert "ISO-BATCH-1" not in [it["invoice"]["rechnungsnummer"] for it in sb["invoices"]]
+
+
+def test_datev_preview_and_export_scope_match(client):
+    """GoBD (Codex, als P1 behandelt): Batch-Vorschau UND Export müssen EXAKT
+    dieselbe Auswahlmenge nutzen. Rohzustände (neu/fehler) mit betrag_brutto
+    dürfen in KEINEM erscheinen – sonst exportiert der Nutzer Zeilen, die er nie
+    in der Vorschau gesehen hat. Prüft die Gleichheit, nicht nur > 0."""
+    tok = client.post("/api/app/register", json={
+        "email": "scopematch@test.de", "password": "Test1234", "name": "S", "company": "X"}).json()["token"]
+    # gemischte Status, ALLE mit betrag_brutto
+    _seed_invoice(client, tok, nr="SCOPE-APP", status="approved")
+    _seed_invoice(client, tok, nr="SCOPE-VER", status="verarbeitet")
+    _seed_invoice(client, tok, nr="SCOPE-NEU", status="neu")     # nicht exportierbar
+    _seed_invoice(client, tok, nr="SCOPE-ERR", status="fehler")  # nicht exportierbar
+
+    preview = client.post("/api/app/datev/preview", headers=_auth(tok), json={}).json()
+    preview_nums = {it["invoice"]["rechnungsnummer"] for it in preview["invoices"]}
+    assert preview_nums == {"SCOPE-APP", "SCOPE-VER"}, preview_nums
+    assert preview["invoice_count"] == 2
+
+    resp = client.post("/api/app/datev/export", headers=_auth(tok), json={})
+    assert resp.status_code == 200, resp.text
+    csv_text = resp.content.decode("utf-8", errors="replace")
+    seeded = ("SCOPE-APP", "SCOPE-VER", "SCOPE-NEU", "SCOPE-ERR")
+    export_nums = {n for n in seeded if n in csv_text}
+
+    # Deckungsgleich: exakt dieselbe Menge in Vorschau und Export-CSV
+    assert export_nums == preview_nums == {"SCOPE-APP", "SCOPE-VER"}
+    # Rohzustände in KEINEM von beiden
+    assert "SCOPE-NEU" not in csv_text and "SCOPE-ERR" not in csv_text
