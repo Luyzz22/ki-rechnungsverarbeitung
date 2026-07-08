@@ -36,10 +36,9 @@ def _fetch_invoices(tenant_id: int) -> List[Dict[str, Any]]:
                COALESCE(NULLIF(TRIM(i.rechnungsaussteller), ''), 'Unbekannt') AS supplier,
                COALESCE(i.betrag_brutto, 0)            AS amount,
                i.datum                                  AS invoice_date,
-               COALESCE(CAST(i.created_at AS TEXT), CAST(j.created_at AS TEXT)) AS created_at
+               CAST(i.created_at AS TEXT)               AS created_at
         FROM invoices i
-        JOIN jobs j ON i.job_id = j.job_id
-        WHERE j.user_id = ?
+        WHERE i.tenant_id = ?
           AND COALESCE(i.deleted, 0) = 0
         """,
         (int(tenant_id),),
