@@ -387,3 +387,30 @@ def test_invoices_visible_without_job_and_tenant_isolated(client):
     # Tenant B sieht sie NICHT (Isolation über i.tenant_id)
     b = client.get("/api/app/invoices?limit=500", headers=_auth(tb)).json()
     assert "ORPH-A" not in [i["rechnungsnummer"] for i in b["items"]]
+
+
+def test_invoices_classic_flow_visible_via_job_user_id(client):
+    """Regression (Codex P1): der klassische Upload-Flow schreibt invoices OHNE
+    tenant_id (Zuordnung nur über jobs.user_id). Diese müssen sichtbar bleiben
+    (LEFT JOIN + tenant-sicherer Fallback), aber tenant-isoliert."""
+    import database
+    ta = client.post("/api/app/register", json={
+        "email": "clsa@test.de", "password": "Test1234", "name": "A", "company": "X"}).json()["token"]
+    tb = client.post("/api/app/register", json={
+        "email": "clsb@test.de", "password": "Test1234", "name": "B", "company": "Y"}).json()["token"]
+    tid_a = _tenant_id(client, ta)
+    conn = database.get_connection(); cur = conn.cursor()
+    cur.execute("INSERT OR IGNORE INTO jobs (job_id, user_id, created_at) VALUES (?,?,?)",
+                ("classic-job-1", tid_a, "2026-02-01T00:00:00"))
+    # tenant_id NICHT gesetzt → Zuordnung nur über den Job
+    cur.execute(
+        """INSERT INTO invoices (job_id, rechnungsnummer, datum, rechnungsaussteller,
+           betrag_brutto, betrag_netto, mwst_betrag, waehrung, status)
+           VALUES (?,?,?,?,?,?,?,?,?)""",
+        ("classic-job-1", "CLASSIC-1", "2026-02-15", "Klassik GmbH", 60.0, 50.4, 9.6, "EUR", "verarbeitet"))
+    conn.commit(); conn.close()
+    a = client.get("/api/app/invoices?limit=500", headers=_auth(ta)).json()
+    assert "CLASSIC-1" in [i["rechnungsnummer"] for i in a["items"]], a["total"]
+    # Isolation: Tenant B sieht sie nicht
+    b = client.get("/api/app/invoices?limit=500", headers=_auth(tb)).json()
+    assert "CLASSIC-1" not in [i["rechnungsnummer"] for i in b["items"]]

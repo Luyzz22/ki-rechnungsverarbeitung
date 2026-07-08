@@ -220,8 +220,12 @@ async def api_invoices(request: Request, status: str = "", q: str = "",
     limit = max(1, min(int(limit), 200))
     offset = max(0, int(offset))
 
-    where = ["i.tenant_id = ?", "COALESCE(i.deleted, 0) = 0"]
-    params: list[Any] = [tid]
+    # Tenant-Zuordnung: bevorzugt direkt über i.tenant_id (neuer Flow / die 17),
+    # als Fallback über jobs.user_id (klassischer Upload-Flow schreibt invoices
+    # ohne tenant_id). LEFT JOIN, damit Rechnungen OHNE jobs-Zeile nicht verloren
+    # gehen (der frühere INNER JOIN lieferte 0). Isolation: beide Bedingungen auf tid.
+    where = ["(i.tenant_id = ? OR j.user_id = ?)", "COALESCE(i.deleted, 0) = 0"]
+    params: list[Any] = [tid, tid]
     if status:
         where.append("i.status = ?")
         params.append(status)
@@ -233,15 +237,15 @@ async def api_invoices(request: Request, status: str = "", q: str = "",
     conn = get_connection()
     conn.row_factory = lambda c, r: {col[0]: r[i] for i, col in enumerate(c.description)}
     cur = conn.cursor()
-    cur.execute(f"SELECT COUNT(*) AS n FROM invoices i WHERE {where_sql}", params)
+    cur.execute(f"SELECT COUNT(*) AS n FROM invoices i LEFT JOIN jobs j ON i.job_id = j.job_id WHERE {where_sql}", params)
     total = cur.fetchone()["n"]
     cur.execute(
         f"""
         SELECT i.id, i.rechnungsnummer, i.datum, i.rechnungsaussteller,
                i.betrag_brutto, i.betrag_netto, i.mwst_betrag, i.waehrung,
                COALESCE(i.status, 'neu') AS status,
-               CAST(i.created_at AS TEXT) AS created_at
-        FROM invoices i
+               COALESCE(CAST(i.created_at AS TEXT), CAST(j.created_at AS TEXT)) AS created_at
+        FROM invoices i LEFT JOIN jobs j ON i.job_id = j.job_id
         WHERE {where_sql}
         ORDER BY created_at DESC, i.id DESC
         LIMIT ? OFFSET ?
@@ -261,10 +265,10 @@ async def api_invoice_detail(request: Request, invoice_id: int):
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT i.* FROM invoices i
-        WHERE i.id = ? AND i.tenant_id = ?
+        SELECT i.* FROM invoices i LEFT JOIN jobs j ON i.job_id = j.job_id
+        WHERE i.id = ? AND (i.tenant_id = ? OR j.user_id = ?)
         """,
-        (invoice_id, tid),
+        (invoice_id, tid, tid),
     )
     row = cur.fetchone()
     conn.close()
@@ -288,11 +292,11 @@ async def api_invoice_pdf(request: Request, invoice_id: int):
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT i.job_id, i.datei_pfad
-        FROM invoices i
-        WHERE i.id = ? AND i.tenant_id = ?
+        SELECT i.job_id, i.datei_pfad, j.upload_path
+        FROM invoices i LEFT JOIN jobs j ON i.job_id = j.job_id
+        WHERE i.id = ? AND (i.tenant_id = ? OR j.user_id = ?)
         """,
-        (invoice_id, tid),
+        (invoice_id, tid, tid),
     )
     row = cur.fetchone()
     conn.close()
@@ -503,10 +507,10 @@ def _tenant_invoices(tid: int, invoice_ids: Optional[List[int]] = None) -> List[
     conn.row_factory = lambda c, r: {col[0]: r[i] for i, col in enumerate(c.description)}
     cur = conn.cursor()
     sql = (
-        "SELECT i.* FROM invoices i "
-        "WHERE i.tenant_id = ? AND COALESCE(i.deleted, 0) = 0"
+        "SELECT i.* FROM invoices i LEFT JOIN jobs j ON i.job_id = j.job_id "
+        "WHERE (i.tenant_id = ? OR j.user_id = ?) AND COALESCE(i.deleted, 0) = 0"
     )
-    params: List[Any] = [int(tid)]
+    params: List[Any] = [int(tid), int(tid)]
     if invoice_ids:
         placeholders = ",".join("?" for _ in invoice_ids)
         sql += f" AND i.id IN ({placeholders})"
