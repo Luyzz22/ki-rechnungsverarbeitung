@@ -212,8 +212,9 @@ Antworte NUR mit JSON:
 }"""
 
     try:
+        from invoice_extraction import get_anthropic_extraction_model
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=get_anthropic_extraction_model(),
             max_tokens=500,
             messages=[{"role": "user", "content": prompt}]
         )

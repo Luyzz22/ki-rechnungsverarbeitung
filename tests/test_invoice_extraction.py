@@ -110,3 +110,113 @@ def test_process_pdf_empty_text(monkeypatch):
     monkeypatch.setattr(ie, "_ocr_pdf", lambda p: "")
     res = ie.process_pdf(path)
     assert res["status"] == "manuell_erforderlich"
+
+
+# --- Zentrale Modell-Konfiguration (env-überschreibbar) -------------------
+def test_default_anthropic_model_is_sonnet_4_6(monkeypatch):
+    monkeypatch.delenv("EXTRACTION_MODEL_ANTHROPIC", raising=False)
+    assert ie.get_anthropic_extraction_model() == "claude-sonnet-4-6"
+    assert ie.DEFAULT_ANTHROPIC_MODEL == "claude-sonnet-4-6"
+
+
+def test_anthropic_model_env_override(monkeypatch):
+    monkeypatch.setenv("EXTRACTION_MODEL_ANTHROPIC", "claude-test-xyz")
+    assert ie.get_anthropic_extraction_model() == "claude-test-xyz"
+
+
+def test_category_ai_uses_central_model(monkeypatch):
+    """category_ai muss dasselbe zentrale Modell wie die Extraktion nutzen –
+    nicht mehr hartkodiert (früher claude-sonnet-4-20250514)."""
+    import category_ai
+    captured = {}
+
+    class _FakeMessages:
+        def create(self, **kw):
+            captured["model"] = kw["model"]
+
+            class _Content:
+                text = '{"category_id": 5, "confidence": 0.9, "reasoning": "ok"}'
+
+            class _Resp:
+                content = [_Content()]
+
+            return _Resp()
+
+    class _FakeAnthropic:
+        def __init__(self, **kw):
+            self.messages = _FakeMessages()
+
+    monkeypatch.setattr(category_ai, "Anthropic", _FakeAnthropic)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.setenv("EXTRACTION_MODEL_ANTHROPIC", "claude-sonnet-4-6")
+    monkeypatch.setattr(category_ai, "get_learned_category", lambda s, u: None)
+    monkeypatch.setattr(category_ai, "get_all_categories", lambda uid: [
+        {"id": 5, "name": "Lebensmittel", "description": "x", "account_number": "4400"}])
+
+    cid, conf, reason = category_ai.predict_category({"rechnungsaussteller": "EDEKA"}, user_id=1)
+    assert captured["model"] == "claude-sonnet-4-6"
+    assert cid == 5 and conf == 0.9
+
+
+# --- Provider-4xx/5xx landen in der Fehler-Zeile --------------------------
+class _FakeResponse:
+    def __init__(self, status, text):
+        self.status_code = status
+        self.text = text
+
+
+class _FakeStatusError(Exception):
+    """Nachbildung von anthropic/openai APIStatusError (status_code + response)."""
+
+    def __init__(self, status, text):
+        self.status_code = status
+        self.response = _FakeResponse(status, text)
+        self.message = text
+        super().__init__(text)
+
+
+def test_as_provider_error_extracts_status_and_text():
+    err = ie._as_provider_error(_FakeStatusError(404, "not_found_error: model unknown"))
+    assert isinstance(err, ie.LLMProviderError)
+    assert err.status_code == 404
+    assert "not_found_error" in err.detail
+
+
+def test_as_provider_error_ignores_non_status():
+    # Timeout/Netzwerkfehler ohne HTTP-Status → kein Provider-Statusfehler
+    assert ie._as_provider_error(RuntimeError("timeout")) is None
+
+
+def test_process_pdf_provider_4xx_in_error_line(monkeypatch):
+    path = _write_pdf("Rechnung\nAcme GmbH\n119,00 EUR")
+
+    def _raise(text):
+        raise ie.LLMProviderError(404, "not_found_error: model claude-x")
+
+    monkeypatch.setattr(ie, "_call_llm", _raise)
+    res = ie.process_pdf(path)
+    assert res["status"] == "fehler"
+    assert "404" in (res["error"] or "")
+    assert "not_found_error" in (res["error"] or "")
+
+
+def test_call_llm_wraps_anthropic_status_error(monkeypatch):
+    """Ungültiges Modell → Anthropic wirft 404; _call_llm übersetzt es in einen
+    LLMProviderError mit Statuscode + Text (statt es nur ins httpx-Log zu geben)."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    class _FakeMessages:
+        def create(self, **kw):
+            raise _FakeStatusError(404, f"model {kw.get('model')} not found")
+
+    class _FakeAnthropic:
+        def __init__(self, **kw):
+            self.messages = _FakeMessages()
+
+    import anthropic
+    monkeypatch.setattr(anthropic, "Anthropic", _FakeAnthropic)
+    with pytest.raises(ie.LLMProviderError) as exc_info:
+        ie._call_llm("irgendein Rechnungstext")
+    assert exc_info.value.status_code == 404
+    assert "not found" in exc_info.value.detail
