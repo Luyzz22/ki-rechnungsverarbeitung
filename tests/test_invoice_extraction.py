@@ -46,6 +46,60 @@ def test_normalize_german_numbers():
     assert f["waehrung"] == "EUR"
 
 
+# --- Betrags-Vervollständigung -------------------------------------------
+def test_complete_amounts_netto_plus_satz():
+    """id=31: netto 288,94 + 19 % → brutto 343,84, mwst_betrag 54,90; §14-Check grün."""
+    f = ie.normalize_fields({"betrag_netto": "288,94", "mwst_satz": "19"})
+    assert f["mwst_betrag"] == 54.90
+    assert f["betrag_brutto"] == 343.84
+    # §14-Betragscheck (netto + mwst ≈ brutto) muss grün sein
+    v = ie.run_validation(f)
+    summe = next(c for c in v["checks"] if c["name"] == "betrag_summe")
+    assert summe["ok"] is True
+
+
+def test_complete_amounts_netto_plus_mwstbetrag():
+    f = ie.normalize_fields({"betrag_netto": 100.0, "mwst_betrag": 19.0})
+    assert f["betrag_brutto"] == 119.0
+
+
+def test_complete_amounts_brutto_plus_satz():
+    f = ie.normalize_fields({"betrag_brutto": 343.84, "mwst_satz": 19.0})
+    assert f["betrag_netto"] == 288.94
+    assert f["mwst_betrag"] == 54.90
+
+
+def test_complete_amounts_brutto_plus_netto():
+    f = ie.normalize_fields({"betrag_brutto": 119.0, "betrag_netto": 100.0})
+    assert f["mwst_betrag"] == 19.0
+
+
+def test_complete_amounts_full_never_overwrites():
+    """GoBD: extrahierte Originalwerte haben Vorrang – auch wenn (absichtlich)
+    inkonsistent, wird nichts überschrieben."""
+    f = ie.normalize_fields({"betrag_netto": 100.0, "mwst_satz": 19.0,
+                             "mwst_betrag": 99.0, "betrag_brutto": 199.0})
+    assert f["mwst_betrag"] == 99.0      # NICHT 19.0
+    assert f["betrag_brutto"] == 199.0   # NICHT 119.0
+
+
+@pytest.mark.parametrize("raw", [
+    {"betrag_brutto": 119.0},   # nur brutto, kein satz/netto → nichts ableitbar
+    {"betrag_netto": 100.0},    # nur netto, kein satz/mwst → nichts ableitbar
+])
+def test_complete_amounts_insufficient_data_no_derivation(raw):
+    f = ie.normalize_fields(raw)
+    present = [k for k in ("betrag_brutto", "betrag_netto", "mwst_betrag") if f[k] is not None]
+    assert present == list(raw.keys())  # keine erfundenen Werte
+
+
+def test_complete_amounts_zero_rate_steuerfrei():
+    """0 % (steuerfrei) ist gültig: mwst_betrag = 0, brutto = netto."""
+    f = ie.normalize_fields({"betrag_netto": 100.0, "mwst_satz": 0})
+    assert f["mwst_betrag"] == 0.0
+    assert f["betrag_brutto"] == 100.0
+
+
 # --- Schritt 4: Validierung ----------------------------------------------
 def test_validation_full_ok():
     v = ie.run_validation({

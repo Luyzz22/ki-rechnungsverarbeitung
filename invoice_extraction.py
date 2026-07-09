@@ -226,11 +226,58 @@ def _to_float(value: Any) -> Optional[float]:
         return None
 
 
+def _complete_amounts(fields: Dict[str, Any]) -> None:
+    """Ergänzt fehlende Beträge (brutto/netto/mwst_betrag) aus den vorhandenen.
+
+    GoBD: berechnete Werte werden NUR gesetzt, wenn das Zielfeld leer ist und der
+    Wert eindeutig aus extrahierten Feldern folgt – extrahierte Originalwerte
+    haben immer Vorrang und werden nie überschrieben. Alle berechneten Werte auf
+    2 Dezimalstellen gerundet. Kombinationen:
+
+      netto + satz        → mwst_betrag = netto·satz/100, brutto = netto+mwst
+      netto + mwst_betrag → brutto = netto+mwst
+      brutto + satz       → netto = brutto/(1+satz/100), mwst_betrag = brutto−netto
+      brutto + netto      → mwst_betrag = brutto−netto
+    """
+    def val(key: str) -> Optional[float]:
+        v = fields.get(key)
+        return float(v) if isinstance(v, (int, float)) else None
+
+    satz = val("mwst_satz")
+    has_satz = satz is not None and satz >= 0  # 0 % (steuerfrei) ist gültig
+
+    # netto + satz → mwst_betrag, brutto
+    if val("betrag_netto") is not None and has_satz:
+        if val("mwst_betrag") is None:
+            fields["mwst_betrag"] = round(val("betrag_netto") * satz / 100, 2)
+        if val("betrag_brutto") is None and val("mwst_betrag") is not None:
+            fields["betrag_brutto"] = round(val("betrag_netto") + val("mwst_betrag"), 2)
+
+    # brutto + satz → netto, mwst_betrag
+    if val("betrag_brutto") is not None and has_satz:
+        if val("betrag_netto") is None:
+            fields["betrag_netto"] = round(val("betrag_brutto") / (1 + satz / 100), 2)
+        if val("mwst_betrag") is None and val("betrag_netto") is not None:
+            fields["mwst_betrag"] = round(val("betrag_brutto") - val("betrag_netto"), 2)
+
+    # netto + mwst_betrag → brutto
+    if (val("betrag_netto") is not None and val("mwst_betrag") is not None
+            and val("betrag_brutto") is None):
+        fields["betrag_brutto"] = round(val("betrag_netto") + val("mwst_betrag"), 2)
+
+    # brutto + netto → mwst_betrag
+    if (val("betrag_brutto") is not None and val("betrag_netto") is not None
+            and val("mwst_betrag") is None):
+        fields["mwst_betrag"] = round(val("betrag_brutto") - val("betrag_netto"), 2)
+
+
 def normalize_fields(raw: Dict[str, Any]) -> Dict[str, Any]:
     """Bringt LLM-Felder in DB-Form (nur bekannte Felder, Beträge als float)."""
     out: Dict[str, Any] = {f: raw.get(f) for f in FIELDS}
     for num in ("betrag_brutto", "betrag_netto", "mwst_betrag", "mwst_satz"):
         out[num] = _to_float(out.get(num))
+    # Fehlende Beträge aus den vorhandenen ableiten (ohne Überschreiben).
+    _complete_amounts(out)
     if isinstance(out.get("artikel"), (list, dict)):
         out["artikel"] = json.dumps(out["artikel"], ensure_ascii=False)
     if not out.get("waehrung"):
