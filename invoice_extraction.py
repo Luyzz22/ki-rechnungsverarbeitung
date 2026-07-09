@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import re
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -226,11 +227,73 @@ def _to_float(value: Any) -> Optional[float]:
         return None
 
 
+_CENT = Decimal("0.01")
+
+
+def _money(value: Decimal) -> float:
+    """Kaufmännische Rundung auf 2 Dezimalstellen (ROUND_HALF_UP), als float.
+
+    Beträge werden durchgängig in ``Decimal`` gerechnet – Pythons Float-``round``
+    nutzt Banker's Rounding auf Binärbrüchen und würde z. B. 0,475 € auf 0,47 €
+    statt (kaufmännisch korrekt) 0,48 € runden."""
+    return float(value.quantize(_CENT, rounding=ROUND_HALF_UP))
+
+
+def _complete_amounts(fields: Dict[str, Any]) -> None:
+    """Ergänzt fehlende Beträge (brutto/netto/mwst_betrag) aus den vorhandenen.
+
+    GoBD: berechnete Werte werden NUR gesetzt, wenn das Zielfeld leer ist und der
+    Wert eindeutig aus extrahierten Feldern folgt – extrahierte Originalwerte
+    haben immer Vorrang und werden nie überschrieben. Berechnung in ``Decimal``
+    mit kaufmännischer Cent-Rundung (ROUND_HALF_UP). Kombinationen:
+
+      netto + satz        → mwst_betrag = netto·satz/100, brutto = netto+mwst
+      netto + mwst_betrag → brutto = netto+mwst
+      brutto + satz       → netto = brutto/(1+satz/100), mwst_betrag = brutto−netto
+      brutto + netto      → mwst_betrag = brutto−netto
+    """
+    def dec(key: str) -> Optional[Decimal]:
+        v = fields.get(key)
+        return Decimal(str(v)) if isinstance(v, (int, float)) else None
+
+    def empty(key: str) -> bool:
+        return fields.get(key) is None
+
+    satz = dec("mwst_satz")
+    has_satz = satz is not None and satz >= 0  # 0 % (steuerfrei) ist gültig
+
+    # netto + satz → mwst_betrag, brutto
+    if dec("betrag_netto") is not None and has_satz:
+        if empty("mwst_betrag"):
+            fields["mwst_betrag"] = _money(dec("betrag_netto") * satz / Decimal(100))
+        if empty("betrag_brutto") and dec("mwst_betrag") is not None:
+            fields["betrag_brutto"] = _money(dec("betrag_netto") + dec("mwst_betrag"))
+
+    # brutto + satz → netto, mwst_betrag
+    if dec("betrag_brutto") is not None and has_satz:
+        if empty("betrag_netto"):
+            fields["betrag_netto"] = _money(dec("betrag_brutto") / (Decimal(1) + satz / Decimal(100)))
+        if empty("mwst_betrag") and dec("betrag_netto") is not None:
+            fields["mwst_betrag"] = _money(dec("betrag_brutto") - dec("betrag_netto"))
+
+    # netto + mwst_betrag → brutto
+    if (dec("betrag_netto") is not None and dec("mwst_betrag") is not None
+            and empty("betrag_brutto")):
+        fields["betrag_brutto"] = _money(dec("betrag_netto") + dec("mwst_betrag"))
+
+    # brutto + netto → mwst_betrag
+    if (dec("betrag_brutto") is not None and dec("betrag_netto") is not None
+            and empty("mwst_betrag")):
+        fields["mwst_betrag"] = _money(dec("betrag_brutto") - dec("betrag_netto"))
+
+
 def normalize_fields(raw: Dict[str, Any]) -> Dict[str, Any]:
     """Bringt LLM-Felder in DB-Form (nur bekannte Felder, Beträge als float)."""
     out: Dict[str, Any] = {f: raw.get(f) for f in FIELDS}
     for num in ("betrag_brutto", "betrag_netto", "mwst_betrag", "mwst_satz"):
         out[num] = _to_float(out.get(num))
+    # Fehlende Beträge aus den vorhandenen ableiten (ohne Überschreiben).
+    _complete_amounts(out)
     if isinstance(out.get("artikel"), (list, dict)):
         out["artikel"] = json.dumps(out["artikel"], ensure_ascii=False)
     if not out.get("waehrung"):
