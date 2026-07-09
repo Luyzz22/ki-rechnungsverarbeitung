@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple
 from anthropic import Anthropic
 import os
 from database import get_all_categories, get_learned_category, save_category_learning
+from invoice_extraction import get_anthropic_extraction_model
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ Antworte NUR mit diesem JSON-Format (kein Markdown, keine Backticks):
 
         client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=get_anthropic_extraction_model(),
             max_tokens=500,
             messages=[{"role": "user", "content": prompt}]
         )

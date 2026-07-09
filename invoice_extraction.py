@@ -27,6 +27,23 @@ logger = logging.getLogger(__name__)
 
 LLM_TIMEOUT = int(os.getenv("EXTRACTION_LLM_TIMEOUT", "30"))
 
+# Zentrales Anthropic-Modell für ALLE Extraktions-/KI-Aufrufe (Rechnungs-
+# extraktion UND Auto-Kategorisierung). Über EXTRACTION_MODEL_ANTHROPIC
+# konfigurierbar, damit ein Modell-Rename nicht in mehreren Dateien nachgezogen
+# werden muss.
+DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6"
+DEFAULT_OPENAI_MODEL = "gpt-4o"
+
+
+def get_anthropic_extraction_model() -> str:
+    """Anthropic-Modell für Extraktions-/KI-Aufrufe (Env: EXTRACTION_MODEL_ANTHROPIC)."""
+    return os.getenv("EXTRACTION_MODEL_ANTHROPIC", DEFAULT_ANTHROPIC_MODEL)
+
+
+def get_openai_extraction_model() -> str:
+    """OpenAI-Modell für Extraktions-Aufrufe (Env: EXTRACTION_MODEL_OPENAI)."""
+    return os.getenv("EXTRACTION_MODEL_OPENAI", DEFAULT_OPENAI_MODEL)
+
 # Zielfelder der Extraktion
 FIELDS = [
     "rechnungsaussteller", "rechnungsaussteller_adresse", "rechnungsempfaenger",
@@ -51,6 +68,39 @@ _EXTRACTION_PROMPT = (
 
 class NoLLMConfigured(RuntimeError):
     """Kein ANTHROPIC_API_KEY/OPENAI_API_KEY konfiguriert."""
+
+
+class LLMProviderError(RuntimeError):
+    """Der LLM-Provider hat mit einem 4xx/5xx-Status geantwortet.
+
+    Trägt Statuscode + Antworttext, damit beides in der Fehler-Zeile der
+    Rechnung landet (nicht nur im httpx-Log)."""
+
+    def __init__(self, status_code: Optional[int], detail: str):
+        self.status_code = status_code
+        self.detail = detail
+        super().__init__(f"Provider-Fehler {status_code}: {detail}")
+
+
+def _as_provider_error(exc: Exception) -> Optional["LLMProviderError"]:
+    """Erkennt Provider-Statusfehler (Anthropic/OpenAI ``APIStatusError`` u. ä.)
+    und extrahiert Statuscode + Antworttext. Gibt ``None`` zurück, wenn ``exc``
+    kein HTTP-Statusfehler ist (z. B. Timeout/Netzwerk)."""
+    status = getattr(exc, "status_code", None)
+    response = getattr(exc, "response", None)
+    if status is None and response is not None:
+        status = getattr(response, "status_code", None)
+    if status is None:
+        return None
+    detail = ""
+    if response is not None:
+        try:
+            detail = (response.text or "").strip()
+        except Exception:  # pragma: no cover - defensive
+            detail = ""
+    if not detail:
+        detail = str(getattr(exc, "message", "") or exc).strip()
+    return LLMProviderError(int(status), detail[:500])
 
 
 # ---------------------------------------------------------------------------
@@ -121,23 +171,39 @@ def _call_llm(text: str) -> Dict[str, Any]:
         from anthropic import Anthropic
 
         client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"), timeout=LLM_TIMEOUT)
-        model = os.getenv("EXTRACTION_MODEL_ANTHROPIC", "claude-3-5-sonnet-latest")
-        msg = client.messages.create(
-            model=model, max_tokens=2000,
-            messages=[{"role": "user", "content": prompt}],
-        )
+        model = get_anthropic_extraction_model()
+        try:
+            msg = client.messages.create(
+                model=model, max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}],
+            )
+        except Exception as exc:
+            provider_err = _as_provider_error(exc)
+            if provider_err is not None:
+                logger.warning("Anthropic %s (Modell %s): %s",
+                               provider_err.status_code, model, provider_err.detail)
+                raise provider_err from exc
+            raise
         return _parse_json(msg.content[0].text)
 
     if os.getenv("OPENAI_API_KEY"):
         from openai import OpenAI
 
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), timeout=LLM_TIMEOUT)
-        model = os.getenv("EXTRACTION_MODEL_OPENAI", "gpt-4o")
-        resp = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
-        )
+        model = get_openai_extraction_model()
+        try:
+            resp = client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+            )
+        except Exception as exc:
+            provider_err = _as_provider_error(exc)
+            if provider_err is not None:
+                logger.warning("OpenAI %s (Modell %s): %s",
+                               provider_err.status_code, model, provider_err.detail)
+                raise provider_err from exc
+            raise
         return _parse_json(resp.choices[0].message.content)
 
     raise NoLLMConfigured("Kein ANTHROPIC_API_KEY/OPENAI_API_KEY konfiguriert")
@@ -272,6 +338,10 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
         fields = normalize_fields(raw)
     except NoLLMConfigured as exc:
         result["error"] = str(exc)
+        return result
+    except LLMProviderError as exc:
+        # Provider-4xx/5xx: Statuscode + Antworttext in die Fehler-Zeile.
+        result["error"] = f"KI-Provider HTTP {exc.status_code}: {exc.detail}"
         return result
     except Exception as exc:
         result["error"] = f"KI-Extraktion fehlgeschlagen: {exc}"
