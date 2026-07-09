@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import re
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -226,49 +227,64 @@ def _to_float(value: Any) -> Optional[float]:
         return None
 
 
+_CENT = Decimal("0.01")
+
+
+def _money(value: Decimal) -> float:
+    """Kaufmännische Rundung auf 2 Dezimalstellen (ROUND_HALF_UP), als float.
+
+    Beträge werden durchgängig in ``Decimal`` gerechnet – Pythons Float-``round``
+    nutzt Banker's Rounding auf Binärbrüchen und würde z. B. 0,475 € auf 0,47 €
+    statt (kaufmännisch korrekt) 0,48 € runden."""
+    return float(value.quantize(_CENT, rounding=ROUND_HALF_UP))
+
+
 def _complete_amounts(fields: Dict[str, Any]) -> None:
     """Ergänzt fehlende Beträge (brutto/netto/mwst_betrag) aus den vorhandenen.
 
     GoBD: berechnete Werte werden NUR gesetzt, wenn das Zielfeld leer ist und der
     Wert eindeutig aus extrahierten Feldern folgt – extrahierte Originalwerte
-    haben immer Vorrang und werden nie überschrieben. Alle berechneten Werte auf
-    2 Dezimalstellen gerundet. Kombinationen:
+    haben immer Vorrang und werden nie überschrieben. Berechnung in ``Decimal``
+    mit kaufmännischer Cent-Rundung (ROUND_HALF_UP). Kombinationen:
 
       netto + satz        → mwst_betrag = netto·satz/100, brutto = netto+mwst
       netto + mwst_betrag → brutto = netto+mwst
       brutto + satz       → netto = brutto/(1+satz/100), mwst_betrag = brutto−netto
       brutto + netto      → mwst_betrag = brutto−netto
     """
-    def val(key: str) -> Optional[float]:
+    def dec(key: str) -> Optional[Decimal]:
         v = fields.get(key)
-        return float(v) if isinstance(v, (int, float)) else None
+        return Decimal(str(v)) if isinstance(v, (int, float)) else None
 
-    satz = val("mwst_satz")
+    def empty(key: str) -> bool:
+        return fields.get(key) is None
+
+    satz = dec("mwst_satz")
     has_satz = satz is not None and satz >= 0  # 0 % (steuerfrei) ist gültig
 
     # netto + satz → mwst_betrag, brutto
-    if val("betrag_netto") is not None and has_satz:
-        if val("mwst_betrag") is None:
-            fields["mwst_betrag"] = round(val("betrag_netto") * satz / 100, 2)
-        if val("betrag_brutto") is None and val("mwst_betrag") is not None:
-            fields["betrag_brutto"] = round(val("betrag_netto") + val("mwst_betrag"), 2)
+    if dec("betrag_netto") is not None and has_satz:
+        if empty("mwst_betrag"):
+            fields["mwst_betrag"] = _money(dec("betrag_netto") * satz / Decimal(100))
+        if empty("betrag_brutto") and dec("mwst_betrag") is not None:
+            fields["betrag_brutto"] = _money(dec("betrag_netto") + dec("mwst_betrag"))
 
     # brutto + satz → netto, mwst_betrag
-    if val("betrag_brutto") is not None and has_satz:
-        if val("betrag_netto") is None:
-            fields["betrag_netto"] = round(val("betrag_brutto") / (1 + satz / 100), 2)
-        if val("mwst_betrag") is None and val("betrag_netto") is not None:
-            fields["mwst_betrag"] = round(val("betrag_brutto") - val("betrag_netto"), 2)
+    if dec("betrag_brutto") is not None and has_satz:
+        if empty("betrag_netto"):
+            fields["betrag_netto"] = _money(dec("betrag_brutto") / (Decimal(1) + satz / Decimal(100)))
+        if empty("mwst_betrag") and dec("betrag_netto") is not None:
+            fields["mwst_betrag"] = _money(dec("betrag_brutto") - dec("betrag_netto"))
 
     # netto + mwst_betrag → brutto
-    if (val("betrag_netto") is not None and val("mwst_betrag") is not None
-            and val("betrag_brutto") is None):
-        fields["betrag_brutto"] = round(val("betrag_netto") + val("mwst_betrag"), 2)
+    if (dec("betrag_netto") is not None and dec("mwst_betrag") is not None
+            and empty("betrag_brutto")):
+        fields["betrag_brutto"] = _money(dec("betrag_netto") + dec("mwst_betrag"))
 
     # brutto + netto → mwst_betrag
-    if (val("betrag_brutto") is not None and val("betrag_netto") is not None
-            and val("mwst_betrag") is None):
-        fields["mwst_betrag"] = round(val("betrag_brutto") - val("betrag_netto"), 2)
+    if (dec("betrag_brutto") is not None and dec("betrag_netto") is not None
+            and empty("mwst_betrag")):
+        fields["mwst_betrag"] = _money(dec("betrag_brutto") - dec("betrag_netto"))
 
 
 def normalize_fields(raw: Dict[str, Any]) -> Dict[str, Any]:

@@ -100,6 +100,17 @@ def test_complete_amounts_zero_rate_steuerfrei():
     assert f["betrag_brutto"] == 100.0
 
 
+def test_complete_amounts_half_cent_rounds_up_commercially():
+    """Halb-Cent-Fall (Codex P2): netto 2,50 · 19 % = 0,475 → kaufmännisch 0,48
+    (nicht Banker's-Rounding 0,47). Decimal/ROUND_HALF_UP statt float-round."""
+    f = ie.normalize_fields({"betrag_netto": 2.50, "mwst_satz": 19})
+    assert f["mwst_betrag"] == 0.48
+    assert f["betrag_brutto"] == 2.98
+    v = ie.run_validation(f)
+    summe = next(c for c in v["checks"] if c["name"] == "betrag_summe")
+    assert summe["ok"] is True
+
+
 # --- Schritt 4: Validierung ----------------------------------------------
 def test_validation_full_ok():
     v = ie.run_validation({
