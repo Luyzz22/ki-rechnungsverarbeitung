@@ -81,6 +81,17 @@ class NoLLMConfigured(RuntimeError):
     """Kein ANTHROPIC_API_KEY/OPENAI_API_KEY konfiguriert."""
 
 
+class LLMResponseUnparseable(RuntimeError):
+    """Die Modell-Antwort war kein gültiges JSON.
+
+    Trägt die Roh-Antwort (``raw``), damit sie – gerade im Fehlerfall (truncated/
+    malformed) – im Diagnose-Feld landet und der Fall nicht „blind" bleibt."""
+
+    def __init__(self, raw: str):
+        self.raw = raw
+        super().__init__("LLM-Antwort ist kein gültiges JSON")
+
+
 class LLMProviderError(RuntimeError):
     """Der LLM-Provider hat mit einem 4xx/5xx-Status geantwortet.
 
@@ -187,7 +198,12 @@ def _call_llm(text: str) -> Dict[str, Any]:
     prompt = f"{_EXTRACTION_PROMPT}\n\nRechnungstext:\n{body}"
 
     def _finish(raw_text: str) -> Dict[str, Any]:
-        parsed = _parse_json(raw_text)
+        try:
+            parsed = _parse_json(raw_text)
+        except Exception as exc:
+            # Roh-Antwort NICHT verlieren – sie ist genau im Parse-Fehlerfall
+            # für die Diagnose entscheidend.
+            raise LLMResponseUnparseable(raw_text) from exc
         if isinstance(parsed, dict):
             parsed.setdefault("__raw__", raw_text)
         return parsed
@@ -445,6 +461,12 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
     except LLMProviderError as exc:
         # Provider-4xx/5xx: Statuscode + Antworttext in die Fehler-Zeile.
         result["error"] = f"KI-Provider HTTP {exc.status_code}: {exc.detail}"
+        return result
+    except LLMResponseUnparseable as exc:
+        # Roh-Antwort für die Diagnose sichern (extraktion_raw), auch wenn das
+        # Parsen scheitert – genau dieser Fall soll debuggbar sein.
+        result["raw_response"] = exc.raw
+        result["error"] = "KI-Antwort ist kein gültiges JSON (siehe Diagnose/extraktion_raw)"
         return result
     except Exception as exc:
         result["error"] = f"KI-Extraktion fehlgeschlagen: {exc}"

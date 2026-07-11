@@ -204,6 +204,47 @@ def test_call_llm_captures_raw_and_respects_text_limit(monkeypatch):
     assert len(body) == 50
 
 
+def test_call_llm_unparseable_preserves_raw(monkeypatch):
+    """Malformed/truncated JSON → LLMResponseUnparseable mit erhaltener Roh-Antwort."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    class _Msg:
+        def create(self, **kw):
+            class _C:
+                text = "Sorry, hier ist die Rechnung: {unvollständig"
+
+            class _R:
+                content = [_C()]
+
+            return _R()
+
+    class _FakeAnthropic:
+        def __init__(self, **kw):
+            self.messages = _Msg()
+
+    import anthropic
+    monkeypatch.setattr(anthropic, "Anthropic", _FakeAnthropic)
+    with pytest.raises(ie.LLMResponseUnparseable) as exc_info:
+        ie._call_llm("text")
+    assert "{unvollständig" in exc_info.value.raw
+
+
+def test_process_pdf_unparseable_persists_raw_for_diagnosis(monkeypatch):
+    """Parse-Fehler → Status fehler, aber Roh-Antwort landet in raw_response
+    (Diagnose bleibt möglich, nicht 'blind')."""
+    path = _write_pdf("Rechnung\nAcme GmbH")
+
+    def _raise(text):
+        raise ie.LLMResponseUnparseable("<<GARBAGE MODEL OUTPUT {>>")
+
+    monkeypatch.setattr(ie, "_call_llm", _raise)
+    res = ie.process_pdf(path)
+    assert res["status"] == "fehler"
+    assert res["raw_response"] == "<<GARBAGE MODEL OUTPUT {>>"
+    assert "JSON" in (res["error"] or "")
+
+
 def test_process_pdf_captures_raw_response(monkeypatch):
     path = _write_pdf("Rechnung\nAcme GmbH")
     monkeypatch.setattr(ie, "_call_llm", lambda text: {
