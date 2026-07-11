@@ -494,6 +494,9 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
         overall = "verarbeitet"
     elif "verarbeitet" in statuses:
         overall = "teilweise_verarbeitet"
+    elif "pruefen" in statuses and "fehler" not in statuses:
+        # Extraktion lief, aber (mind.) eine Rechnung ist prüfbedürftig – kein Fehler.
+        overall = "pruefen"
     else:
         overall = "fehler"
 
