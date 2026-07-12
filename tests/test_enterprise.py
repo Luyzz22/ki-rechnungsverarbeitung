@@ -94,6 +94,79 @@ def test_kpis_counts_and_automation(db, add_invoice):
     assert len(kpis["trend"]) == 30
 
 
+def test_kpis_status_breakdown_matches_list(db, add_invoice):
+    """B4: Status-Kacheln (status_breakdown) = Summe der Rechnungsliste."""
+    add_invoice("A", 100.0)  # ohne Status → 'neu'
+    add_invoice("B", 100.0)
+    conn = database.get_connection(); cur = conn.cursor()
+    for supplier, status in (("C", "verarbeitet"), ("D", "pruefen"), ("E", "verarbeitet")):
+        cur.execute(
+            "INSERT INTO invoices (rechnungsaussteller, betrag_brutto, status, tenant_id, created_at) "
+            "VALUES (?,?,?,?,?)",
+            (supplier, 50.0, status, 1, datetime.now().isoformat()))
+    conn.commit(); conn.close()
+
+    kpis = enterprise_dashboard.get_kpis(1)
+    sb = kpis["status_breakdown"]
+    assert sb.get("neu") == 2
+    assert sb.get("verarbeitet") == 2
+    assert sb.get("pruefen") == 1
+    # Kacheln = Summe der Liste
+    assert sum(sb.values()) == kpis["total_invoices"] == 5
+
+
+def test_kpis_count_month_uses_created_at_not_datum(db):
+    """B4: Volumen-KPIs zählen über created_at (Verarbeitungszeitpunkt), nicht
+    über das Rechnungsdatum."""
+    conn = database.get_connection(); cur = conn.cursor()
+    # Rechnungsdatum weit in der Vergangenheit, aber created_at = jetzt
+    cur.execute(
+        "INSERT INTO invoices (rechnungsaussteller, betrag_brutto, datum, created_at, tenant_id) "
+        "VALUES (?,?,?,?,?)",
+        ("X", 10.0, "2020-01-01", datetime.now().isoformat(), 1))
+    conn.commit(); conn.close()
+    kpis = enterprise_dashboard.get_kpis(1)
+    assert kpis["count_month"] >= 1  # via created_at gezählt, nicht datum=2020
+
+
+def test_get_statistics_counts_tenant_invoices(tmp_path, monkeypatch):
+    """B4/pg: get_statistics zählt Rechnungen tenant-sicher (LEFT JOIN + COALESCE),
+    nicht 0 durch INNER JOIN auf leere jobs; läuft ohne SQLite-only-Konstrukte
+    (Identifier-Quote/DATE('now'))."""
+    import sqlite3
+    from cache import invalidate_cache
+    db_file = tmp_path / "stats.db"
+    monkeypatch.setattr(database, "_ensure_db_path", lambda: db_file)
+    invalidate_cache("statistics")  # Cache-Leak zwischen Tests vermeiden
+    conn = sqlite3.connect(db_file)
+    conn.execute(
+        "CREATE TABLE jobs (job_id TEXT PRIMARY KEY, user_id INTEGER, status TEXT, "
+        "created_at TEXT, total_amount REAL, successful INTEGER, total_files INTEGER)")
+    conn.execute(
+        "CREATE TABLE invoices (id INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT, "
+        "rechnungsaussteller TEXT, betrag_brutto REAL, tenant_id INTEGER)")
+    conn.execute(
+        "INSERT INTO jobs (job_id,user_id,status,created_at,total_amount,successful,total_files) "
+        "VALUES ('j1',1,'completed',?,200.0,2,2)", (datetime.now().isoformat(),))
+    conn.execute("INSERT INTO invoices (job_id, rechnungsaussteller, betrag_brutto, tenant_id) "
+                 "VALUES ('j1','A',100.0,1)")
+    # Orphan-Rechnung: nur tenant_id, keine jobs-Zeile → INNER JOIN hätte sie verloren
+    conn.execute("INSERT INTO invoices (rechnungsaussteller, betrag_brutto, tenant_id) "
+                 "VALUES ('B',100.0,1)")
+    conn.commit(); conn.close()
+
+    stats = database.get_statistics(user_id=1)
+    assert stats["total_invoices"] == 2  # inkl. Orphan (LEFT JOIN + COALESCE)
+    assert stats["total_jobs"] == 1
+    # Gesamtsumme + Durchschnitt auf DEMSELBEN Rechnungssatz wie die Zählung
+    # (inkl. Orphan-Betrag) – nicht aus jobs.total_amount.
+    assert stats["total_amount"] == 200.0
+    assert stats["avg_per_invoice"] == 100.0
+    assert isinstance(stats["daily_data"], list)
+    assert isinstance(stats["top_aussteller"], list)
+    invalidate_cache("statistics")
+
+
 def test_render_trend_svg(db):
     trend = enterprise_dashboard.get_trend(1, days=30)
     svg = enterprise_dashboard.render_trend_svg(trend)

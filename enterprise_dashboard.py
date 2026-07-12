@@ -95,6 +95,22 @@ def get_kpis(tenant_id: int) -> Dict[str, Any]:
     except Exception:  # pragma: no cover - Tabelle evtl. noch nicht migriert
         pass
 
+    # Status-Verteilung (kanonisch, tenant-gefiltert wie die Rechnungsliste) –
+    # damit die Dashboard-Kacheln exakt der Summe der Liste entsprechen und nicht
+    # aus einer abweichenden Quelle stammen.
+    cursor.execute(
+        """
+        SELECT COALESCE(NULLIF(TRIM(i.status), ''), 'neu') AS s, COUNT(*) AS n
+        FROM invoices i
+        LEFT JOIN jobs j ON i.job_id = j.job_id
+        WHERE COALESCE(i.tenant_id, j.user_id) = ?
+          AND COALESCE(i.deleted, 0) = 0
+        GROUP BY COALESCE(NULLIF(TRIM(i.status), ''), 'neu')
+        """,
+        (int(tenant_id),),
+    )
+    status_breakdown = {str(r[0]): int(r[1] or 0) for r in cursor.fetchall()}
+
     conn.close()
 
     oldest_age_hours = None
@@ -123,6 +139,7 @@ def get_kpis(tenant_id: int) -> Dict[str, Any]:
         "oldest_approval": oldest_approval,
         "oldest_age_hours": oldest_age_hours,
         "anomaly_alerts": anomaly_alerts,
+        "status_breakdown": status_breakdown,
         "trend": trend,
     }
 
