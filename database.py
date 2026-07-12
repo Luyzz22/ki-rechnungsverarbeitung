@@ -488,8 +488,20 @@ def get_statistics(user_id: int = None) -> Dict:
         cursor.execute('SELECT COUNT(*) FROM invoices')
     total_invoices = cursor.fetchone()[0]
 
-    # Total amount
-    cursor.execute(f"SELECT SUM(total_amount) FROM jobs WHERE status = 'completed' {user_where}", user_params)
+    # Total amount – über DENSELBEN tenant-Rechnungssatz wie total_invoices, damit
+    # "Rechnungen gesamt" und "Gesamtsumme"/Durchschnitt konsistent sind (auch für
+    # Orphan-Rechnungen ohne jobs-Zeile). Nicht aus jobs.total_amount ableiten.
+    if user_id:
+        cursor.execute(
+            """
+            SELECT COALESCE(SUM(i.betrag_brutto), 0) FROM invoices i
+            LEFT JOIN jobs j ON i.job_id = j.job_id
+            WHERE COALESCE(i.tenant_id, j.user_id) = ?
+            """,
+            (user_id,),
+        )
+    else:
+        cursor.execute('SELECT COALESCE(SUM(betrag_brutto), 0) FROM invoices')
     total_amount = cursor.fetchone()[0] or 0
 
     # Success rate

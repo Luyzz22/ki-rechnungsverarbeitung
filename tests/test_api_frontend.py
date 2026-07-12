@@ -109,6 +109,23 @@ def test_invoices_pagination_shape(client, token):
     assert body["limit"] == 10
 
 
+def test_invoices_filter_neu_includes_null_status(client):
+    """Codex P2: eine Rechnung ohne Status zählt im Dashboard als 'neu' – der
+    Listen-Filter ?status=neu muss sie ebenfalls zeigen (Kachel == Liste)."""
+    import database
+    tok = client.post("/api/app/register", json={
+        "email": "neufilter@test.de", "password": "Test1234", "name": "N", "company": "X"}).json()["token"]
+    tid = _tenant_id(client, tok)
+    conn = database.get_connection(); cur = conn.cursor()
+    # Rechnung OHNE status (NULL) direkt anlegen
+    cur.execute(
+        "INSERT INTO invoices (rechnungsnummer, betrag_brutto, tenant_id, created_at) "
+        "VALUES (?,?,?,?)", ("NEU-NULL-1", 42.0, tid, "2026-06-01T00:00:00"))
+    conn.commit(); conn.close()
+    items = client.get("/api/app/invoices?status=neu&limit=500", headers=_auth(tok)).json()["items"]
+    assert "NEU-NULL-1" in [i["rechnungsnummer"] for i in items]
+
+
 def test_invoice_detail_404(client, token):
     assert client.get("/api/app/invoices/999999", headers=_auth(token)).status_code == 404
 

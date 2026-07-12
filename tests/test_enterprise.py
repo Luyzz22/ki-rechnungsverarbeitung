@@ -158,6 +158,10 @@ def test_get_statistics_counts_tenant_invoices(tmp_path, monkeypatch):
     stats = database.get_statistics(user_id=1)
     assert stats["total_invoices"] == 2  # inkl. Orphan (LEFT JOIN + COALESCE)
     assert stats["total_jobs"] == 1
+    # Gesamtsumme + Durchschnitt auf DEMSELBEN Rechnungssatz wie die Zählung
+    # (inkl. Orphan-Betrag) – nicht aus jobs.total_amount.
+    assert stats["total_amount"] == 200.0
+    assert stats["avg_per_invoice"] == 100.0
     assert isinstance(stats["daily_data"], list)
     assert isinstance(stats["top_aussteller"], list)
     invalidate_cache("statistics")

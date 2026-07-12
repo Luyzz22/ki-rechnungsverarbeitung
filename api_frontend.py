@@ -230,7 +230,9 @@ async def api_invoices(request: Request, status: str = "", q: str = "",
     where = ["COALESCE(i.tenant_id, j.user_id) = ?", "COALESCE(i.deleted, 0) = 0"]
     params: list[Any] = [tid]
     if status:
-        where.append("i.status = ?")
+        # Status wie im Dashboard-status_breakdown normalisieren (NULL/leer → 'neu'),
+        # damit Kachel-Zahl und gefilterte Liste für Altzeilen ohne Status übereinstimmen.
+        where.append("COALESCE(NULLIF(TRIM(i.status), ''), 'neu') = ?")
         params.append(status)
     if q:
         where.append("(i.rechnungsaussteller LIKE ? OR i.rechnungsnummer LIKE ?)")
