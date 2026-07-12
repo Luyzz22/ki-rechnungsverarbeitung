@@ -28,6 +28,10 @@ logger = logging.getLogger(__name__)
 
 LLM_TIMEOUT = int(os.getenv("EXTRACTION_LLM_TIMEOUT", "30"))
 
+# Maximale an das LLM übergebene Textlänge. Der alte Wert (12000) schnitt lange
+# oder mehrseitige Belege ab → fehlende Felder. Default großzügig; 0 = unbegrenzt.
+EXTRACTION_TEXT_LIMIT = int(os.getenv("EXTRACTION_TEXT_LIMIT", "100000"))
+
 # Zentrales Anthropic-Modell für ALLE Extraktions-/KI-Aufrufe (Rechnungs-
 # extraktion UND Auto-Kategorisierung). Über EXTRACTION_MODEL_ANTHROPIC
 # konfigurierbar, damit ein Modell-Rename nicht in mehreren Dateien nachgezogen
@@ -56,19 +60,36 @@ FIELDS = [
 
 _EXTRACTION_PROMPT = (
     "Extrahiere folgende Felder aus dieser deutschen Rechnung als JSON:\n"
-    "- rechnungsaussteller (Firmenname des Absenders)\n"
-    "- rechnungsaussteller_adresse\n- rechnungsempfaenger\n- rechnungsempfaenger_adresse\n"
+    "- rechnungsaussteller (Firmenname des LEISTENDEN/Absenders, der die Rechnung "
+    "STELLT – unabhängig davon, ob es sich um eine Eingangs- oder Ausgangsrechnung "
+    "handelt; NICHT verwechseln mit dem Empfänger)\n"
+    "- rechnungsaussteller_adresse\n"
+    "- rechnungsempfaenger (Name des RechnungsEMPFÄNGERS/Leistungsempfängers)\n"
+    "- rechnungsempfaenger_adresse\n"
     "- rechnungsnummer\n- datum (Format: YYYY-MM-DD)\n- faelligkeitsdatum (Format: YYYY-MM-DD)\n"
     "- kundennummer\n- betrag_brutto (Dezimalzahl)\n- betrag_netto (Dezimalzahl)\n"
     "- mwst_betrag (Dezimalzahl)\n- mwst_satz (Dezimalzahl, z.B. 19.0)\n- waehrung (z.B. EUR)\n"
     "- iban\n- bic\n- steuernummer\n- ust_idnr\n- zahlungsbedingungen\n"
     "- artikel (Zusammenfassung der Positionen)\n\n"
+    "Wichtig: Steht ein Feld NICHT im Beleg, setze null – niemals raten oder "
+    "Werte aus anderen Feldern erfinden.\n"
     "Antworte NUR mit validem JSON, keine Erklärung."
 )
 
 
 class NoLLMConfigured(RuntimeError):
     """Kein ANTHROPIC_API_KEY/OPENAI_API_KEY konfiguriert."""
+
+
+class LLMResponseUnparseable(RuntimeError):
+    """Die Modell-Antwort war kein gültiges JSON.
+
+    Trägt die Roh-Antwort (``raw``), damit sie – gerade im Fehlerfall (truncated/
+    malformed) – im Diagnose-Feld landet und der Fall nicht „blind" bleibt."""
+
+    def __init__(self, raw: str):
+        self.raw = raw
+        super().__init__("LLM-Antwort ist kein gültiges JSON")
 
 
 class LLMProviderError(RuntimeError):
@@ -112,7 +133,7 @@ def ensure_extraction_columns() -> None:
 
     conn = get_connection()
     cur = conn.cursor()
-    for col in ("validierung_json", "kontierung_json", "datei_pfad"):
+    for col in ("validierung_json", "kontierung_json", "datei_pfad", "extraktion_raw"):
         try:
             cur.execute(f"PRAGMA table_info(invoices)")
             existing = [r[1] for r in cur.fetchall()]
@@ -165,8 +186,27 @@ def _parse_json(raw: str) -> Dict[str, Any]:
 
 
 def _call_llm(text: str) -> Dict[str, Any]:
-    """Ruft das LLM auf und gibt das geparste JSON zurück (mockbar in Tests)."""
-    prompt = f"{_EXTRACTION_PROMPT}\n\nRechnungstext:\n{text[:12000]}"
+    """Ruft das LLM auf und gibt das geparste JSON zurück (mockbar in Tests).
+
+    Das geparste Dict enthält zusätzlich den privaten Schlüssel ``__raw__`` mit
+    der Roh-Antwort des Modells (für die Diagnose persistiert). Der Rechnungstext
+    wird auf ``EXTRACTION_TEXT_LIMIT`` Zeichen begrenzt (0 = unbegrenzt)."""
+    body = text if EXTRACTION_TEXT_LIMIT <= 0 else text[:EXTRACTION_TEXT_LIMIT]
+    if len(text) > len(body):
+        logger.warning("Rechnungstext auf %d von %d Zeichen gekürzt (EXTRACTION_TEXT_LIMIT)",
+                       len(body), len(text))
+    prompt = f"{_EXTRACTION_PROMPT}\n\nRechnungstext:\n{body}"
+
+    def _finish(raw_text: str) -> Dict[str, Any]:
+        try:
+            parsed = _parse_json(raw_text)
+        except Exception as exc:
+            # Roh-Antwort NICHT verlieren – sie ist genau im Parse-Fehlerfall
+            # für die Diagnose entscheidend.
+            raise LLMResponseUnparseable(raw_text) from exc
+        if isinstance(parsed, dict):
+            parsed.setdefault("__raw__", raw_text)
+        return parsed
 
     if os.getenv("ANTHROPIC_API_KEY"):
         from anthropic import Anthropic
@@ -185,7 +225,7 @@ def _call_llm(text: str) -> Dict[str, Any]:
                                provider_err.status_code, model, provider_err.detail)
                 raise provider_err from exc
             raise
-        return _parse_json(msg.content[0].text)
+        return _finish(msg.content[0].text)
 
     if os.getenv("OPENAI_API_KEY"):
         from openai import OpenAI
@@ -205,7 +245,7 @@ def _call_llm(text: str) -> Dict[str, Any]:
                                provider_err.status_code, model, provider_err.detail)
                 raise provider_err from exc
             raise
-        return _parse_json(resp.choices[0].message.content)
+        return _finish(resp.choices[0].message.content)
 
     raise NoLLMConfigured("Kein ANTHROPIC_API_KEY/OPENAI_API_KEY konfiguriert")
 
@@ -340,9 +380,17 @@ def run_validation(fields: Dict[str, Any]) -> Dict[str, Any]:
         ok = bool(re.match(r"^[A-Z]{2}[A-Z0-9]{2,12}$", ust))
         add("ust_idnr_format", ok, "warning", "USt-IdNr.-Format ungültig" if not ok else "Format ok")
 
-    # Betragsplausibilität: netto + mwst ≈ brutto
+    # Betrags-Vollständigkeit + Plausibilität – FAIL-CLOSED:
+    # Fehlt einer der drei Beträge (NULL) ODER sind alle 0,00 → Prüfung nicht
+    # möglich → Fehler (kein stilles „0,00 + 0,00 = 0,00 ist ok"). Nur bei
+    # vollständigen, aussagekräftigen Beträgen wird die Summe netto+mwst ≈ brutto
+    # geprüft.
     b, n, m = fields.get("betrag_brutto"), fields.get("betrag_netto"), fields.get("mwst_betrag")
-    if b is not None and n is not None and m is not None:
+    amounts_present = all(x is not None for x in (b, n, m))
+    amounts_meaningful = amounts_present and any(abs(float(x)) > 0 for x in (b, n, m))
+    if not amounts_meaningful:
+        add("betrag_summe", False, "error", "Beträge unvollständig — Prüfung nicht möglich")
+    else:
         ok = abs((n + m) - b) <= max(0.02, b * 0.01)
         add("betrag_summe", ok, "warning", "Netto + USt ≠ Brutto" if not ok else "Summen stimmig")
 
@@ -375,11 +423,16 @@ def suggest_kontierung(fields: Dict[str, Any]) -> Dict[str, Any]:
 def process_pdf(filepath: str) -> Dict[str, Any]:
     """Führt die komplette Pipeline für eine Datei aus.
 
-    Returns dict mit: status, fields, validation, kontierung, error.
-    Status: 'verarbeitet' | 'fehler' | 'manuell_erforderlich'.
+    Returns dict mit: status, fields, validation, kontierung, error, raw_response.
+
+    Status-Semantik (B3):
+      - Extraktion fehlgeschlagen            → 'fehler' (sichtbar, kein stilles pending)
+      - kein Text extrahierbar (Scan o. OCR) → 'manuell_erforderlich'
+      - Extraktion ok + keine §14-Fehler     → 'verarbeitet'
+      - Extraktion ok + §14-Fehler (Score <) → 'pruefen'
     """
     result: Dict[str, Any] = {"status": "fehler", "fields": {}, "validation": None,
-                              "kontierung": None, "error": None}
+                              "kontierung": None, "error": None, "raw_response": None}
 
     # Schritt 2: Text
     try:
@@ -398,6 +451,9 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
     # Schritt 3: KI
     try:
         raw = _call_llm(text)
+        # Roh-Antwort für die Diagnose sichern (nicht in die Felder mischen).
+        if isinstance(raw, dict):
+            result["raw_response"] = raw.pop("__raw__", None)
         fields = normalize_fields(raw)
     except NoLLMConfigured as exc:
         result["error"] = str(exc)
@@ -405,6 +461,12 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
     except LLMProviderError as exc:
         # Provider-4xx/5xx: Statuscode + Antworttext in die Fehler-Zeile.
         result["error"] = f"KI-Provider HTTP {exc.status_code}: {exc.detail}"
+        return result
+    except LLMResponseUnparseable as exc:
+        # Roh-Antwort für die Diagnose sichern (extraktion_raw), auch wenn das
+        # Parsen scheitert – genau dieser Fall soll debuggbar sein.
+        result["raw_response"] = exc.raw
+        result["error"] = "KI-Antwort ist kein gültiges JSON (siehe Diagnose/extraktion_raw)"
         return result
     except Exception as exc:
         result["error"] = f"KI-Extraktion fehlgeschlagen: {exc}"
@@ -414,7 +476,10 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
     validation = run_validation(fields)
     kontierung = suggest_kontierung(fields)
 
-    result.update({"status": "verarbeitet", "fields": fields,
+    # B3: Extraktion erfolgreich → 'verarbeitet' nur bei bestandener §14-Prüfung,
+    # sonst 'pruefen' (sichtbarer Prüf-Bedarf statt stillem pending).
+    status = "verarbeitet" if validation.get("ok") else "pruefen"
+    result.update({"status": status, "fields": fields,
                    "validation": validation, "kontierung": kontierung})
     return result
 
@@ -427,7 +492,9 @@ def update_invoice_record(invoice_id: int, result: Dict[str, Any]) -> None:
     cur = conn.cursor()
     status = result.get("status", "fehler")
 
-    if status == "verarbeitet":
+    if status in ("verarbeitet", "pruefen"):
+        # Extraktion erfolgreich – Felder persistieren; Status spiegelt die
+        # §14-Prüfung ('verarbeitet' bestanden / 'pruefen' prüfbedürftig).
         f = result["fields"]
         cur.execute(
             """
@@ -438,7 +505,7 @@ def update_invoice_record(invoice_id: int, result: Dict[str, Any]) -> None:
               betrag_brutto = ?, betrag_netto = ?, mwst_betrag = ?, mwst_satz = ?,
               waehrung = ?, iban = ?, bic = ?, steuernummer = ?, ust_idnr = ?,
               zahlungsbedingungen = ?, artikel = ?,
-              validierung_json = ?, kontierung_json = ?, status = 'verarbeitet'
+              validierung_json = ?, kontierung_json = ?, status = ?
             WHERE id = ?
             """,
             (
@@ -451,6 +518,7 @@ def update_invoice_record(invoice_id: int, result: Dict[str, Any]) -> None:
                 f.get("zahlungsbedingungen"), f.get("artikel"),
                 json.dumps(result.get("validation"), ensure_ascii=False),
                 json.dumps(result.get("kontierung"), ensure_ascii=False),
+                status,
                 int(invoice_id),
             ),
         )
@@ -460,5 +528,17 @@ def update_invoice_record(invoice_id: int, result: Dict[str, Any]) -> None:
             "UPDATE invoices SET status = ?, verwendungszweck = ? WHERE id = ?",
             (status, (result.get("error") or "")[:500], int(invoice_id)),
         )
+
+    # B1a: Roh-Antwort des Modells persistent für die Diagnose ablegen (best effort;
+    # Spalte wird via ensure_extraction_columns angelegt). Auch im Fehlerfall
+    # nützlich, damit künftige Fälle nicht „blind" sind.
+    raw_response = result.get("raw_response")
+    if raw_response:
+        try:
+            cur.execute("UPDATE invoices SET extraktion_raw = ? WHERE id = ?",
+                        (str(raw_response)[:20000], int(invoice_id)))
+        except Exception as exc:  # pragma: no cover - Spalte evtl. nicht vorhanden
+            logger.debug("extraktion_raw persist übersprungen: %s", exc)
+
     conn.commit()
     conn.close()

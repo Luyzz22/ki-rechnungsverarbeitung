@@ -111,6 +111,189 @@ def test_complete_amounts_half_cent_rounds_up_commercially():
     assert summe["ok"] is True
 
 
+# --- B2: Betragscheck fail-closed ----------------------------------------
+def test_amount_check_fail_closed_on_null():
+    """NULL-Beträge → betrag_summe ist FEHLER (nicht stillschweigend ok)."""
+    v = ie.run_validation({"rechnungsaussteller": "A", "rechnungsnummer": "1",
+                           "datum": "2026-01-01", "steuernummer": "x"})
+    bs = next(c for c in v["checks"] if c["name"] == "betrag_summe")
+    assert bs["ok"] is False and bs["severity"] == "error"
+    assert "unvollständig" in bs["message"].lower()
+    assert v["ok"] is False
+
+
+def test_amount_check_fail_closed_on_all_zero():
+    """0,00 + 0,00 = 0,00 darf NICHT als bestanden gewertet werden (Fail-open-Bug)."""
+    v = ie.run_validation({"rechnungsaussteller": "A", "rechnungsnummer": "1",
+                           "datum": "2026-01-01", "steuernummer": "x",
+                           "betrag_brutto": 0.0, "betrag_netto": 0.0, "mwst_betrag": 0.0})
+    bs = next(c for c in v["checks"] if c["name"] == "betrag_summe")
+    assert bs["ok"] is False and bs["severity"] == "error"
+
+
+def test_amount_check_ok_when_consistent():
+    v = ie.run_validation({"rechnungsaussteller": "A", "rechnungsnummer": "1",
+                           "datum": "2026-01-01", "steuernummer": "x",
+                           "betrag_brutto": 119.0, "betrag_netto": 100.0, "mwst_betrag": 19.0})
+    bs = next(c for c in v["checks"] if c["name"] == "betrag_summe")
+    assert bs["ok"] is True
+
+
+# --- B3: Status-Semantik --------------------------------------------------
+def test_process_pdf_status_pruefen_when_validation_fails(monkeypatch):
+    """Extraktion ok, aber §14-Prüfung fehlgeschlagen (fehlende Steuer-ID) → pruefen."""
+    path = _write_pdf("Rechnung\nAcme GmbH")
+    monkeypatch.setattr(ie, "_call_llm", lambda text: {
+        "rechnungsaussteller": "Acme GmbH", "rechnungsnummer": "R1", "datum": "2026-01-01",
+        "betrag_brutto": "119,00", "mwst_satz": "19.0",  # KEINE Steuer-ID
+    })
+    res = ie.process_pdf(path)
+    assert res["status"] == "pruefen"
+    assert res["validation"]["ok"] is False
+
+
+def test_process_pdf_status_pruefen_when_amounts_incomplete(monkeypatch):
+    """Nur netto, keine weiteren Beträge/Satz → Beträge unvollständig → pruefen."""
+    path = _write_pdf("Rechnung\nAcme GmbH")
+    monkeypatch.setattr(ie, "_call_llm", lambda text: {
+        "rechnungsaussteller": "Acme GmbH", "rechnungsnummer": "R1", "datum": "2026-01-01",
+        "steuernummer": "12/345/67890", "betrag_netto": "100,00",
+    })
+    res = ie.process_pdf(path)
+    assert res["status"] == "pruefen"
+    bs = next(c for c in res["validation"]["checks"] if c["name"] == "betrag_summe")
+    assert bs["ok"] is False and bs["severity"] == "error"
+
+
+# --- B1a: Truncation-Limit, Roh-Antwort, Prompt-Schärfung -----------------
+def test_prompt_sharpened_issuer_and_null_guidance():
+    assert "LEISTENDEN" in ie._EXTRACTION_PROMPT  # Aussteller = Leistender/Absender
+    assert "null" in ie._EXTRACTION_PROMPT         # fehlende Felder nicht raten
+
+
+def test_call_llm_captures_raw_and_respects_text_limit(monkeypatch):
+    """Roh-Antwort landet unter __raw__; der Prompt erhält nur bis zum Limit."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setattr(ie, "EXTRACTION_TEXT_LIMIT", 50)
+    seen = {}
+
+    class _Msg:
+        def create(self, **kw):
+            seen["prompt"] = kw["messages"][0]["content"]
+
+            class _C:
+                text = '{"rechnungsaussteller": "X GmbH"}'
+
+            class _R:
+                content = [_C()]
+
+            return _R()
+
+    class _FakeAnthropic:
+        def __init__(self, **kw):
+            self.messages = _Msg()
+
+    import anthropic
+    monkeypatch.setattr(anthropic, "Anthropic", _FakeAnthropic)
+    out = ie._call_llm("A" * 500)
+    assert out["__raw__"] == '{"rechnungsaussteller": "X GmbH"}'
+    assert out["rechnungsaussteller"] == "X GmbH"
+    # Rechnungstext im Prompt auf 50 Zeichen begrenzt
+    body = seen["prompt"].split("Rechnungstext:\n", 1)[1]
+    assert len(body) == 50
+
+
+def test_call_llm_unparseable_preserves_raw(monkeypatch):
+    """Malformed/truncated JSON → LLMResponseUnparseable mit erhaltener Roh-Antwort."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    class _Msg:
+        def create(self, **kw):
+            class _C:
+                text = "Sorry, hier ist die Rechnung: {unvollständig"
+
+            class _R:
+                content = [_C()]
+
+            return _R()
+
+    class _FakeAnthropic:
+        def __init__(self, **kw):
+            self.messages = _Msg()
+
+    import anthropic
+    monkeypatch.setattr(anthropic, "Anthropic", _FakeAnthropic)
+    with pytest.raises(ie.LLMResponseUnparseable) as exc_info:
+        ie._call_llm("text")
+    assert "{unvollständig" in exc_info.value.raw
+
+
+def test_process_pdf_unparseable_persists_raw_for_diagnosis(monkeypatch):
+    """Parse-Fehler → Status fehler, aber Roh-Antwort landet in raw_response
+    (Diagnose bleibt möglich, nicht 'blind')."""
+    path = _write_pdf("Rechnung\nAcme GmbH")
+
+    def _raise(text):
+        raise ie.LLMResponseUnparseable("<<GARBAGE MODEL OUTPUT {>>")
+
+    monkeypatch.setattr(ie, "_call_llm", _raise)
+    res = ie.process_pdf(path)
+    assert res["status"] == "fehler"
+    assert res["raw_response"] == "<<GARBAGE MODEL OUTPUT {>>"
+    assert "JSON" in (res["error"] or "")
+
+
+def test_process_pdf_captures_raw_response(monkeypatch):
+    path = _write_pdf("Rechnung\nAcme GmbH")
+    monkeypatch.setattr(ie, "_call_llm", lambda text: {
+        "rechnungsaussteller": "Acme GmbH", "rechnungsnummer": "R1", "datum": "2026-01-01",
+        "steuernummer": "12/345/67890", "betrag_brutto": "119,00", "mwst_satz": "19.0",
+        "__raw__": '{"rechnungsaussteller":"Acme GmbH"}  <<RAWMODEL>>',
+    })
+    res = ie.process_pdf(path)
+    assert res["raw_response"] == '{"rechnungsaussteller":"Acme GmbH"}  <<RAWMODEL>>'
+    assert "__raw__" not in res["fields"]
+
+
+def test_update_invoice_record_pruefen_persists_fields_and_raw(tmp_path, monkeypatch):
+    """update_invoice_record persistiert bei 'pruefen' die Felder (nicht nur Status)
+    und legt die Roh-Antwort in extraktion_raw ab."""
+    import sqlite3
+    import database
+    db = tmp_path / "upd.db"
+    monkeypatch.setattr(database, "_ensure_db_path", lambda: db)
+    conn = sqlite3.connect(db)
+    conn.execute(
+        """CREATE TABLE invoices (
+            id INTEGER PRIMARY KEY, rechnungsaussteller TEXT, rechnungsaussteller_adresse TEXT,
+            rechnungsempfaenger TEXT, rechnungsempfaenger_adresse TEXT, rechnungsnummer TEXT,
+            datum TEXT, faelligkeitsdatum TEXT, kundennummer TEXT, betrag_brutto REAL,
+            betrag_netto REAL, mwst_betrag REAL, mwst_satz REAL, waehrung TEXT, iban TEXT,
+            bic TEXT, steuernummer TEXT, ust_idnr TEXT, zahlungsbedingungen TEXT, artikel TEXT,
+            validierung_json TEXT, kontierung_json TEXT, status TEXT, verwendungszweck TEXT,
+            extraktion_raw TEXT)""")
+    conn.execute("INSERT INTO invoices (id, status) VALUES (7, 'pending')")
+    conn.commit(); conn.close()
+
+    result = {"status": "pruefen",
+              "fields": {"rechnungsaussteller": "Acme GmbH", "betrag_netto": 100.0},
+              "validation": {"ok": False}, "kontierung": {},
+              "raw_response": "<<RAWMODELTEXT>>"}
+    ie.update_invoice_record(7, result)
+
+    conn = sqlite3.connect(db)
+    row = conn.execute(
+        "SELECT status, rechnungsaussteller, betrag_netto, extraktion_raw FROM invoices WHERE id=7"
+    ).fetchone()
+    conn.close()
+    assert row[0] == "pruefen"
+    assert row[1] == "Acme GmbH"
+    assert row[2] == 100.0
+    assert row[3] == "<<RAWMODELTEXT>>"
+
+
 # --- Schritt 4: Validierung ----------------------------------------------
 def test_validation_full_ok():
     v = ie.run_validation({
