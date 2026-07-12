@@ -411,7 +411,7 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
     os.makedirs(job_dir, exist_ok=True)
 
     saved = []
-    for f in files:
+    for idx, f in enumerate(files):
         ext = os.path.splitext(f.filename or "")[1].lower()
         if ext not in UPLOAD_ALLOWED_EXT:
             raise HTTPException(
@@ -424,10 +424,16 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
                 status_code=413,
                 detail=f"Datei zu groß (max. {UPLOAD_MAX_BYTES // (1024 * 1024)} MB)",
             )
-        dest = os.path.join(job_dir, os.path.basename(f.filename))
+        # Eindeutiges Ziel je Datei (Index-Präfix): zwei Uploads mit gleichem
+        # Basisnamen dürfen sich NICHT gegenseitig überschreiben – sonst würde
+        # der gespeicherte datei_hash von der tatsächlich verarbeiteten Datei
+        # abweichen.
+        base_name = os.path.basename(f.filename or f"upload_{idx}")
+        dest = os.path.join(job_dir, f"{idx:03d}_{base_name}")
         with open(dest, "wb") as out:
             out.write(content)
-        saved.append(dest)
+        import duplicate_detection
+        saved.append((dest, duplicate_detection.compute_file_hash(content)))
 
     if not saved:
         raise HTTPException(status_code=400, detail="Keine gültige Datei hochgeladen")
@@ -441,19 +447,33 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
     import invoice_extraction
     invoice_extraction.ensure_extraction_columns()
 
+    import duplicate_detection
     results = []
-    for path in saved:
+    for path, file_hash in saved:
         # Invoice-Record anlegen (Status processing)
         conn = get_connection()
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO invoices (job_id, status, created_at, tenant_id, datei_pfad) "
-            "VALUES (?, 'processing', ?, ?, ?)",
-            (job_id, datetime.now().isoformat(), tid, path),
+            "INSERT INTO invoices (job_id, status, created_at, tenant_id, datei_pfad, datei_hash) "
+            "VALUES (?, 'processing', ?, ?, ?, ?)",
+            (job_id, datetime.now().isoformat(), tid, path, file_hash),
         )
         invoice_id = cur.lastrowid
         conn.commit()
         conn.close()
+
+        # B6: layoutunabhängige Duplikatserkennung über den Datei-Hash (fängt
+        # Re-Uploads auch bei NULL-Aussteller – der alte content_hash versagte da).
+        duplicate = None
+        try:
+            match = duplicate_detection.check_duplicate_by_file_hash(
+                file_hash, tid, exclude_invoice_id=invoice_id)
+            if match:
+                duplicate = {"of_id": match["id"], "method": "file_hash"}
+                duplicate_detection.save_duplicate_detection(
+                    invoice_id, match["id"], method="file_hash", confidence=1.0)
+        except Exception as exc:  # pragma: no cover - Duplikat-Check darf Upload nie sprengen
+            logger.warning("Duplikat-Check (file_hash) invoice=%s: %s", invoice_id, exc)
 
         # Pipeline synchron ausführen (crasht nie – Status spiegelt Fehler)
         try:
@@ -465,6 +485,19 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
             invoice_extraction.update_invoice_record(invoice_id, outcome)
         except Exception as exc:  # pragma: no cover
             logger.error("update_invoice_record id=%s: %s", invoice_id, exc)
+
+        # B6: zusätzlich NULL-sicherer Feld-Match (Nummer+Betrag), falls der
+        # Datei-Hash nichts fand (z. B. re-exportiertes PDF gleicher Rechnung).
+        if duplicate is None:
+            try:
+                fmatch = duplicate_detection.check_duplicate_by_fields(
+                    outcome.get("fields") or {}, tid, exclude_invoice_id=invoice_id)
+                if fmatch:
+                    duplicate = {"of_id": fmatch["id"], "method": "fields"}
+                    duplicate_detection.save_duplicate_detection(
+                        invoice_id, fmatch["id"], method="fields", confidence=0.9)
+            except Exception as exc:  # pragma: no cover
+                logger.warning("Duplikat-Check (fields) invoice=%s: %s", invoice_id, exc)
 
         audit_events.log_event(tid, audit_events.AuditEvent.KI_EXTRAKTION, user_id=tid,
                                entity_type="invoice", entity_id=invoice_id,
@@ -486,6 +519,7 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
             "datei": os.path.basename(path),
             "status": outcome.get("status"),
             "validierung_ok": (outcome.get("validation") or {}).get("ok"),
+            "duplicate": duplicate,
             "error": outcome.get("error"),
         })
 
