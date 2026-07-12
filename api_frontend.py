@@ -411,7 +411,7 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
     os.makedirs(job_dir, exist_ok=True)
 
     saved = []
-    for f in files:
+    for idx, f in enumerate(files):
         ext = os.path.splitext(f.filename or "")[1].lower()
         if ext not in UPLOAD_ALLOWED_EXT:
             raise HTTPException(
@@ -424,7 +424,12 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
                 status_code=413,
                 detail=f"Datei zu groß (max. {UPLOAD_MAX_BYTES // (1024 * 1024)} MB)",
             )
-        dest = os.path.join(job_dir, os.path.basename(f.filename))
+        # Eindeutiges Ziel je Datei (Index-Präfix): zwei Uploads mit gleichem
+        # Basisnamen dürfen sich NICHT gegenseitig überschreiben – sonst würde
+        # der gespeicherte datei_hash von der tatsächlich verarbeiteten Datei
+        # abweichen.
+        base_name = os.path.basename(f.filename or f"upload_{idx}")
+        dest = os.path.join(job_dir, f"{idx:03d}_{base_name}")
         with open(dest, "wb") as out:
             out.write(content)
         import duplicate_detection

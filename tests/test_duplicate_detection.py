@@ -115,6 +115,34 @@ def test_field_match_requires_nummer_and_betrag(db):
     assert dd.check_duplicate_by_fields({"rechnungsnummer": "IT2025032"}, 1) is None
 
 
+def test_field_match_different_known_suppliers_no_false_positive(db):
+    """Codex P2: zwei BEKANNTE, verschiedene Aussteller mit gleicher (simpler)
+    Nummer + Betrag → KEIN Duplikat (verschiedene Lieferanten, gleiche Nummer)."""
+    _seed("2026-001", 100.0, aussteller="Lieferant A")
+    m = dd.check_duplicate_by_fields(
+        {"rechnungsnummer": "2026-001", "betrag_brutto": 100.0,
+         "rechnungsaussteller": "Lieferant B"}, 1)
+    assert m is None
+
+
+def test_field_match_same_known_supplier_is_duplicate(db):
+    a = _seed("2026-001", 100.0, aussteller="Lieferant A")
+    m = dd.check_duplicate_by_fields(
+        {"rechnungsnummer": "2026-001", "betrag_brutto": 100.0,
+         "rechnungsaussteller": "lieferant a"}, 1)  # case-insensitive
+    assert m and m["id"] == a
+
+
+def test_field_match_supplier_guard_null_tolerant(db):
+    """NULL-Toleranz bleibt: neuer Beleg mit Aussteller, Altbeleg ohne → Duplikat
+    (der Briefkopf-Logo-Fall darf nicht am Aussteller-Guard scheitern)."""
+    a = _seed("IT2025032", 1880.2, aussteller=None)
+    m = dd.check_duplicate_by_fields(
+        {"rechnungsnummer": "IT2025032", "betrag_brutto": 1880.2,
+         "rechnungsaussteller": "SBS GmbH"}, 1)
+    assert m and m["id"] == a
+
+
 def test_field_match_tenant_isolated(db):
     _seed("IT2025032", 1880.2, tenant=1)
     m = dd.check_duplicate_by_fields(

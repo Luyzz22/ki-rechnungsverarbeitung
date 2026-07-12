@@ -179,6 +179,15 @@ def check_duplicate_by_fields(invoice: dict, tenant_id: int,
     if exclude_invoice_id is not None:
         sql += " AND i.id <> ?"
         params.append(int(exclude_invoice_id))
+    # Verschärfung: Aussteller nur, wenn im NEUEN Beleg vorhanden. Dann muss der
+    # Altbeleg denselben Aussteller haben ODER selbst keinen (NULL-tolerant –
+    # Briefkopf-Logo-Fall). Sind beide Aussteller bekannt und verschieden, ist es
+    # KEIN Duplikat (verschiedene Lieferanten nutzen dieselben simplen Nummern).
+    aussteller = str(invoice.get("rechnungsaussteller") or "").strip()
+    if aussteller:
+        sql += (" AND (COALESCE(TRIM(i.rechnungsaussteller), '') = '' "
+                "OR LOWER(TRIM(i.rechnungsaussteller)) = ?)")
+        params.append(aussteller.lower())
     # Verschärfung: Datum nur, wenn im NEUEN Beleg vorhanden (matcht dann exakt
     # oder gegen NULL-Datum der Altzeile – kein Ausschluss allein wegen NULL).
     datum = str(invoice.get("datum") or "").strip()

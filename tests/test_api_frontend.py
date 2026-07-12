@@ -208,6 +208,47 @@ def test_upload_reupload_identical_file_flagged_duplicate(client, token, monkeyp
     assert dup["of_id"] == r1.json()["invoices"][0]["id"]
 
 
+def test_upload_same_basename_distinct_hashes(client, token, monkeypatch):
+    """Codex P2: zwei Dateien mit GLEICHEM Basisnamen, aber unterschiedlichem
+    Inhalt in einem Upload → jede Rechnung behält ihren eigenen datei_hash
+    (kein Überschreiben des Ziels), keine fälschliche Duplikat-Markierung."""
+    import invoice_extraction
+    import database
+    calls = {"n": 0}
+
+    def _mock(text):
+        calls["n"] += 1
+        n = calls["n"]
+        return {"rechnungsnummer": f"R-{n}", "datum": "2026-01-01",
+                "betrag_brutto": f"{n * 11},00", "steuernummer": "12/345/67890"}
+
+    monkeypatch.setattr(invoice_extraction, "_call_llm", _mock)
+    pdf_a = _make_pdf("Beleg A – Inhalt eins")
+    pdf_b = _make_pdf("Beleg B – voellig anderer Inhalt zwei")
+    assert pdf_a != pdf_b
+    r = client.post("/api/app/upload", headers=_auth(token), files=[
+        ("files", ("rechnung.pdf", pdf_a, "application/pdf")),
+        ("files", ("rechnung.pdf", pdf_b, "application/pdf")),
+    ])
+    assert r.status_code == 200, r.text
+    invs = r.json()["invoices"]
+    assert len(invs) == 2
+    # keiner der beiden ist Duplikat des anderen (verschiedene Bytes)
+    assert all(i["duplicate"] is None for i in invs)
+    # in der DB haben beide den zur jeweiligen Datei passenden Hash
+    import duplicate_detection
+    conn = database.get_connection(); cur = conn.cursor()
+    hashes = {}
+    for i in invs:
+        h = cur.execute("SELECT datei_hash FROM invoices WHERE id=?", (i["id"],)).fetchone()[0]
+        hashes[i["id"]] = h
+    conn.close()
+    assert set(hashes.values()) == {
+        duplicate_detection.compute_file_hash(pdf_a),
+        duplicate_detection.compute_file_hash(pdf_b),
+    }
+
+
 def test_upload_without_llm_sets_error(client, token, monkeypatch):
     import invoice_extraction
     def _raise(text):
