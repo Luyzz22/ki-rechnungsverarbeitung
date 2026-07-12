@@ -221,6 +221,49 @@ def init_enterprise_schema() -> None:
     _ensure_column(cursor, "invoices", "payment_status", "TEXT")
     _ensure_column(cursor, "invoices", "paid_at", "TEXT")
 
+    # --- Extraktions-/Duplikat-Spalten (MIG: bisher nur per Code eingefügt, ohne
+    #     Startup-Migration → Schema-Drift zwischen Repo und Prod). Idempotent
+    #     hier nachgezogen, damit `import web.app` das vollständige Schema anlegt. ---
+    _ensure_column(cursor, "invoices", "content_hash", "TEXT")
+    _ensure_column(cursor, "invoices", "datei_hash", "TEXT")
+    _ensure_column(cursor, "invoices", "datei_pfad", "TEXT")
+    _ensure_column(cursor, "invoices", "validierung_json", "TEXT")
+    _ensure_column(cursor, "invoices", "kontierung_json", "TEXT")
+    _ensure_column(cursor, "invoices", "extraktion_raw", "TEXT")
+    _ensure_column(cursor, "invoices", "confidence", "REAL")
+    _ensure_column(cursor, "invoices", "source_format", "TEXT")
+    _ensure_column(cursor, "invoices", "einvoice_raw_xml", "TEXT")
+    _ensure_column(cursor, "invoices", "einvoice_profile", "TEXT")
+    _ensure_column(cursor, "invoices", "einvoice_valid", "INTEGER")
+    _ensure_column(cursor, "invoices", "einvoice_validation_message", "TEXT")
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS ix_invoices_datei_hash ON invoices(tenant_id, datei_hash)"
+    )
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS ix_invoices_content_hash ON invoices(content_hash)"
+    )
+
+    # Duplikat-Erkennung (von duplicate_detection.py genutzt, bislang ohne
+    # Migration → auf Prod manuell angelegt; hier idempotent nachgezogen).
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS duplicate_detections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            invoice_id INTEGER,
+            duplicate_of_id INTEGER,
+            detection_method TEXT,
+            confidence REAL,
+            status TEXT DEFAULT 'pending',
+            reviewed_by INTEGER,
+            reviewed_at TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS ix_dup_detections_invoice ON duplicate_detections(invoice_id)"
+    )
+
     # Zahlungsbedingungen (von zahlungs_service.py genutzt, sonst nirgends angelegt)
     cursor.execute(
         """
@@ -311,6 +354,15 @@ def init_enterprise_schema() -> None:
 
     conn.commit()
     conn.close()
+
+    # Bestandsdaten-Backfill: Datei-Hashes für Alt-Rechnungen ohne Hash (einmalig,
+    # idempotent, best effort – füllt nur NULL-Zeilen mit vorhandener Datei).
+    try:
+        from duplicate_detection import backfill_datei_hashes
+        backfill_datei_hashes()
+    except Exception as exc:  # pragma: no cover - darf Start nie sprengen
+        logger.debug("datei_hash-Backfill übersprungen: %s", exc)
+
     logger.info("enterprise_db: Schema initialisiert")
 
 

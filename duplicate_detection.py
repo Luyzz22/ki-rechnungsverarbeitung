@@ -71,6 +71,128 @@ def check_duplicate_by_hash(invoice: dict, user_id: int = None, conn=None) -> Op
     
     return None
 
+def compute_file_hash(content: bytes) -> str:
+    """SHA-256 der Upload-Datei – layoutunabhängige Duplikatserkennung.
+
+    Fängt Re-Uploads derselben Datei auch dann, wenn die Extraktion (Aussteller
+    im Briefkopf-Logo → NULL) keinen verlässlichen Feld-Fingerprint liefert."""
+    return hashlib.sha256(content).hexdigest()
+
+
+def backfill_datei_hashes(limit: int = 1000) -> int:
+    """Berechnet ``datei_hash`` für Bestandsrechnungen ohne Hash (einmalig,
+    idempotent). Best effort: nur Zeilen mit vorhandener Datei (``datei_pfad``);
+    Fehler brechen weder Migration noch Start. Gibt die Anzahl gefüllter Zeilen zurück."""
+    import os
+    from database import get_connection
+
+    filled = 0
+    try:
+        conn = get_connection()
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, datei_pfad FROM invoices "
+            "WHERE (datei_hash IS NULL OR datei_hash = '') AND datei_pfad IS NOT NULL "
+            "LIMIT ?",
+            (int(limit),),
+        )
+        rows = cur.fetchall()
+        for row in rows:
+            path = row["datei_pfad"]
+            try:
+                if path and os.path.isfile(path):
+                    with open(path, "rb") as fh:
+                        h = compute_file_hash(fh.read())
+                    cur.execute("UPDATE invoices SET datei_hash = ? WHERE id = ?", (h, row["id"]))
+                    filled += 1
+            except Exception as exc:  # pragma: no cover - einzelne Datei defekt/fehlt
+                logger.debug("backfill datei_hash id=%s übersprungen: %s", row["id"], exc)
+        conn.commit()
+        conn.close()
+        if filled:
+            logger.info("backfill_datei_hashes: %d Zeilen gefüllt", filled)
+    except Exception as exc:  # pragma: no cover - darf Start nie sprengen
+        logger.warning("backfill_datei_hashes übersprungen: %s", exc)
+    return filled
+
+
+def check_duplicate_by_file_hash(datei_hash: str, tenant_id: int,
+                                 exclude_invoice_id: Optional[int] = None, conn=None) -> Optional[Dict]:
+    """Findet eine frühere Rechnung DESSELBEN Tenants mit identischem Datei-Hash."""
+    if not datei_hash:
+        return None
+    from database import get_connection
+
+    should_close = conn is None
+    if conn is None:
+        conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    sql = (
+        "SELECT i.id, i.rechnungsnummer, i.datum, i.rechnungsaussteller, i.betrag_brutto "
+        "FROM invoices i LEFT JOIN jobs j ON i.job_id = j.job_id "
+        "WHERE i.datei_hash = ? AND COALESCE(i.tenant_id, j.user_id) = ? "
+        "AND COALESCE(i.deleted, 0) = 0"
+    )
+    params = [datei_hash, int(tenant_id)]
+    if exclude_invoice_id is not None:
+        sql += " AND i.id <> ?"
+        params.append(int(exclude_invoice_id))
+    sql += " ORDER BY i.id ASC LIMIT 1"
+    cursor.execute(sql, params)
+    row = cursor.fetchone()
+    if should_close:
+        conn.close()
+    return dict(row) if row else None
+
+
+def check_duplicate_by_fields(invoice: dict, tenant_id: int,
+                              exclude_invoice_id: Optional[int] = None, conn=None) -> Optional[Dict]:
+    """NULL-sicherer Feld-Match: primär (tenant, rechnungsnummer, betrag_brutto).
+
+    ``rechnungsaussteller``/``datum`` werden NUR verschärfend genutzt, wenn sie
+    beidseitig vorhanden sind – so kippt der Match nicht (wie beim alten
+    content_hash) allein daran, dass der Aussteller im Briefkopf-Logo steht und
+    darum NULL ist. Ohne Nummer UND Betrag ist kein verlässlicher Feld-Match
+    möglich → None (kein False Positive)."""
+    nummer = str(invoice.get("rechnungsnummer") or "").strip()
+    brutto = invoice.get("betrag_brutto")
+    if not nummer or brutto is None:
+        return None
+    from database import get_connection
+
+    should_close = conn is None
+    if conn is None:
+        conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    params = [int(tenant_id), nummer.lower(), float(brutto)]
+    sql = (
+        "SELECT i.id, i.rechnungsnummer, i.datum, i.rechnungsaussteller, i.betrag_brutto "
+        "FROM invoices i LEFT JOIN jobs j ON i.job_id = j.job_id "
+        "WHERE COALESCE(i.tenant_id, j.user_id) = ? "
+        "AND LOWER(TRIM(COALESCE(i.rechnungsnummer, ''))) = ? "
+        "AND ABS(COALESCE(i.betrag_brutto, 0) - ?) < 0.01 "
+        "AND COALESCE(i.deleted, 0) = 0"
+    )
+    if exclude_invoice_id is not None:
+        sql += " AND i.id <> ?"
+        params.append(int(exclude_invoice_id))
+    # Verschärfung: Datum nur, wenn im NEUEN Beleg vorhanden (matcht dann exakt
+    # oder gegen NULL-Datum der Altzeile – kein Ausschluss allein wegen NULL).
+    datum = str(invoice.get("datum") or "").strip()
+    if datum:
+        sql += " AND (i.datum = ? OR i.datum IS NULL)"
+        params.append(datum)
+    sql += " ORDER BY i.id ASC LIMIT 1"
+    cursor.execute(sql, params)
+    row = cursor.fetchone()
+    if should_close:
+        conn.close()
+    return dict(row) if row else None
+
+
 def save_duplicate_detection(invoice_id: int, duplicate_of_id: int, method: str = 'hash', confidence: float = 1.0, conn=None):
     """Save duplicate detection to database"""
     from database import get_connection

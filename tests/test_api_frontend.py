@@ -185,6 +185,29 @@ def test_upload_runs_pipeline(client, token, monkeypatch):
     assert detail["betrag_brutto"] == 119.0
 
 
+def test_upload_reupload_identical_file_flagged_duplicate(client, token, monkeypatch):
+    """B6: derselbe Datei-Upload zweimal → zweiter wird als Duplikat markiert
+    (layoutunabhängig, auch ohne Aussteller)."""
+    import invoice_extraction
+    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text: {
+        "rechnungsnummer": "IT2025032", "datum": "2025-09-29", "betrag_brutto": "1880,20",
+        "betrag_netto": "1580,00", "mwst_betrag": "300,20", "mwst_satz": "19.0",
+        "steuernummer": "12/345/67890",  # rechnungsaussteller bewusst NULL (Briefkopf-Logo)
+    })
+    pdf = _make_pdf("Rechnung IT2025032\nBrutto 1880,20 EUR")
+    r1 = client.post("/api/app/upload", headers=_auth(token),
+                     files={"files": ("beleg.pdf", pdf, "application/pdf")})
+    assert r1.status_code == 200
+    assert r1.json()["invoices"][0]["duplicate"] is None  # erster Upload: kein Duplikat
+    # exakt dieselben Bytes erneut
+    r2 = client.post("/api/app/upload", headers=_auth(token),
+                     files={"files": ("beleg.pdf", pdf, "application/pdf")})
+    assert r2.status_code == 200
+    dup = r2.json()["invoices"][0]["duplicate"]
+    assert dup is not None and dup["method"] == "file_hash"
+    assert dup["of_id"] == r1.json()["invoices"][0]["id"]
+
+
 def test_upload_without_llm_sets_error(client, token, monkeypatch):
     import invoice_extraction
     def _raise(text):

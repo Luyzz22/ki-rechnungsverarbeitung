@@ -133,7 +133,7 @@ def ensure_extraction_columns() -> None:
 
     conn = get_connection()
     cur = conn.cursor()
-    for col in ("validierung_json", "kontierung_json", "datei_pfad", "extraktion_raw"):
+    for col in ("validierung_json", "kontierung_json", "datei_pfad", "extraktion_raw", "datei_hash"):
         try:
             cur.execute(f"PRAGMA table_info(invoices)")
             existing = [r[1] for r in cur.fetchall()]
