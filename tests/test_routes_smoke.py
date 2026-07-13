@@ -69,6 +69,13 @@ def client():
     return c
 
 
+def test_api_docs_disabled_by_default(client):
+    """Docs-Hardening: /docs, /redoc und /openapi.json sind ohne ENABLE_API_DOCS
+    NICHT erreichbar (dürfen nicht öffentlich sein)."""
+    for path in ("/docs", "/redoc", "/openapi.json"):
+        assert client.get(path).status_code == 404, path
+
+
 # Seiten, die mit 200 rendern müssen
 PAGES_200 = [
     "/login", "/register", "/password-reset/request",

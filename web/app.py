@@ -131,10 +131,19 @@ from datev_exporter import export_to_datev
 from notifications import send_notifications, check_low_confidence
 
 # FastAPI App
+# Sicherheit: interaktive API-Docs (/docs, /redoc, /openapi.json) sind
+# standardmäßig DEAKTIVIERT. Sie waren nach einem verlorenen Server-Handedit
+# stundenlang öffentlich erreichbar – die Härtung gehört ins Repo, damit sie
+# einen Deploy überlebt. Nur per ENABLE_API_DOCS=1 (z. B. lokal) einschaltbar
+# (secure by default).
+_api_docs_enabled = os.getenv("ENABLE_API_DOCS", "").strip().lower() in ("1", "true", "yes", "on")
 app = FastAPI(
     title="KI-Rechnungsverarbeitung Web",
     description="Automatische Rechnungsverarbeitung mit KI",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/docs" if _api_docs_enabled else None,
+    redoc_url="/redoc" if _api_docs_enabled else None,
+    openapi_url="/openapi.json" if _api_docs_enabled else None,
 )
 
 # === Exception Handlers ===
