@@ -4,8 +4,8 @@
 #
 #   sudo bash /var/www/invoice-app/deploy.sh [BRANCH]
 #
-# Aktualisiert Code, installiert Deps, migriert Schema (idempotent) und startet
-# den Dienst neu. Siehe DEPLOY.md für Details (nginx/systemd-Erststeinrichtung).
+# Aktualisiert Code, installiert Deps ins venv des Dienstes, migriert das Schema
+# (idempotent) und startet den Dienst neu. Siehe DEPLOY.md für Details.
 # =============================================================================
 set -euo pipefail
 
@@ -15,35 +15,53 @@ SERVICE="${SERVICE:-invoice-app}"
 DB_PATH="${INVOICE_DB_PATH:-$APP_DIR/invoices.db}"
 VENV="${VENV:-$APP_DIR/venv}"
 
-echo "==> App-Verzeichnis: $APP_DIR | Branch: $BRANCH"
 cd "$APP_DIR"
 
-echo "==> Remote prüfen"
-git remote -v | grep -q "Luyzz22/ki-rechnungsverarbeitung" \
-  || echo "WARN: origin zeigt nicht auf Luyzz22 – ggf. 'git remote set-url origin ...'"
+# --- Phase 1: Code deterministisch auf origin/$BRANCH bringen, dann re-exec ---
+# Wichtig: deploy.sh aktualisiert sich im Update selbst. Läuft danach dieselbe
+# bash-Instanz weiter, führt sie u. U. VERALTETE Bytes dieses Scripts aus – das
+# ließ zuvor weiter System-pip/-python statt des venv laufen. Deshalb nach dem
+# Update EINMAL die frische Fassung neu ausführen (Guard verhindert Endlosschleife).
+if [ "${DEPLOY_REEXEC:-0}" != "1" ]; then
+  echo "==> App-Verzeichnis: $APP_DIR | Branch: $BRANCH"
+  git remote -v | grep -q "Luyzz22/ki-rechnungsverarbeitung" \
+    || echo "WARN: origin zeigt nicht auf Luyzz22 – ggf. 'git remote set-url origin ...'"
 
-echo "==> Code aktualisieren ($BRANCH)"
-git stash --include-untracked || true
-git fetch origin
-git checkout "$BRANCH"
-git pull origin "$BRANCH"
+  echo "==> Code aktualisieren – harter Reset auf origin/$BRANCH (kein Stash)"
+  git fetch origin "$BRANCH"
+  git checkout "$BRANCH" 2>/dev/null || git checkout -B "$BRANCH" "origin/$BRANCH"
+  # Server-Handedits an versionierten Dateien werden bewusst verworfen (das Repo
+  # ist die Quelle der Wahrheit). venv/.env/invoices.db sind untracked/ignored
+  # und bleiben durch reset --hard unangetastet.
+  git reset --hard "origin/$BRANCH"
 
-# Konsequent das venv des Dienstes verwenden (systemd startet uvicorn aus dem
-# venv). System-pip3/python3 würde Deps am Dienst vorbei installieren.
+  echo "==> Frische deploy.sh-Fassung übernehmen (re-exec)"
+  DEPLOY_REEXEC=1 exec bash "$APP_DIR/deploy.sh" "$BRANCH"
+fi
+
+# --- Ab hier läuft GARANTIERT die frisch gezogene Script-Fassung -------------
 echo "==> Python-venv sicherstellen ($VENV)"
 if [ ! -x "$VENV/bin/python" ]; then
   echo "    venv fehlt – erstelle es"
   python3 -m venv "$VENV"
 fi
 PY="$VENV/bin/python"
-PIP="$VENV/bin/pip"
 
-echo "==> Abhängigkeiten installieren (venv)"
-"$PIP" install --upgrade pip >/dev/null 2>&1 || true
-"$PIP" install -r requirements.txt || {
-  echo "WARN: pip-Konflikt – versuche PDF-Stack ohne Deps"
-  "$PIP" install --no-deps pdfplumber pdfminer.six pypdfium2 || true
-}
+echo "==> Abhängigkeiten installieren (venv: $PY)"
+# Immer 'python -m pip' des venv verwenden – nie system pip3.
+"$PY" -m pip install --upgrade pip >/dev/null 2>&1 || true
+if ! "$PY" -m pip install -r requirements.txt; then
+  echo "WARN: pip-Konflikt bei requirements.txt – versuche PDF-Stack ohne Deps"
+  "$PY" -m pip install --no-deps pdfplumber pdfminer.six pypdfium2 || true
+fi
+
+# Harte Vorbedingung: ohne fastapi startet der Dienst nicht. Klar abbrechen,
+# statt später mit ModuleNotFoundError im Migrationsschritt zu scheitern.
+if ! "$PY" -c "import fastapi" 2>/dev/null; then
+  echo "ABBRUCH: 'fastapi' ist im venv nicht installiert."
+  echo "         Prüfe: $PY -m pip install -r requirements.txt"
+  exit 1
+fi
 
 echo "==> .env Pflichtwerte prüfen"
 miss=0
