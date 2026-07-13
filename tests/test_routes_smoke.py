@@ -69,6 +69,12 @@ def client():
     return c
 
 
+def test_api_health_ok(client):
+    """Deploy-Smoke-Test hängt an /api/health → muss 200 liefern."""
+    r = client.get("/api/health")
+    assert r.status_code == 200
+
+
 def test_api_docs_disabled_by_default(client):
     """Docs-Hardening: /docs, /redoc und /openapi.json sind ohne ENABLE_API_DOCS
     NICHT erreichbar (dürfen nicht öffentlich sein)."""
