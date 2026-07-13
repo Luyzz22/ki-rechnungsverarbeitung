@@ -30,6 +30,13 @@ lxml>=5.0.0,<6.0
 # AI / LLM
 openai>=2.3.0,<3.0
 anthropic>=0.40.0,<1.0
+# Hinweis: Die Gemini-Features (smart_maintenance / Nexus-Gateway) benötigen die
+# google-genai-SDK. Sie ist hier bewusst NICHT aufgenommen, weil
+# smart_maintenance beim Import init_maintenance_db() mit hartkodiertem Pfad
+# (/var/www/invoice-app/invoices.db) ausführt und so außerhalb der Prod-Umgebung
+# (CI/lokal) scheitert. Der api_nexus-Router wird ohne die SDK sauber
+# deaktiviert (siehe web/app.py). Zum Aktivieren zuerst den Import-Time-DB-Init
+# in smart_maintenance lazy/pfad-korrekt machen, dann google-genai ergänzen.
 
 # HTTP
 httpx>=0.28.0,<1.0
