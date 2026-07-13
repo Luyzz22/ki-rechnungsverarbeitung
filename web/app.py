@@ -19,7 +19,7 @@ sys.path.insert(0, "/var/www/invoice-app")
 try:
     from api_nexus import router as nexus_router
     NEXUS_AVAILABLE = True
-except ImportError:
+except Exception:  # ImportError ODER Import-Time-Fehler (z. B. smart_maintenance-DB-Init)
     NEXUS_AVAILABLE = False
 #!/usr/bin/env python3
 from dotenv import load_dotenv
@@ -49,7 +49,7 @@ sys.path.insert(0, "/var/www/invoice-app")
 try:
     from api_nexus import router as nexus_router
     NEXUS_AVAILABLE = True
-except ImportError:
+except Exception:  # ImportError ODER Import-Time-Fehler (z. B. smart_maintenance-DB-Init)
     NEXUS_AVAILABLE = False
 from fastapi.responses import FileResponse, RedirectResponse
 import logging
@@ -114,7 +114,7 @@ sys.path.insert(0, "/var/www/invoice-app")
 try:
     from api_nexus import router as nexus_router
     NEXUS_AVAILABLE = True
-except ImportError:
+except Exception:  # ImportError ODER Import-Time-Fehler (z. B. smart_maintenance-DB-Init)
     NEXUS_AVAILABLE = False
 import shutil
 from typing import List
@@ -4403,7 +4403,7 @@ sys.path.insert(0, "/var/www/invoice-app")
 try:
     from api_nexus import router as nexus_router
     NEXUS_AVAILABLE = True
-except ImportError:
+except Exception:  # ImportError ODER Import-Time-Fehler (z. B. smart_maintenance-DB-Init)
     NEXUS_AVAILABLE = False
 
 @app.get("/api/analytics/finance-snapshot")
@@ -7149,7 +7149,7 @@ try:
     from api_nexus import router as nexus_router
     app.include_router(nexus_router)
     print("✅ Nexus Gateway API aktiviert: /api/nexus/*")
-except ImportError as e:
+except Exception as e:  # ImportError ODER Import-Time-Fehler (fällt sauber auf "deaktiviert" zurück)
     print(f"⚠️ Nexus Gateway nicht verfügbar: {e}")
 
 
