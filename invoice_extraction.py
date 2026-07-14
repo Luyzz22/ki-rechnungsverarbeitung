@@ -371,6 +371,33 @@ def normalize_fields(raw: Dict[str, Any]) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Schritt 4: Validierung (deterministisch)
 # ---------------------------------------------------------------------------
+# Länderspezifische USt-IdNr-Muster (Auszug). DE = DE + 9 Ziffern.
+_UST_PATTERNS = {
+    "DE": r"^DE[0-9]{9}$",
+    "AT": r"^ATU[0-9]{8}$",
+    "CH": r"^CHE[0-9]{9}(MWST|TVA|IVA)?$",
+    "FR": r"^FR[0-9A-Z]{2}[0-9]{9}$",
+    "IT": r"^IT[0-9]{11}$",
+    "ES": r"^ES[0-9A-Z][0-9]{7}[0-9A-Z]$",
+    "NL": r"^NL[0-9]{9}B[0-9]{2}$",
+    "BE": r"^BE[0-9]{10}$",
+    "LU": r"^LU[0-9]{8}$",
+    "PL": r"^PL[0-9]{10}$",
+}
+
+
+def _valid_ust_idnr(ust: str) -> bool:
+    """Prüft das USt-IdNr-Format – länderspezifisch, wo bekannt (z. B. DE + 9
+    Ziffern), sonst generisch tolerant (Ländercode + 2–12 alphanumerisch)."""
+    ust = (ust or "").replace(" ", "").upper()
+    if not ust:
+        return False
+    pat = _UST_PATTERNS.get(ust[:2])
+    if pat:
+        return bool(re.match(pat, ust))
+    return bool(re.match(r"^[A-Z]{2}[A-Z0-9]{2,12}$", ust))
+
+
 def run_validation(fields: Dict[str, Any]) -> Dict[str, Any]:
     checks: List[Dict[str, Any]] = []
 
@@ -401,10 +428,10 @@ def run_validation(fields: Dict[str, Any]) -> Dict[str, Any]:
             ok = bool(re.match(r"^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$", iban))
         add("iban", ok, "warning", "IBAN ungültig" if not ok else "IBAN gültig")
 
-    # USt-IdNr-Format
-    ust = (fields.get("ust_idnr") or "").replace(" ", "")
+    # USt-IdNr-Format (länderspezifisch, wo bekannt; sonst generisch tolerant)
+    ust = (fields.get("ust_idnr") or "").replace(" ", "").upper()
     if ust:
-        ok = bool(re.match(r"^[A-Z]{2}[A-Z0-9]{2,12}$", ust))
+        ok = _valid_ust_idnr(ust)
         add("ust_idnr_format", ok, "warning", "USt-IdNr.-Format ungültig" if not ok else "Format ok")
 
     # Betrags-Vollständigkeit + Plausibilität – FAIL-CLOSED:

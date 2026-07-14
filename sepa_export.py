@@ -15,16 +15,38 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
+# Erwartete IBAN-Längen je Land (Auszug; weitere Länder werden über die
+# generische 15–34-Prüfung + Mod-97 abgedeckt).
+_IBAN_LENGTHS = {
+    "DE": 22, "AT": 20, "CH": 21, "FR": 27, "IT": 27, "ES": 24, "NL": 18,
+    "BE": 16, "LU": 20, "GB": 22, "PL": 28, "CZ": 24, "DK": 18, "SE": 24,
+}
+
+
 def validate_iban(iban: str) -> bool:
-    """Validiert IBAN-Format."""
+    """Validiert eine IBAN nach ISO 13616 (Format, Länge, Mod-97-Prüfziffer).
+
+    Vorgehen: Leerzeichen entfernen + Großschreibung, Format prüfen, erwartete
+    Landeslänge prüfen (falls bekannt), dann die ersten vier Zeichen ans Ende
+    stellen, Buchstaben in Zahlen umsetzen (A=10 … Z=35) und `int(...) % 97 == 1`
+    berechnen. Python-int ist beliebig genau – kein BigInt-Präzisionsproblem."""
     if not iban:
         return False
-    iban = iban.replace(" ", "").upper()
+    iban = re.sub(r"\s+", "", iban).upper()
     if len(iban) < 15 or len(iban) > 34:
         return False
     if not re.match(r'^[A-Z]{2}[0-9]{2}[A-Z0-9]+$', iban):
         return False
-    return True
+    expected = _IBAN_LENGTHS.get(iban[:2])
+    if expected is not None and len(iban) != expected:
+        return False
+    # Mod-97 (ISO 7064): erste 4 Zeichen ans Ende, Buchstaben → Zahlen.
+    rearranged = iban[4:] + iban[:4]
+    digits = "".join(str(ord(ch) - 55) if ch.isalpha() else ch for ch in rearranged)
+    try:
+        return int(digits) % 97 == 1
+    except ValueError:  # pragma: no cover - durch Regex bereits ausgeschlossen
+        return False
 
 
 def validate_bic(bic: str) -> bool:

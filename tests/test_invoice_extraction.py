@@ -320,6 +320,54 @@ def test_validation_bad_iban_flagged():
     assert iban_check["ok"] is False
 
 
+# --- IBAN-Validator (Mod-97) ----------------------------------------------
+@pytest.mark.parametrize("iban", [
+    "DE19100101238495732107",   # Beleg 46 (SBS)
+    "DE89370400440532013000",
+    "DE02120300000000202051",
+    "de19 1001 0123 8495 7321 07",  # Leerzeichen + Kleinschreibung
+])
+def test_validate_iban_valid(iban):
+    from sepa_export import validate_iban
+    assert validate_iban(iban) is True
+
+
+@pytest.mark.parametrize("iban", [
+    "DE20100101238495732107",   # falsche Prüfziffer
+    "DE88370400440532013000",   # falsche Prüfziffer
+    "DE191001012384957321",     # falsche Länge (DE=22)
+    "XX19100101238495732107",   # Nicht-Land / Mod-97 falsch
+    "",
+])
+def test_validate_iban_invalid(iban):
+    from sepa_export import validate_iban
+    assert validate_iban(iban) is False
+
+
+def test_run_validation_iban_and_ust_green_for_doc46():
+    """Beleg 46: IBAN + USt-IdNr sind gültig → beide Checks grün (nicht falsch-negativ)."""
+    v = ie.run_validation({
+        "rechnungsaussteller": "SBS Deutschland GmbH & Co. KG", "rechnungsnummer": "IT2025032",
+        "datum": "2025-09-29", "betrag_brutto": 1880.2, "betrag_netto": 1580.0,
+        "mwst_betrag": 300.2, "mwst_satz": 19.0, "steuernummer": "47013/22377",
+        "ust_idnr": "DE300066949", "iban": "DE19100101238495732107",
+    })
+    iban_check = next(c for c in v["checks"] if c["name"] == "iban")
+    ust_check = next(c for c in v["checks"] if c["name"] == "ust_idnr_format")
+    assert iban_check["ok"] is True
+    assert ust_check["ok"] is True
+
+
+@pytest.mark.parametrize("ust,ok", [
+    ("DE300066949", True), ("DE 300 066 949", True), ("de300066949", True),
+    ("DE30006694", False),   # nur 8 Ziffern
+    ("DE3000669490", False),  # 10 Ziffern
+    ("ATU12345678", True), ("ATU1234567", False),
+])
+def test_valid_ust_idnr(ust, ok):
+    assert ie._valid_ust_idnr(ust) is ok
+
+
 # --- Schritt 5: Kontierung ------------------------------------------------
 @pytest.mark.parametrize("satz,expected", [(19.0, 9), (7.0, 8), (0.0, 0), (None, 0)])
 def test_kontierung_steuerschluessel(satz, expected):
