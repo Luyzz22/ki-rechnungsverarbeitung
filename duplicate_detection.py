@@ -89,11 +89,16 @@ def _resolve_invoice_file(datei_pfad, job_upload_path):
 
     if datei_pfad and os.path.isfile(datei_pfad):
         return datei_pfad
+    # jobs.upload_path ist ein GETEILTES Verzeichnis. Bei Mehr-Datei-Jobs lässt
+    # sich Zeile→Datei nicht eindeutig zuordnen – dann NICHT raten (sonst bekämen
+    # alle Rechnungen des Jobs denselben Hash → falsche Datei-Hash-Duplikate).
+    # Nur verwenden, wenn genau EINE passende Datei im Verzeichnis liegt.
     if job_upload_path and os.path.isdir(job_upload_path):
-        for name in sorted(os.listdir(job_upload_path)):
-            full = os.path.join(job_upload_path, name)
-            if os.path.isfile(full) and name.lower().endswith((".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".xml")):
-                return full
+        exts = (".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".xml")
+        eligible = [os.path.join(job_upload_path, n) for n in sorted(os.listdir(job_upload_path))
+                    if n.lower().endswith(exts) and os.path.isfile(os.path.join(job_upload_path, n))]
+        if len(eligible) == 1:
+            return eligible[0]
     return None
 
 
@@ -166,6 +171,28 @@ def check_duplicate_by_file_hash(datei_hash: str, tenant_id: int,
     return dict(row) if row else None
 
 
+def _normalize_date(value) -> Optional[str]:
+    """Bringt gängige Datumsformate auf YYYY-MM-DD (format-tolerant für den
+    Duplikat-Guard). Unparsbares → None (= „unbekannt", schließt NICHT aus)."""
+    import re
+    s = str(value or "").strip()
+    if not s:
+        return None
+    m = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})", s)
+    if m:
+        y, mo, d = m.groups()
+        return f"{y}-{int(mo):02d}-{int(d):02d}"
+    m = re.match(r"^(\d{1,2})[.](\d{1,2})[.](\d{4})", s)
+    if m:
+        d, mo, y = m.groups()
+        return f"{y}-{int(mo):02d}-{int(d):02d}"
+    m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{4})", s)
+    if m:
+        d, mo, y = m.groups()
+        return f"{y}-{int(mo):02d}-{int(d):02d}"
+    return None
+
+
 def check_duplicate_by_fields(invoice: dict, tenant_id: int,
                               exclude_invoice_id: Optional[int] = None, conn=None) -> Optional[Dict]:
     """NULL-sicherer Feld-Match: primär (tenant, rechnungsnummer, betrag_brutto).
@@ -207,25 +234,29 @@ def check_duplicate_by_fields(invoice: dict, tenant_id: int,
         sql += (" AND (COALESCE(TRIM(i.rechnungsaussteller), '') = '' "
                 "OR LOWER(TRIM(i.rechnungsaussteller)) = ?)")
         params.append(aussteller.lower())
-    # WICHTIG (B6-Regression): Das Datum wird NICHT als Ausschlusskriterium in die
-    # WHERE-Klausel genommen. Bestandsrechnungen wurden vor den Extraktions-/
-    # Normalisierungs-Verbesserungen erfasst; ihr gespeichertes ``datum`` weicht
-    # oft im Format ab (z. B. "29.09.2025" vs. "2025-09-29"). Eine harte
-    # Gleichheit hätte exakt diese Alt-Duplikate (Doc 36/41) fälschlich
-    # ausgeschlossen. Identität ist (tenant, rechnungsnummer, betrag_brutto);
-    # das Datum dient nur als Sortier-Präferenz (gleiches/ähnliches Datum zuerst).
-    datum = str(invoice.get("datum") or "").strip()
-    if datum:
-        # Bevorzugt Treffer mit gleichem Datum, schließt abweichende NICHT aus.
-        sql += " ORDER BY (CASE WHEN i.datum = ? THEN 0 ELSE 1 END), i.id ASC LIMIT 1"
-        params.append(datum)
-    else:
-        sql += " ORDER BY i.id ASC LIMIT 1"
+    sql += " ORDER BY i.id ASC"
     cursor.execute(sql, params)
-    row = cursor.fetchone()
+    rows = cursor.fetchall()
     if should_close:
         conn.close()
-    return dict(row) if row else None
+
+    # Datums-Guard FORMAT-TOLERANT und in Python (nicht als harte SQL-Gleichheit):
+    # Das Datum wird auf YYYY-MM-DD normalisiert. Ein Kandidat wird NUR
+    # ausgeschlossen, wenn BEIDE Daten vorhanden sind UND sich nach Normalisierung
+    # unterscheiden (verhindert False Positives bei wiederkehrenden Belegen mit
+    # gleicher simpler Nummer + gleichem Betrag, aber anderem Datum). Format-
+    # Abweichungen (Doc 36/41: "29.09.2025" vs. "2025-09-29") gelten als gleich.
+    new_date = _normalize_date(invoice.get("datum"))
+    fallback = None
+    for row in rows:
+        stored = _normalize_date(row["datum"])
+        if new_date and stored:
+            if new_date == stored:
+                return dict(row)          # exakter (normalisierter) Datumstreffer
+            continue                      # beide bekannt & verschieden → kein Duplikat
+        if fallback is None:              # mind. eine Seite ohne Datum → kompatibel
+            fallback = row
+    return dict(fallback) if fallback else None
 
 
 def save_duplicate_detection(invoice_id: int, duplicate_of_id: int, method: str = 'hash', confidence: float = 1.0, conn=None):
