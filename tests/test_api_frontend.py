@@ -1,5 +1,6 @@
 """E2E-Test der Frontend-JSON-API (/api/app, Bearer-Auth) für die Next.js-SPA."""
 
+import json
 import os
 import tempfile
 
@@ -258,9 +259,20 @@ def test_upload_reupload_identical_file_flagged_duplicate(client, token, monkeyp
     r2 = client.post("/api/app/upload", headers=_auth(token),
                      files={"files": ("beleg.pdf", pdf, "application/pdf")})
     assert r2.status_code == 200
-    dup = r2.json()["invoices"][0]["duplicate"]
+    inv2 = r2.json()["invoices"][0]
+    dup = inv2["duplicate"]
     assert dup is not None and dup["method"] == "file_hash"
     assert dup["of_id"] == r1.json()["invoices"][0]["id"]
+    # Der Duplikat-Treffer MUSS in validierung_json stehen (Quelle der Detail-
+    # Ansicht/Compliance-Panel) und den Status auf 'pruefen' setzen – sonst zeigt
+    # die UI weiter „+10/10 kein Duplikat", obwohl der Hash matcht.
+    assert inv2["status"] == "pruefen"
+    detail = client.get(f"/api/app/invoices/{inv2['id']}", headers=_auth(token)).json()
+    val = json.loads(detail["validierung_json"])
+    dcheck = next(c for c in val["checks"] if c["name"] == "duplikat")
+    assert dcheck["ok"] is False and dcheck["severity"] == "error"
+    assert str(r1.json()["invoices"][0]["id"]) in dcheck["message"]
+    assert val["ok"] is False
 
 
 def test_upload_same_basename_distinct_hashes(client, token, monkeypatch):

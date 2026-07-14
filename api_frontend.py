@@ -397,6 +397,34 @@ async def api_audit_csv(request: Request, action: str = "", date_from: str = "",
 # ---------------------------------------------------------------------------
 # Upload (multipart) – KI-Extraktions-Pipeline (synchron, MVP)
 # ---------------------------------------------------------------------------
+def _apply_duplicate_to_outcome(outcome: Dict[str, Any], duplicate: Optional[Dict[str, Any]]) -> None:
+    """Spiegelt das Duplikat-Ergebnis in ``outcome['validation']`` (validierung_json),
+    damit die Detail-Ansicht/Compliance-Panel den „Duplikat"-Check korrekt anzeigt
+    (die Panels lesen validierung_json, nicht die duplicate_detections-Tabelle).
+    Bei einem Treffer wird zusätzlich der Status auf 'pruefen' gesetzt (keine
+    stille Auto-Freigabe eines Duplikats)."""
+    val = outcome.get("validation")
+    if not isinstance(val, dict):
+        val = {"ok": True, "error_count": 0, "checks": []}
+        outcome["validation"] = val
+    checks = val.setdefault("checks", [])
+    # idempotent: evtl. vorhandenen alten Duplikat-Check entfernen (Reprocess)
+    checks[:] = [c for c in checks if c.get("name") != "duplikat"]
+    is_dup = duplicate is not None
+    checks.append({
+        "name": "duplikat",
+        "ok": not is_dup,
+        "severity": "error" if is_dup else "info",
+        "message": (f"Identische Rechnung bereits vorhanden (ID {duplicate['of_id']})"
+                    if is_dup else "Keine identische Rechnung gefunden"),
+    })
+    if is_dup:
+        val["ok"] = False
+        val["error_count"] = int(val.get("error_count", 0) or 0) + 1
+        if outcome.get("status") in ("verarbeitet", None):
+            outcome["status"] = "pruefen"
+
+
 @router.post("/upload")
 async def api_upload(request: Request, files: List[UploadFile] = File(...)):
     """Nimmt PDF-Rechnungen entgegen, speichert sie, legt je Datei einen
@@ -464,42 +492,50 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
         conn.commit()
         conn.close()
 
-        # B6: layoutunabhängige Duplikatserkennung über den Datei-Hash (fängt
-        # Re-Uploads auch bei NULL-Aussteller – der alte content_hash versagte da).
-        duplicate = None
-        try:
-            match = duplicate_detection.check_duplicate_by_file_hash(
-                file_hash, tid, exclude_invoice_id=invoice_id)
-            if match:
-                duplicate = {"of_id": match["id"], "method": "file_hash"}
-                duplicate_detection.save_duplicate_detection(
-                    invoice_id, match["id"], method="file_hash", confidence=1.0)
-        except Exception as exc:  # pragma: no cover - Duplikat-Check darf Upload nie sprengen
-            logger.warning("Duplikat-Check (file_hash) invoice=%s: %s", invoice_id, exc)
-
         # Pipeline synchron ausführen (crasht nie – Status spiegelt Fehler)
         try:
             outcome = invoice_extraction.process_pdf(path)
         except Exception as exc:  # pragma: no cover - defensive
             outcome = {"status": "fehler", "error": str(exc), "fields": {},
                        "validation": None, "kontierung": None}
-        try:
-            invoice_extraction.update_invoice_record(invoice_id, outcome)
-        except Exception as exc:  # pragma: no cover
-            logger.error("update_invoice_record id=%s: %s", invoice_id, exc)
 
-        # B6: zusätzlich NULL-sicherer Feld-Match (Nummer+Betrag), falls der
-        # Datei-Hash nichts fand (z. B. re-exportiertes PDF gleicher Rechnung).
+        # B6: Duplikatserkennung – zuerst layoutunabhängig über den Datei-Hash
+        # (fängt Re-Uploads auch bei NULL-Aussteller), sonst NULL-sicherer
+        # Feld-Match (Nummer+Betrag). BEIDE Checks laufen VOR update_invoice_record,
+        # damit das Ergebnis in validierung_json landet – sonst zeigt die
+        # Detail-Ansicht/Compliance-Panel den Treffer nie an.
+        duplicate = None
+        try:
+            match = duplicate_detection.check_duplicate_by_file_hash(
+                file_hash, tid, exclude_invoice_id=invoice_id)
+            if match:
+                duplicate = {"of_id": match["id"], "method": "file_hash"}
+        except Exception as exc:  # pragma: no cover - Duplikat-Check darf Upload nie sprengen
+            logger.warning("Duplikat-Check (file_hash) invoice=%s: %s", invoice_id, exc)
         if duplicate is None:
             try:
                 fmatch = duplicate_detection.check_duplicate_by_fields(
                     outcome.get("fields") or {}, tid, exclude_invoice_id=invoice_id)
                 if fmatch:
                     duplicate = {"of_id": fmatch["id"], "method": "fields"}
-                    duplicate_detection.save_duplicate_detection(
-                        invoice_id, fmatch["id"], method="fields", confidence=0.9)
             except Exception as exc:  # pragma: no cover
                 logger.warning("Duplikat-Check (fields) invoice=%s: %s", invoice_id, exc)
+
+        if duplicate is not None:
+            try:
+                duplicate_detection.save_duplicate_detection(
+                    invoice_id, duplicate["of_id"], method=duplicate["method"],
+                    confidence=1.0 if duplicate["method"] == "file_hash" else 0.9)
+            except Exception as exc:  # pragma: no cover
+                logger.warning("save_duplicate_detection invoice=%s: %s", invoice_id, exc)
+        # Duplikat-Ergebnis ins validierung_json spiegeln + Status auf 'pruefen'.
+        _apply_duplicate_to_outcome(outcome, duplicate)
+
+        # Persistieren (Felder + validierung_json inkl. Duplikat-Check + Status)
+        try:
+            invoice_extraction.update_invoice_record(invoice_id, outcome)
+        except Exception as exc:  # pragma: no cover
+            logger.error("update_invoice_record id=%s: %s", invoice_id, exc)
 
         audit_events.log_event(tid, audit_events.AuditEvent.KI_EXTRAKTION, user_id=tid,
                                entity_type="invoice", entity_id=invoice_id,
