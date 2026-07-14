@@ -22,6 +22,10 @@ from google.genai import types
 from dotenv import load_dotenv
 load_dotenv()
 
+# Zentrale DB-Verbindung (routet auf Postgres via DATABASE_URL bzw. die
+# konfigurierte SQLite-DB) – ersetzt hartkodierte /var/www/...-Pfade.
+from database import get_connection
+
 # Gemini Configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
@@ -123,7 +127,7 @@ def search_invoices_by_part(search_terms: List[str], user_id: int = None) -> Lis
     Sucht in Rechnungen nach Teilen basierend auf Suchbegriffen.
     Gibt Lieferanten, Preise und letzte Bestelldaten zurück.
     """
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -189,7 +193,7 @@ def get_supplier_statistics(supplier_name: str, user_id: int = None) -> Dict:
     """
     Statistiken zu einem Lieferanten: Bestellvolumen, Häufigkeit, Durchschnittspreise
     """
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     
     query = """
@@ -544,7 +548,7 @@ async def process_maintenance_request(
 
 def init_maintenance_db():
     """Initialisiert Maintenance-Requests Tabelle"""
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -580,7 +584,8 @@ def init_maintenance_db():
 
 def save_maintenance_request(result: Dict, user_id: int = None) -> int:
     """Speichert Maintenance Request in DB"""
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    init_maintenance_db()  # lazy, idempotent (CREATE TABLE IF NOT EXISTS)
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -607,8 +612,9 @@ def save_maintenance_request(result: Dict, user_id: int = None) -> int:
     return request_id
 
 
-# Init DB on import
-init_maintenance_db()
+# Hinweis: init_maintenance_db() wird NICHT beim Import ausgeführt (das schlug
+# außerhalb der Prod-Umgebung fehl und riss den gesamten Nexus-Router mit).
+# Die Tabelle wird stattdessen lazy in save_maintenance_request() angelegt.
 
 
 # ============================================================================
