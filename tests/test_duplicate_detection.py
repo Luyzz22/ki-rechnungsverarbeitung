@@ -21,7 +21,7 @@ def db(tmp_path, monkeypatch):
     monkeypatch.setattr(database, "_ensure_db_path", lambda: p)
     conn = database.get_connection()
     cur = conn.cursor()
-    cur.execute("CREATE TABLE jobs (job_id TEXT PRIMARY KEY, user_id INTEGER, created_at TEXT)")
+    cur.execute("CREATE TABLE jobs (job_id TEXT PRIMARY KEY, user_id INTEGER, created_at TEXT, upload_path TEXT)")
     cur.execute(
         """CREATE TABLE invoices (
             id INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT, rechnungsnummer TEXT,
@@ -92,6 +92,27 @@ def test_field_match_null_supplier(db):
     m = dd.check_duplicate_by_fields(
         {"rechnungsnummer": "IT2025032", "betrag_brutto": 1880.2}, 1)
     assert m and m["id"] == a
+
+
+def test_field_match_ignores_datum_format_mismatch(db):
+    """B6-Regression (Doc 36/41/45): Bestandsrechnung mit ABWEICHENDEM Datums-
+    format (vor der Normalisierung erfasst) darf den Feld-Match NICHT verhindern.
+    Identität = (tenant, nummer, betrag); Datum ist nur Sortier-Präferenz."""
+    old = _seed("IT2025032", 1880.2, aussteller=None, datum="29.09.2025")  # Altformat
+    m = dd.check_duplicate_by_fields(
+        {"rechnungsnummer": "IT2025032", "betrag_brutto": 1880.2,
+         "datum": "2025-09-29", "rechnungsaussteller": None}, 1)  # neu normalisiert
+    assert m and m["id"] == old
+
+
+def test_field_match_prefers_same_datum(db):
+    """Bei mehreren Kandidaten wird der mit gleichem Datum bevorzugt (aber keiner
+    ausgeschlossen)."""
+    other = _seed("R-1", 100.0, aussteller=None, datum="2020-01-01")
+    same = _seed("R-1", 100.0, aussteller=None, datum="2026-05-05")
+    m = dd.check_duplicate_by_fields(
+        {"rechnungsnummer": "R-1", "betrag_brutto": 100.0, "datum": "2026-05-05"}, 1)
+    assert m and m["id"] == same
 
 
 def test_field_match_different_amount_no_false_positive(db):
