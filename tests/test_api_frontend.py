@@ -202,6 +202,44 @@ def test_upload_runs_pipeline(client, token, monkeypatch):
     assert detail["betrag_brutto"] == 119.0
 
 
+def test_upload_detects_duplicate_of_pre_migration_row(client, monkeypatch):
+    """B6-Regression (echter Upload-Pfad): Bestandsrechnung OHNE datei_hash
+    (vor der Migration) und mit ABWEICHENDEM Datumsformat muss beim erneuten
+    Upload derselben Rechnung als Duplikat erkannt werden – über den Feld-Match
+    (Nummer+Betrag, tenant-gefiltert, NULL-sicher), nicht nur über den Datei-Hash.
+    Genau dieser Fall (Doc 36/41/45) versagte auf Prod, während der Unit-Test grün war."""
+    import database
+    import invoice_extraction
+    tok = client.post("/api/app/register", json={
+        "email": "b6reg@test.de", "password": "Test1234", "name": "B6", "company": "X"}).json()["token"]
+    tid = _tenant_id(client, tok)
+    # Bestehende Rechnung wie Doc 36: kein datei_hash, kein Aussteller (Briefkopf-
+    # Logo), Datum im Altformat.
+    conn = database.get_connection(); cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO invoices (rechnungsnummer, datum, rechnungsaussteller, betrag_brutto, "
+        "tenant_id, created_at) VALUES (?,?,?,?,?,?)",
+        ("IT2025032", "29.09.2025", None, 1880.2, tid, "2025-09-29T10:00:00"))
+    existing_id = cur.lastrowid
+    conn.commit(); conn.close()
+
+    # Neuer Upload derselben Rechnung – Extraktion liefert dieselben Werte,
+    # aber Datum im normalisierten Neuformat und weiterhin OHNE Aussteller.
+    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text: {
+        "rechnungsnummer": "IT2025032", "datum": "2025-09-29", "betrag_brutto": "1880,20",
+        "betrag_netto": "1580,00", "mwst_betrag": "300,20", "mwst_satz": "19.0",
+        "steuernummer": "12/345/67890",  # rechnungsaussteller bewusst NULL
+    })
+    r = client.post("/api/app/upload", headers=_auth(tok),
+                    files={"files": ("SBS GB IT 2025032 FST BER.pdf", _make_pdf("IT2025032"),
+                                     "application/pdf")})
+    assert r.status_code == 200, r.text
+    dup = r.json()["invoices"][0]["duplicate"]
+    assert dup is not None, "Duplikat des Altbestands (ohne Hash, anderes Datumsformat) muss erkannt werden"
+    assert dup["method"] == "fields"
+    assert dup["of_id"] == existing_id
+
+
 def test_upload_reupload_identical_file_flagged_duplicate(client, token, monkeypatch):
     """B6: derselbe Datei-Upload zweimal → zweiter wird als Duplikat markiert
     (layoutunabhängig, auch ohne Aussteller)."""

@@ -79,11 +79,34 @@ def compute_file_hash(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
+def _resolve_invoice_file(datei_pfad, job_upload_path):
+    """Findet die zu einer Rechnung gehörende Datei für den Hash-Backfill.
+
+    Bevorzugt ``datei_pfad``; fällt sonst auf das Upload-Verzeichnis des Jobs
+    zurück (klassischer Flow speicherte den Pfad nur dort). Gibt den Pfad zur
+    ersten passenden Datei zurück oder ``None``."""
+    import os
+
+    if datei_pfad and os.path.isfile(datei_pfad):
+        return datei_pfad
+    # jobs.upload_path ist ein GETEILTES Verzeichnis. Bei Mehr-Datei-Jobs lässt
+    # sich Zeile→Datei nicht eindeutig zuordnen – dann NICHT raten (sonst bekämen
+    # alle Rechnungen des Jobs denselben Hash → falsche Datei-Hash-Duplikate).
+    # Nur verwenden, wenn genau EINE passende Datei im Verzeichnis liegt.
+    if job_upload_path and os.path.isdir(job_upload_path):
+        exts = (".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".xml")
+        eligible = [os.path.join(job_upload_path, n) for n in sorted(os.listdir(job_upload_path))
+                    if n.lower().endswith(exts) and os.path.isfile(os.path.join(job_upload_path, n))]
+        if len(eligible) == 1:
+            return eligible[0]
+    return None
+
+
 def backfill_datei_hashes(limit: int = 1000) -> int:
     """Berechnet ``datei_hash`` für Bestandsrechnungen ohne Hash (einmalig,
-    idempotent). Best effort: nur Zeilen mit vorhandener Datei (``datei_pfad``);
-    Fehler brechen weder Migration noch Start. Gibt die Anzahl gefüllter Zeilen zurück."""
-    import os
+    idempotent). Best effort: nutzt ``datei_pfad`` ODER das jobs.upload_path des
+    zugehörigen Jobs (klassischer Flow). Fehler brechen weder Migration noch
+    Start. Gibt die Anzahl gefüllter Zeilen zurück."""
     from database import get_connection
 
     filled = 0
@@ -92,16 +115,17 @@ def backfill_datei_hashes(limit: int = 1000) -> int:
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, datei_pfad FROM invoices "
-            "WHERE (datei_hash IS NULL OR datei_hash = '') AND datei_pfad IS NOT NULL "
+            "SELECT i.id, i.datei_pfad, j.upload_path "
+            "FROM invoices i LEFT JOIN jobs j ON i.job_id = j.job_id "
+            "WHERE (i.datei_hash IS NULL OR i.datei_hash = '') "
             "LIMIT ?",
             (int(limit),),
         )
         rows = cur.fetchall()
         for row in rows:
-            path = row["datei_pfad"]
             try:
-                if path and os.path.isfile(path):
+                path = _resolve_invoice_file(row["datei_pfad"], row["upload_path"])
+                if path:
                     with open(path, "rb") as fh:
                         h = compute_file_hash(fh.read())
                     cur.execute("UPDATE invoices SET datei_hash = ? WHERE id = ?", (h, row["id"]))
@@ -147,6 +171,28 @@ def check_duplicate_by_file_hash(datei_hash: str, tenant_id: int,
     return dict(row) if row else None
 
 
+def _normalize_date(value) -> Optional[str]:
+    """Bringt gängige Datumsformate auf YYYY-MM-DD (format-tolerant für den
+    Duplikat-Guard). Unparsbares → None (= „unbekannt", schließt NICHT aus)."""
+    import re
+    s = str(value or "").strip()
+    if not s:
+        return None
+    m = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})", s)
+    if m:
+        y, mo, d = m.groups()
+        return f"{y}-{int(mo):02d}-{int(d):02d}"
+    m = re.match(r"^(\d{1,2})[.](\d{1,2})[.](\d{4})", s)
+    if m:
+        d, mo, y = m.groups()
+        return f"{y}-{int(mo):02d}-{int(d):02d}"
+    m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{4})", s)
+    if m:
+        d, mo, y = m.groups()
+        return f"{y}-{int(mo):02d}-{int(d):02d}"
+    return None
+
+
 def check_duplicate_by_fields(invoice: dict, tenant_id: int,
                               exclude_invoice_id: Optional[int] = None, conn=None) -> Optional[Dict]:
     """NULL-sicherer Feld-Match: primär (tenant, rechnungsnummer, betrag_brutto).
@@ -188,18 +234,29 @@ def check_duplicate_by_fields(invoice: dict, tenant_id: int,
         sql += (" AND (COALESCE(TRIM(i.rechnungsaussteller), '') = '' "
                 "OR LOWER(TRIM(i.rechnungsaussteller)) = ?)")
         params.append(aussteller.lower())
-    # Verschärfung: Datum nur, wenn im NEUEN Beleg vorhanden (matcht dann exakt
-    # oder gegen NULL-Datum der Altzeile – kein Ausschluss allein wegen NULL).
-    datum = str(invoice.get("datum") or "").strip()
-    if datum:
-        sql += " AND (i.datum = ? OR i.datum IS NULL)"
-        params.append(datum)
-    sql += " ORDER BY i.id ASC LIMIT 1"
+    sql += " ORDER BY i.id ASC"
     cursor.execute(sql, params)
-    row = cursor.fetchone()
+    rows = cursor.fetchall()
     if should_close:
         conn.close()
-    return dict(row) if row else None
+
+    # Datums-Guard FORMAT-TOLERANT und in Python (nicht als harte SQL-Gleichheit):
+    # Das Datum wird auf YYYY-MM-DD normalisiert. Ein Kandidat wird NUR
+    # ausgeschlossen, wenn BEIDE Daten vorhanden sind UND sich nach Normalisierung
+    # unterscheiden (verhindert False Positives bei wiederkehrenden Belegen mit
+    # gleicher simpler Nummer + gleichem Betrag, aber anderem Datum). Format-
+    # Abweichungen (Doc 36/41: "29.09.2025" vs. "2025-09-29") gelten als gleich.
+    new_date = _normalize_date(invoice.get("datum"))
+    fallback = None
+    for row in rows:
+        stored = _normalize_date(row["datum"])
+        if new_date and stored:
+            if new_date == stored:
+                return dict(row)          # exakter (normalisierter) Datumstreffer
+            continue                      # beide bekannt & verschieden → kein Duplikat
+        if fallback is None:              # mind. eine Seite ohne Datum → kompatibel
+            fallback = row
+    return dict(fallback) if fallback else None
 
 
 def save_duplicate_detection(invoice_id: int, duplicate_of_id: int, method: str = 'hash', confidence: float = 1.0, conn=None):

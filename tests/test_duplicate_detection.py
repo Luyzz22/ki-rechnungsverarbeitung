@@ -21,7 +21,7 @@ def db(tmp_path, monkeypatch):
     monkeypatch.setattr(database, "_ensure_db_path", lambda: p)
     conn = database.get_connection()
     cur = conn.cursor()
-    cur.execute("CREATE TABLE jobs (job_id TEXT PRIMARY KEY, user_id INTEGER, created_at TEXT)")
+    cur.execute("CREATE TABLE jobs (job_id TEXT PRIMARY KEY, user_id INTEGER, created_at TEXT, upload_path TEXT)")
     cur.execute(
         """CREATE TABLE invoices (
             id INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT, rechnungsnummer TEXT,
@@ -92,6 +92,74 @@ def test_field_match_null_supplier(db):
     m = dd.check_duplicate_by_fields(
         {"rechnungsnummer": "IT2025032", "betrag_brutto": 1880.2}, 1)
     assert m and m["id"] == a
+
+
+def test_field_match_ignores_datum_format_mismatch(db):
+    """B6-Regression (Doc 36/41/45): Bestandsrechnung mit ABWEICHENDEM Datums-
+    format (vor der Normalisierung erfasst) darf den Feld-Match NICHT verhindern.
+    Identität = (tenant, nummer, betrag); Datum ist nur Sortier-Präferenz."""
+    old = _seed("IT2025032", 1880.2, aussteller=None, datum="29.09.2025")  # Altformat
+    m = dd.check_duplicate_by_fields(
+        {"rechnungsnummer": "IT2025032", "betrag_brutto": 1880.2,
+         "datum": "2025-09-29", "rechnungsaussteller": None}, 1)  # neu normalisiert
+    assert m and m["id"] == old
+
+
+def test_field_match_prefers_same_datum(db):
+    """Bei mehreren Kandidaten wird der mit gleichem Datum bevorzugt (aber keiner
+    ausgeschlossen)."""
+    other = _seed("R-1", 100.0, aussteller=None, datum="2020-01-01")
+    same = _seed("R-1", 100.0, aussteller=None, datum="2026-05-05")
+    m = dd.check_duplicate_by_fields(
+        {"rechnungsnummer": "R-1", "betrag_brutto": 100.0, "datum": "2026-05-05"}, 1)
+    assert m and m["id"] == same
+
+
+def test_field_match_different_dates_no_false_positive(db):
+    """Codex P2: gleiche Nummer + gleicher Betrag + NULL-Aussteller, aber
+    VERSCHIEDENE (beidseitig vorhandene) Daten → KEIN Duplikat (wiederkehrende
+    Belege mit simpler Nummer). Datum bleibt format-toleranter Discriminator."""
+    _seed("2026-001", 100.0, aussteller=None, datum="2026-01-15")
+    m = dd.check_duplicate_by_fields(
+        {"rechnungsnummer": "2026-001", "betrag_brutto": 100.0,
+         "datum": "2026-07-15", "rechnungsaussteller": None}, 1)
+    assert m is None
+
+
+def test_backfill_skips_ambiguous_multifile_job(db, tmp_path):
+    """Codex P1: bei Mehr-Datei-Jobs (geteiltes upload_path, mehrere Rechnungen
+    ohne datei_pfad) darf der Backfill KEINEN geteilten Hash setzen."""
+    job_dir = tmp_path / "job1"; job_dir.mkdir()
+    (job_dir / "a.pdf").write_bytes(b"AAA")
+    (job_dir / "b.pdf").write_bytes(b"BBB")
+    conn = database.get_connection(); cur = conn.cursor()
+    cur.execute("INSERT INTO jobs (job_id, user_id, upload_path) VALUES (?,?,?)", ("job1", 1, str(job_dir)))
+    for nr in ("A", "B"):
+        cur.execute("INSERT INTO invoices (job_id, rechnungsnummer, betrag_brutto, tenant_id) VALUES (?,?,?,?)",
+                    ("job1", nr, 10.0, 1))
+    conn.commit(); conn.close()
+    dd.backfill_datei_hashes()
+    conn = database.get_connection(); cur = conn.cursor()
+    hashes = [r[0] for r in cur.execute("SELECT datei_hash FROM invoices WHERE job_id='job1' ORDER BY id").fetchall()]
+    conn.close()
+    assert hashes == [None, None]
+
+
+def test_backfill_single_file_job_gets_hash(db, tmp_path):
+    """Ein-Datei-Job (eindeutig) bekommt den korrekten Hash über upload_path."""
+    job_dir = tmp_path / "job2"; job_dir.mkdir()
+    content = b"%PDF single file"
+    (job_dir / "only.pdf").write_bytes(content)
+    conn = database.get_connection(); cur = conn.cursor()
+    cur.execute("INSERT INTO jobs (job_id, user_id, upload_path) VALUES (?,?,?)", ("job2", 1, str(job_dir)))
+    cur.execute("INSERT INTO invoices (job_id, rechnungsnummer, betrag_brutto, tenant_id) VALUES (?,?,?,?)",
+                ("job2", "S", 5.0, 1))
+    conn.commit(); conn.close()
+    dd.backfill_datei_hashes()
+    conn = database.get_connection(); cur = conn.cursor()
+    h = cur.execute("SELECT datei_hash FROM invoices WHERE job_id='job2'").fetchone()[0]
+    conn.close()
+    assert h == dd.compute_file_hash(content)
 
 
 def test_field_match_different_amount_no_false_positive(db):
