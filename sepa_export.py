@@ -23,16 +23,28 @@ _IBAN_LENGTHS = {
 }
 
 
+def normalize_iban(iban: str) -> str:
+    """Kanonische IBAN: OHNE jegliche Whitespaces (auch Tabs/Zeilenumbrüche/NBSP),
+    in Großbuchstaben. Muss überall genutzt werden, wo eine IBAN geschrieben wird
+    (Validierung UND SEPA-Export), damit kein akzeptierter, aber whitespace-
+    behafteter Wert ins XML gelangt (Banken lehnen das ab)."""
+    return re.sub(r"\s+", "", iban or "").replace(" ", "").upper()
+
+
+def _normalize_bic(bic: str) -> str:
+    return re.sub(r"\s+", "", bic or "").replace(" ", "").upper()
+
+
 def validate_iban(iban: str) -> bool:
     """Validiert eine IBAN nach ISO 13616 (Format, Länge, Mod-97-Prüfziffer).
 
-    Vorgehen: Leerzeichen entfernen + Großschreibung, Format prüfen, erwartete
+    Vorgehen: Whitespaces entfernen + Großschreibung, Format prüfen, erwartete
     Landeslänge prüfen (falls bekannt), dann die ersten vier Zeichen ans Ende
     stellen, Buchstaben in Zahlen umsetzen (A=10 … Z=35) und `int(...) % 97 == 1`
     berechnen. Python-int ist beliebig genau – kein BigInt-Präzisionsproblem."""
     if not iban:
         return False
-    iban = re.sub(r"\s+", "", iban).upper()
+    iban = normalize_iban(iban)
     if len(iban) < 15 or len(iban) > 34:
         return False
     if not re.match(r'^[A-Z]{2}[0-9]{2}[A-Z0-9]+$', iban):
@@ -150,13 +162,13 @@ def generate_sepa_xml(
     # Debtor Account
     dbtr_acct = ET.SubElement(pmt_inf, "DbtrAcct")
     dbtr_id = ET.SubElement(dbtr_acct, "Id")
-    ET.SubElement(dbtr_id, "IBAN").text = debtor_iban.replace(" ", "").upper()
+    ET.SubElement(dbtr_id, "IBAN").text = normalize_iban(debtor_iban)
     
     # Debtor Agent (Bank)
     dbtr_agt = ET.SubElement(pmt_inf, "DbtrAgt")
     fin_instn_id = ET.SubElement(dbtr_agt, "FinInstnId")
     if debtor_bic:
-        ET.SubElement(fin_instn_id, "BIC").text = debtor_bic.replace(" ", "").upper()
+        ET.SubElement(fin_instn_id, "BIC").text = _normalize_bic(debtor_bic)
     else:
         ET.SubElement(fin_instn_id, "Othr").text = "NOTPROVIDED"
     
@@ -181,7 +193,7 @@ def generate_sepa_xml(
         if creditor_bic and validate_bic(creditor_bic):
             cdtr_agt = ET.SubElement(cdt_trf_tx_inf, "CdtrAgt")
             cdtr_fin_instn = ET.SubElement(cdtr_agt, "FinInstnId")
-            ET.SubElement(cdtr_fin_instn, "BIC").text = creditor_bic.replace(" ", "").upper()
+            ET.SubElement(cdtr_fin_instn, "BIC").text = _normalize_bic(creditor_bic)
         
         # Creditor (Empfänger)
         cdtr = ET.SubElement(cdt_trf_tx_inf, "Cdtr")
@@ -193,7 +205,7 @@ def generate_sepa_xml(
         if creditor_iban and validate_iban(creditor_iban):
             cdtr_acct = ET.SubElement(cdt_trf_tx_inf, "CdtrAcct")
             cdtr_acct_id = ET.SubElement(cdtr_acct, "Id")
-            ET.SubElement(cdtr_acct_id, "IBAN").text = creditor_iban.replace(" ", "").upper()
+            ET.SubElement(cdtr_acct_id, "IBAN").text = normalize_iban(creditor_iban)
         
         # Remittance Information (Verwendungszweck)
         rmt_inf = ET.SubElement(cdt_trf_tx_inf, "RmtInf")

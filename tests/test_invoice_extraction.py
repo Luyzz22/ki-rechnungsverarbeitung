@@ -368,6 +368,28 @@ def test_valid_ust_idnr(ust, ok):
     assert ie._valid_ust_idnr(ust) is ok
 
 
+def test_normalize_iban_strips_all_whitespace():
+    from sepa_export import normalize_iban
+    assert normalize_iban("DE89\t3704\n0044 0532013000") == "DE89370400440532013000"
+    assert normalize_iban("de89 3704 0044 0532 0130 00") == "DE89370400440532013000"
+
+
+def test_sepa_xml_emits_whitespace_free_iban():
+    """Codex P2: eine akzeptierte, aber whitespace-behaftete IBAN darf NICHT mit
+    Tabs/Zeilenumbrüchen ins SEPA-XML gelangen (Banken lehnen das ab)."""
+    from sepa_export import generate_sepa_xml
+    xml = generate_sepa_xml(
+        payments=[{"creditor_name": "Acme GmbH",
+                   "creditor_iban": "DE02\t1203 0000\n0000202051",
+                   "amount": 10.0, "reference": "R-1"}],
+        debtor_name="Zahler GmbH",
+        debtor_iban="DE89\n3704 0044 0532013000",
+    )
+    assert "\t" not in xml and "\n0044" not in xml
+    assert "<IBAN>DE89370400440532013000</IBAN>" in xml
+    assert "<IBAN>DE02120300000000202051</IBAN>" in xml
+
+
 # --- Schritt 5: Kontierung ------------------------------------------------
 @pytest.mark.parametrize("satz,expected", [(19.0, 9), (7.0, 8), (0.0, 0), (None, 0)])
 def test_kontierung_steuerschluessel(satz, expected):
