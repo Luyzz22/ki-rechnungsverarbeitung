@@ -513,7 +513,11 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
                     raw2.pop("__raw__", None)
                 fields2 = normalize_fields(raw2)
                 for key, val in fields2.items():
-                    if not (fields.get(key) or "") and (val not in (None, "")):
+                    # Nur echte Lücken füllen: None/"" gilt als fehlend – NICHT
+                    # falsy-Werte wie 0.0 (z. B. mwst_satz=0 bei steuerfrei), sonst
+                    # würde der OCR-Pass legitime Nullwerte des ersten Laufs
+                    # überschreiben ("erster Lauf gewinnt").
+                    if fields.get(key) in (None, "") and val not in (None, ""):
                         fields[key] = val
         except Exception as exc:  # pragma: no cover - Zusatzschritt darf nie sprengen
             logger.info("OCR-Nachextraktion übersprungen: %s", exc)

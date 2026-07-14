@@ -377,6 +377,27 @@ def test_process_pdf_two_stage_ocr_recovers_header_footer_fields(monkeypatch):
     assert f["betrag_brutto"] == 1880.2
 
 
+def test_two_stage_ocr_preserves_zero_valued_first_pass_fields(monkeypatch):
+    """Codex P2: ein legitimer Nullwert aus dem ersten Lauf (z. B. mwst_satz=0
+    bei steuerfrei) darf vom OCR-Zweitlauf NICHT überschrieben werden."""
+    path = _write_pdf("Rechnung steuerfrei")
+    def _mock(text):
+        if "[OCR" in text:
+            return {"rechnungsaussteller": "SBS Deutschland", "iban": "DE19100101238495732107",
+                    "ust_idnr": "DE300066949", "steuernummer": "47013/22377",
+                    "mwst_satz": "19.0", "mwst_betrag": "300,20"}  # will NICHT gewinnen
+        return {"rechnungsnummer": "R-0", "betrag_brutto": "1580,00", "betrag_netto": "1580,00",
+                "mwst_satz": 0.0, "mwst_betrag": 0.0}  # steuerfrei, echte Nullwerte
+    monkeypatch.setattr(ie, "_call_llm", _mock)
+    monkeypatch.setattr(ie, "_ocr_pdf", lambda p: "SBS DEUTSCHLAND\nIBAN: DE19 1001 0123 8495 7321 07")
+    res = ie.process_pdf(path)
+    f = res["fields"]
+    assert f["mwst_satz"] == 0.0   # Nullwert bleibt erhalten
+    assert f["mwst_betrag"] == 0.0
+    assert f["rechnungsaussteller"] == "SBS Deutschland"  # Lücke wurde ergänzt
+    assert f["iban"] == "DE19100101238495732107"
+
+
 def test_process_pdf_no_second_pass_when_issuer_present(monkeypatch):
     """Sind Aussteller-Felder bereits vorhanden, läuft KEIN zweiter OCR-Pass
     (kein unnötiger OCR-Aufwand pro Upload)."""
