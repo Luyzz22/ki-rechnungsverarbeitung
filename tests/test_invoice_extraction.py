@@ -342,6 +342,58 @@ def test_process_pdf_success(monkeypatch):
     assert res["validation"]["ok"] is True
 
 
+def test_process_pdf_two_stage_ocr_recovers_header_footer_fields(monkeypatch):
+    """Aussteller/IBAN/USt-IdNr/Steuernummer stehen nur im Grafik-Fuß (kein
+    Textlayer). Fehlen sie nach dem Text-Pass komplett, ergänzt ein zweiter
+    Extraktionslauf über OCR die fehlenden Felder – ohne die bereits
+    extrahierten Werte zu überschreiben."""
+    path = _write_pdf("Rechnung IT2025032\nNetto 1.580,00 EUR")
+    calls = {"n": 0}
+
+    def _mock(text):
+        calls["n"] += 1
+        if "[OCR" in text:  # zweiter Lauf mit OCR-Text
+            return {"rechnungsnummer": "WRONG-should-not-win", "betrag_brutto": "0,00",
+                    "rechnungsaussteller": "SBS Deutschland GmbH & Co. KG",
+                    "iban": "DE19100101238495732107", "bic": "QNTODEB2XXX",
+                    "ust_idnr": "DE300066949", "steuernummer": "47013/22377"}
+        # erster Lauf (nur Body): Aussteller/IBAN/USt/Steuer NULL
+        return {"rechnungsnummer": "IT2025032", "betrag_brutto": "1880,20",
+                "betrag_netto": "1580,00", "datum": "2025-09-29"}
+
+    monkeypatch.setattr(ie, "_call_llm", _mock)
+    monkeypatch.setattr(ie, "_ocr_pdf", lambda p:
+                        "SBS DEUTSCHLAND GMBH & CO. KG\nIBAN: DE19 1001 0123 8495 7321 07\n"
+                        "USt-IdNr.: DE300066949\nSteuer-Nr.: 47013/22377")
+    res = ie.process_pdf(path)
+    assert calls["n"] == 2  # zweistufig ausgelöst
+    f = res["fields"]
+    assert f["rechnungsaussteller"] == "SBS Deutschland GmbH & Co. KG"
+    assert f["iban"] == "DE19100101238495732107"
+    assert f["ust_idnr"] == "DE300066949"
+    assert f["steuernummer"] == "47013/22377"
+    # bereits extrahierte Body-Felder bleiben erhalten (erster Lauf gewinnt)
+    assert f["rechnungsnummer"] == "IT2025032"
+    assert f["betrag_brutto"] == 1880.2
+
+
+def test_process_pdf_no_second_pass_when_issuer_present(monkeypatch):
+    """Sind Aussteller-Felder bereits vorhanden, läuft KEIN zweiter OCR-Pass
+    (kein unnötiger OCR-Aufwand pro Upload)."""
+    path = _write_pdf("Rechnung\nAcme GmbH")
+    calls = {"n": 0}
+    monkeypatch.setattr(ie, "_call_llm", lambda text: calls.__setitem__("n", calls["n"] + 1) or {
+        "rechnungsaussteller": "Acme GmbH", "rechnungsnummer": "R1", "datum": "2026-01-01",
+        "betrag_brutto": "119,00", "mwst_satz": "19.0", "steuernummer": "12/345/67890",
+    })
+    ocr = {"called": False}
+    monkeypatch.setattr(ie, "_ocr_pdf", lambda p: ocr.__setitem__("called", True) or "x")
+    res = ie.process_pdf(path)
+    assert calls["n"] == 1
+    assert ocr["called"] is False
+    assert res["fields"]["rechnungsaussteller"] == "Acme GmbH"
+
+
 def test_process_pdf_no_llm(monkeypatch):
     path = _write_pdf("Rechnung\nAcme GmbH")
     def _raise(text):

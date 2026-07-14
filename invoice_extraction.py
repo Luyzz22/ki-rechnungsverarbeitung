@@ -156,17 +156,44 @@ def extract_text_from_pdf(filepath: str) -> str:
         return "\n".join(page.extract_text() or "" for page in pdf.pages)
 
 
-def _ocr_pdf(filepath: str) -> str:
-    """OCR-Fallback für Scans ohne Textebene (pytesseract + pdf2image)."""
+def _render_pdf_images(filepath: str, dpi: int = 300):
+    """Rendert die PDF-Seiten zu PIL-Images. Bevorzugt pypdfium2 (kein Poppler
+    nötig, in requirements), fällt sonst auf pdf2image/Poppler zurück."""
     try:
+        import pypdfium2 as pdfium
+
+        pdf = pdfium.PdfDocument(filepath)
+        scale = dpi / 72.0
+        return [pdf[i].render(scale=scale).to_pil() for i in range(len(pdf))]
+    except Exception as exc:  # pragma: no cover - Fallback
+        logger.info("pypdfium2-Render nicht verfügbar (%s), versuche pdf2image", exc)
         import pdf2image
+        return pdf2image.convert_from_path(filepath, dpi=dpi)
+
+
+def _ocr_pdf(filepath: str) -> str:
+    """OCR der gerenderten PDF-Seiten (pytesseract). Für Scans OHNE Textebene und
+    für Belege, deren Kopf-/Fußzeile (Aussteller/IBAN/USt-IdNr) nur als Grafik
+    vorliegt und im Textlayer fehlt."""
+    try:
         import pytesseract
 
-        images = pdf2image.convert_from_path(filepath)
+        images = _render_pdf_images(filepath)
         return "\n".join(pytesseract.image_to_string(img, lang="deu") for img in images)
     except Exception as exc:  # pragma: no cover - poppler/tesseract optional
-        logger.info("OCR-Fallback nicht verfügbar: %s", exc)
+        logger.info("OCR nicht verfügbar: %s", exc)
         return ""
+
+
+# Pflicht-/Ausstellerfelder, die häufig nur im Grafik-Briefkopf/-fuß stehen und
+# im pdftotext-Layer fehlen → lösen bei NULL eine zweite OCR-Extraktion aus.
+_ISSUER_FIELDS = ("rechnungsaussteller", "iban", "ust_idnr", "steuernummer")
+
+
+def _issuer_fields_missing(fields: Dict[str, Any]) -> bool:
+    """True, wenn ALLE Aussteller-/Zahlungs-Pflichtfelder leer sind (typischer
+    Grafik-Briefkopf-Fall)."""
+    return all(not (fields.get(k) or "") for k in _ISSUER_FIELDS)
 
 
 # ---------------------------------------------------------------------------
@@ -471,6 +498,25 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
     except Exception as exc:
         result["error"] = f"KI-Extraktion fehlgeschlagen: {exc}"
         return result
+
+    # Schritt 3b (zweistufig): Fehlen Aussteller/IBAN/USt-IdNr/Steuernummer
+    # vollständig, stehen sie beim deutschen Standardbeleg meist NUR im Grafik-
+    # Briefkopf/-fuß (kein Textlayer). Dann die Seite OCR'en und die fehlenden
+    # Felder aus einem zweiten Extraktionslauf ergänzen (nur NULLs füllen; die
+    # bereits extrahierten Werte behalten Vorrang). Best effort – bricht nie.
+    if _issuer_fields_missing(fields):
+        try:
+            ocr_text = _ocr_pdf(filepath)
+            if ocr_text and ocr_text.strip() and ocr_text.strip() != (text or "").strip():
+                raw2 = _call_llm(f"{text}\n\n[OCR Kopf-/Fußzeile]\n{ocr_text}")
+                if isinstance(raw2, dict):
+                    raw2.pop("__raw__", None)
+                fields2 = normalize_fields(raw2)
+                for key, val in fields2.items():
+                    if not (fields.get(key) or "") and (val not in (None, "")):
+                        fields[key] = val
+        except Exception as exc:  # pragma: no cover - Zusatzschritt darf nie sprengen
+            logger.info("OCR-Nachextraktion übersprungen: %s", exc)
 
     # Schritt 4+5
     validation = run_validation(fields)
