@@ -14,7 +14,25 @@ from dataclasses import dataclass, asdict
 from collections import defaultdict
 import math
 
-DB_PATH = "/var/www/invoice-app/invoices.db"
+DB_PATH = "/var/www/invoice-app/invoices.db"  # nur noch Legacy-Konstante, ungenutzt
+
+# Portable DB-Verbindung + lazy, idempotenter Tabellen-Init: kein Import-Time-Init
+# und kein hartkodierter /var/www-Pfad mehr, damit der Nexus-Gateway auch in
+# CI/lokal/Postgres lädt (routet über get_connection()).
+from database import get_connection
+
+_SPEND_DB_READY = False
+
+
+def _conn():
+    global _SPEND_DB_READY
+    if not _SPEND_DB_READY:
+        try:
+            init_spend_analytics_db()
+        except Exception:  # pragma: no cover - defensiv, darf Nutzung nie sprengen
+            pass
+        _SPEND_DB_READY = True
+    return get_connection()
 
 
 @dataclass
@@ -39,7 +57,7 @@ class SpendForecast:
 
 
 def init_spend_analytics_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -98,7 +116,7 @@ def init_spend_analytics_db():
 
 
 def get_spend_overview(months: int = 12) -> Dict[str, Any]:
-    conn = sqlite3.connect(DB_PATH)
+    conn = _conn()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -187,7 +205,7 @@ def get_spend_overview(months: int = 12) -> Dict[str, Any]:
 
 
 def get_supplier_deep_dive(supplier_name: str) -> Dict[str, Any]:
-    conn = sqlite3.connect(DB_PATH)
+    conn = _conn()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -277,7 +295,7 @@ def run_spend_analysis() -> List[SpendAlert]:
 
 def _check_budget_thresholds() -> List[SpendAlert]:
     alerts = []
-    conn = sqlite3.connect(DB_PATH)
+    conn = _conn()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -329,7 +347,7 @@ def _check_budget_thresholds() -> List[SpendAlert]:
 
 def _check_spend_anomalies() -> List[SpendAlert]:
     alerts = []
-    conn = sqlite3.connect(DB_PATH)
+    conn = _conn()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -373,7 +391,7 @@ def _check_spend_anomalies() -> List[SpendAlert]:
 
 def _check_supplier_spikes() -> List[SpendAlert]:
     alerts = []
-    conn = sqlite3.connect(DB_PATH)
+    conn = _conn()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -420,7 +438,7 @@ def _check_supplier_spikes() -> List[SpendAlert]:
 
 def _check_maintenance_cost_trends() -> List[SpendAlert]:
     alerts = []
-    conn = sqlite3.connect(DB_PATH)
+    conn = _conn()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -487,7 +505,7 @@ def _create_default_budgets(cursor, conn):
 def _save_alerts(alerts: List[SpendAlert]):
     if not alerts:
         return
-    conn = sqlite3.connect(DB_PATH)
+    conn = _conn()
     cursor = conn.cursor()
     for alert in alerts:
         try:
@@ -503,7 +521,7 @@ def _save_alerts(alerts: List[SpendAlert]):
 
 
 def forecast_spend(months_ahead: int = 3) -> List[SpendForecast]:
-    conn = sqlite3.connect(DB_PATH)
+    conn = _conn()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT strftime('%Y-%m', datum) as period, SUM(betrag_brutto) as total
@@ -554,7 +572,7 @@ def set_budget(budget_type: str, reference_key: str = "all",
                monthly_limit: float = None, quarterly_limit: float = None,
                yearly_limit: float = None, alert_pct: float = 80.0,
                critical_pct: float = 95.0) -> Dict:
-    conn = sqlite3.connect(DB_PATH)
+    conn = _conn()
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM spend_budgets WHERE budget_type = ? AND reference_key = ?",
                    (budget_type, reference_key))
@@ -578,7 +596,7 @@ def set_budget(budget_type: str, reference_key: str = "all",
 
 
 def get_budgets() -> List[Dict]:
-    conn = sqlite3.connect(DB_PATH)
+    conn = _conn()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM spend_budgets WHERE is_active = 1")
@@ -593,7 +611,7 @@ def get_budgets() -> List[Dict]:
 
 
 def get_active_alerts(limit: int = 20) -> List[Dict]:
-    conn = sqlite3.connect(DB_PATH)
+    conn = _conn()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
@@ -611,7 +629,7 @@ def get_active_alerts(limit: int = 20) -> List[Dict]:
 
 
 def acknowledge_alert(alert_id: str, user_id: int = None) -> Dict:
-    conn = sqlite3.connect(DB_PATH)
+    conn = _conn()
     cursor = conn.cursor()
     cursor.execute("UPDATE spend_alerts SET acknowledged=1, acknowledged_by=?, acknowledged_at=CURRENT_TIMESTAMP WHERE alert_id=?",
                    (user_id, alert_id))
@@ -621,4 +639,4 @@ def acknowledge_alert(alert_id: str, user_id: int = None) -> Dict:
     return {"acknowledged": updated > 0, "alert_id": alert_id}
 
 
-init_spend_analytics_db()
+# Kein Import-Time-Init mehr – Tabellen werden lazy via _conn() angelegt.

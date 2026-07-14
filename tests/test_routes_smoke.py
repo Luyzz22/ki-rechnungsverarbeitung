@@ -69,6 +69,32 @@ def client():
     return c
 
 
+def test_nexus_gateway_loads_without_import_time_db(client):
+    """Regression: smart_maintenance macht KEINEN Import-Time-DB-Init mehr
+    (hartkodierter Pfad → Startup-Crash). Der Nexus-Gateway lädt sauber."""
+    import web.app as wa
+    assert getattr(wa, "NEXUS_AVAILABLE", False) is True
+
+
+@pytest.mark.parametrize("modname,initfn", [
+    ("smart_maintenance", "init_maintenance_db"),
+    ("spend_analytics", "init_spend_analytics_db"),
+])
+def test_nexus_module_import_does_not_touch_db(monkeypatch, modname, initfn):
+    """Import von smart_maintenance/spend_analytics darf KEINE DB öffnen/anlegen
+    (früher Import-Time-Init auf hartkodiertem Pfad → Nexus-Gateway deaktiviert)."""
+    import importlib
+    import sys
+    import database
+    monkeypatch.setattr(
+        database, "get_connection",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("DB beim Import berührt")),
+    )
+    sys.modules.pop(modname, None)
+    mod = importlib.import_module(modname)  # darf NICHT raisen
+    assert hasattr(mod, initfn)
+
+
 def test_api_health_ok(client):
     """Deploy-Smoke-Test hängt an /api/health → muss 200 liefern."""
     r = client.get("/api/health")
