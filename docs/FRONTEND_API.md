@@ -71,6 +71,17 @@ Objekt, damit die Zahlen nie divergieren.
 - `validierung_json` (Rohstring) bleibt für Rückwärtskompatibilität erhalten,
   ist aber **deprecated** — nutzt `validierung`.
 
+**Liste (`GET /api/app/invoices`)** liefert je Item dieselbe Quelle **kompakt**
+— ohne `checks[]` (die holt das Detail), damit die Liste leicht bleibt:
+```jsonc
+"validierung": { "ok": false, "error_count": 1,
+  "pflichtangaben": { "ok": 6, "total": 6, "geprueft": true, "vollstaendig": true },
+  "summary": { "total": 9, "passed": 8, "failed": 1 } },
+"validierung_ok": false
+```
+Für Badge/Summary in der Liste `validierung.ok` / `summary` nutzen; für die
+Detail-Prüfliste das Detail-Endpoint laden.
+
 ## Noch offen (Backend-Folgeaufgabe)
 Diese SPA-Seiten brauchen noch Bearer-Endpunkte unter `/api/app` (bislang nur
 session-/CSRF-basiert vorhanden):

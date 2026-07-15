@@ -249,6 +249,7 @@ async def api_invoices(request: Request, status: str = "", q: str = "",
         f"""
         SELECT i.id, i.rechnungsnummer, i.datum, i.rechnungsaussteller,
                i.betrag_brutto, i.betrag_netto, i.mwst_betrag, i.waehrung,
+               i.validierung_json,
                COALESCE(i.status, 'neu') AS status,
                COALESCE(CAST(i.created_at AS TEXT), CAST(j.created_at AS TEXT)) AS created_at
         FROM invoices i LEFT JOIN jobs j ON i.job_id = j.job_id
@@ -260,6 +261,13 @@ async def api_invoices(request: Request, status: str = "", q: str = "",
     )
     items = cur.fetchall()
     conn.close()
+    # Kompakte Validierung aus derselben Quelle (Badge/Summary je Zeile ohne die
+    # volle Check-Liste – die holt das Detail). validierung_json-Rohstring nicht
+    # in die Liste durchreichen.
+    for it in items:
+        v = _normalize_validierung(it.pop("validierung_json", None), include_checks=False)
+        it["validierung"] = v
+        it["validierung_ok"] = v["ok"] if v else None
     return {"total": total, "limit": limit, "offset": offset, "items": items}
 
 
@@ -281,7 +289,7 @@ _CHECK_LABELS: Dict[str, str] = {
 }
 
 
-def _normalize_validierung(raw: Any) -> Optional[Dict[str, Any]]:
+def _normalize_validierung(raw: Any, *, include_checks: bool = True) -> Optional[Dict[str, Any]]:
     """Parst das gespeicherte ``validierung_json`` (String) in ein strukturiertes
     Objekt und reichert jeden Check um Label + Kategorie an.
 
@@ -290,7 +298,11 @@ def _normalize_validierung(raw: Any) -> Optional[Dict[str, Any]]:
     bzw. ``validierung.pflichtangaben``. Ohne diese Normalisierung erhielt das
     Frontend nur einen JSON-String, validierte teils clientseitig neu (mit
     zu strenger IBAN/USt-Regex → Falsch-„ungültig") oder las für Tab und Panel
-    unterschiedliche Felder (→ „20/20" vs. „keine Pflichtangaben-Prüfung")."""
+    unterschiedliche Felder (→ „20/20" vs. „keine Pflichtangaben-Prüfung").
+
+    ``include_checks=False`` liefert die kompakte Variante (ohne ``checks[]``)
+    für die Listen-Ansicht – Badge/Summary aus derselben Quelle, ohne die volle
+    Check-Liste je Listenzeile zu übertragen (die holt das Detail)."""
     if isinstance(raw, str):
         raw = raw.strip()
         if not raw:
@@ -328,10 +340,9 @@ def _normalize_validierung(raw: Any) -> Optional[Dict[str, Any]]:
                 pflicht_ok += 1
 
     passed = sum(1 for c in norm_checks if c.get("ok"))
-    return {
+    out = {
         "ok": bool(data.get("ok")),
         "error_count": int(data.get("error_count", 0) or 0),
-        "checks": norm_checks,
         # Für das Compliance-Panel (identische Zahl wie der Tab → keine Divergenz)
         "pflichtangaben": {
             "ok": pflicht_ok,
@@ -342,6 +353,9 @@ def _normalize_validierung(raw: Any) -> Optional[Dict[str, Any]]:
         "summary": {"total": len(norm_checks), "passed": passed,
                     "failed": len(norm_checks) - passed},
     }
+    if include_checks:
+        out["checks"] = norm_checks
+    return out
 
 
 @router.get("/invoices/{invoice_id}")

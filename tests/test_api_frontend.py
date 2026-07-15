@@ -127,6 +127,31 @@ def test_invoices_filter_neu_includes_null_status(client):
     assert "NEU-NULL-1" in [i["rechnungsnummer"] for i in items]
 
 
+def test_invoices_list_exposes_compact_validierung(client, monkeypatch):
+    """Listen-Endpoint liefert dieselbe validierung-Quelle wie das Detail, aber
+    KOMPAKT (ok/error_count/pflichtangaben/summary, ohne die volle checks-Liste)
+    und OHNE den validierung_json-Rohstring durchzureichen."""
+    import invoice_extraction
+    tok = client.post("/api/app/register", json={
+        "email": "listval@test.de", "password": "Test1234", "name": "L", "company": "X"}).json()["token"]
+    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text: {
+        "rechnungsaussteller": "Acme GmbH", "rechnungsnummer": "LST-001",
+        "datum": "2026-01-15", "betrag_brutto": "119,00", "betrag_netto": "100,00",
+        "mwst_betrag": "19,00", "mwst_satz": "19.0", "steuernummer": "12/345/67890",
+        "iban": "DE89370400440532013000", "waehrung": "EUR",
+    })
+    client.post("/api/app/upload", headers=_auth(tok),
+                files={"files": ("r.pdf", _make_pdf(), "application/pdf")})
+    item = next(i for i in client.get("/api/app/invoices?limit=500", headers=_auth(tok)).json()["items"]
+                if i["rechnungsnummer"] == "LST-001")
+    assert "validierung_json" not in item  # Rohstring nicht in der Liste
+    v = item["validierung"]
+    assert isinstance(v, dict) and "checks" not in v  # kompakt: keine volle Liste
+    assert item["validierung_ok"] == v["ok"]
+    assert v["pflichtangaben"]["geprueft"] is True
+    assert v["summary"]["total"] >= 4
+
+
 def test_invoice_detail_404(client, token):
     assert client.get("/api/app/invoices/999999", headers=_auth(token)).status_code == 404
 
