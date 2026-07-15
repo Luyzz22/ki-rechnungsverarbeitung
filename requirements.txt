@@ -57,6 +57,7 @@ rich>=14.0.0
 # PDF/Document
 pillow>=11.0.0
 python-pptx>=1.0.0
+reportlab>=4.0.0,<6.0  # PDF-Erzeugung (zugferd.py, web/app.py) + Test-PDFs
 
 # Utilities
 pytz>=2025.1
