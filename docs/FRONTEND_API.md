@@ -35,6 +35,42 @@ Fehlerformat: HTTP-Statuscode + `{ "detail": "..." }`.
 ## `trend[]` (für Recharts)
 `[{ "date": "YYYY-MM-DD", "count": <int> }]` (30 Tage, lückenlos). Linienfarbe `#003856`.
 
+## Validierung (`GET /api/app/invoices/{id}`) — EINZIGE Quelle der Wahrheit
+
+Das Detail-Objekt enthält ein bereits geparstes, angereichertes Feld
+**`validierung`**. **Das Frontend rendert dieses Objekt direkt** und validiert
+**nicht** clientseitig neu (keine eigene IBAN-/USt-Regex — das Backend prüft die
+IBAN per echter mod-97-Prüfsumme und die USt-IdNr. länderspezifisch). Sowohl der
+Validierung-Tab als auch das Compliance-Panel lesen **dasselbe** `validierung`-
+Objekt, damit die Zahlen nie divergieren.
+
+```jsonc
+"validierung": {
+  "ok": false,                 // Gesamtergebnis (keine error-Checks offen)
+  "error_count": 1,
+  "checks": [                  // direkt rendern: label + ok + severity + message
+    { "name": "§14_rechnungsnummer", "ok": true,  "severity": "error",
+      "label": "Rechnungsnummer", "category": "Pflichtangabe (§14 UStG)",
+      "message": "Pflichtangabe fehlt: Rechnungsnummer" },
+    { "name": "iban", "ok": true, "severity": "warning",
+      "label": "IBAN", "category": "Prüfung", "message": "IBAN gültig" },
+    { "name": "duplikat", "ok": false, "severity": "error",
+      "label": "Duplikat", "category": "Prüfung",
+      "message": "Identische Rechnung bereits vorhanden (ID 41)" }
+  ],
+  "pflichtangaben": {          // fürs Compliance-Panel (gleiche Zahl wie der Tab)
+    "ok": 6, "total": 6, "geprueft": true, "vollstaendig": true },
+  "summary": { "total": 9, "passed": 8, "failed": 1 }
+}
+```
+
+- `validierung` ist `null`, wenn die Extraktion fehlschlug (Status `fehler`/
+  `manuell_erforderlich`) — dann KEIN grünes Compliance-Ergebnis anzeigen.
+- `severity`: `"error"` (blockierend) · `"warning"` (Hinweis) · `"info"`.
+- `validierung_ok` (Top-Level) spiegelt `validierung.ok` (bzw. `null`).
+- `validierung_json` (Rohstring) bleibt für Rückwärtskompatibilität erhalten,
+  ist aber **deprecated** — nutzt `validierung`.
+
 ## Noch offen (Backend-Folgeaufgabe)
 Diese SPA-Seiten brauchen noch Bearer-Endpunkte unter `/api/app` (bislang nur
 session-/CSRF-basiert vorhanden):

@@ -28,6 +28,7 @@ Endpunkte:
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -262,6 +263,87 @@ async def api_invoices(request: Request, status: str = "", q: str = "",
     return {"total": total, "limit": limit, "offset": offset, "items": items}
 
 
+# Menschenlesbare Labels/Kategorien je Check-Name – damit die SPA die
+# validierung_json.checks DIREKT rendern kann (Label + ok + severity + message)
+# und NICHT clientseitig neu validieren muss (Ursache der IBAN/USt-„ungültig"-
+# Falschmeldungen und der „keine Pflichtangaben-Prüfung"-Inkonsistenz).
+_CHECK_LABELS: Dict[str, str] = {
+    "iban": "IBAN",
+    "ust_idnr_format": "USt-IdNr.-Format",
+    "betrag_summe": "Betragsprüfung",
+    "duplikat": "Duplikat",
+    "§14_rechnungsaussteller": "Rechnungsaussteller",
+    "§14_rechnungsnummer": "Rechnungsnummer",
+    "§14_datum": "Rechnungsdatum",
+    "§14_betrag_brutto": "Rechnungsbetrag",
+    "§14_steuer_id": "Steuernummer / USt-IdNr.",
+    "§14_umsatzsteuer": "Umsatzsteuer",
+}
+
+
+def _normalize_validierung(raw: Any) -> Optional[Dict[str, Any]]:
+    """Parst das gespeicherte ``validierung_json`` (String) in ein strukturiertes
+    Objekt und reichert jeden Check um Label + Kategorie an.
+
+    Dies ist die EINZIGE Quelle der Wahrheit für die SPA – sowohl der
+    Validierung-Tab als auch das Compliance-Panel lesen ``validierung.checks``
+    bzw. ``validierung.pflichtangaben``. Ohne diese Normalisierung erhielt das
+    Frontend nur einen JSON-String, validierte teils clientseitig neu (mit
+    zu strenger IBAN/USt-Regex → Falsch-„ungültig") oder las für Tab und Panel
+    unterschiedliche Felder (→ „20/20" vs. „keine Pflichtangaben-Prüfung")."""
+    if isinstance(raw, str):
+        raw = raw.strip()
+        if not raw:
+            return None
+        try:
+            data = json.loads(raw)
+        except (ValueError, TypeError):
+            return None
+    elif isinstance(raw, dict):
+        data = raw
+    else:
+        return None
+    if not isinstance(data, dict):
+        return None
+
+    checks = data.get("checks")
+    checks = checks if isinstance(checks, list) else []
+    norm_checks: List[Dict[str, Any]] = []
+    pflicht_total = pflicht_ok = 0
+    for c in checks:
+        if not isinstance(c, dict):
+            continue
+        name = str(c.get("name", ""))
+        is_pflicht = name.startswith("§14_")
+        label = _CHECK_LABELS.get(name)
+        if not label:
+            label = name[4:].replace("_", " ").capitalize() if is_pflicht else name
+        item = dict(c)
+        item["label"] = label
+        item["category"] = "Pflichtangabe (§14 UStG)" if is_pflicht else "Prüfung"
+        norm_checks.append(item)
+        if is_pflicht:
+            pflicht_total += 1
+            if c.get("ok"):
+                pflicht_ok += 1
+
+    passed = sum(1 for c in norm_checks if c.get("ok"))
+    return {
+        "ok": bool(data.get("ok")),
+        "error_count": int(data.get("error_count", 0) or 0),
+        "checks": norm_checks,
+        # Für das Compliance-Panel (identische Zahl wie der Tab → keine Divergenz)
+        "pflichtangaben": {
+            "ok": pflicht_ok,
+            "total": pflicht_total,
+            "geprueft": pflicht_total > 0,
+            "vollstaendig": pflicht_total > 0 and pflicht_ok == pflicht_total,
+        },
+        "summary": {"total": len(norm_checks), "passed": passed,
+                    "failed": len(norm_checks) - passed},
+    }
+
+
 @router.get("/invoices/{invoice_id}")
 async def api_invoice_detail(request: Request, invoice_id: int):
     tid = _require_tenant(request)
@@ -279,6 +361,11 @@ async def api_invoice_detail(request: Request, invoice_id: int):
     conn.close()
     if not row:
         raise HTTPException(status_code=404, detail="Rechnung nicht gefunden")
+    # Strukturierte Validierung als einzige Quelle der Wahrheit ergänzen
+    # (validierung_json bleibt als Rohstring erhalten – Rückwärtskompatibilität).
+    validierung = _normalize_validierung(row.get("validierung_json"))
+    row["validierung"] = validierung
+    row["validierung_ok"] = validierung["ok"] if validierung else None
     return row
 
 

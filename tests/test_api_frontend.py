@@ -201,6 +201,20 @@ def test_upload_runs_pipeline(client, token, monkeypatch):
     detail = client.get(f"/api/app/invoices/{inv['id']}", headers=_auth(token)).json()
     assert detail["rechnungsaussteller"] == "Acme GmbH"
     assert detail["betrag_brutto"] == 119.0
+    # Strukturierte Validierung ist die einzige Quelle der Wahrheit (Validierung-Tab
+    # UND Compliance-Panel lesen dasselbe Objekt – keine clientseitige Neuvalidierung).
+    val = detail["validierung"]
+    assert isinstance(val, dict) and isinstance(val["checks"], list) and val["checks"]
+    assert detail["validierung_ok"] == val["ok"]
+    # Jeder Check trägt Label + Kategorie, damit die SPA direkt rendern kann.
+    for c in val["checks"]:
+        assert c.get("label") and c.get("category")
+    by_name = {c["name"]: c for c in val["checks"]}
+    # Gültige IBAN (mod-97) darf NICHT als „ungültig" gemeldet werden (Backend ist Quelle).
+    assert by_name["iban"]["ok"] is True
+    # Pflichtangaben-Prüfung fand statt und zeigt für Tab und Panel dieselbe Zahl.
+    pa = val["pflichtangaben"]
+    assert pa["geprueft"] is True and pa["total"] >= 4 and pa["ok"] == pa["total"]
 
 
 def test_upload_detects_duplicate_of_pre_migration_row(client, monkeypatch):
