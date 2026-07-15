@@ -152,6 +152,29 @@ def test_invoices_list_exposes_compact_validierung(client, monkeypatch):
     assert v["summary"]["total"] >= 4
 
 
+def test_row_with_validierung_handles_hybridrow():
+    """Prod-Regression: unter PostgreSQL liefert get_connection() HybridRow-Objekte,
+    die KEIN item-assignment unterstützen ('HybridRow' object does not support item
+    assignment). _row_with_validierung muss die Zeile zuerst in einen echten dict
+    materialisieren – für HybridRow UND für dict."""
+    import api_frontend
+    from db_compat import HybridRow
+    raw = json.dumps({"ok": True, "error_count": 0,
+                      "checks": [{"name": "§14_rechnungsnummer", "ok": True,
+                                  "severity": "error", "message": "ok"},
+                                 {"name": "iban", "ok": True, "severity": "warning",
+                                  "message": "IBAN gültig"}]})
+    hr = HybridRow(["id", "rechnungsnummer", "validierung_json"], [7, "R-7", raw])
+    # Detail-Variante (volle checks, Rohstring behalten)
+    d = api_frontend._row_with_validierung(hr, include_checks=True, keep_raw=True)
+    assert d["id"] == 7 and d["validierung_ok"] is True
+    assert d["validierung"]["checks"] and d["validierung_json"] == raw
+    # Listen-Variante (kompakt, Rohstring entfernt)
+    lst = api_frontend._row_with_validierung(hr, include_checks=False, keep_raw=False)
+    assert "validierung_json" not in lst and "checks" not in lst["validierung"]
+    assert lst["validierung"]["pflichtangaben"]["geprueft"] is True
+
+
 def test_invoice_detail_404(client, token):
     assert client.get("/api/app/invoices/999999", headers=_auth(token)).status_code == 404
 

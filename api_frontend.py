@@ -259,15 +259,12 @@ async def api_invoices(request: Request, status: str = "", q: str = "",
         """,
         params + [limit, offset],
     )
-    items = cur.fetchall()
+    rows = cur.fetchall()
     conn.close()
     # Kompakte Validierung aus derselben Quelle (Badge/Summary je Zeile ohne die
     # volle Check-Liste – die holt das Detail). validierung_json-Rohstring nicht
     # in die Liste durchreichen.
-    for it in items:
-        v = _normalize_validierung(it.pop("validierung_json", None), include_checks=False)
-        it["validierung"] = v
-        it["validierung_ok"] = v["ok"] if v else None
+    items = [_row_with_validierung(r, include_checks=False, keep_raw=False) for r in rows]
     return {"total": total, "limit": limit, "offset": offset, "items": items}
 
 
@@ -358,6 +355,22 @@ def _normalize_validierung(raw: Any, *, include_checks: bool = True) -> Optional
     return out
 
 
+def _row_with_validierung(row: Any, *, include_checks: bool, keep_raw: bool) -> Dict[str, Any]:
+    """Materialisiert eine DB-Zeile in einen echten dict und ergänzt das
+    strukturierte ``validierung``-Objekt + ``validierung_ok``.
+
+    ``dict(row)`` zuerst ist zwingend: unter PostgreSQL liefert get_connection()
+    HybridRow-Objekte (kein item-assignment/pop), unabhängig von einer gesetzten
+    row_factory; unter SQLite ist es bereits ein dict. ``keep_raw=False`` entfernt
+    den ``validierung_json``-Rohstring (Listen-Ansicht überträgt ihn nicht)."""
+    d = dict(row)
+    raw = d.pop("validierung_json", None) if not keep_raw else d.get("validierung_json")
+    v = _normalize_validierung(raw, include_checks=include_checks)
+    d["validierung"] = v
+    d["validierung_ok"] = v["ok"] if v else None
+    return d
+
+
 @router.get("/invoices/{invoice_id}")
 async def api_invoice_detail(request: Request, invoice_id: int):
     tid = _require_tenant(request)
@@ -375,12 +388,13 @@ async def api_invoice_detail(request: Request, invoice_id: int):
     conn.close()
     if not row:
         raise HTTPException(status_code=404, detail="Rechnung nicht gefunden")
+    # In einen echten dict materialisieren, bevor wir Felder ergänzen: unter
+    # PostgreSQL liefert get_connection() HybridRow-Objekte (kein item-assignment),
+    # unabhängig von der oben gesetzten row_factory. dict(row) funktioniert für
+    # beide Backends (HybridRow hat keys()/__getitem__, SQLite liefert bereits dict).
     # Strukturierte Validierung als einzige Quelle der Wahrheit ergänzen
-    # (validierung_json bleibt als Rohstring erhalten – Rückwärtskompatibilität).
-    validierung = _normalize_validierung(row.get("validierung_json"))
-    row["validierung"] = validierung
-    row["validierung_ok"] = validierung["ok"] if validierung else None
-    return row
+    # (validierung_json bleibt im Detail als Rohstring erhalten – Rückwärtskompat.).
+    return _row_with_validierung(row, include_checks=True, keep_raw=True)
 
 
 @router.get("/invoices/{invoice_id}/pdf")
