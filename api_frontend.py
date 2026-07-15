@@ -28,6 +28,7 @@ Endpunkte:
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -248,6 +249,7 @@ async def api_invoices(request: Request, status: str = "", q: str = "",
         f"""
         SELECT i.id, i.rechnungsnummer, i.datum, i.rechnungsaussteller,
                i.betrag_brutto, i.betrag_netto, i.mwst_betrag, i.waehrung,
+               i.validierung_json,
                COALESCE(i.status, 'neu') AS status,
                COALESCE(CAST(i.created_at AS TEXT), CAST(j.created_at AS TEXT)) AS created_at
         FROM invoices i LEFT JOIN jobs j ON i.job_id = j.job_id
@@ -259,7 +261,101 @@ async def api_invoices(request: Request, status: str = "", q: str = "",
     )
     items = cur.fetchall()
     conn.close()
+    # Kompakte Validierung aus derselben Quelle (Badge/Summary je Zeile ohne die
+    # volle Check-Liste – die holt das Detail). validierung_json-Rohstring nicht
+    # in die Liste durchreichen.
+    for it in items:
+        v = _normalize_validierung(it.pop("validierung_json", None), include_checks=False)
+        it["validierung"] = v
+        it["validierung_ok"] = v["ok"] if v else None
     return {"total": total, "limit": limit, "offset": offset, "items": items}
+
+
+# Menschenlesbare Labels/Kategorien je Check-Name – damit die SPA die
+# validierung_json.checks DIREKT rendern kann (Label + ok + severity + message)
+# und NICHT clientseitig neu validieren muss (Ursache der IBAN/USt-„ungültig"-
+# Falschmeldungen und der „keine Pflichtangaben-Prüfung"-Inkonsistenz).
+_CHECK_LABELS: Dict[str, str] = {
+    "iban": "IBAN",
+    "ust_idnr_format": "USt-IdNr.-Format",
+    "betrag_summe": "Betragsprüfung",
+    "duplikat": "Duplikat",
+    "§14_rechnungsaussteller": "Rechnungsaussteller",
+    "§14_rechnungsnummer": "Rechnungsnummer",
+    "§14_datum": "Rechnungsdatum",
+    "§14_betrag_brutto": "Rechnungsbetrag",
+    "§14_steuer_id": "Steuernummer / USt-IdNr.",
+    "§14_umsatzsteuer": "Umsatzsteuer",
+}
+
+
+def _normalize_validierung(raw: Any, *, include_checks: bool = True) -> Optional[Dict[str, Any]]:
+    """Parst das gespeicherte ``validierung_json`` (String) in ein strukturiertes
+    Objekt und reichert jeden Check um Label + Kategorie an.
+
+    Dies ist die EINZIGE Quelle der Wahrheit für die SPA – sowohl der
+    Validierung-Tab als auch das Compliance-Panel lesen ``validierung.checks``
+    bzw. ``validierung.pflichtangaben``. Ohne diese Normalisierung erhielt das
+    Frontend nur einen JSON-String, validierte teils clientseitig neu (mit
+    zu strenger IBAN/USt-Regex → Falsch-„ungültig") oder las für Tab und Panel
+    unterschiedliche Felder (→ „20/20" vs. „keine Pflichtangaben-Prüfung").
+
+    ``include_checks=False`` liefert die kompakte Variante (ohne ``checks[]``)
+    für die Listen-Ansicht – Badge/Summary aus derselben Quelle, ohne die volle
+    Check-Liste je Listenzeile zu übertragen (die holt das Detail)."""
+    if isinstance(raw, str):
+        raw = raw.strip()
+        if not raw:
+            return None
+        try:
+            data = json.loads(raw)
+        except (ValueError, TypeError):
+            return None
+    elif isinstance(raw, dict):
+        data = raw
+    else:
+        return None
+    if not isinstance(data, dict):
+        return None
+
+    checks = data.get("checks")
+    checks = checks if isinstance(checks, list) else []
+    norm_checks: List[Dict[str, Any]] = []
+    pflicht_total = pflicht_ok = 0
+    for c in checks:
+        if not isinstance(c, dict):
+            continue
+        name = str(c.get("name", ""))
+        is_pflicht = name.startswith("§14_")
+        label = _CHECK_LABELS.get(name)
+        if not label:
+            label = name[4:].replace("_", " ").capitalize() if is_pflicht else name
+        item = dict(c)
+        item["label"] = label
+        item["category"] = "Pflichtangabe (§14 UStG)" if is_pflicht else "Prüfung"
+        norm_checks.append(item)
+        if is_pflicht:
+            pflicht_total += 1
+            if c.get("ok"):
+                pflicht_ok += 1
+
+    passed = sum(1 for c in norm_checks if c.get("ok"))
+    out = {
+        "ok": bool(data.get("ok")),
+        "error_count": int(data.get("error_count", 0) or 0),
+        # Für das Compliance-Panel (identische Zahl wie der Tab → keine Divergenz)
+        "pflichtangaben": {
+            "ok": pflicht_ok,
+            "total": pflicht_total,
+            "geprueft": pflicht_total > 0,
+            "vollstaendig": pflicht_total > 0 and pflicht_ok == pflicht_total,
+        },
+        "summary": {"total": len(norm_checks), "passed": passed,
+                    "failed": len(norm_checks) - passed},
+    }
+    if include_checks:
+        out["checks"] = norm_checks
+    return out
 
 
 @router.get("/invoices/{invoice_id}")
@@ -279,6 +375,11 @@ async def api_invoice_detail(request: Request, invoice_id: int):
     conn.close()
     if not row:
         raise HTTPException(status_code=404, detail="Rechnung nicht gefunden")
+    # Strukturierte Validierung als einzige Quelle der Wahrheit ergänzen
+    # (validierung_json bleibt als Rohstring erhalten – Rückwärtskompatibilität).
+    validierung = _normalize_validierung(row.get("validierung_json"))
+    row["validierung"] = validierung
+    row["validierung_ok"] = validierung["ok"] if validierung else None
     return row
 
 
@@ -397,6 +498,39 @@ async def api_audit_csv(request: Request, action: str = "", date_from: str = "",
 # ---------------------------------------------------------------------------
 # Upload (multipart) – KI-Extraktions-Pipeline (synchron, MVP)
 # ---------------------------------------------------------------------------
+def _apply_duplicate_to_outcome(outcome: Dict[str, Any], duplicate: Optional[Dict[str, Any]]) -> None:
+    """Spiegelt das Duplikat-Ergebnis in ``outcome['validation']`` (validierung_json),
+    damit die Detail-Ansicht/Compliance-Panel den „Duplikat"-Check korrekt anzeigt
+    (die Panels lesen validierung_json, nicht die duplicate_detections-Tabelle).
+    Bei einem Treffer wird zusätzlich der Status auf 'pruefen' gesetzt (keine
+    stille Auto-Freigabe eines Duplikats)."""
+    is_dup = duplicate is not None
+    val = outcome.get("validation")
+    if not isinstance(val, dict):
+        # Kein Validierungsergebnis (Extraktion fehlgeschlagen / kein Text): NICHT
+        # fälschlich als 'ok' markieren. Nur wenn ein Duplikat vorliegt, legen wir
+        # ein (dann fehlgeschlagenes) Validierungsergebnis an; sonst unangetastet.
+        if not is_dup:
+            return
+        val = {"ok": True, "error_count": 0, "checks": []}
+        outcome["validation"] = val
+    checks = val.setdefault("checks", [])
+    # idempotent: evtl. vorhandenen alten Duplikat-Check entfernen (Reprocess)
+    checks[:] = [c for c in checks if c.get("name") != "duplikat"]
+    checks.append({
+        "name": "duplikat",
+        "ok": not is_dup,
+        "severity": "error" if is_dup else "info",
+        "message": (f"Identische Rechnung bereits vorhanden (ID {duplicate['of_id']})"
+                    if is_dup else "Keine identische Rechnung gefunden"),
+    })
+    if is_dup:
+        val["ok"] = False
+        val["error_count"] = int(val.get("error_count", 0) or 0) + 1
+        if outcome.get("status") in ("verarbeitet", None):
+            outcome["status"] = "pruefen"
+
+
 @router.post("/upload")
 async def api_upload(request: Request, files: List[UploadFile] = File(...)):
     """Nimmt PDF-Rechnungen entgegen, speichert sie, legt je Datei einen
@@ -464,42 +598,50 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
         conn.commit()
         conn.close()
 
-        # B6: layoutunabhängige Duplikatserkennung über den Datei-Hash (fängt
-        # Re-Uploads auch bei NULL-Aussteller – der alte content_hash versagte da).
-        duplicate = None
-        try:
-            match = duplicate_detection.check_duplicate_by_file_hash(
-                file_hash, tid, exclude_invoice_id=invoice_id)
-            if match:
-                duplicate = {"of_id": match["id"], "method": "file_hash"}
-                duplicate_detection.save_duplicate_detection(
-                    invoice_id, match["id"], method="file_hash", confidence=1.0)
-        except Exception as exc:  # pragma: no cover - Duplikat-Check darf Upload nie sprengen
-            logger.warning("Duplikat-Check (file_hash) invoice=%s: %s", invoice_id, exc)
-
         # Pipeline synchron ausführen (crasht nie – Status spiegelt Fehler)
         try:
             outcome = invoice_extraction.process_pdf(path)
         except Exception as exc:  # pragma: no cover - defensive
             outcome = {"status": "fehler", "error": str(exc), "fields": {},
                        "validation": None, "kontierung": None}
-        try:
-            invoice_extraction.update_invoice_record(invoice_id, outcome)
-        except Exception as exc:  # pragma: no cover
-            logger.error("update_invoice_record id=%s: %s", invoice_id, exc)
 
-        # B6: zusätzlich NULL-sicherer Feld-Match (Nummer+Betrag), falls der
-        # Datei-Hash nichts fand (z. B. re-exportiertes PDF gleicher Rechnung).
+        # B6: Duplikatserkennung – zuerst layoutunabhängig über den Datei-Hash
+        # (fängt Re-Uploads auch bei NULL-Aussteller), sonst NULL-sicherer
+        # Feld-Match (Nummer+Betrag). BEIDE Checks laufen VOR update_invoice_record,
+        # damit das Ergebnis in validierung_json landet – sonst zeigt die
+        # Detail-Ansicht/Compliance-Panel den Treffer nie an.
+        duplicate = None
+        try:
+            match = duplicate_detection.check_duplicate_by_file_hash(
+                file_hash, tid, exclude_invoice_id=invoice_id)
+            if match:
+                duplicate = {"of_id": match["id"], "method": "file_hash"}
+        except Exception as exc:  # pragma: no cover - Duplikat-Check darf Upload nie sprengen
+            logger.warning("Duplikat-Check (file_hash) invoice=%s: %s", invoice_id, exc)
         if duplicate is None:
             try:
                 fmatch = duplicate_detection.check_duplicate_by_fields(
                     outcome.get("fields") or {}, tid, exclude_invoice_id=invoice_id)
                 if fmatch:
                     duplicate = {"of_id": fmatch["id"], "method": "fields"}
-                    duplicate_detection.save_duplicate_detection(
-                        invoice_id, fmatch["id"], method="fields", confidence=0.9)
             except Exception as exc:  # pragma: no cover
                 logger.warning("Duplikat-Check (fields) invoice=%s: %s", invoice_id, exc)
+
+        if duplicate is not None:
+            try:
+                duplicate_detection.save_duplicate_detection(
+                    invoice_id, duplicate["of_id"], method=duplicate["method"],
+                    confidence=1.0 if duplicate["method"] == "file_hash" else 0.9)
+            except Exception as exc:  # pragma: no cover
+                logger.warning("save_duplicate_detection invoice=%s: %s", invoice_id, exc)
+        # Duplikat-Ergebnis ins validierung_json spiegeln + Status auf 'pruefen'.
+        _apply_duplicate_to_outcome(outcome, duplicate)
+
+        # Persistieren (Felder + validierung_json inkl. Duplikat-Check + Status)
+        try:
+            invoice_extraction.update_invoice_record(invoice_id, outcome)
+        except Exception as exc:  # pragma: no cover
+            logger.error("update_invoice_record id=%s: %s", invoice_id, exc)
 
         audit_events.log_event(tid, audit_events.AuditEvent.KI_EXTRAKTION, user_id=tid,
                                entity_type="invoice", entity_id=invoice_id,

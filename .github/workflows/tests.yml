@@ -74,6 +74,13 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: python -m alembic upgrade head
       - run: python -m pytest modules/rechnungsverarbeitung/tests/ -v --tb=short
+      - name: App-Tests (tests/, SQLite)
+        # Die App-Suite ist SQLite-basiert (monkeypatcht database._ensure_db_path).
+        # DATABASE_URL leeren, damit is_postgres() False bleibt und get_connection
+        # den gepatchten SQLite-Pfad nutzt statt der CI-Postgres-Instanz.
+        env:
+          DATABASE_URL: ""
+        run: python -m pytest tests/ -v --tb=short
 
   security:
     name: Security

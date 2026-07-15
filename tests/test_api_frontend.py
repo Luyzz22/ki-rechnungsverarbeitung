@@ -1,5 +1,6 @@
 """E2E-Test der Frontend-JSON-API (/api/app, Bearer-Auth) für die Next.js-SPA."""
 
+import json
 import os
 import tempfile
 
@@ -126,6 +127,31 @@ def test_invoices_filter_neu_includes_null_status(client):
     assert "NEU-NULL-1" in [i["rechnungsnummer"] for i in items]
 
 
+def test_invoices_list_exposes_compact_validierung(client, monkeypatch):
+    """Listen-Endpoint liefert dieselbe validierung-Quelle wie das Detail, aber
+    KOMPAKT (ok/error_count/pflichtangaben/summary, ohne die volle checks-Liste)
+    und OHNE den validierung_json-Rohstring durchzureichen."""
+    import invoice_extraction
+    tok = client.post("/api/app/register", json={
+        "email": "listval@test.de", "password": "Test1234", "name": "L", "company": "X"}).json()["token"]
+    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text: {
+        "rechnungsaussteller": "Acme GmbH", "rechnungsnummer": "LST-001",
+        "datum": "2026-01-15", "betrag_brutto": "119,00", "betrag_netto": "100,00",
+        "mwst_betrag": "19,00", "mwst_satz": "19.0", "steuernummer": "12/345/67890",
+        "iban": "DE89370400440532013000", "waehrung": "EUR",
+    })
+    client.post("/api/app/upload", headers=_auth(tok),
+                files={"files": ("r.pdf", _make_pdf(), "application/pdf")})
+    item = next(i for i in client.get("/api/app/invoices?limit=500", headers=_auth(tok)).json()["items"]
+                if i["rechnungsnummer"] == "LST-001")
+    assert "validierung_json" not in item  # Rohstring nicht in der Liste
+    v = item["validierung"]
+    assert isinstance(v, dict) and "checks" not in v  # kompakt: keine volle Liste
+    assert item["validierung_ok"] == v["ok"]
+    assert v["pflichtangaben"]["geprueft"] is True
+    assert v["summary"]["total"] >= 4
+
+
 def test_invoice_detail_404(client, token):
     assert client.get("/api/app/invoices/999999", headers=_auth(token)).status_code == 404
 
@@ -200,6 +226,20 @@ def test_upload_runs_pipeline(client, token, monkeypatch):
     detail = client.get(f"/api/app/invoices/{inv['id']}", headers=_auth(token)).json()
     assert detail["rechnungsaussteller"] == "Acme GmbH"
     assert detail["betrag_brutto"] == 119.0
+    # Strukturierte Validierung ist die einzige Quelle der Wahrheit (Validierung-Tab
+    # UND Compliance-Panel lesen dasselbe Objekt – keine clientseitige Neuvalidierung).
+    val = detail["validierung"]
+    assert isinstance(val, dict) and isinstance(val["checks"], list) and val["checks"]
+    assert detail["validierung_ok"] == val["ok"]
+    # Jeder Check trägt Label + Kategorie, damit die SPA direkt rendern kann.
+    for c in val["checks"]:
+        assert c.get("label") and c.get("category")
+    by_name = {c["name"]: c for c in val["checks"]}
+    # Gültige IBAN (mod-97) darf NICHT als „ungültig" gemeldet werden (Backend ist Quelle).
+    assert by_name["iban"]["ok"] is True
+    # Pflichtangaben-Prüfung fand statt und zeigt für Tab und Panel dieselbe Zahl.
+    pa = val["pflichtangaben"]
+    assert pa["geprueft"] is True and pa["total"] >= 4 and pa["ok"] == pa["total"]
 
 
 def test_upload_detects_duplicate_of_pre_migration_row(client, monkeypatch):
@@ -258,9 +298,20 @@ def test_upload_reupload_identical_file_flagged_duplicate(client, token, monkeyp
     r2 = client.post("/api/app/upload", headers=_auth(token),
                      files={"files": ("beleg.pdf", pdf, "application/pdf")})
     assert r2.status_code == 200
-    dup = r2.json()["invoices"][0]["duplicate"]
+    inv2 = r2.json()["invoices"][0]
+    dup = inv2["duplicate"]
     assert dup is not None and dup["method"] == "file_hash"
     assert dup["of_id"] == r1.json()["invoices"][0]["id"]
+    # Der Duplikat-Treffer MUSS in validierung_json stehen (Quelle der Detail-
+    # Ansicht/Compliance-Panel) und den Status auf 'pruefen' setzen – sonst zeigt
+    # die UI weiter „+10/10 kein Duplikat", obwohl der Hash matcht.
+    assert inv2["status"] == "pruefen"
+    detail = client.get(f"/api/app/invoices/{inv2['id']}", headers=_auth(token)).json()
+    val = json.loads(detail["validierung_json"])
+    dcheck = next(c for c in val["checks"] if c["name"] == "duplikat")
+    assert dcheck["ok"] is False and dcheck["severity"] == "error"
+    assert str(r1.json()["invoices"][0]["id"]) in dcheck["message"]
+    assert val["ok"] is False
 
 
 def test_upload_same_basename_distinct_hashes(client, token, monkeypatch):
@@ -313,6 +364,23 @@ def test_upload_without_llm_sets_error(client, token, monkeypatch):
     r = client.post("/api/app/upload", headers=_auth(token), files=files)
     assert r.status_code == 200
     assert r.json()["invoices"][0]["status"] == "fehler"
+
+
+def test_upload_failed_extraction_not_marked_valid(client, token, monkeypatch):
+    """Codex P2: schlägt die Extraktion fehl (validation=None) und liegt KEIN
+    Duplikat vor, darf der Duplikat-Schritt nicht fälschlich validierung_ok=true
+    setzen (kein grüner Prüfstatus für eine nie validierte Rechnung)."""
+    import invoice_extraction
+    def _raise(text):
+        raise invoice_extraction.NoLLMConfigured("kein key")
+    monkeypatch.setattr(invoice_extraction, "_call_llm", _raise)
+    r = client.post("/api/app/upload", headers=_auth(token),
+                    files={"files": ("x.pdf", _make_pdf("R"), "application/pdf")})
+    assert r.status_code == 200
+    inv = r.json()["invoices"][0]
+    assert inv["status"] == "fehler"
+    assert inv["validierung_ok"] is not True  # None/False, NIE True
+    assert inv["duplicate"] is None
 
 
 def test_upload_rejects_non_document(client, token):
