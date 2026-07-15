@@ -403,14 +403,19 @@ def _apply_duplicate_to_outcome(outcome: Dict[str, Any], duplicate: Optional[Dic
     (die Panels lesen validierung_json, nicht die duplicate_detections-Tabelle).
     Bei einem Treffer wird zusätzlich der Status auf 'pruefen' gesetzt (keine
     stille Auto-Freigabe eines Duplikats)."""
+    is_dup = duplicate is not None
     val = outcome.get("validation")
     if not isinstance(val, dict):
+        # Kein Validierungsergebnis (Extraktion fehlgeschlagen / kein Text): NICHT
+        # fälschlich als 'ok' markieren. Nur wenn ein Duplikat vorliegt, legen wir
+        # ein (dann fehlgeschlagenes) Validierungsergebnis an; sonst unangetastet.
+        if not is_dup:
+            return
         val = {"ok": True, "error_count": 0, "checks": []}
         outcome["validation"] = val
     checks = val.setdefault("checks", [])
     # idempotent: evtl. vorhandenen alten Duplikat-Check entfernen (Reprocess)
     checks[:] = [c for c in checks if c.get("name") != "duplikat"]
-    is_dup = duplicate is not None
     checks.append({
         "name": "duplikat",
         "ok": not is_dup,

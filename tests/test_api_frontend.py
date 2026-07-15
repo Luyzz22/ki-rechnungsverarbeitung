@@ -327,6 +327,23 @@ def test_upload_without_llm_sets_error(client, token, monkeypatch):
     assert r.json()["invoices"][0]["status"] == "fehler"
 
 
+def test_upload_failed_extraction_not_marked_valid(client, token, monkeypatch):
+    """Codex P2: schlägt die Extraktion fehl (validation=None) und liegt KEIN
+    Duplikat vor, darf der Duplikat-Schritt nicht fälschlich validierung_ok=true
+    setzen (kein grüner Prüfstatus für eine nie validierte Rechnung)."""
+    import invoice_extraction
+    def _raise(text):
+        raise invoice_extraction.NoLLMConfigured("kein key")
+    monkeypatch.setattr(invoice_extraction, "_call_llm", _raise)
+    r = client.post("/api/app/upload", headers=_auth(token),
+                    files={"files": ("x.pdf", _make_pdf("R"), "application/pdf")})
+    assert r.status_code == 200
+    inv = r.json()["invoices"][0]
+    assert inv["status"] == "fehler"
+    assert inv["validierung_ok"] is not True  # None/False, NIE True
+    assert inv["duplicate"] is None
+
+
 def test_upload_rejects_non_document(client, token):
     files = {"files": ("notes.txt", b"hello", "text/plain")}
     r = client.post("/api/app/upload", headers=_auth(token), files=files)
