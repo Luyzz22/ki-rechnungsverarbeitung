@@ -17,7 +17,8 @@ und `https://www.belegflow-ai.de`.
 |--------|------|--------------|---------|
 | POST | `/api/app/login` | `{email, password}` | `{token, user}` |
 | POST | `/api/app/register` | `{email, password, name?, company?}` | `201 {token, user}` |
-| GET | `/api/app/me` | – | `{user}` |
+| GET | `/api/app/me` | – | `{user, entitlement}` (user inkl. `plan`, `unlimited`) |
+| GET | `/api/app/subscription` | – | Entitlement (Paywall/Testphase – **einzige Quelle**) |
 | GET | `/api/app/dashboard/kpis` | – | `{count_today, count_month, count_quarter, automation_rate, total_invoices, open_approvals, oldest_age_hours, anomaly_alerts, trend[]}` |
 | GET | `/api/app/invoices` | `?status=&q=&limit=&offset=` | `{total, limit, offset, items[]}` |
 | GET | `/api/app/invoices/{id}` | – | Rechnungsobjekt · `404` wenn fremd/fehlend |
@@ -31,6 +32,31 @@ und `https://www.belegflow-ai.de`.
 
 Fehlerformat: HTTP-Statuscode + `{ "detail": "..." }`.
 - `401` nicht/ungültig authentifiziert · `404` nicht gefunden · `400/409` Validierung.
+
+## Entitlement / Paywall (`GET /api/app/subscription`, auch in `/api/app/me`)
+
+**Einzige Quelle der Wahrheit für Paywall/Testphase.** Die SPA darf KEINE
+clientseitige Trial-Heuristik anwenden (der Prod-Fall: ein Admin sah
+„Testphase beendet – 31/500", obwohl er unbegrenzten Zugang hat, weil das
+Frontend clientseitig gated statt diesen Status zu lesen).
+
+```jsonc
+{
+  "plan": "admin",        // bzw. "starter"/"professional"/"enterprise"/null
+  "is_admin": true,        // Admins sind immer unlimited
+  "unlimited": true,       // true → keine Paywall/kein Limit anzeigen
+  "allowed": true,         // darf weiter verarbeiten?
+  "limit": "unlimited",    // Zahl oder "unlimited"
+  "used": 0,
+  "remaining": "unlimited",// Zahl oder "unlimited"
+  "reason": null,          // z. B. "no_subscription" / "limit_reached"
+  "message": null
+}
+```
+
+Regel fürs Frontend: **Wenn `unlimited === true` (oder `is_admin === true`),
+niemals „Testphase beendet"/Limit-Banner zeigen.** Andernfalls `used`/`limit`
+aus diesem Objekt rendern – nicht aus einem hartkodierten Trial-Default.
 
 ## `trend[]` (für Recharts)
 `[{ "date": "YYYY-MM-DD", "count": <int> }]` (30 Tage, lückenlos). Linienfarbe `#003856`.
