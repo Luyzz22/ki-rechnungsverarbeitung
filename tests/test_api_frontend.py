@@ -83,7 +83,46 @@ def test_requires_auth(client):
 def test_me(client, token):
     r = client.get("/api/app/me", headers=_auth(token))
     assert r.status_code == 200
-    assert r.json()["user"]["email"] == "spa@test.de"
+    body = r.json()
+    assert body["user"]["email"] == "spa@test.de"
+    # /me trägt jetzt das Entitlement (Quelle für Paywall/Testphase der SPA)
+    ent = body["entitlement"]
+    for k in ("plan", "is_admin", "unlimited", "allowed", "limit", "used", "remaining"):
+        assert k in ent
+    assert body["user"]["unlimited"] == ent["unlimited"]
+
+
+def test_subscription_requires_auth(client):
+    assert client.get("/api/app/subscription").status_code == 401
+
+
+def test_subscription_admin_is_unlimited(client):
+    """Admin (users.is_admin=1) → unbegrenzt, KEINE abgelaufene Testphase.
+    Regression zum Prod-Fall: Admin sah „Testphase beendet" trotz Admin-Rechten,
+    weil die SPA clientseitig gated statt den Backend-Status zu lesen."""
+    import database
+    tok = client.post("/api/app/register", json={
+        "email": "adminspa@test.de", "password": "Test1234", "name": "Admin", "company": "SBS"}).json()["token"]
+    tid = _tenant_id(client, tok)
+    conn = database.get_connection(); cur = conn.cursor()
+    cur.execute("UPDATE users SET is_admin = 1 WHERE id = ?", (tid,))
+    conn.commit(); conn.close()
+
+    ent = client.get("/api/app/subscription", headers=_auth(tok)).json()
+    assert ent["is_admin"] is True
+    assert ent["unlimited"] is True
+    assert ent["allowed"] is True
+    assert ent["limit"] == "unlimited" and ent["remaining"] == "unlimited"
+    # und /me spiegelt dasselbe
+    me = client.get("/api/app/me", headers=_auth(tok)).json()
+    assert me["entitlement"]["unlimited"] is True and me["user"]["unlimited"] is True
+
+
+def test_subscription_non_admin_not_unlimited(client, token):
+    """Normaler Nutzer ohne aktives Abo → nicht unbegrenzt (unlimited=False)."""
+    ent = client.get("/api/app/subscription", headers=_auth(token)).json()
+    assert ent["is_admin"] is False
+    assert ent["unlimited"] is False
 
 
 @pytest.mark.parametrize("path", [

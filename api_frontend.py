@@ -187,10 +187,62 @@ async def api_register(request: Request):
     return JSONResponse(status_code=201, content={"token": token, "user": _user_dict(user_id)})
 
 
+def _entitlement(user_id: int) -> Dict[str, Any]:
+    """Normalisierter Abrechnungs-/Zugangsstatus für die SPA (Bearer).
+
+    EINZIGE autoritative Quelle für Paywall/Testphase: Admins sind unbegrenzt
+    (``users.is_admin`` – von ``check_invoice_limit`` bereits berücksichtigt).
+    Die SPA MUSS dies auswerten, statt eine clientseitige Trial-Heuristik
+    (z. B. „500/Monat, Testphase beendet") anzuwenden – sonst sieht ein Admin
+    fälschlich eine abgelaufene Testphase, obwohl er unbegrenzten Zugang hat."""
+    try:
+        from database import check_invoice_limit
+        info = check_invoice_limit(int(user_id)) or {}
+    except Exception as exc:  # pragma: no cover - defensiv (z. B. Tabelle fehlt)
+        logger.warning("check_invoice_limit(%s): %s", user_id, exc)
+        info = {}
+    is_admin = bool(info.get("is_admin", False))
+    raw_limit = info.get("limit")
+    unlimited = is_admin or raw_limit in (-1, 999999, "unlimited")
+    used = int(info.get("used", 0) or 0)
+    if unlimited:
+        limit_out: Any = "unlimited"
+        remaining_out: Any = "unlimited"
+        allowed = True
+    else:
+        limit_out = int(raw_limit or 0)
+        remaining_out = max(0, limit_out - used)
+        allowed = bool(info.get("allowed", remaining_out > 0))
+    return {
+        "plan": info.get("plan") or ("admin" if is_admin else None),
+        "is_admin": is_admin,
+        "unlimited": unlimited,
+        "allowed": allowed,
+        "limit": limit_out,
+        "used": used,
+        "remaining": remaining_out,
+        "reason": info.get("reason"),
+        "message": info.get("message"),
+    }
+
+
 @router.get("/me")
 async def api_me(request: Request):
     tid = _require_tenant(request)
-    return {"user": _user_dict(tid)}
+    user = _user_dict(tid)
+    ent = _entitlement(tid)
+    # Bequemlichkeit: Plan/Unlimited direkt am User, plus vollständiges
+    # entitlement-Objekt (die SPA gated darüber, nicht clientseitig).
+    user["plan"] = ent["plan"]
+    user["unlimited"] = ent["unlimited"]
+    return {"user": user, "entitlement": ent}
+
+
+@router.get("/subscription")
+async def api_subscription(request: Request):
+    """Abrechnungs-/Zugangsstatus (Bearer, tenant-isoliert). Admins: unbegrenzt.
+    Die SPA soll diesen Endpoint als einzige Quelle für Paywall/Testphase nutzen."""
+    return _entitlement(_require_tenant(request))
 
 
 # ---------------------------------------------------------------------------
