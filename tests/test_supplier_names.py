@@ -47,6 +47,18 @@ def test_canonical_distinguishes_different_suppliers():
     assert canonical_key("Schenk Digital Solutions GmbH") != canonical_key("Müller & Brandt Maschinenbau GmbH")
 
 
+def test_canonical_preserves_non_latin_unicode():
+    """P1: nicht-lateinische Schriften/Akzente dürfen NICHT auf einen leeren
+    Schlüssel kollabieren (sonst würden verschiedene Lieferanten zusammengeführt)."""
+    assert canonical_key("東京商事") == "東京商事"
+    assert canonical_key("北京贸易") == "北京贸易"
+    assert canonical_key("東京商事") != canonical_key("北京贸易")
+    assert canonical_key("東京商事") != ""
+    # akzentuierte lateinische Namen bleiben unterscheidbar
+    assert canonical_key("Électricité SA") != canonical_key("Àlectricité SA")
+    assert canonical_key("Café Küper") != ""
+
+
 def test_best_display_prefers_mixed_case_then_frequency():
     # gemischte Groß-/Kleinschreibung schlägt ALLCAPS, auch bei geringerer Häufigkeit
     assert best_display_name([

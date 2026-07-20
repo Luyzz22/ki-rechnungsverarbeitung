@@ -60,9 +60,13 @@ def canonical_key(name: Optional[str]) -> str:
     ``'SBS DEUTSCHLAND GMBH & CO.KG'`` / ``'SBS Deutschland GmbH & Co.KG'``;
     ``'AS-Technik / Dipl. Inf. A. Schenk'`` / ``'AS-Technik * Dipl. Inf. A.Schenk'``.
     """
+    # Unicode-bewusst: ALLE alphanumerischen Zeichen (inkl. Umlaute, Akzente,
+    # CJK, kyrillisch …) bleiben erhalten; nur Interpunktion/Whitespace/`_`
+    # werden zu einem Space. Nicht-lateinische Schriften dürfen NICHT auf einen
+    # leeren Schlüssel kollabieren (sonst würden verschiedene Lieferanten
+    # fälschlich zusammengeführt).
     s = (name or "").lower()
-    # alles Nicht-Alphanumerische (inkl. Umlaute/ß erhalten) -> einzelnes Space
-    s = re.sub(r"[^0-9a-zäöüß]+", " ", s)
+    s = re.sub(r"[\W_]+", " ", s, flags=re.UNICODE)
     return re.sub(r"\s+", " ", s).strip()
 
 
