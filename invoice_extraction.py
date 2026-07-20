@@ -474,6 +474,15 @@ def suggest_kontierung(fields: Dict[str, Any]) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Orchestrierung
 # ---------------------------------------------------------------------------
+def _sanitize_issuer_name(fields: Dict[str, Any]) -> None:
+    """Bereinigt ``fields['rechnungsaussteller']`` in-place (Dateiname/Platzhalter
+    → None), damit ein Extraktions-Artefakt nie als Aussteller gilt/gespeichert
+    wird. Muss VOR der Missing-Field-Prüfung laufen (sonst OCR-Pass übersprungen)."""
+    from supplier_names import sanitize_supplier
+    if "rechnungsaussteller" in fields:
+        fields["rechnungsaussteller"] = sanitize_supplier(fields.get("rechnungsaussteller"))
+
+
 def process_pdf(filepath: str) -> Dict[str, Any]:
     """Führt die komplette Pipeline für eine Datei aus.
 
@@ -509,6 +518,11 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
         if isinstance(raw, dict):
             result["raw_response"] = raw.pop("__raw__", None)
         fields = normalize_fields(raw)
+        # Aussteller SOFORT bereinigen (Dateiname/Platzhalter -> None), damit ein
+        # solches Artefakt nicht als „vorhanden" gilt und die OCR-Nachextraktion
+        # (Schritt 3b) fälschlich überspringt – die dann den echten Aussteller
+        # aus dem Grafik-Briefkopf holen könnte.
+        _sanitize_issuer_name(fields)
     except NoLLMConfigured as exc:
         result["error"] = str(exc)
         return result
@@ -539,6 +553,7 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
                 if isinstance(raw2, dict):
                     raw2.pop("__raw__", None)
                 fields2 = normalize_fields(raw2)
+                _sanitize_issuer_name(fields2)  # OCR-Pass darf ebenfalls keinen Dateinamen einsetzen
                 for key, val in fields2.items():
                     # Nur echte Lücken füllen: None/"" gilt als fehlend – NICHT
                     # falsy-Werte wie 0.0 (z. B. mwst_satz=0 bei steuerfrei), sonst

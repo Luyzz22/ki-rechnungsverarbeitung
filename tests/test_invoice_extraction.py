@@ -412,6 +412,49 @@ def test_process_pdf_success(monkeypatch):
     assert res["validation"]["ok"] is True
 
 
+def test_process_pdf_drops_filename_as_supplier(monkeypatch):
+    """Enterprise: liefert die KI einen Dateinamen als Aussteller (Extraktions-
+    Artefakt), darf dieser NICHT persistiert werden – Feld wird verworfen und
+    die §14-Pflichtangabe entsprechend als fehlend gemeldet (Status 'pruefen')."""
+    path = _write_pdf("Rechnung\n119,00 EUR")
+    monkeypatch.setattr(ie, "_call_llm", lambda text: {
+        "rechnungsaussteller": "Testrechnung_Mueller_Brandt_2026-001.pdf",
+        "rechnungsnummer": "R1", "datum": "2026-01-01",
+        "betrag_brutto": "119,00", "mwst_satz": "19.0", "steuernummer": "12/345/67890",
+    })
+    res = ie.process_pdf(path)
+    assert res["fields"]["rechnungsaussteller"] is None
+    assert res["status"] == "pruefen"
+    names = {c["name"] for c in res["validation"]["checks"] if not c["ok"]}
+    assert "§14_rechnungsaussteller" in names
+
+
+def test_process_pdf_ocr_recovers_supplier_when_first_pass_is_filename(monkeypatch):
+    """Codex P2: liefert der erste Lauf einen Dateinamen als Aussteller UND fehlen
+    die übrigen Issuer-Felder, muss der Wert VOR der Missing-Prüfung bereinigt
+    werden, damit der OCR-Zweitlauf den echten Aussteller aus dem Briefkopf holt."""
+    path = _write_pdf("Rechnung IT2025032\nNetto 1.580,00 EUR")
+    calls = {"n": 0}
+
+    def _mock(text):
+        calls["n"] += 1
+        if "[OCR" in text:
+            return {"rechnungsaussteller": "SBS Deutschland GmbH & Co. KG",
+                    "iban": "DE19100101238495732107", "ust_idnr": "DE300066949",
+                    "steuernummer": "47013/22377"}
+        # erster Lauf: Dateiname als Aussteller (Artefakt), übrige Issuer-Felder leer
+        return {"rechnungsaussteller": "IT2025032_scan.pdf",
+                "rechnungsnummer": "IT2025032", "betrag_brutto": "1880,20",
+                "betrag_netto": "1580,00", "datum": "2025-09-29"}
+
+    monkeypatch.setattr(ie, "_call_llm", _mock)
+    monkeypatch.setattr(ie, "_ocr_pdf", lambda p:
+                        "SBS DEUTSCHLAND GMBH & CO. KG\nIBAN: DE19 1001 0123 8495 7321 07")
+    res = ie.process_pdf(path)
+    assert calls["n"] == 2  # OCR-Zweitlauf wurde ausgelöst, nicht durch den Dateinamen unterdrückt
+    assert res["fields"]["rechnungsaussteller"] == "SBS Deutschland GmbH & Co. KG"
+
+
 def test_process_pdf_two_stage_ocr_recovers_header_footer_fields(monkeypatch):
     """Aussteller/IBAN/USt-IdNr/Steuernummer stehen nur im Grafik-Fuß (kein
     Textlayer). Fehlen sie nach dem Text-Pass komplett, ergänzt ein zweiter
