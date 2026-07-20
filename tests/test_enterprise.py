@@ -78,6 +78,49 @@ def test_supplier_detail(db, add_invoice):
     assert len(detail["invoices"]) == 2
 
 
+def test_supplier_merges_case_and_punctuation_variants(db, add_invoice):
+    """Enterprise: Schreibweisen-Varianten desselben Lieferanten werden zu EINER
+    Zeile konsolidiert; angezeigt wird die sauberste (gemischte Schreibweise)."""
+    add_invoice("SBS Deutschland GmbH & Co.KG", 1880.20, invoice_no="A")
+    add_invoice("SBS DEUTSCHLAND GMBH & CO.KG", 1880.20, invoice_no="B")
+    add_invoice("AS-Technik / Dipl. Inf. A. Schenk", 809.20, invoice_no="C")
+    add_invoice("AS-Technik * Dipl. Inf. A.Schenk", 809.20, invoice_no="D")
+
+    suppliers = get_suppliers(1, sort_by="volumen")
+    names = [s["name"] for s in suppliers]
+    # genau zwei Lieferanten (nicht vier)
+    assert len(suppliers) == 2, names
+    sbs = next(s for s in suppliers if s["name"].lower().startswith("sbs"))
+    assert sbs["count"] == 2 and sbs["total"] == 3760.40
+    assert sbs["name"] == "SBS Deutschland GmbH & Co.KG"  # gemischte Schreibweise gewinnt
+
+
+def test_supplier_filenames_and_placeholders_become_unknown(db, add_invoice):
+    """Enterprise: Dateinamen/Platzhalter als Aussteller werden NICHT als eigener
+    Lieferant geführt, sondern unter 'Unbekannt' konsolidiert."""
+    add_invoice("test.pdf", 0.0, invoice_no="A")
+    add_invoice("Testrechnung_Mueller_Brandt_2026-001.pdf", 0.0, invoice_no="B")
+    add_invoice("Reale Firma GmbH", 100.0, invoice_no="C")
+
+    suppliers = get_suppliers(1, sort_by="volumen")
+    names = [s["name"] for s in suppliers]
+    assert "test.pdf" not in names
+    assert "Testrechnung_Mueller_Brandt_2026-001.pdf" not in names
+    assert "Reale Firma GmbH" in names
+    unknown = next(s for s in suppliers if s["name"] == "Unbekannt")
+    assert unknown["count"] == 2  # beide Datei-Aussteller zusammengeführt
+
+
+def test_supplier_detail_matches_canonically(db, add_invoice):
+    """Detail eines konsolidierten Lieferanten zeigt ALLE Varianten-Rechnungen."""
+    add_invoice("Böttcher AG", 262.54, invoice_no="A")
+    add_invoice("BÖTTCHER AG", 262.54, invoice_no="B")
+    detail = get_supplier_detail(1, "böttcher ag")  # beliebige Schreibweise
+    assert detail["summary"]["count"] == 2
+    assert len(detail["invoices"]) == 2
+    assert detail["summary"]["name"] == "Böttcher AG"
+
+
 # ---------------------------------------------------------------------------
 # Phase 4a – Dashboard KPIs
 # ---------------------------------------------------------------------------

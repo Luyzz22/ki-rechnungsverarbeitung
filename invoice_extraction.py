@@ -549,6 +549,13 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
         except Exception as exc:  # pragma: no cover - Zusatzschritt darf nie sprengen
             logger.info("OCR-Nachextraktion übersprungen: %s", exc)
 
+    # Aussteller-Bereinigung: niemals einen Dateinamen/Platzhalter als Lieferant
+    # persistieren (Extraktions-Artefakt). Wird der Wert verworfen, meldet
+    # run_validation korrekt die fehlende §14-Pflichtangabe (Status 'pruefen').
+    from supplier_names import sanitize_supplier
+    if "rechnungsaussteller" in fields:
+        fields["rechnungsaussteller"] = sanitize_supplier(fields.get("rechnungsaussteller"))
+
     # Schritt 4+5
     validation = run_validation(fields)
     kontierung = suggest_kontierung(fields)

@@ -20,10 +20,17 @@ import statistics
 from typing import Any, Dict, List, Optional
 
 from database import get_connection
+from supplier_names import UNKNOWN, best_display_name, canonical_key, sanitize_supplier
 
 logger = logging.getLogger(__name__)
 
 _VALID_SORTS = {"volumen", "risiko", "name"}
+
+
+def _clean_supplier(raw: Any) -> str:
+    """Bereinigter Anzeigename für einen gespeicherten Aussteller (Dateinamen/
+    Platzhalter → 'Unbekannt'). Konsolidiert Bestandsdaten im Lesepfad."""
+    return sanitize_supplier(raw) or UNKNOWN
 
 
 def _fetch_invoices(tenant_id: int) -> List[Dict[str, Any]]:
@@ -121,12 +128,21 @@ def get_suppliers(tenant_id: int, sort_by: str = "volumen") -> List[Dict[str, An
     all_amounts = [float(i["amount"] or 0) for i in invoices]
     global_avg = statistics.mean(all_amounts) if all_amounts else 0.0
 
+    # Kanonisch gruppieren: Schreibweisen-Varianten (Case/Interpunktion) UND
+    # bereinigte Dateinamen/Platzhalter fallen zu EINEM Lieferanten zusammen.
     grouped: Dict[str, List[Dict[str, Any]]] = {}
     for inv in invoices:
-        grouped.setdefault(inv["supplier"], []).append(inv)
+        display = _clean_supplier(inv.get("supplier"))
+        inv["_display"] = display
+        grouped.setdefault(canonical_key(display), []).append(inv)
 
     suppliers: List[Dict[str, Any]] = []
-    for name, items in grouped.items():
+    for items in grouped.values():
+        # saubersten Anzeigenamen aus den Original-Schreibweisen der Gruppe wählen
+        name_counts: Dict[str, int] = {}
+        for i in items:
+            name_counts[i["_display"]] = name_counts.get(i["_display"], 0) + 1
+        name = best_display_name(name_counts.items())
         amounts = [float(i["amount"] or 0) for i in items]
         total = round(sum(amounts), 2)
         count = len(items)
@@ -157,18 +173,31 @@ def get_suppliers(tenant_id: int, sort_by: str = "volumen") -> List[Dict[str, An
 
 
 def get_supplier_detail(tenant_id: int, supplier: str) -> Dict[str, Any]:
-    """Detailansicht eines Lieferanten inkl. Rechnungshistorie."""
-    invoices = [i for i in _fetch_invoices(tenant_id) if i["supplier"] == supplier]
+    """Detailansicht eines Lieferanten inkl. Rechnungshistorie.
+
+    Matcht kanonisch (case-/interpunktions-unabhängig), damit ein in der
+    Übersicht zusammengeführter Lieferant auch im Detail alle seine Rechnungen
+    zeigt – inkl. bereinigter Dateinamen/Platzhalter unter 'Unbekannt'.
+    """
+    key = canonical_key(_clean_supplier(supplier))
+    all_invoices = _fetch_invoices(tenant_id)
+    invoices = [i for i in all_invoices if canonical_key(_clean_supplier(i.get("supplier"))) == key]
     invoices.sort(key=lambda i: (i.get("invoice_date") or i.get("created_at") or ""), reverse=True)
 
-    all_amounts = [float(i["amount"] or 0) for i in _fetch_invoices(tenant_id)]
+    all_amounts = [float(i["amount"] or 0) for i in all_invoices]
     global_avg = statistics.mean(all_amounts) if all_amounts else 0.0
 
     amounts = [float(i["amount"] or 0) for i in invoices]
     total = round(sum(amounts), 2)
     count = len(invoices)
+    # sauberster Anzeigename der Gruppe (Fallback: übergebener Name)
+    name_counts: Dict[str, int] = {}
+    for i in invoices:
+        disp = _clean_supplier(i.get("supplier"))
+        name_counts[disp] = name_counts.get(disp, 0) + 1
+    display_name = best_display_name(name_counts.items()) if name_counts else (supplier or UNKNOWN)
     summary = {
-        "name": supplier,
+        "name": display_name,
         "count": count,
         "total": total,
         "avg": round(total / count, 2) if count else 0.0,
