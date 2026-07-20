@@ -130,27 +130,30 @@ def get_suppliers(tenant_id: int, sort_by: str = "volumen") -> List[Dict[str, An
 
     # Kanonisch gruppieren: Schreibweisen-Varianten (Case/Interpunktion) UND
     # bereinigte Dateinamen/Platzhalter fallen zu EINEM Lieferanten zusammen.
-    grouped: Dict[str, List[Dict[str, Any]]] = {}
+    # Den bereinigten Anzeigenamen NICHT in die Row schreiben – unter PostgreSQL
+    # sind das HybridRow-Objekte ohne item-assignment. Als (display, row)-Tupel
+    # neben der Row führen.
+    grouped: Dict[str, List[Any]] = {}
     for inv in invoices:
         display = _clean_supplier(inv.get("supplier"))
-        inv["_display"] = display
-        grouped.setdefault(canonical_key(display), []).append(inv)
+        grouped.setdefault(canonical_key(display), []).append((display, inv))
 
     suppliers: List[Dict[str, Any]] = []
-    for items in grouped.values():
+    for pairs in grouped.values():
+        rows = [row for _, row in pairs]
         # saubersten Anzeigenamen aus den Original-Schreibweisen der Gruppe wählen
         name_counts: Dict[str, int] = {}
-        for i in items:
-            name_counts[i["_display"]] = name_counts.get(i["_display"], 0) + 1
+        for display, _ in pairs:
+            name_counts[display] = name_counts.get(display, 0) + 1
         name = best_display_name(name_counts.items())
-        amounts = [float(i["amount"] or 0) for i in items]
+        amounts = [float(i["amount"] or 0) for i in rows]
         total = round(sum(amounts), 2)
-        count = len(items)
+        count = len(rows)
         avg = round(total / count, 2) if count else 0.0
         # letzte Rechnung anhand Rechnungsdatum, Fallback created_at
-        dates = [i.get("invoice_date") or i.get("created_at") or "" for i in items]
+        dates = [i.get("invoice_date") or i.get("created_at") or "" for i in rows]
         last_date = max(dates) if dates else ""
-        risk = _supplier_risk(items, global_avg)
+        risk = _supplier_risk(rows, global_avg)
         suppliers.append(
             {
                 "name": name,

@@ -71,3 +71,27 @@ def test_best_display_prefers_mixed_case_then_frequency():
 
 def test_best_display_empty_is_unknown():
     assert best_display_name([]) == UNKNOWN
+
+
+def test_get_suppliers_handles_hybridrow_rows(monkeypatch):
+    """Prod-Regression: unter PostgreSQL liefert _fetch_invoices HybridRow-Objekte
+    (kein item-assignment). get_suppliers darf die Row NICHT mutieren – sonst
+    'HybridRow' object does not support item assignment (500)."""
+    import supplier_overview as so
+    from db_compat import HybridRow
+
+    cols = ["id", "supplier", "amount", "invoice_date", "created_at"]
+    rows = [
+        HybridRow(cols, [1, "SBS Deutschland GmbH & Co.KG", 1880.20, "2025-09-29", "2025-09-29T10:00:00"]),
+        HybridRow(cols, [2, "SBS DEUTSCHLAND GMBH & CO.KG", 1880.20, "2025-09-29", "2025-09-30T10:00:00"]),
+        HybridRow(cols, [3, "test.pdf", 0.0, "2026-06-09", "2026-06-09T10:00:00"]),
+    ]
+    monkeypatch.setattr(so, "_fetch_invoices", lambda tid: rows)
+
+    suppliers = so.get_suppliers(1, sort_by="volumen")
+    names = [s["name"] for s in suppliers]
+    # Varianten gemergt (saubere Schreibweise), Dateiname → Unbekannt
+    assert "SBS Deutschland GmbH & Co.KG" in names
+    assert "test.pdf" not in names and "Unbekannt" in names
+    sbs = next(s for s in suppliers if s["name"].lower().startswith("sbs"))
+    assert sbs["count"] == 2 and sbs["total"] == 3760.40
