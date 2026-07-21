@@ -277,6 +277,24 @@ def test_escalation_after_48h(db, add_invoice):
     assert overdue["overdue"] is True
 
 
+def test_enrich_approval_handles_hybridrow():
+    """Prod-Regression: unter PostgreSQL liefert get_connection() HybridRow-Objekte
+    (kein item-assignment). _enrich_approval darf die Row NICHT mutieren – sonst
+    'HybridRow' object does not support item assignment → 500 auf /api/app/freigaben."""
+    from db_compat import HybridRow
+    cols = ["request_id", "invoice_id", "amount", "status", "created_at"]
+    old = (datetime.now() - timedelta(hours=72)).isoformat(timespec="seconds")
+    row = HybridRow(cols, [9, 33, 500.0, "offen", old])
+    out = approval_workflow._enrich_approval(row, datetime.now())
+    assert out["request_id"] == 9 and out["invoice_id"] == 33
+    assert out["age_hours"] is not None and out["age_hours"] >= 72
+    assert out["overdue"] is True
+    # datetime-Wert (statt ISO-String) darf ebenfalls nicht crashen
+    row2 = HybridRow(cols, [10, 34, 10.0, "offen", datetime.now() - timedelta(hours=1)])
+    out2 = approval_workflow._enrich_approval(row2, datetime.now())
+    assert out2["overdue"] is False
+
+
 # ---------------------------------------------------------------------------
 # Phase 5a – GoBD
 # ---------------------------------------------------------------------------
