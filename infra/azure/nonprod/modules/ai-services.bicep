@@ -28,6 +28,7 @@ param azureOpenAiModelVersion string
 
 @minLength(1)
 param azureOpenAiModelFormat string
+param azureOpenAiDeploymentSkuName string
 
 @minValue(1)
 param azureOpenAiModelCapacity int
@@ -51,7 +52,7 @@ resource azureOpenAiDeployment 'Microsoft.CognitiveServices/accounts/deployments
   parent: azureOpenAiAccount
   name: azureOpenAiDeploymentName
   sku: {
-    name: 'Standard'
+    name: azureOpenAiDeploymentSkuName
     capacity: azureOpenAiModelCapacity
   }
   properties: {

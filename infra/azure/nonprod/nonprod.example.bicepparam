@@ -30,4 +30,5 @@ param azureOpenAiDeploymentName = '<pinned-azure-openai-deployment-name-placehol
 param azureOpenAiModelName = '<pinned-azure-openai-model-name-placeholder>'
 param azureOpenAiModelVersion = '<pinned-azure-openai-model-version-placeholder>'
 param azureOpenAiModelFormat = '<pinned-azure-openai-model-format-placeholder>'
+param azureOpenAiDeploymentSkuName = '<pinned-azure-openai-deployment-sku-placeholder>'
 param azureOpenAiModelCapacity = 1

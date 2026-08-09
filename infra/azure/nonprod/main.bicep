@@ -45,6 +45,7 @@ param azureOpenAiModelVersion string
 
 @minLength(1)
 param azureOpenAiModelFormat string
+param azureOpenAiDeploymentSkuName string
 
 @minValue(1)
 param azureOpenAiModelCapacity int
@@ -74,6 +75,7 @@ module aiServices 'modules/ai-services.bicep' = {
     azureOpenAiModelName: azureOpenAiModelName
     azureOpenAiModelVersion: azureOpenAiModelVersion
     azureOpenAiModelFormat: azureOpenAiModelFormat
+    azureOpenAiDeploymentSkuName: azureOpenAiDeploymentSkuName
     azureOpenAiModelCapacity: azureOpenAiModelCapacity
   }
 }

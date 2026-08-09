@@ -131,3 +131,10 @@ phase0-deploy.sh
 
 # Beispielkonfiguration darf eingecheckt werden
 !.env.example
+
+# --- Local Azure non-prod deployment artifacts ---
+.azure-build/
+infra/azure/nonprod/nonprod.local.bicepparam
+
+# --- Local AI editor workspace ---
+.cursor/

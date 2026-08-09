@@ -12,7 +12,9 @@ param privateEndpointConnectionResourceIds array
 var isTransitionalStaticEgress = networkMode == 'TRANSITIONAL_STATIC_EGRESS'
 var transitionalIpRules = [
   for cidr in allowedHetznerEgressCidrs: {
-    value: cidr
+    // Cognitive Services expects a bare IPv4 value for a single-host /32 rule.
+    // The input remains /32 to preserve the exact-egress governance contract.
+    value: endsWith(cidr, '/32') ? split(cidr, '/')[0] : cidr
   }
 ]
 
