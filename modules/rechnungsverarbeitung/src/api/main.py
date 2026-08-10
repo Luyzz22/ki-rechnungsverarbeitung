@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import sentry_sdk
 import os
-from dotenv import load_dotenv
-load_dotenv("/var/www/invoice-app/.env")
 
 if os.getenv('SENTRY_DSN'):
     sentry_sdk.init(
