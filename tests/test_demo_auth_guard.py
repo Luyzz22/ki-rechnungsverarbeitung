@@ -10,60 +10,58 @@ def _set_runtime(monkeypatch, value: str) -> None:
     jwt_auth._jwt_secret_cache = None
 
 
-def test_reserved_demo_identity_is_blocked_in_production(monkeypatch):
-    _set_runtime(monkeypatch, "production")
-
+def _assert_blocked(callable_):
     with pytest.raises(HTTPException) as exc_info:
-        jwt_auth.create_tokens(
-            user_id="demo-user",
-            tenant_id="test-ai-live",
-            role="user",
-        )
-
+        callable_()
     assert exc_info.value.status_code == 401
     assert exc_info.value.detail == "Invalid credentials"
 
 
+def test_reserved_demo_identity_is_blocked_in_production(monkeypatch):
+    _set_runtime(monkeypatch, "production")
+    _assert_blocked(
+        lambda: jwt_auth.create_tokens(
+            user_id="demo-user",
+            tenant_id="test-ai-live",
+            role="user",
+        )
+    )
+
+
 def test_reserved_demo_user_is_blocked_even_with_other_tenant(monkeypatch):
     _set_runtime(monkeypatch, "production")
-
-    with pytest.raises(HTTPException) as exc_info:
-        jwt_auth.create_access_token(
+    _assert_blocked(
+        lambda: jwt_auth.create_access_token(
             user_id="demo-user",
             tenant_id="tenant-other",
             role="user",
         )
-
-    assert exc_info.value.status_code == 401
+    )
 
 
 def test_reserved_demo_tenant_is_blocked_even_with_other_user(monkeypatch):
     _set_runtime(monkeypatch, "production")
-
-    with pytest.raises(HTTPException) as exc_info:
-        jwt_auth.create_refresh_token(
+    _assert_blocked(
+        lambda: jwt_auth.create_refresh_token(
             user_id="user-other",
             tenant_id="test-ai-live",
         )
-
-    assert exc_info.value.status_code == 401
-
-
-def test_reserved_demo_identity_remains_available_in_explicit_test_runtime(monkeypatch):
-    _set_runtime(monkeypatch, "test")
-
-    tokens = jwt_auth.create_tokens(
-        user_id="demo-user",
-        tenant_id="test-ai-live",
-        role="user",
     )
 
-    access = jwt_auth.decode_token(tokens.access_token)
-    refresh = jwt_auth.decode_token(tokens.refresh_token)
-    assert access["sub"] == "demo-user"
-    assert access["tenant_id"] == "test-ai-live"
-    assert access["type"] == "access"
-    assert refresh["type"] == "refresh"
+
+@pytest.mark.parametrize("runtime", ["development", "dev", "test", "ci"])
+def test_reserved_demo_identity_is_blocked_in_every_nonproduction_runtime(
+    monkeypatch,
+    runtime,
+):
+    _set_runtime(monkeypatch, runtime)
+    _assert_blocked(
+        lambda: jwt_auth.create_tokens(
+            user_id="demo-user",
+            tenant_id="test-ai-live",
+            role="user",
+        )
+    )
 
 
 def test_normal_identity_is_allowed_in_production(monkeypatch):
