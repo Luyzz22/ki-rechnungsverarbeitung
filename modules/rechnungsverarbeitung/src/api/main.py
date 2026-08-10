@@ -24,6 +24,7 @@ from typing import Any
 
 from fastapi import FastAPI, UploadFile, File, Header, HTTPException, APIRouter, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from shared.settings import get_settings
@@ -230,16 +231,19 @@ async def health():
         with get_session() as session:
             session.execute(__import__("sqlalchemy").text("SELECT 1"))
         checks["database"] = "ok"
-    except Exception as e:
-        checks["database"] = f"error: {type(e).__name__}"
+    except Exception:
+        checks["database"] = "error"
 
-    status = "healthy" if all(v == "ok" for v in checks.values()) else "degraded"
-    return {
-        "status": status,
-        "checks": checks,
-        "version": "1.0.0",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
+    healthy = all(value == "ok" for value in checks.values())
+    return JSONResponse(
+        status_code=200 if healthy else 503,
+        content={
+            "status": "healthy" if healthy else "degraded",
+            "checks": checks,
+            "version": "1.0.0",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        },
+    )
 
 
 # ── Upload ────────────────────────────────────────────────────────────
