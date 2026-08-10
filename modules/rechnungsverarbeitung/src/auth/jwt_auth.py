@@ -54,30 +54,19 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 30
 
-# Reserved demo identity used by a legacy modular API route. The route must not
-# be capable of minting usable credentials outside explicitly non-production
-# runtimes, even if the legacy endpoint is accidentally exposed.
+# Reserved identities belonging to a retired static demo route. They are never
+# valid token subjects, including in development/test. Keeping this guard in the
+# token factory makes the legacy route fail closed until the route itself is
+# removed from the oversized API module.
 _RESERVED_DEMO_USER_ID = "demo-user"
 _RESERVED_DEMO_TENANT_ID = "test-ai-live"
-_NON_PRODUCTION_ENVS = frozenset({"development", "dev", "test", "ci"})
-
-
-def _runtime_env() -> str:
-    return (
-        os.getenv("FLOWCHECK_RUNTIME_ENV")
-        or os.getenv("ENVIRONMENT")
-        or os.getenv("APP_ENV")
-        or ""
-    ).strip().lower()
 
 
 def _assert_token_identity_allowed(user_id: str, tenant_id: str) -> None:
-    """Block legacy demo identities unless runtime is explicitly non-production."""
-    if user_id not in {_RESERVED_DEMO_USER_ID} and tenant_id not in {_RESERVED_DEMO_TENANT_ID}:
+    """Permanently block retired demo identities from receiving JWTs."""
+    if user_id != _RESERVED_DEMO_USER_ID and tenant_id != _RESERVED_DEMO_TENANT_ID:
         return
-    if _runtime_env() in _NON_PRODUCTION_ENVS:
-        return
-    logger.warning("SECURITY: blocked reserved demo token identity outside non-production")
+    logger.warning("SECURITY: blocked retired demo token identity")
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
 
