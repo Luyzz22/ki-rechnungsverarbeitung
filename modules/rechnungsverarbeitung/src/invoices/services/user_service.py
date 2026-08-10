@@ -15,11 +15,46 @@ from modules.rechnungsverarbeitung.src.auth.jwt_auth import (
 logger = logging.getLogger(__name__)
 
 
+MIN_PASSWORD_LENGTH = 12
+MAX_BCRYPT_PASSWORD_BYTES = 72
+_COMMON_PASSWORDS = frozenset({
+    "password1234",
+    "passwort1234",
+    "123456789012",
+    "qwertzuiop12",
+    "administrator",
+})
+
+
+def validate_password_strength(password: str) -> None:
+    """Enforce a minimum password baseline before bcrypt hashing.
+
+    Existing users remain login-compatible; this guard applies to newly created
+    credentials only. The byte limit avoids silent bcrypt truncation semantics.
+    """
+    if not isinstance(password, str):
+        raise ValueError("Passwort ist ungueltig")
+    if len(password) < MIN_PASSWORD_LENGTH:
+        raise ValueError(f"Passwort muss mindestens {MIN_PASSWORD_LENGTH} Zeichen lang sein")
+
+    encoded = password.encode("utf-8")
+    if len(encoded) > MAX_BCRYPT_PASSWORD_BYTES:
+        raise ValueError(
+            f"Passwort darf maximal {MAX_BCRYPT_PASSWORD_BYTES} UTF-8-Bytes lang sein"
+        )
+
+    normalized = password.casefold()
+    if normalized in _COMMON_PASSWORDS or len(set(password)) < 4:
+        raise ValueError("Passwort ist zu leicht zu erraten")
+
+
 class UserService:
     """Manages user registration, authentication, and tenant assignment."""
 
     def register(self, email: str, password: str, name: str, company: str = "") -> dict[str, Any]:
         """Register a new user and create their tenant."""
+        validate_password_strength(password)
+
         with get_session() as s:
             existing = s.execute(
                 text("SELECT id FROM users WHERE email = :e"), {"e": email.lower()}
@@ -45,7 +80,7 @@ class UserService:
             })
             s.commit()
 
-        logger.info(f"user_registered: {email} tenant={tenant_id}")
+        logger.info("user_registered")
         return {"user_id": user_id, "tenant_id": tenant_id, "email": email.lower(), "name": name, "role": "admin"}
 
     def login(self, email: str, password: str) -> dict[str, Any]:
@@ -89,6 +124,10 @@ class UserService:
 
     def invite_user(self, email: str, password: str, name: str, tenant_id: str, role: str = "user") -> dict[str, Any]:
         """Invite a user to an existing tenant."""
+        validate_password_strength(password)
+        if role not in self.VALID_ROLES:
+            raise ValueError(f"Invalid role: {role}. Valid: {', '.join(sorted(self.VALID_ROLES))}")
+
         with get_session() as s:
             existing = s.execute(text("SELECT id FROM users WHERE email = :e"), {"e": email.lower()}).fetchone()
             if existing:
