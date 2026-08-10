@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -56,6 +57,19 @@ class Settings(BaseSettings):
     kosit_validator_timeout: int = 30
     google_client_id: str = ""
     google_client_secret: str = ""
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_database_driver(cls, value: object) -> str:
+        url = str(value or "").strip()
+
+        if url.startswith("postgresql://"):
+            return "postgresql+psycopg://" + url[len("postgresql://"):]
+
+        if url.startswith("postgres://"):
+            return "postgresql+psycopg://" + url[len("postgres://"):]
+
+        return url
 
     @property
     def is_production(self) -> bool:
