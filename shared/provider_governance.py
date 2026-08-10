@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from shared.inference_policy import DataClass, InferenceProfile, InferenceProvider, assert_inference_allowed
 from shared.provider_deployments import (
     CloudProcessingRegion,
+    DeploymentResidencyMode,
     ProviderDeploymentPolicy,
     provider_deployment_from_mapping,
 )
@@ -265,6 +266,11 @@ def validate_provider_deployment_policy(
         provider=provider,
     )
     _validate_processing_region(deployment.processing_region, provider=provider)
+    _validate_deployment_residency_mode(
+        deployment,
+        settings=settings,
+        env=env,
+    )
     _validate_model_pin(deployment.model_deployment_id, "model_deployment_id", provider=provider)
     _validate_model_pin(deployment.model_version, "model_version", provider=provider)
     if purpose not in deployment.purpose_allowlist:
@@ -306,6 +312,27 @@ def validate_deployment_endpoint_host(
     if value not in allowlist:
         raise ProviderGovernanceError("endpoint_host_not_allowed", provider=provider_enum)
     return value
+
+
+def _validate_deployment_residency_mode(
+    deployment: ProviderDeploymentPolicy,
+    *,
+    settings: Any | None,
+    env: Mapping[str, str] | None,
+) -> None:
+    if not (
+        is_production_runtime(settings=settings, env=env)
+        and eu_regional_cloud_required_in_production(settings=settings, env=env)
+        and deployment.provider in REGIONAL_CLOUD_PROVIDERS
+    ):
+        return
+
+    mode = str(deployment.deployment_residency_mode or "").strip().upper()
+    if mode != DeploymentResidencyMode.SINGLE_REGION.value:
+        raise ProviderGovernanceError(
+            "deployment_residency_mode_not_single_region",
+            provider=deployment.provider,
+        )
 
 
 def _validate_processing_region(value: str, *, provider: InferenceProvider) -> None:

@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from shared.inference_policy import DataClass, InferenceProfile, InferenceProvider
+from shared.provider_deployments import DeploymentResidencyMode
 from shared.production_preflight import format_preflight_result, run_production_preflight
 
 
@@ -18,6 +19,7 @@ def _deployment_config(**overrides):
         "provider": InferenceProvider.AZURE_OPENAI_EU.value,
         "endpoint_host": HOST,
         "processing_region": "EU",
+        "deployment_residency_mode": DeploymentResidencyMode.SINGLE_REGION.value,
         "model_deployment_id": DEPLOYMENT_ID,
         "model_version": MODEL_VERSION,
         "purpose_allowlist": ["invoice_llm_extraction"],
@@ -118,6 +120,20 @@ def test_production_disallowed_regions_block():
 
         assert result.ok is False
         assert "PREFLIGHT_DEPLOYMENT_PROCESSING_REGION_INVALID" in _codes(result)
+
+
+def test_production_eu_data_zone_residency_mode_blocks():
+    result = run_production_preflight(
+        env=_env(
+            FLOWCHECK_PROVIDER_DEPLOYMENT_CONFIG=_deployment_config(
+                deployment_residency_mode=DeploymentResidencyMode.EU_DATA_ZONE.value
+            )
+        )
+    )
+
+    assert result.ok is False
+    assert "PREFLIGHT_DEPLOYMENT_RESIDENCY_MODE_NOT_SINGLE_REGION" in _codes(result)
+    assert "deployment_residency_mode" in _fields(result)
 
 
 def test_production_missing_model_version_blocks():

@@ -14,6 +14,13 @@ class CloudProcessingRegion(str, Enum):
     UNSET = "UNSET"
 
 
+class DeploymentResidencyMode(str, Enum):
+    SINGLE_REGION = "SINGLE_REGION"
+    EU_DATA_ZONE = "EU_DATA_ZONE"
+    LOCAL_ONLY = "LOCAL_ONLY"
+    UNSET = "UNSET"
+
+
 @dataclass(frozen=True)
 class ProviderDeploymentPolicy:
     provider: InferenceProvider
@@ -26,6 +33,7 @@ class ProviderDeploymentPolicy:
     retention_evidence_ref: str
     no_training_evidence_ref: str
     provider_governance_approved: bool
+    deployment_residency_mode: str = DeploymentResidencyMode.UNSET.value
 
 
 def provider_deployment_from_mapping(value: dict[str, Any]) -> ProviderDeploymentPolicy:
@@ -41,4 +49,10 @@ def provider_deployment_from_mapping(value: dict[str, Any]) -> ProviderDeploymen
         retention_evidence_ref=str(value.get("retention_evidence_ref", "")),
         no_training_evidence_ref=str(value.get("no_training_evidence_ref", "")),
         provider_governance_approved=bool(value.get("provider_governance_approved", False)),
+        deployment_residency_mode=str(
+            value.get(
+                "deployment_residency_mode",
+                DeploymentResidencyMode.UNSET.value,
+            )
+        ),
     )

@@ -11,7 +11,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from shared.inference_policy import InferenceProfile, InferenceProvider
-from shared.provider_deployments import ProviderDeploymentPolicy, provider_deployment_from_mapping
+from shared.provider_deployments import (
+    DeploymentResidencyMode,
+    ProviderDeploymentPolicy,
+    provider_deployment_from_mapping,
+)
 from shared.provider_governance import (
     DISALLOWED_REGIONS,
     FLOATING_MODEL_VALUES,
@@ -206,6 +210,15 @@ def _validate_deployment(
     region = str(deployment.processing_region or "").strip().lower()
     if region in DISALLOWED_REGIONS:
         issues.append(ProductionPreflightIssue("PREFLIGHT_DEPLOYMENT_PROCESSING_REGION_INVALID", "processing_region"))
+
+    residency_mode = str(deployment.deployment_residency_mode or "").strip().upper()
+    if residency_mode != DeploymentResidencyMode.SINGLE_REGION.value:
+        issues.append(
+            ProductionPreflightIssue(
+                "PREFLIGHT_DEPLOYMENT_RESIDENCY_MODE_NOT_SINGLE_REGION",
+                "deployment_residency_mode",
+            )
+        )
 
     issues.extend(_validate_model_pin(deployment.model_deployment_id, field="model_deployment_id"))
     issues.extend(_validate_model_pin(deployment.model_version, field="model_version"))

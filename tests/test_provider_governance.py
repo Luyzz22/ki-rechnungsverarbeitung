@@ -3,7 +3,7 @@ import json
 import pytest
 
 from shared.inference_policy import DataClass, InferenceProfile, InferenceProvider
-from shared.provider_deployments import ProviderDeploymentPolicy
+from shared.provider_deployments import DeploymentResidencyMode, ProviderDeploymentPolicy
 from shared.provider_governance import (
     ProviderGovernanceError,
     assert_provider_governance_allowed,
@@ -20,6 +20,7 @@ def _policy(**overrides):
         "provider": InferenceProvider.AZURE_OPENAI_EU,
         "endpoint_host": HOST,
         "processing_region": "EU",
+        "deployment_residency_mode": DeploymentResidencyMode.SINGLE_REGION.value,
         "model_deployment_id": "flowcheck-gpt-4o-prod-2026-06",
         "model_version": "gpt-4o-2024-08-06",
         "purpose_allowlist": frozenset({"invoice_llm_extraction"}),
@@ -85,6 +86,29 @@ def test_eu_regional_cloud_approved_deployment_allowed():
 
     assert decision.allowed is True
     assert decision.cloud_processing_region == "EU"
+
+
+def test_production_eu_data_zone_residency_mode_blocks_regional_assurance():
+    with pytest.raises(ProviderGovernanceError) as exc_info:
+        assert_provider_governance_allowed(
+            data_class=DataClass.INVOICE_CONFIDENTIAL,
+            inference_profile=InferenceProfile.EU_REGIONAL_CLOUD,
+            provider=InferenceProvider.AZURE_OPENAI_EU,
+            purpose="invoice_llm_extraction",
+            endpoint_host=HOST,
+            model_deployment_id="flowcheck-gpt-4o-prod-2026-06",
+            deployments=[
+                _policy(
+                    deployment_residency_mode=DeploymentResidencyMode.EU_DATA_ZONE.value
+                )
+            ],
+            env=_env(),
+        )
+
+    assert (
+        exc_info.value.reason_code
+        == "deployment_residency_mode_not_single_region"
+    )
 
 
 def test_unapproved_provider_deployment_blocks():
@@ -222,6 +246,7 @@ def test_provider_deployment_config_is_server_side_json():
                 "provider": policy.provider.value,
                 "endpoint_host": policy.endpoint_host,
                 "processing_region": policy.processing_region,
+                "deployment_residency_mode": policy.deployment_residency_mode,
                 "model_deployment_id": policy.model_deployment_id,
                 "model_version": policy.model_version,
                 "purpose_allowlist": sorted(policy.purpose_allowlist),
