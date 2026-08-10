@@ -54,6 +54,33 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 30
 
+# Reserved demo identity used by a legacy modular API route. The route must not
+# be capable of minting usable credentials outside explicitly non-production
+# runtimes, even if the legacy endpoint is accidentally exposed.
+_RESERVED_DEMO_USER_ID = "demo-user"
+_RESERVED_DEMO_TENANT_ID = "test-ai-live"
+_NON_PRODUCTION_ENVS = frozenset({"development", "dev", "test", "ci"})
+
+
+def _runtime_env() -> str:
+    return (
+        os.getenv("FLOWCHECK_RUNTIME_ENV")
+        or os.getenv("ENVIRONMENT")
+        or os.getenv("APP_ENV")
+        or ""
+    ).strip().lower()
+
+
+def _assert_token_identity_allowed(user_id: str, tenant_id: str) -> None:
+    """Block legacy demo identities unless runtime is explicitly non-production."""
+    if user_id not in {_RESERVED_DEMO_USER_ID} and tenant_id not in {_RESERVED_DEMO_TENANT_ID}:
+        return
+    if _runtime_env() in _NON_PRODUCTION_ENVS:
+        return
+    logger.warning("SECURITY: blocked reserved demo token identity outside non-production")
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+
 bearer_scheme = HTTPBearer(auto_error=False)
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
@@ -87,6 +114,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 # --- Tokens ---
 def create_access_token(user_id: str, tenant_id: str, role: str = "user") -> str:
+    _assert_token_identity_allowed(user_id, tenant_id)
     now = int(time.time())
     payload = {
         "sub": user_id,
@@ -99,6 +127,7 @@ def create_access_token(user_id: str, tenant_id: str, role: str = "user") -> str
     return jwt.encode(payload, _resolve_jwt_secret(), algorithm=ALGORITHM)
 
 def create_refresh_token(user_id: str, tenant_id: str) -> str:
+    _assert_token_identity_allowed(user_id, tenant_id)
     now = int(time.time())
     payload = {
         "sub": user_id,
@@ -110,6 +139,7 @@ def create_refresh_token(user_id: str, tenant_id: str) -> str:
     return jwt.encode(payload, _resolve_jwt_secret(), algorithm=ALGORITHM)
 
 def create_tokens(user_id: str, tenant_id: str, role: str = "user") -> TokenResponse:
+    _assert_token_identity_allowed(user_id, tenant_id)
     return TokenResponse(
         access_token=create_access_token(user_id, tenant_id, role),
         refresh_token=create_refresh_token(user_id, tenant_id),
