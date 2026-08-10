@@ -95,3 +95,19 @@ def test_openai_config_resolver_uses_server_allowlist_not_client_input():
     )
 
     assert config.endpoint == "https://flowcheck-westeurope.openai.azure.com"
+
+
+def test_openai_custom_subdomain_does_not_require_region_in_hostname():
+    config = resolve_azure_openai_config(
+        env={
+            "FLOWCHECK_AZURE_ADAPTERS_ENABLED": "true",
+            "FLOWCHECK_AZURE_AUTH_MODE": "entra",
+            "AZURE_OPENAI_ENDPOINT": "https://flowcheck-nonprod-openai.openai.azure.com",
+            "AZURE_OPENAI_DEPLOYMENT": "gpt-5-5-eu-datazone-quality",
+            "AZURE_OPENAI_SCOPE": "https://cognitiveservices.azure.com/.default",
+            "FLOWCHECK_AZURE_ALLOWED_REGION": "germanywestcentral",
+            "FLOWCHECK_AZURE_ENDPOINT_HOST_ALLOWLIST": "flowcheck-nonprod-openai.openai.azure.com",
+        }
+    )
+
+    assert config.endpoint == "https://flowcheck-nonprod-openai.openai.azure.com"

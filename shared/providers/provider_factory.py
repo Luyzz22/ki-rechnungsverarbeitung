@@ -70,28 +70,6 @@ def azure_auth_mode(*, settings: Any | None = None, env: Mapping[str, str] | Non
     return _get_config_value("FLOWCHECK_AZURE_AUTH_MODE", settings=settings, env=env, default="entra").strip().lower()
 
 
-def _normalize_region(value: str) -> str:
-    return "".join(ch for ch in value.lower() if ch.isalnum())
-
-
-def _validate_endpoint_region(
-    endpoint: str,
-    allowed_region: str,
-    *,
-    provider: InferenceProvider,
-    error_code: str,
-) -> None:
-    if not allowed_region:
-        return
-    hostname = urlparse(endpoint).hostname or ""
-    if _normalize_region(allowed_region) not in _normalize_region(hostname):
-        raise AzureProviderError(
-            error_code,
-            "endpoint_region_not_allowed",
-            provider=provider,
-        )
-
-
 def _validate_entra_auth(*, settings: Any | None, env: Mapping[str, str] | None, provider: InferenceProvider) -> None:
     if azure_auth_mode(settings=settings, env=env) != "entra":
         raise AzureProviderError(
@@ -150,7 +128,6 @@ def resolve_azure_openai_config(
         source="server_config",
         error_code="AZURE_CONFIGURATION_INVALID",
     )
-    _validate_endpoint_region(endpoint, allowed_region, provider=provider, error_code="AZURE_CONFIGURATION_INVALID")
 
     if scope != AZURE_OPENAI_DEFAULT_SCOPE:
         raise AzureProviderError(
@@ -207,7 +184,6 @@ def resolve_azure_document_intelligence_config(
         source="server_config",
         error_code="AZURE_CONFIGURATION_INVALID",
     )
-    _validate_endpoint_region(endpoint, allowed_region, provider=provider, error_code="AZURE_CONFIGURATION_INVALID")
 
     return AzureDocumentIntelligenceConfig(endpoint=endpoint, model=model, allowed_region=allowed_region)
 
