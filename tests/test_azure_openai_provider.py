@@ -14,7 +14,7 @@ def _enabled_env(**overrides):
         "FLOWCHECK_AZURE_ALLOW_DEVELOPER_CREDENTIALS": "false",
         "AZURE_OPENAI_ENDPOINT": "https://flowcheck-westeurope.openai.azure.com",
         "AZURE_OPENAI_DEPLOYMENT": "flowcheck-gpt",
-        "AZURE_OPENAI_SCOPE": "https://ai.azure.com/.default",
+        "AZURE_OPENAI_SCOPE": "https://cognitiveservices.azure.com/.default",
         "FLOWCHECK_AZURE_ALLOWED_REGION": "westeurope",
         "FLOWCHECK_AZURE_ENDPOINT_HOST_ALLOWLIST": "flowcheck-westeurope.openai.azure.com",
     }

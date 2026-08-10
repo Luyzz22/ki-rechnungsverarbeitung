@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     azure_openai_endpoint: str = ""
     azure_openai_deployment: str = ""
     azure_openai_api_version: str = "2024-10-21"
-    azure_openai_scope: str = "https://ai.azure.com/.default"
+    azure_openai_scope: str = "https://cognitiveservices.azure.com/.default"
     azure_document_intelligence_endpoint: str = ""
     azure_document_intelligence_model: str = "prebuilt-invoice"
     local_llm_base_url: str = ""

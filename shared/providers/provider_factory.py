@@ -21,7 +21,7 @@ from shared.providers.azure_identity import (
 )
 
 
-AZURE_OPENAI_DEFAULT_SCOPE = "https://ai.azure.com/.default"
+AZURE_OPENAI_DEFAULT_SCOPE = "https://cognitiveservices.azure.com/.default"
 AZURE_OPENAI_DEFAULT_API_VERSION = "2024-10-21"
 AZURE_DOCUMENT_INTELLIGENCE_DEFAULT_MODEL = "prebuilt-invoice"
 

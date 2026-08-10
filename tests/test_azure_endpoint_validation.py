@@ -88,7 +88,7 @@ def test_openai_config_resolver_uses_server_allowlist_not_client_input():
             "FLOWCHECK_AZURE_AUTH_MODE": "entra",
             "AZURE_OPENAI_ENDPOINT": "https://flowcheck-westeurope.openai.azure.com",
             "AZURE_OPENAI_DEPLOYMENT": "flowcheck-gpt",
-            "AZURE_OPENAI_SCOPE": "https://ai.azure.com/.default",
+            "AZURE_OPENAI_SCOPE": "https://cognitiveservices.azure.com/.default",
             "FLOWCHECK_AZURE_ALLOWED_REGION": "westeurope",
             "FLOWCHECK_AZURE_ENDPOINT_HOST_ALLOWLIST": "flowcheck-westeurope.openai.azure.com",
         }
