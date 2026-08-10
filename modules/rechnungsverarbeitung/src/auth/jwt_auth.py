@@ -141,14 +141,30 @@ def decode_token(token: str) -> dict:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}")
 
 # --- API Keys ---
-VALID_API_KEYS: dict[str, dict] = {}
+_ALLOWED_API_KEY_ROLES = frozenset({"user", "viewer", "editor", "admin", "service"})
 
-def _load_api_keys():
-    key = os.getenv("SBS_API_KEY", "")
-    if key:
-        VALID_API_KEYS[key] = {"tenant_id": "sbs-master", "role": "admin", "user_id": "api-key-admin"}
 
-_load_api_keys()
+def _resolve_api_key_identity(api_key: str) -> Optional[UserAuth]:
+    """Resolve a matching API key only to an explicitly configured tenant identity."""
+    configured_key = os.getenv("SBS_API_KEY", "")
+    if not configured_key or not secrets.compare_digest(api_key, configured_key):
+        return None
+
+    tenant_id = os.getenv("SBS_API_KEY_TENANT_ID", "").strip()
+    user_id = os.getenv("SBS_API_KEY_USER_ID", "").strip()
+    role = os.getenv("SBS_API_KEY_ROLE", "").strip().lower()
+
+    if not tenant_id or not user_id or role not in _ALLOWED_API_KEY_ROLES:
+        logger.error(
+            "SECURITY: SBS_API_KEY matched but its scoped identity configuration is incomplete or invalid"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="API key authentication unavailable",
+        )
+
+    return UserAuth(user_id=user_id, tenant_id=tenant_id, role=role)
+
 
 def generate_api_key() -> str:
     return f"sbs_{secrets.token_hex(24)}"
@@ -158,10 +174,11 @@ async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Security(bearer_scheme),
     api_key: Optional[str] = Security(api_key_header),
 ) -> UserAuth:
-    # Try API Key first
-    if api_key and api_key in VALID_API_KEYS:
-        info = VALID_API_KEYS[api_key]
-        return UserAuth(user_id=info["user_id"], tenant_id=info["tenant_id"], role=info["role"])
+    # API keys are tenant-scoped and require an explicit configured identity.
+    if api_key:
+        api_key_user = _resolve_api_key_identity(api_key)
+        if api_key_user is not None:
+            return api_key_user
 
     # Try Bearer token
     if credentials:
