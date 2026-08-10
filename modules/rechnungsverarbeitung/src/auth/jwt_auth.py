@@ -183,16 +183,16 @@ def require_role(role: str):
         return user
     return check
 
-# Legacy compatibility — extract tenant from auth or fallback to header
+# Legacy compatibility — authenticated tenant remains canonical.
 async def get_tenant_from_auth(
     credentials: Optional[HTTPAuthorizationCredentials] = Security(bearer_scheme),
     api_key: Optional[str] = Security(api_key_header),
     x_tenant_id: Optional[str] = None,
 ) -> str:
-    try:
-        user = await get_current_user(credentials, api_key)
-        return user.tenant_id
-    except HTTPException:
-        if x_tenant_id:
-            return x_tenant_id
-        raise HTTPException(status_code=401, detail="Authentication required")
+    """Resolve tenant only from authenticated identity; never trust a header fallback."""
+    user = await get_current_user(credentials, api_key)
+    if x_tenant_id is not None:
+        requested_tenant = x_tenant_id.strip()
+        if requested_tenant and requested_tenant != user.tenant_id:
+            raise HTTPException(status_code=403, detail="X-Tenant-ID does not match authenticated tenant")
+    return user.tenant_id
