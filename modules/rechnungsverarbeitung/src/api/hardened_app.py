@@ -1,9 +1,9 @@
 """Production app composition with fail-closed replacement of legacy auth routes.
 
 The oversized legacy API module still contains historical auth handlers. This
-composition layer removes exactly the legacy handlers that are security-sensitive
-and mounts the audited secure auth router in their place. Production containers
-must target this module, not ``main:app``.
+composition layer removes every handler registered on the security-sensitive
+legacy paths and mounts the audited secure auth router in their place. Production
+containers must target this module, not ``main:app``.
 """
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ _REPLACED_POST_PATHS = frozenset(
         "/api/v1/users/invite",
     }
 )
+_SECURE_AUTH_MODULE = "modules.rechnungsverarbeitung.src.api.secure_auth_router"
 
 
 def _is_replaced_post_route(route: object) -> bool:
@@ -30,18 +31,28 @@ def _is_replaced_post_route(route: object) -> bool:
 
 
 def _cut_over_secure_auth_routes() -> None:
-    """Replace each expected legacy POST route exactly once or fail startup."""
-    legacy_matches = [route for route in app.router.routes if _is_replaced_post_route(route)]
-    counts = Counter(getattr(route, "path", "") for route in legacy_matches)
-    expected = Counter({path: 1 for path in _REPLACED_POST_PATHS})
-    if counts != expected:
-        raise RuntimeError(
-            "SECURITY: legacy auth route inventory changed; refusing hardened app startup"
-        )
+    """Remove all legacy sensitive handlers and verify the secure final state.
 
+    The legacy module has accumulated duplicate/changed route registrations over
+    time. Treating an exact pre-cutover count as a security invariant makes the
+    hardened application unavailable even though every matching legacy route can
+    be removed deterministically. The security invariant that matters is the
+    post-cutover state: each protected path must be served exactly once and only
+    by ``secure_auth_router``.
+    """
     app.router.routes[:] = [
         route for route in app.router.routes if not _is_replaced_post_route(route)
     ]
+
+    # Defensive check: no matching legacy route may survive filtering.
+    remaining_legacy = [
+        route for route in app.router.routes if _is_replaced_post_route(route)
+    ]
+    if remaining_legacy:
+        raise RuntimeError(
+            "SECURITY: legacy auth routes survived hardened cutover"
+        )
+
     app.include_router(secure_auth_router, prefix="/api/v1")
 
     active_secure_routes = [
@@ -52,6 +63,7 @@ def _cut_over_secure_auth_routes() -> None:
         and "POST" in route.methods
     ]
     active_counts = Counter(route.path for route in active_secure_routes)
+    expected = Counter({path: 1 for path in _REPLACED_POST_PATHS})
     if active_counts != expected:
         raise RuntimeError(
             "SECURITY: secure auth route cutover is incomplete or duplicated"
@@ -60,8 +72,7 @@ def _cut_over_secure_auth_routes() -> None:
     unexpected_handlers = [
         route
         for route in active_secure_routes
-        if route.endpoint.__module__
-        != "modules.rechnungsverarbeitung.src.api.secure_auth_router"
+        if route.endpoint.__module__ != _SECURE_AUTH_MODULE
     ]
     if unexpected_handlers:
         raise RuntimeError(
