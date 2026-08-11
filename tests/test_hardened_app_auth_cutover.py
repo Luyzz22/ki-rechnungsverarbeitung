@@ -58,6 +58,15 @@ def test_retired_demo_credentials_are_not_served_by_active_login(monkeypatch):
     assert response.json() == {"detail": "Invalid credentials"}
 
 
+def test_hardened_cutover_can_be_reapplied_without_duplicate_sensitive_routes():
+    hardened_app._cut_over_secure_auth_routes()
+
+    for path in _REPLACED_POST_PATHS:
+        routes = _post_routes(path)
+        assert len(routes) == 1, path
+        assert routes[0].endpoint.__module__ == _SECURE_MODULE
+
+
 def test_production_dockerfile_targets_hardened_app():
     dockerfile = Path("Dockerfile").read_text(encoding="utf-8")
 
