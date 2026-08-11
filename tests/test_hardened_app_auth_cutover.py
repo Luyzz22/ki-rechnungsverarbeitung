@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
 from modules.rechnungsverarbeitung.src.api import hardened_app
@@ -15,13 +14,12 @@ _REPLACED_POST_PATHS = {
 }
 
 
-def _post_routes(path: str) -> list[APIRoute]:
+def _post_routes(path: str) -> list[object]:
     return [
         route
         for route in hardened_app.app.router.routes
-        if isinstance(route, APIRoute)
-        and route.path == path
-        and "POST" in route.methods
+        if getattr(route, "path", None) == path
+        and "POST" in (getattr(route, "methods", set()) or set())
     ]
 
 
