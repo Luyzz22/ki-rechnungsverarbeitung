@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from collections import Counter
 
-from fastapi.routing import APIRoute
-
 from modules.rechnungsverarbeitung.src.api.main import app
 from modules.rechnungsverarbeitung.src.api.secure_auth_router import router as secure_auth_router
 
@@ -31,38 +29,26 @@ def _is_replaced_post_route(route: object) -> bool:
 
 
 def _cut_over_secure_auth_routes() -> None:
-    """Remove all legacy sensitive handlers and verify the secure final state.
+    """Remove sensitive legacy handlers and verify the secure final state.
 
-    The legacy module has accumulated duplicate/changed route registrations over
-    time. Treating an exact pre-cutover count as a security invariant makes the
-    hardened application unavailable even though every matching legacy route can
-    be removed deterministically. The security invariant that matters is the
-    post-cutover state: each protected path must be served exactly once and only
-    by ``secure_auth_router``.
+    Route verification deliberately uses FastAPI/Starlette's public route
+    attributes instead of relying on one concrete ``APIRoute`` runtime class.
+    This keeps the security invariant stable across framework versions while
+    still requiring an exact path, method and endpoint module match.
     """
     app.router.routes[:] = [
         route for route in app.router.routes if not _is_replaced_post_route(route)
     ]
 
-    # Defensive check: no matching legacy route may survive filtering.
-    remaining_legacy = [
-        route for route in app.router.routes if _is_replaced_post_route(route)
-    ]
-    if remaining_legacy:
-        raise RuntimeError(
-            "SECURITY: legacy auth routes survived hardened cutover"
-        )
+    if any(_is_replaced_post_route(route) for route in app.router.routes):
+        raise RuntimeError("SECURITY: legacy auth routes survived hardened cutover")
 
     app.include_router(secure_auth_router, prefix="/api/v1")
 
     active_secure_routes = [
-        route
-        for route in app.router.routes
-        if isinstance(route, APIRoute)
-        and route.path in _REPLACED_POST_PATHS
-        and "POST" in route.methods
+        route for route in app.router.routes if _is_replaced_post_route(route)
     ]
-    active_counts = Counter(route.path for route in active_secure_routes)
+    active_counts = Counter(getattr(route, "path", "") for route in active_secure_routes)
     expected = Counter({path: 1 for path in _REPLACED_POST_PATHS})
     if active_counts != expected:
         raise RuntimeError(
@@ -72,7 +58,8 @@ def _cut_over_secure_auth_routes() -> None:
     unexpected_handlers = [
         route
         for route in active_secure_routes
-        if route.endpoint.__module__ != _SECURE_AUTH_MODULE
+        if getattr(getattr(route, "endpoint", None), "__module__", None)
+        != _SECURE_AUTH_MODULE
     ]
     if unexpected_handlers:
         raise RuntimeError(
