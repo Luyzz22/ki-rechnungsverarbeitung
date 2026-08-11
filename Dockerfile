@@ -2,12 +2,12 @@
 # SBS Nexus Finance – Production Dockerfile
 # ============================================================================
 
-FROM python:3.13-slim AS builder
+FROM python:3.12-slim AS builder
 WORKDIR /build
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-FROM python:3.13-slim AS production
+FROM python:3.12-slim AS production
 RUN groupadd -r sbs && useradd -r -g sbs -d /app -s /sbin/nologin sbs
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2 libxslt1.1 libjpeg62-turbo libpng16-16 curl \
