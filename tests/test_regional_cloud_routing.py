@@ -9,6 +9,7 @@ from shared.inference_policy import (
     InferenceProvider,
     assert_inference_allowed,
 )
+from shared.provider_deployments import DeploymentResidencyMode
 from shared.providers.azure_openai_provider import AzureOpenAIProvider
 from shared.providers.provider_factory import select_provider_for_purpose
 from shared.provider_governance import ProviderGovernanceError, assert_provider_governance_allowed
@@ -24,6 +25,7 @@ def _deployment_config():
             "provider": InferenceProvider.AZURE_OPENAI_EU.value,
             "endpoint_host": HOST,
             "processing_region": "EU",
+            "deployment_residency_mode": DeploymentResidencyMode.SINGLE_REGION.value,
             "model_deployment_id": DEPLOYMENT_ID,
             "model_version": "gpt-4o-2024-08-06",
             "purpose_allowlist": ["invoice_llm_extraction"],
