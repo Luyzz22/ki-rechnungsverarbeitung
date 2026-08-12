@@ -84,6 +84,7 @@ def _primary_key_columns(cur: Any, table: str) -> list[str]:
         "JOIN information_schema.key_column_usage kcu "
         "  ON tc.constraint_name = kcu.constraint_name "
         " AND tc.constraint_schema = kcu.constraint_schema "
+        " AND tc.table_name = kcu.table_name "
         "WHERE tc.table_schema = 'public' "
         "  AND tc.table_name = %s "
         "  AND tc.constraint_type = 'PRIMARY KEY' "
@@ -157,11 +158,13 @@ def validate_postgres_schema(connection: Any) -> dict[str, Any]:
         return assessment
 
     findings = [SchemaFinding(**item) for item in assessment["findings"]]
-    code = (
-        "USER_ID_DOMAIN_MISMATCH"
-        if any(f.table == "users" and f.actual != "single-column primary key" for f in findings)
-        else "POSTGRES_SCHEMA_INCOMPATIBLE"
+    has_user_domain_mismatch = any(
+        finding.table == "users"
+        and finding.column == "id"
+        and finding.expected == EXPECTED_USER_ID_TYPE
+        for finding in findings
     )
+    code = "USER_ID_DOMAIN_MISMATCH" if has_user_domain_mismatch else "POSTGRES_SCHEMA_INCOMPATIBLE"
     raise PostgresSchemaCompatibilityError(code, findings)
 
 
