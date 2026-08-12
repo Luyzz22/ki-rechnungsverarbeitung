@@ -3,14 +3,22 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import Column, String, DateTime, Text
+from sqlalchemy import String, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shared.db.session import Base
 
+# The legacy application owns the public `invoices` table and uses an integer
+# user/tenant domain.  The modular SQLAlchemy/Alembic stack uses string tenant
+# identifiers.  Sharing the same physical table made a fresh PostgreSQL cutover
+# type-unsafe.  Keep the modular persistence contract in dedicated tables.
+MODULAR_INVOICE_TABLE = "processing_invoices"
+MODULAR_INVOICE_EVENT_TABLE = "processing_invoice_events"
+
+
 class InvoiceEvent(Base):
-    __tablename__ = "invoice_events"
+    __tablename__ = MODULAR_INVOICE_EVENT_TABLE
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     tenant_id: Mapped[str] = mapped_column(String, index=True, nullable=False)
@@ -33,8 +41,9 @@ class InvoiceEvent(Base):
         JSONB, nullable=True
     )
 
+
 class Invoice(Base):
-    __tablename__ = "invoices"
+    __tablename__ = MODULAR_INVOICE_TABLE
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     document_id: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
