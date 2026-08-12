@@ -191,15 +191,26 @@ def get_open_approvals(tenant_id: int) -> List[Dict[str, Any]]:
     conn.close()
 
     now = datetime.now()
-    for row in rows:
+    return [_enrich_approval(row, now) for row in rows]
+
+
+def _enrich_approval(row: Any, now: datetime) -> Dict[str, Any]:
+    """Materialisiert eine Freigabe-Zeile in einen echten dict und ergänzt
+    ``age_hours``/``overdue``. ``dict(row)`` zuerst ist zwingend: unter PostgreSQL
+    liefert get_connection() HybridRow-Objekte (kein item-assignment); ohne die
+    Materialisierung wirft ``row['age_hours'] = …`` → 500 auf /api/app/freigaben."""
+    d = dict(row)
+    created = d.get("created_at")
+    age_hours: Optional[float] = None
+    try:
+        created_dt = datetime.fromisoformat(created) if isinstance(created, str) else created
+        if created_dt is not None:
+            age_hours = round((now - created_dt).total_seconds() / 3600, 1)
+    except (ValueError, TypeError):
         age_hours = None
-        try:
-            age_hours = round((now - datetime.fromisoformat(row["created_at"])).total_seconds() / 3600, 1)
-        except (ValueError, TypeError):
-            pass
-        row["age_hours"] = age_hours
-        row["overdue"] = bool(age_hours is not None and age_hours > ESCALATION_HOURS)
-    return rows
+    d["age_hours"] = age_hours
+    d["overdue"] = bool(age_hours is not None and age_hours > ESCALATION_HOURS)
+    return d
 
 
 def _get_request(cursor, tenant_id: int, request_id: int) -> Optional[Dict[str, Any]]:

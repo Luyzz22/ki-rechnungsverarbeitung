@@ -38,7 +38,20 @@ def _ensure_db_path() -> Path:
         return DB_PATH
 
 def get_connection():
-    """Get database connection"""
+    """Get database connection.
+
+    Wenn ``DATABASE_URL`` (PostgreSQL/Neon) gesetzt ist, wird eine
+    kompatibilitätsgewrappte psycopg-Verbindung zurückgegeben (``?``→``%s``,
+    sqlite3.Row-ähnliche Zeilen). Andernfalls SQLite (Default für lokale
+    Entwicklung / Bestand).
+    """
+    try:
+        from db_compat import is_postgres, connect_postgres
+        if is_postgres():
+            return connect_postgres()
+    except Exception as exc:  # pragma: no cover - Fallback auf SQLite
+        logger.error("PostgreSQL-Verbindung fehlgeschlagen, nutze SQLite: %s", exc)
+
     db_path = _ensure_db_path()
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
@@ -72,6 +85,14 @@ def _ensure_inference_policy_columns(cursor: sqlite3.Cursor) -> None:
 def _ensure_invoice_storage_columns(cursor: sqlite3.Cursor) -> None:
     """Add legacy invoice columns expected by save_invoices idempotently."""
     definitions = {
+        # The legacy FlowCheck schema uses INTEGER user/tenant keys
+        # (users.id and jobs.user_id); keep the invoice ownership column in the
+        # same domain so COALESCE(i.tenant_id, jobs.user_id) stays type-safe.
+        "tenant_id": "INTEGER",
+        # These columns are consumed by the primary list/dashboard paths and
+        # therefore belong to the base invoice contract, not only Enterprise.
+        "status": "TEXT",
+        "created_at": "TEXT",
         "content_hash": "TEXT DEFAULT ''",
         "source_format": "TEXT DEFAULT 'pdf'",
         "einvoice_raw_xml": "TEXT DEFAULT ''",
@@ -200,12 +221,21 @@ def init_database():
             zahlungsbedingungen TEXT,
             artikel TEXT,
             verwendungszweck TEXT,
+            status TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (job_id) REFERENCES jobs(job_id)
         )
     ''')
     _ensure_invoice_storage_columns(cursor)
     _ensure_inference_policy_columns(cursor)
     _ensure_organization_processing_policy_schema(conn)
+
+    # On explicit re-initialization these late-defined helpers are available.
+    # Reuse this connection so all schema work stays on one backend target.
+    for initializer_name in ("init_users_table", "init_subscriptions_table"):
+        initializer = globals().get(initializer_name)
+        if callable(initializer):
+            initializer(connection=conn)
     
     conn.commit()
 
@@ -283,8 +313,15 @@ def save_job(job_id: str, job_data: Dict, user_id: int = None):
     conn.close()
 
 
-def save_invoices(job_id: str, results: List[Dict]):
-    """Save invoice results for a job (inkl. E-Rechnungs-Metadaten)"""
+def save_invoices(job_id: str, results: List[Dict], tenant_id: Optional[int] = None):
+    """Save invoice results for a job (inkl. E-Rechnungs-Metadaten).
+
+    ``tenant_id`` wird direkt auf jeder Rechnung gesetzt, damit neue Rechnungen
+    sauber mandantenzugeordnet sind und der Read-Pfad nicht auf den
+    jobs.user_id-Legacy-Fallback angewiesen ist. Wird kein ``tenant_id``
+    übergeben, wird er aus ``jobs.user_id`` des zugehörigen Jobs abgeleitet
+    (der Job wird unmittelbar vor dieser Funktion gespeichert).
+    """
     from duplicate_detection import (
         generate_invoice_hash,
         check_duplicate_by_hash,
@@ -298,6 +335,32 @@ def save_invoices(job_id: str, results: List[Dict]):
     # benutzt jetzt DB_PATH => invoices.db
     conn = get_connection()
     cursor = conn.cursor()
+
+    # jobs.user_id is the canonical owner. Legacy unowned/non-numeric jobs may
+    # remain NULL, but an explicit tenant must never override that contract.
+    cursor.execute("SELECT user_id FROM jobs WHERE job_id = ?", (job_id,))
+    jrow = cursor.fetchone()
+    if jrow is None:
+        conn.close()
+        raise ValueError("INVOICE_JOB_OWNER_REQUIRED")
+    job_owner_id = jrow[0]
+    try:
+        canonical_tenant_id: Optional[int] = int(job_owner_id) if job_owner_id is not None else None
+    except (TypeError, ValueError):
+        canonical_tenant_id = None
+
+    if tenant_id is not None:
+        try:
+            requested_tenant_id = int(tenant_id)
+        except (TypeError, ValueError) as exc:
+            conn.close()
+            raise ValueError("INVOICE_TENANT_INVALID") from exc
+        if canonical_tenant_id is None or requested_tenant_id != canonical_tenant_id:
+            conn.close()
+            raise ValueError("INVOICE_TENANT_MISMATCH")
+        tenant_id_val = requested_tenant_id
+    else:
+        tenant_id_val = canonical_tenant_id
 
     # Bestehende Rechnungen dieses Jobs löschen (Re-Processing)
     cursor.execute("DELETE FROM invoices WHERE job_id = ?", (job_id,))
@@ -340,10 +403,10 @@ def save_invoices(job_id: str, results: List[Dict]):
                 source_format, einvoice_raw_xml, einvoice_profile,
                 einvoice_valid, einvoice_validation_message, confidence,
                 data_class, inference_profile, provider_selected, policy_version,
-                policy_decision
+                policy_decision, tenant_id
             ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
             """,
             (
@@ -384,6 +447,7 @@ def save_invoices(job_id: str, results: List[Dict]):
                 invoice.get("provider_selected", invoice.get("ai_model_used", "")),
                 invoice.get("policy_version", POLICY_VERSION),
                 invoice.get("policy_decision", "not_evaluated"),
+                tenant_id_val,
             ),
         )
 
@@ -477,84 +541,122 @@ def get_all_jobs(limit: int = 50, offset: int = 0, user_id: int = None) -> List[
 
 @cached("statistics", ttl=300)
 def get_statistics(user_id: int = None) -> Dict:
-    """Get overall statistics - filtered by user_id"""
+    """Get overall statistics - filtered by user_id.
+
+    Postgres-fest: einfache Anführungszeichen für String-Literale (doppelte sind
+    auf Postgres Bezeichner-Quotes), portables 30-Tage-Fenster über einen in
+    Python berechneten Stichtag statt SQLite-``DATE('now', …)``, und Rechnungs-
+    zählung tenant-sicher über ``COALESCE(i.tenant_id, j.user_id)`` (der frühere
+    INNER JOIN auf jobs lieferte 0 für Rechnungen ohne jobs-Zeile)."""
+    from datetime import date, timedelta
+
     conn = get_connection()
     cursor = conn.cursor()
-    
-    # Build user filter
+
+    # Build user filter (jobs-basierte Kennzahlen)
     user_where = "AND user_id = ?" if user_id else ""
     user_params = (user_id,) if user_id else ()
-    
+    since_30 = (date.today() - timedelta(days=30)).isoformat()
+
     # Total jobs
-    cursor.execute(f'SELECT COUNT(*) FROM jobs WHERE status = "completed" {user_where}', user_params)
+    cursor.execute(f"SELECT COUNT(*) FROM jobs WHERE status = 'completed' {user_where}", user_params)
     total_jobs = cursor.fetchone()[0]
-    
-    # Total invoices (via jobs JOIN)
+
+    # Total invoices (tenant-sicher, ohne INNER JOIN auf ggf. leere jobs)
     if user_id:
-        cursor.execute('''
-            SELECT COUNT(*) FROM invoices i 
-            INNER JOIN jobs j ON i.job_id = j.job_id 
-            WHERE j.user_id = ?
-        ''', (user_id,))
+        cursor.execute(
+            """
+            SELECT COUNT(*) FROM invoices i
+            LEFT JOIN jobs j ON i.job_id = j.job_id
+            WHERE COALESCE(i.tenant_id, j.user_id) = ?
+            """,
+            (user_id,),
+        )
     else:
         cursor.execute('SELECT COUNT(*) FROM invoices')
     total_invoices = cursor.fetchone()[0]
-    
-    # Total amount
-    cursor.execute(f'SELECT SUM(total_amount) FROM jobs WHERE status = "completed" {user_where}', user_params)
+
+    # Total amount – über DENSELBEN tenant-Rechnungssatz wie total_invoices, damit
+    # "Rechnungen gesamt" und "Gesamtsumme"/Durchschnitt konsistent sind (auch für
+    # Orphan-Rechnungen ohne jobs-Zeile). Nicht aus jobs.total_amount ableiten.
+    if user_id:
+        cursor.execute(
+            """
+            SELECT COALESCE(SUM(i.betrag_brutto), 0) FROM invoices i
+            LEFT JOIN jobs j ON i.job_id = j.job_id
+            WHERE COALESCE(i.tenant_id, j.user_id) = ?
+            """,
+            (user_id,),
+        )
+    else:
+        cursor.execute('SELECT COALESCE(SUM(betrag_brutto), 0) FROM invoices')
     total_amount = cursor.fetchone()[0] or 0
-    
+
     # Success rate
-    cursor.execute(f'SELECT SUM(successful), SUM(total_files) FROM jobs WHERE status = "completed" {user_where}', user_params)
+    cursor.execute(f"SELECT SUM(successful), SUM(total_files) FROM jobs WHERE status = 'completed' {user_where}", user_params)
     row = cursor.fetchone()
     successful = row[0] or 0
     total_files = row[1] or 0
     success_rate = (successful / total_files * 100) if total_files > 0 else 0
-    
+
     # Average per invoice
     avg_per_invoice = (total_amount / total_invoices) if total_invoices > 0 else 0
-    
+
     # Jobs per day (last 30 days)
     if user_id:
-        cursor.execute('''
-            SELECT DATE(created_at) as date, COUNT(*) as count, SUM(total_amount) as amount
-            FROM jobs 
-            WHERE status = "completed" AND user_id = ?
-            AND created_at >= DATE('now', '-30 days')
-            GROUP BY DATE(created_at)
+        cursor.execute(
+            """
+            SELECT substr(CAST(created_at AS TEXT), 1, 10) as date, COUNT(*) as count,
+                   SUM(total_amount) as amount
+            FROM jobs
+            WHERE status = 'completed' AND user_id = ?
+              AND substr(CAST(created_at AS TEXT), 1, 10) >= ?
+            GROUP BY substr(CAST(created_at AS TEXT), 1, 10)
             ORDER BY date
-        ''', (user_id,))
+            """,
+            (user_id, since_30),
+        )
     else:
-        cursor.execute('''
-            SELECT DATE(created_at) as date, COUNT(*) as count, SUM(total_amount) as amount
-            FROM jobs 
-            WHERE status = "completed" 
-            AND created_at >= DATE('now', '-30 days')
-            GROUP BY DATE(created_at)
+        cursor.execute(
+            """
+            SELECT substr(CAST(created_at AS TEXT), 1, 10) as date, COUNT(*) as count,
+                   SUM(total_amount) as amount
+            FROM jobs
+            WHERE status = 'completed'
+              AND substr(CAST(created_at AS TEXT), 1, 10) >= ?
+            GROUP BY substr(CAST(created_at AS TEXT), 1, 10)
             ORDER BY date
-        ''')
+            """,
+            (since_30,),
+        )
     daily_data = [dict(r) for r in cursor.fetchall()]
-    
-    # Top Rechnungsaussteller (via jobs JOIN)
+
+    # Top Rechnungsaussteller (tenant-sicher)
     if user_id:
-        cursor.execute('''
+        cursor.execute(
+            """
             SELECT i.rechnungsaussteller, COUNT(*) as count, SUM(i.betrag_brutto) as total
             FROM invoices i
-            INNER JOIN jobs j ON i.job_id = j.job_id
-            WHERE i.rechnungsaussteller != '' AND j.user_id = ?
+            LEFT JOIN jobs j ON i.job_id = j.job_id
+            WHERE COALESCE(NULLIF(TRIM(i.rechnungsaussteller), ''), NULL) IS NOT NULL
+              AND COALESCE(i.tenant_id, j.user_id) = ?
             GROUP BY i.rechnungsaussteller
             ORDER BY count DESC
             LIMIT 5
-        ''', (user_id,))
+            """,
+            (user_id,),
+        )
     else:
-        cursor.execute('''
+        cursor.execute(
+            """
             SELECT rechnungsaussteller, COUNT(*) as count, SUM(betrag_brutto) as total
             FROM invoices
-            WHERE rechnungsaussteller != ''
+            WHERE COALESCE(NULLIF(TRIM(rechnungsaussteller), ''), NULL) IS NOT NULL
             GROUP BY rechnungsaussteller
             ORDER BY count DESC
             LIMIT 5
-        ''')
+            """
+        )
     top_aussteller = [dict(r) for r in cursor.fetchall()]
     
     conn.close()
@@ -1088,9 +1190,10 @@ def is_email_processed(message_id: str) -> bool:
     conn.close()
     return exists
 
-def init_users_table():
+def init_users_table(connection=None):
     """Initialize users table"""
-    conn = get_connection()
+    owns_connection = connection is None
+    conn = connection if connection is not None else get_connection()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -1139,11 +1242,11 @@ def init_users_table():
     if 'user_id' not in columns:
         cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
 
-    conn.commit()
-    # Cache invalidieren nach neuen Invoices
-    invalidate_cache("statistics")
-    invalidate_cache("monthly_summary")
-    conn.close()
+    if owns_connection:
+        conn.commit()
+        invalidate_cache("statistics")
+        invalidate_cache("monthly_summary")
+        conn.close()
 
 init_users_table()
 
@@ -1234,9 +1337,10 @@ def email_exists(email: str) -> bool:
     conn.close()
     return exists
 
-def init_users_table():
+def init_users_table(connection=None):
     """Initialize users table"""
-    conn = get_connection()
+    owns_connection = connection is None
+    conn = connection if connection is not None else get_connection()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -1285,11 +1389,11 @@ def init_users_table():
     if 'user_id' not in columns:
         cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
 
-    conn.commit()
-    # Cache invalidieren nach neuen Invoices
-    invalidate_cache("statistics")
-    invalidate_cache("monthly_summary")
-    conn.close()
+    if owns_connection:
+        conn.commit()
+        invalidate_cache("statistics")
+        invalidate_cache("monthly_summary")
+        conn.close()
 
 init_users_table()
 
@@ -1380,9 +1484,10 @@ def email_exists(email: str) -> bool:
     conn.close()
     return exists
 
-def init_subscriptions_table():
+def init_subscriptions_table(connection=None):
     """Initialize subscriptions table"""
-    conn = get_connection()
+    owns_connection = connection is None
+    conn = connection if connection is not None else get_connection()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -1402,11 +1507,11 @@ def init_subscriptions_table():
         )
     ''')
     
-    conn.commit()
-    # Cache invalidieren nach neuen Invoices
-    invalidate_cache("statistics")
-    invalidate_cache("monthly_summary")
-    conn.close()
+    if owns_connection:
+        conn.commit()
+        invalidate_cache("statistics")
+        invalidate_cache("monthly_summary")
+        conn.close()
 
 init_subscriptions_table()
 
@@ -2110,6 +2215,10 @@ def reset_password(token: str, new_password: str) -> bool:
 # =============================================================================
 # REPOSITORY FUNKTIONEN (neu hinzugefügt)
 # =============================================================================
+# Legacy compatibility API for the separate English-column fixture under
+# modules/rechnungsverarbeitung/tests. Active FlowCheck runtime paths use the
+# canonical German invoice columns above; do not add duplicate alias columns
+# to the primary schema. A static contract test prevents production imports.
 
 def find_potential_duplicates(
     invoice_number: str,

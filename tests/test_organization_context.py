@@ -1,4 +1,5 @@
 import sqlite3
+from unittest.mock import Mock
 
 import pytest
 
@@ -43,6 +44,7 @@ def org_db():
     conn.execute("INSERT INTO users (id, email, current_org_id) VALUES (1, 'owner@example.test', 10)")
     conn.execute("INSERT INTO users (id, email, current_org_id) VALUES (2, 'member@example.test', 10)")
     conn.execute("INSERT INTO users (id, email, current_org_id) VALUES (3, 'other@example.test', 20)")
+    conn.execute("INSERT INTO users (id, email, current_org_id) VALUES (4, 'legacy@example.test', NULL)")
     conn.execute("INSERT INTO organizations (id, name, slug, cloud_processing_region) VALUES (10, 'EU Org', 'eu-org', 'eu')")
     conn.execute(
         "INSERT INTO organizations (id, name, slug, cloud_processing_region) VALUES (20, 'Local Org', 'local-org', 'local_only')"
@@ -51,11 +53,15 @@ def org_db():
     conn.execute("INSERT INTO org_members (org_id, user_id, role) VALUES (10, 2, 'member')")
     conn.execute("INSERT INTO org_members (org_id, user_id, role) VALUES (20, 3, 'owner')")
     conn.execute("CREATE TABLE jobs (job_id TEXT PRIMARY KEY, user_id INTEGER)")
-    conn.execute("CREATE TABLE invoices (id INTEGER PRIMARY KEY, job_id TEXT)")
+    conn.execute("CREATE TABLE invoices (id INTEGER PRIMARY KEY, job_id TEXT, tenant_id INTEGER)")
     conn.execute("INSERT INTO jobs (job_id, user_id) VALUES ('job-eu', 1)")
     conn.execute("INSERT INTO jobs (job_id, user_id) VALUES ('job-local', 3)")
-    conn.execute("INSERT INTO invoices (id, job_id) VALUES (100, 'job-eu')")
-    conn.execute("INSERT INTO invoices (id, job_id) VALUES (200, 'job-local')")
+    conn.execute("INSERT INTO jobs (job_id, user_id) VALUES ('job-legacy', 4)")
+    conn.execute("INSERT INTO invoices (id, job_id, tenant_id) VALUES (100, 'job-eu', 1)")
+    conn.execute("INSERT INTO invoices (id, job_id, tenant_id) VALUES (101, 'job-eu', NULL)")
+    conn.execute("INSERT INTO invoices (id, job_id, tenant_id) VALUES (200, 'job-local', 3)")
+    conn.execute("INSERT INTO invoices (id, job_id, tenant_id) VALUES (400, 'job-legacy', 4)")
+    conn.execute("INSERT INTO invoices (id, job_id, tenant_id) VALUES (500, 'job-eu', 3)")
     conn.commit()
     yield conn
     conn.close()
@@ -78,6 +84,103 @@ def test_invoice_from_other_organization_blocks_access(org_db):
         )
 
     assert exc_info.value.error_code == "ORG_CONTEXT_REQUIRED"
+    assert exc_info.value.reason_code == "organization_membership_required"
+
+
+def test_invoice_id_without_authenticated_principal_is_denied(org_db):
+    with pytest.raises(OrganizationContextError) as exc_info:
+        resolve_trusted_organization_context(invoice_id=100, connection=org_db)
+
+    assert exc_info.value.reason_code == "authenticated_principal_required"
+    assert exc_info.value.to_safe_dict() == {
+        "error_code": "ORG_CONTEXT_REQUIRED",
+        "reason_code": "authenticated_principal_required",
+    }
+
+
+def test_job_id_without_authenticated_principal_is_denied(org_db):
+    with pytest.raises(OrganizationContextError) as exc_info:
+        resolve_trusted_organization_context(job_id="job-eu", connection=org_db)
+
+    assert exc_info.value.reason_code == "authenticated_principal_required"
+
+
+def test_job_owner_and_same_organization_member_are_allowed(org_db):
+    owner_context = resolve_trusted_organization_context(
+        authenticated_user_id=1,
+        job_id="job-eu",
+        connection=org_db,
+    )
+    member_context = resolve_trusted_organization_context(
+        authenticated_user_id=2,
+        invoice_id=100,
+        connection=org_db,
+    )
+
+    assert owner_context.organization_id == 10
+    assert member_context.organization_id == 10
+
+
+def test_invoice_tenant_matches_job_owner(org_db):
+    context = resolve_trusted_organization_context(
+        authenticated_user_id=1,
+        invoice_id=100,
+        connection=org_db,
+    )
+
+    assert context.organization_id == 10
+
+
+def test_legacy_invoice_without_tenant_uses_verified_job_owner(org_db):
+    context = resolve_trusted_organization_context(
+        authenticated_user_id=1,
+        invoice_id=101,
+        connection=org_db,
+    )
+
+    assert context.organization_id == 10
+
+
+def test_invoice_tenant_mismatch_fails_before_policy_or_provider(org_db, monkeypatch):
+    downstream_policy = Mock()
+    monkeypatch.setattr(
+        "shared.organization_context.resolve_tenant_policy_for_context",
+        downstream_policy,
+    )
+
+    with pytest.raises(OrganizationContextError) as exc_info:
+        resolve_trusted_organization_context(
+            authenticated_user_id=1,
+            invoice_id=500,
+            connection=org_db,
+        )
+
+    assert exc_info.value.reason_code == "invoice_tenant_owner_mismatch"
+    assert "500" not in str(exc_info.value)
+    downstream_policy.assert_not_called()
+
+
+def test_legacy_single_tenant_invoice_resolves_from_verified_owner(org_db):
+    context = resolve_trusted_organization_context(
+        authenticated_user_id=4,
+        invoice_id=400,
+        connection=org_db,
+    )
+
+    assert context is not None
+    assert context.organization_id is None
+    assert context.user_id == 4
+    assert context.source == "invoice_owner"
+
+
+def test_legacy_single_tenant_invoice_blocks_different_user(org_db):
+    with pytest.raises(OrganizationContextError) as exc_info:
+        resolve_trusted_organization_context(
+            authenticated_user_id=1,
+            invoice_id=400,
+            connection=org_db,
+        )
+
     assert exc_info.value.reason_code == "organization_membership_required"
 
 

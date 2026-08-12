@@ -9,7 +9,8 @@ Tenant-isolierte Kennzahlen für das Dashboard:
 - Anomalie-Alerts (aktive Warnungen)
 - 30-Tage-Trend (Verarbeitungsvolumen) als einfaches SVG
 
-Tenant-Isolation: ``jobs.user_id = tenant_id``.
+Tenant-Isolation: ``COALESCE(invoices.tenant_id, jobs.user_id) = tenant_id``
+(tenant_id bevorzugt, jobs.user_id nur als Legacy-Fallback).
 """
 
 from __future__ import annotations
@@ -34,10 +35,10 @@ def _count_since(cursor, tenant_id: int, since_iso: str) -> int:
         """
         SELECT COUNT(*)
         FROM invoices i
-        JOIN jobs j ON i.job_id = j.job_id
-        WHERE j.user_id = ?
+        LEFT JOIN jobs j ON i.job_id = j.job_id
+        WHERE COALESCE(i.tenant_id, j.user_id) = ?
           AND COALESCE(i.deleted, 0) = 0
-          AND COALESCE(i.created_at, j.created_at) >= ?
+          AND COALESCE(CAST(i.created_at AS TEXT), CAST(j.created_at AS TEXT)) >= ?
         """,
         (int(tenant_id), since_iso),
     )
@@ -65,8 +66,8 @@ def get_kpis(tenant_id: int) -> Dict[str, Any]:
         SELECT COUNT(*) AS total,
                SUM(CASE WHEN COALESCE(i.manual_correction, 0) = 0 THEN 1 ELSE 0 END) AS automated
         FROM invoices i
-        JOIN jobs j ON i.job_id = j.job_id
-        WHERE j.user_id = ?
+        LEFT JOIN jobs j ON i.job_id = j.job_id
+        WHERE COALESCE(i.tenant_id, j.user_id) = ?
           AND COALESCE(i.deleted, 0) = 0
         """,
         (int(tenant_id),),
@@ -93,6 +94,22 @@ def get_kpis(tenant_id: int) -> Dict[str, Any]:
         oldest_approval = ar[1]
     except Exception:  # pragma: no cover - Tabelle evtl. noch nicht migriert
         pass
+
+    # Status-Verteilung (kanonisch, tenant-gefiltert wie die Rechnungsliste) –
+    # damit die Dashboard-Kacheln exakt der Summe der Liste entsprechen und nicht
+    # aus einer abweichenden Quelle stammen.
+    cursor.execute(
+        """
+        SELECT COALESCE(NULLIF(TRIM(i.status), ''), 'neu') AS s, COUNT(*) AS n
+        FROM invoices i
+        LEFT JOIN jobs j ON i.job_id = j.job_id
+        WHERE COALESCE(i.tenant_id, j.user_id) = ?
+          AND COALESCE(i.deleted, 0) = 0
+        GROUP BY COALESCE(NULLIF(TRIM(i.status), ''), 'neu')
+        """,
+        (int(tenant_id),),
+    )
+    status_breakdown = {str(r[0]): int(r[1] or 0) for r in cursor.fetchall()}
 
     conn.close()
 
@@ -122,6 +139,7 @@ def get_kpis(tenant_id: int) -> Dict[str, Any]:
         "oldest_approval": oldest_approval,
         "oldest_age_hours": oldest_age_hours,
         "anomaly_alerts": anomaly_alerts,
+        "status_breakdown": status_breakdown,
         "trend": trend,
     }
 
@@ -133,12 +151,12 @@ def get_trend(tenant_id: int, days: int = 30) -> List[Dict[str, Any]]:
     since = (date.today() - timedelta(days=days - 1)).isoformat()
     cursor.execute(
         """
-        SELECT substr(COALESCE(i.created_at, j.created_at), 1, 10) AS day, COUNT(*) AS cnt
+        SELECT substr(COALESCE(CAST(i.created_at AS TEXT), CAST(j.created_at AS TEXT)), 1, 10) AS day, COUNT(*) AS cnt
         FROM invoices i
-        JOIN jobs j ON i.job_id = j.job_id
-        WHERE j.user_id = ?
+        LEFT JOIN jobs j ON i.job_id = j.job_id
+        WHERE COALESCE(i.tenant_id, j.user_id) = ?
           AND COALESCE(i.deleted, 0) = 0
-          AND substr(COALESCE(i.created_at, j.created_at), 1, 10) >= ?
+          AND substr(COALESCE(CAST(i.created_at AS TEXT), CAST(j.created_at AS TEXT)), 1, 10) >= ?
         GROUP BY day
         """,
         (int(tenant_id), since),

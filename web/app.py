@@ -19,7 +19,7 @@ sys.path.insert(0, "/var/www/invoice-app")
 try:
     from api_nexus import router as nexus_router
     NEXUS_AVAILABLE = True
-except ImportError:
+except Exception:  # ImportError ODER Import-Time-Fehler (z. B. smart_maintenance-DB-Init)
     NEXUS_AVAILABLE = False
 #!/usr/bin/env python3
 from dotenv import load_dotenv
@@ -49,13 +49,13 @@ sys.path.insert(0, "/var/www/invoice-app")
 try:
     from api_nexus import router as nexus_router
     NEXUS_AVAILABLE = True
-except ImportError:
+except Exception:  # ImportError ODER Import-Time-Fehler (z. B. smart_maintenance-DB-Init)
     NEXUS_AVAILABLE = False
 from fastapi.responses import FileResponse, RedirectResponse
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from database import save_job, save_invoices, get_job, get_all_jobs, get_statistics, get_invoices_by_job
-from database import get_db_path
+from database import get_db_path, get_connection
 from notifications import send_sendgrid_email
 from category_ai import predict_category
 from logging.handlers import RotatingFileHandler
@@ -121,7 +121,7 @@ sys.path.insert(0, "/var/www/invoice-app")
 try:
     from api_nexus import router as nexus_router
     NEXUS_AVAILABLE = True
-except ImportError:
+except Exception:  # ImportError ODER Import-Time-Fehler (z. B. smart_maintenance-DB-Init)
     NEXUS_AVAILABLE = False
 import shutil
 from typing import List
@@ -138,10 +138,19 @@ from datev_exporter import export_to_datev
 from notifications import send_notifications, check_low_confidence
 
 # FastAPI App
+# Sicherheit: interaktive API-Docs (/docs, /redoc, /openapi.json) sind
+# standardmäßig DEAKTIVIERT. Sie waren nach einem verlorenen Server-Handedit
+# stundenlang öffentlich erreichbar – die Härtung gehört ins Repo, damit sie
+# einen Deploy überlebt. Nur per ENABLE_API_DOCS=1 (z. B. lokal) einschaltbar
+# (secure by default).
+_api_docs_enabled = os.getenv("ENABLE_API_DOCS", "").strip().lower() in ("1", "true", "yes", "on")
 app = FastAPI(
     title="KI-Rechnungsverarbeitung Web",
     description="Automatische Rechnungsverarbeitung mit KI",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/docs" if _api_docs_enabled else None,
+    redoc_url="/redoc" if _api_docs_enabled else None,
+    openapi_url="/openapi.json" if _api_docs_enabled else None,
 )
 
 # === Exception Handlers ===
@@ -262,6 +271,20 @@ try:
     app.include_router(customer_router)
 except Exception as _cust_exc:  # pragma: no cover - defensive
     app_logger.error("Customer-Router konnte nicht geladen werden: %s", _cust_exc)
+
+# Frontend-JSON-API (Bearer-Auth) für die Next.js-SPA unter /api/app
+try:
+    from api_frontend import router as frontend_api_router
+    app.include_router(frontend_api_router)
+except Exception as _fe_exc:  # pragma: no cover - defensive
+    app_logger.error("Frontend-API-Router konnte nicht geladen werden: %s", _fe_exc)
+
+# Öffentlicher, login-freier E-Rechnungs-Validierungs-Endpoint /api/public/validate
+try:
+    from public_validate import router as public_validate_router
+    app.include_router(public_validate_router)
+except Exception as _pv_exc:  # pragma: no cover - defensive
+    app_logger.error("Public-Validate-Router konnte nicht geladen werden: %s", _pv_exc)
 
 @app.get("/landing")
 async def landing_page():
@@ -1013,7 +1036,7 @@ def get_user_info(user_id):
         return {"id": 0, "email": "", "name": "User", "is_admin": False, "plan": "Free"}
     
     try:
-        conn = sqlite3.connect(get_db_path(), check_same_thread=False)
+        conn = get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute("SELECT id, email, name, is_admin FROM users WHERE id = ?", (user_id,))
@@ -1149,7 +1172,13 @@ async def download_monthly_mbr(request: Request, year: int = None, month: int = 
     try:
         from mbr.generator import generate_presentation
 
-        conn = sqlite3.connect(get_db_path(), check_same_thread=False)
+        # MBR-Datenschicht (mbr/data.py) erwartet das Legacy-Schema `rechnungen`
+        # (Spalten rechnungs_datum/netto_betrag/brutto_betrag/lieferant/kategorie_id),
+        # das NICHT der kanonischen `invoices`-Tabelle entspricht. Bis zur eigenen
+        # MBR→invoices-Migration bewusst auf SQLite (get_db_path) statt Neon; sonst
+        # bricht der Export (relation "rechnungen" does not exist). Siehe PR-Notiz.
+        conn = sqlite3.connect(get_db_path())
+        conn.row_factory = sqlite3.Row
         pptx_bytes = generate_presentation(
             conn, 
             api_key=api_key, 
@@ -1949,7 +1978,7 @@ def require_login(request: Request):
 def get_demo_usage(ip_address: str) -> dict:
     """Prüft Demo-Nutzung für eine IP-Adresse. Max 3 pro Tag."""
     import sqlite3
-    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn = get_connection()
     cursor = conn.cursor()
     
     # Erstelle Tabelle falls nicht existiert
@@ -1983,7 +2012,7 @@ def get_demo_usage(ip_address: str) -> dict:
 def record_demo_usage(ip_address: str, filename: str):
     """Zeichnet Demo-Nutzung auf."""
     import sqlite3
-    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO demo_usage (ip_address, filename) VALUES (?, ?)
@@ -3050,7 +3079,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://sbsdeutschland.com", "https://app.sbsdeutschland.com", "https://sbsnexus.de", "https://www.sbsnexus.de", "http://localhost:3000", "http://localhost:3001"],
+    allow_origins=["https://sbsdeutschland.com", "https://app.sbsdeutschland.com", "https://sbsnexus.de", "https://www.sbsnexus.de", "https://belegflow-ai.de", "https://www.belegflow-ai.de", "http://localhost:3000", "http://localhost:3001"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
@@ -3851,36 +3880,6 @@ def validate_einvoice(xml_string: str):
     return True, "XML syntaktisch gültig, aber kein spezifisches E-Rechnungs-Profil erkannt.", ""
 
 # === Plausibility API ===
-@app.post("/api/plausibility/{check_id}/review")
-async def review_plausibility(check_id: int, request: Request):
-    """Review a plausibility check"""
-    if "user_id" not in request.session:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    _require_csrf_token(request, _get_submitted_csrf_token(request))
-    data = await request.json()
-    status = data.get('status')
-    
-    if status not in ['reviewed', 'ignored']:
-        raise HTTPException(status_code=400, detail="Invalid status")
-    
-    import sqlite3
-    from datetime import datetime
-    
-    conn = sqlite3.connect('invoices.db', check_same_thread=False)
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        UPDATE plausibility_checks
-        SET status = ?, reviewed_at = ?
-        WHERE id = ?
-    ''', (status, datetime.now().isoformat(), check_id))
-    
-    conn.commit()
-    conn.close()
-    
-    return {"status": "ok"}
-
-# === Analytics Dashboard ===
 @app.get("/analytics/costs")
 async def analytics_costs(request: Request):
     """Analytics Dashboard für API-Kosten - Nur für Admins"""
@@ -3894,7 +3893,7 @@ async def analytics_costs(request: Request):
     monthly_costs = get_monthly_costs()
     
     # Hole alle Jobs mit Kosten
-    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -4496,7 +4495,7 @@ sys.path.insert(0, "/var/www/invoice-app")
 try:
     from api_nexus import router as nexus_router
     NEXUS_AVAILABLE = True
-except ImportError:
+except Exception:  # ImportError ODER Import-Time-Fehler (z. B. smart_maintenance-DB-Init)
     NEXUS_AVAILABLE = False
 
 @app.get("/api/analytics/finance-snapshot")
@@ -5295,7 +5294,7 @@ async def get_notification_settings(request: Request):
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
     user_email = request.session.get("user_email", "")
     try:
-        conn = sqlite3.connect('invoices.db', check_same_thread=False)
+        conn = get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         settings = cursor.execute("SELECT * FROM user_settings WHERE user_email = ?", (user_email,)).fetchone()
@@ -5315,7 +5314,7 @@ async def update_notification_settings(request: Request):
     user_email = request.session.get("user_email", "")
     data = await request.json()
     try:
-        conn = sqlite3.connect('invoices.db', check_same_thread=False)
+        conn = get_connection()
         cursor = conn.cursor()
         existing = cursor.execute("SELECT user_email FROM user_settings WHERE user_email = ?", (user_email,)).fetchone()
         if not existing:
@@ -5345,7 +5344,7 @@ async def save_slack_settings(request: Request):
     if enabled and webhook_url and not webhook_url.startswith("https://hooks.slack.com/"):
         return {"success": False, "error": "Ungueltige Slack Webhook URL"}
     try:
-        conn = sqlite3.connect('invoices.db', check_same_thread=False)
+        conn = get_connection()
         cursor = conn.cursor()
         existing = cursor.execute("SELECT user_email FROM user_settings WHERE user_email = ?", (user_email,)).fetchone()
         if not existing:
@@ -5392,7 +5391,7 @@ async def save_weekly_report_settings(request: Request):
     day = int(data.get("day", 1))
     time_val = data.get("time", "07:00")
     try:
-        conn = sqlite3.connect('invoices.db', check_same_thread=False)
+        conn = get_connection()
         cursor = conn.cursor()
         existing = cursor.execute("SELECT user_email FROM user_settings WHERE user_email = ?", (user_email,)).fetchone()
         if not existing:
@@ -5412,7 +5411,7 @@ async def send_report_now(request: Request):
     user_email = request.session.get("user_email", "")
     results = {"email": False, "slack": False}
     try:
-        conn = sqlite3.connect('invoices.db', check_same_thread=False)
+        conn = get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         settings = cursor.execute("SELECT * FROM user_settings WHERE user_email = ?", (user_email,)).fetchone()
@@ -5445,7 +5444,7 @@ async def update_company_profile(request: Request):
     
     try:
         import sqlite3
-        conn = sqlite3.connect('invoices.db', check_same_thread=False)
+        conn = get_connection()
         cursor = conn.cursor()
         
         cursor.execute(
@@ -5554,17 +5553,18 @@ async def get_subscription_info(request: Request):
     
     try:
         import sqlite3
-        conn = sqlite3.connect('invoices.db', check_same_thread=False)
+        conn = get_connection()
         cursor = conn.cursor()
         
-        # Prüfe product_subscriptions
+        # Prüfe product_subscriptions (Spalten product/plan – siehe
+        # multi_product_subscriptions.init_product_subscriptions_table)
         cursor.execute("""
-            SELECT product_id, plan_name, status, usage_limit, usage_current 
-            FROM product_subscriptions 
+            SELECT product, plan, status, usage_limit, usage_current
+            FROM product_subscriptions
             WHERE user_id = ? AND status = 'active'
         """, (request.session["user_id"],))
         rows = cursor.fetchall()
-        
+
         if rows:
             for row in rows:
                 product_id, plan_name, status, limit, current = row
@@ -5573,7 +5573,7 @@ async def get_subscription_info(request: Request):
                     "name": product_names.get(product_id, product_id),
                     "plan": plan_name,
                     "status": status,
-                    "usage": f"{current}/{limit}" if limit > 0 else "Unbegrenzt"
+                    "usage": f"{current}/{limit}" if (limit or 0) > 0 else "Unbegrenzt"
                 })
             
             # Setze Plan basierend auf höchstem aktiven Plan
@@ -5687,7 +5687,7 @@ async def copilot_demo_status(request: Request):
     import sqlite3
     from datetime import datetime
     
-    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn = get_connection()
     cursor = conn.cursor()
     
     # Erstelle Tabelle falls nicht vorhanden
@@ -5739,7 +5739,7 @@ async def copilot_demo_query(request: Request):
     
     # Rate-Limit prüfen
     if not is_admin:
-        conn = sqlite3.connect('invoices.db', check_same_thread=False)
+        conn = get_connection()
         cursor = conn.cursor()
         
         today = datetime.now().strftime('%Y-%m-%d')
@@ -5899,7 +5899,7 @@ WICHTIG: Dies ist eine Demo mit Beispieldaten. Erwähne das NICHT in deiner Antw
         # Nutzung aufzeichnen
         if not is_admin:
             logged_question = question.replace("\r", " ").replace("\n", " ")[:200]
-            conn = sqlite3.connect('invoices.db', check_same_thread=False)
+            conn = get_connection()
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT INTO copilot_demo_usage (ip_address, question, created_at) VALUES (?, ?, ?)",
@@ -6264,7 +6264,7 @@ async def datev_export_page(request: Request):
     user_info = get_user_info(user_id)
     
     # Get invoices for export
-    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = get_connection(); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
         SELECT i.id, i.rechnungsnummer, i.datum, i.rechnungsaussteller, 
@@ -6314,7 +6314,7 @@ async def export_to_datev(request: Request):
         return JSONResponse({"error": "Keine Rechnungen ausgewählt"}, status_code=400)
     
     # Load invoices
-    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = get_connection(); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
     placeholders = ','.join(['?' for _ in invoice_ids])
@@ -6435,7 +6435,7 @@ async def preview_datev_export(request: Request, invoice_id: int):
     if not user_id:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
     
-    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = get_connection(); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     # DSGVO: User darf nur eigene Rechnungen sehen
     from rbac import is_admin_or_owner
@@ -6571,7 +6571,7 @@ async def suggest_kontierung(request: Request):
         return JSONResponse({"error": "invoice_id erforderlich"}, status_code=400)
     
     # Lade Rechnung (DSGVO: User-Filter)
-    conn = sqlite3.connect(get_db_path(), check_same_thread=False)
+    conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     from rbac import is_admin_or_owner
@@ -6677,43 +6677,8 @@ async def get_kontenrahmen(request: Request, skr: str = "SKR03"):
     })
 
 
-@app.get("/api/kontierung/historie", tags=["Kontierung"])
-async def get_kontierung_historie(request: Request, limit: int = 50):
-    """
-    Zeigt die letzten Kontierungsentscheidungen (für Audit/Debugging).
-    """
-    user_id = request.session.get("user_id")
-    if not user_id:
-        return JSONResponse({"error": "Not authenticated"}, status_code=401)
-    
-    conn = sqlite3.connect(get_db_path(), check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    
-    cursor.execute("""
-        SELECT * FROM kontierung_historie 
-        ORDER BY created_at DESC 
-        LIMIT ?
-    """, (limit,))
-    
-    rows = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    
-    return JSONResponse({
-        "historie": rows,
-        "count": len(rows)
-    })
-
-
-
-
-# =============================================================================
-# ZAHLUNGSVORSCHLÄGE & SKONTO-OPTIMIERUNG
-# =============================================================================
-
-import sys
-sys.path.insert(0, '/var/www/invoice-app')
 from zahlungs_service import get_zahlungs_service, ZahlungsService
+
 
 @app.get("/zahlungen", response_class=HTMLResponse, tags=["Zahlungen"])
 async def zahlungen_dashboard(request: Request):
@@ -6946,7 +6911,7 @@ from sevdesk import create_sevdesk_client, SevdeskInvoiceSync, test_sevdesk_conn
 
 # Integration settings table
 def init_integrations_table():
-    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = get_connection(); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS integrations (
@@ -6969,6 +6934,28 @@ def init_integrations_table():
 init_integrations_table()
 
 
+def init_user_settings_table():
+    """Benachrichtigungs-/Report-Einstellungen je User (Single-Source auf Neon)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_settings (
+            user_email TEXT PRIMARY KEY,
+            notification_email INTEGER DEFAULT 1,
+            notification_slack INTEGER DEFAULT 0,
+            slack_webhook_url TEXT,
+            weekly_report_enabled INTEGER DEFAULT 0,
+            weekly_report_day TEXT DEFAULT 'monday',
+            weekly_report_time TEXT DEFAULT '09:00',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+init_user_settings_table()
+
+
 @app.get("/integrations", response_class=HTMLResponse, tags=["Integrations"])
 async def integrations_page(request: Request):
     """Integrations Settings Page"""
@@ -6978,7 +6965,7 @@ async def integrations_page(request: Request):
     
     user_info = get_user_info(user_id)
     
-    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = get_connection(); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM integrations WHERE org_id = 1")
     rows = cursor.fetchall()
@@ -7034,7 +7021,7 @@ async def save_integration(request: Request):
     api_key = data.get('api_key')
     enabled = data.get('enabled', False)
     
-    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = get_connection(); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO integrations (org_id, provider, api_key, enabled, updated_at)
@@ -7062,7 +7049,7 @@ async def sync_to_integration(request: Request):
     provider = data.get('provider')
     invoice_ids = data.get('invoice_ids', [])
     
-    conn = sqlite3.connect(get_db_path(), check_same_thread=False); conn.row_factory = sqlite3.Row
+    conn = get_connection(); conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT api_key FROM integrations WHERE org_id = 1 AND provider = ? AND enabled = 1", (provider,))
     row = cursor.fetchone()
@@ -7182,8 +7169,7 @@ async def get_ai_dashboard_analysis():
 @app.get("/api/ai/drilldown")
 async def get_ai_drilldown():
     try:
-        db_path = '/var/www/invoice-app/invoices.db'
-        conn = sqlite3.connect(db_path)
+        conn = get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
@@ -7245,8 +7231,7 @@ async def chat_with_cfo(request: Request):
             return JSONResponse({"response": "Bitte stellen Sie eine Frage."})
         
         # Datenbank-Kontext laden
-        db_path = '/var/www/invoice-app/invoices.db'
-        conn = sqlite3.connect(db_path)
+        conn = get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
@@ -7332,49 +7317,6 @@ Beantworte die Frage des Users basierend auf diesen Daten."""
         return JSONResponse({"response": "Entschuldigung, ein Fehler ist aufgetreten."})
 
 
-# ============================================================
-# MBR ENTERPRISE PAGE
-# ============================================================
-@app.get("/mbr", response_class=HTMLResponse)
-async def mbr_page(request: Request):
-    """Enterprise MBR Dashboard with date selection."""
-    redirect = require_login(request)
-    if redirect:
-        return redirect
-    
-    user_id = request.session.get("user_id")
-    user_info = get_user_info(user_id)
-    
-    # Get available months with data for this user
-    from database import get_db_path
-    conn = sqlite3.connect(get_db_path(), check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    available_months = []
-    try:
-        cursor = conn.execute("""
-            SELECT DISTINCT
-                strftime('%Y', rechnungs_datum) as year,
-                strftime('%m', rechnungs_datum) as month,
-                COUNT(*) as invoice_count
-            FROM rechnungen
-            WHERE user_id = ? AND rechnungs_datum IS NOT NULL
-            GROUP BY year, month
-            ORDER BY year DESC, month DESC
-            LIMIT 24
-        """, (user_id,))
-        available_months = [dict(r) for r in cursor.fetchall()]
-    except sqlite3.OperationalError:
-        # Legacy-Tabelle 'rechnungen' nicht vorhanden – leere Liste, kein Crash
-        available_months = []
-    finally:
-        conn.close()
-    
-    return templates.TemplateResponse("mbr.html", {
-        "request": request,
-        "user": user_info,
-        "available_months": available_months,
-    })
-
 # ══════════════════════════════════════════════════════════════════════════════
 # NEXUS GATEWAY INTEGRATION
 # ══════════════════════════════════════════════════════════════════════════════
@@ -7384,8 +7326,9 @@ try:
     from api_nexus import router as nexus_router
     app.include_router(nexus_router)
     print("✅ Nexus Gateway API aktiviert: /api/nexus/*")
-except ImportError as e:
+except Exception as e:  # ImportError ODER Import-Time-Fehler (fällt sauber auf "deaktiviert" zurück)
     print(f"⚠️ Nexus Gateway nicht verfügbar: {e}")
+
 
 @app.get("/spend-analytics", response_class=HTMLResponse)
 async def spend_analytics_page(request: Request):

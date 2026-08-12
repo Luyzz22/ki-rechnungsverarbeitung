@@ -1,8 +1,6 @@
 import ast
-import importlib
 import re
 import sqlite3
-import sys
 from pathlib import Path
 
 from shared.inference_policy import (
@@ -250,14 +248,19 @@ def test_api_request_models_do_not_accept_policy_control_fields():
     assert offenders == []
 
 
-def _reload_database_for_path(monkeypatch, db_path: Path):
-    monkeypatch.setenv("INVOICE_DB_PATH", str(db_path))
-    sys.modules.pop("database", None)
-    return importlib.import_module("database")
+def _initialize_database_for_path(monkeypatch, db_path: Path):
+    import database
+
+    # Keep one database module identity: enterprise_db/web.app import
+    # get_connection directly and would otherwise retain stale references to a
+    # different module instance and SQLite file.
+    monkeypatch.setattr(database, "_ensure_db_path", lambda: db_path)
+    database.init_database()
+    return database
 
 
 def test_fresh_sqlite_db_gets_policy_metadata(monkeypatch, tmp_path):
-    database = _reload_database_for_path(monkeypatch, tmp_path / "fresh.sqlite")
+    database = _initialize_database_for_path(monkeypatch, tmp_path / "fresh.sqlite")
 
     database.save_job(
         "job-fresh",
@@ -286,11 +289,79 @@ def test_fresh_sqlite_db_gets_policy_metadata(monkeypatch, tmp_path):
     )
 
     rows = database.get_invoices_by_job("job-fresh")
+    statistics = database.get_statistics(user_id=1)
     assert len(rows) == 1
+    assert rows[0]["tenant_id"] == 1
     assert rows[0]["data_class"] == "invoice_confidential"
     assert rows[0]["inference_profile"] == "standard"
     assert rows[0]["provider_selected"] == "openai_direct"
     assert rows[0]["policy_decision"] == "allowed"
+    assert statistics["total_invoices"] == 1
+    assert statistics["total_amount"] == 11.9
+
+    conn = sqlite3.connect(tmp_path / "fresh.sqlite")
+    invoice_schema = {
+        row[1]: row[2] for row in conn.execute("PRAGMA table_info(invoices)").fetchall()
+    }
+    tables = {
+        row[0]
+        for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()
+    }
+    conn.close()
+    assert invoice_schema["tenant_id"].upper() == "INTEGER"
+    assert {"status", "created_at"} <= invoice_schema.keys()
+    assert {"subscriptions", "zahlungsbedingungen"} <= tables
+
+
+def test_schema_subinitializers_reuse_existing_connection(monkeypatch):
+    import database
+
+    conn = sqlite3.connect(":memory:")
+    conn.execute("CREATE TABLE jobs (job_id TEXT PRIMARY KEY)")
+
+    def unexpected_connection():
+        raise AssertionError("subinitializer selected another database backend")
+
+    monkeypatch.setattr(database, "get_connection", unexpected_connection)
+    database.init_users_table(connection=conn)
+    database.init_subscriptions_table(connection=conn)
+
+    tables = {
+        row[0]
+        for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()
+    }
+    conn.close()
+    assert {"users", "subscriptions"} <= tables
+
+
+def test_legacy_english_invoice_repository_is_not_imported_by_runtime():
+    legacy_functions = {
+        "find_potential_duplicates",
+        "get_invoice_stats",
+        "get_invoices_by_supplier",
+        "get_monthly_summary",
+    }
+    excluded_parts = {"tests", "_archive", "backup_20260203_162219", ".venv", "venv"}
+    offenders = []
+
+    for path in REPO_ROOT.rglob("*.py"):
+        if path == REPO_ROOT / "database.py" or excluded_parts.intersection(path.parts):
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module == "database":
+                imported = legacy_functions.intersection(alias.name for alias in node.names)
+                offenders.extend(f"{path.relative_to(REPO_ROOT)}::{name}" for name in sorted(imported))
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "database"
+                and node.func.attr in legacy_functions
+            ):
+                offenders.append(f"{path.relative_to(REPO_ROOT)}::{node.func.attr}")
+
+    assert offenders == []
 
 
 def test_old_sqlite_db_is_migrated_without_destroying_rows(monkeypatch, tmp_path):
@@ -323,7 +394,7 @@ def test_old_sqlite_db_is_migrated_without_destroying_rows(monkeypatch, tmp_path
     conn.commit()
     conn.close()
 
-    _reload_database_for_path(monkeypatch, db_path)
+    _initialize_database_for_path(monkeypatch, db_path)
 
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
@@ -334,5 +405,14 @@ def test_old_sqlite_db_is_migrated_without_destroying_rows(monkeypatch, tmp_path
 
     assert row is not None
     assert row["rechnungsnummer"] == "ALT-1"
-    assert {"data_class", "inference_profile", "provider_selected", "policy_version", "policy_decision"} <= invoice_columns
+    assert {
+        "tenant_id",
+        "data_class",
+        "inference_profile",
+        "provider_selected",
+        "policy_version",
+        "policy_decision",
+        "status",
+        "created_at",
+    } <= invoice_columns
     assert {"data_class", "inference_profile", "provider_selected", "policy_version", "policy_decision"} <= job_columns

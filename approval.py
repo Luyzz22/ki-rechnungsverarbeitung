@@ -74,7 +74,16 @@ class ApprovalManager:
         except Exception as exc:  # pragma: no cover - defensive
             logger.warning("ApprovalManager schema init: %s", exc)
 
-    def _get_conn(self) -> sqlite3.Connection:
+    def _get_conn(self):
+        # Auf PostgreSQL (DATABASE_URL) über die Kompatibilitätsschicht routen,
+        # sonst lokales SQLite (unverändertes Verhalten für Dev/Tests).
+        try:
+            from db_compat import is_postgres
+            if is_postgres():
+                from database import get_connection
+                return get_connection()
+        except Exception:  # pragma: no cover - defensiver Fallback auf SQLite
+            pass
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
@@ -422,7 +431,7 @@ class ApprovalManager:
             'manager': "can_approve = 1 AND approval_limit >= 2000",
             'cfo': "can_approve = 1 AND approval_limit >= 10000",
             'ceo': "can_approve = 1 AND approval_limit >= 50000",
-            'admin': "is_admin = 1",
+            'admin': "CAST(is_admin AS INTEGER) = 1",
         }
         
         condition = role_conditions.get(required_role, "can_approve = 1")

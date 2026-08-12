@@ -9,7 +9,8 @@ Der Risiko-Score orientiert sich an den Heuristiken aus
 Betrags-Ausreißer, Rundbeträge), implementiert sie hier jedoch direkt auf dem
 SQLite-Schema der Hauptanwendung (Tabelle ``invoices`` + ``jobs``-JOIN).
 
-Tenant-Isolation: ``jobs.user_id = tenant_id``.
+Tenant-Isolation: ``COALESCE(invoices.tenant_id, jobs.user_id) = tenant_id``
+(tenant_id bevorzugt, jobs.user_id nur als Legacy-Fallback).
 """
 
 from __future__ import annotations
@@ -19,10 +20,17 @@ import statistics
 from typing import Any, Dict, List, Optional
 
 from database import get_connection
+from supplier_names import UNKNOWN, best_display_name, canonical_key, sanitize_supplier
 
 logger = logging.getLogger(__name__)
 
 _VALID_SORTS = {"volumen", "risiko", "name"}
+
+
+def _clean_supplier(raw: Any) -> str:
+    """Bereinigter Anzeigename für einen gespeicherten Aussteller (Dateinamen/
+    Platzhalter → 'Unbekannt'). Konsolidiert Bestandsdaten im Lesepfad."""
+    return sanitize_supplier(raw) or UNKNOWN
 
 
 def _fetch_invoices(tenant_id: int) -> List[Dict[str, Any]]:
@@ -36,10 +44,10 @@ def _fetch_invoices(tenant_id: int) -> List[Dict[str, Any]]:
                COALESCE(NULLIF(TRIM(i.rechnungsaussteller), ''), 'Unbekannt') AS supplier,
                COALESCE(i.betrag_brutto, 0)            AS amount,
                i.datum                                  AS invoice_date,
-               COALESCE(i.created_at, j.created_at)     AS created_at
+               COALESCE(CAST(i.created_at AS TEXT), CAST(j.created_at AS TEXT)) AS created_at
         FROM invoices i
-        JOIN jobs j ON i.job_id = j.job_id
-        WHERE j.user_id = ?
+        LEFT JOIN jobs j ON i.job_id = j.job_id
+        WHERE COALESCE(i.tenant_id, j.user_id) = ?
           AND COALESCE(i.deleted, 0) = 0
         """,
         (int(tenant_id),),
@@ -120,20 +128,32 @@ def get_suppliers(tenant_id: int, sort_by: str = "volumen") -> List[Dict[str, An
     all_amounts = [float(i["amount"] or 0) for i in invoices]
     global_avg = statistics.mean(all_amounts) if all_amounts else 0.0
 
-    grouped: Dict[str, List[Dict[str, Any]]] = {}
+    # Kanonisch gruppieren: Schreibweisen-Varianten (Case/Interpunktion) UND
+    # bereinigte Dateinamen/Platzhalter fallen zu EINEM Lieferanten zusammen.
+    # Den bereinigten Anzeigenamen NICHT in die Row schreiben – unter PostgreSQL
+    # sind das HybridRow-Objekte ohne item-assignment. Als (display, row)-Tupel
+    # neben der Row führen.
+    grouped: Dict[str, List[Any]] = {}
     for inv in invoices:
-        grouped.setdefault(inv["supplier"], []).append(inv)
+        display = _clean_supplier(inv.get("supplier"))
+        grouped.setdefault(canonical_key(display), []).append((display, inv))
 
     suppliers: List[Dict[str, Any]] = []
-    for name, items in grouped.items():
-        amounts = [float(i["amount"] or 0) for i in items]
+    for pairs in grouped.values():
+        rows = [row for _, row in pairs]
+        # saubersten Anzeigenamen aus den Original-Schreibweisen der Gruppe wählen
+        name_counts: Dict[str, int] = {}
+        for display, _ in pairs:
+            name_counts[display] = name_counts.get(display, 0) + 1
+        name = best_display_name(name_counts.items())
+        amounts = [float(i["amount"] or 0) for i in rows]
         total = round(sum(amounts), 2)
-        count = len(items)
+        count = len(rows)
         avg = round(total / count, 2) if count else 0.0
         # letzte Rechnung anhand Rechnungsdatum, Fallback created_at
-        dates = [i.get("invoice_date") or i.get("created_at") or "" for i in items]
+        dates = [i.get("invoice_date") or i.get("created_at") or "" for i in rows]
         last_date = max(dates) if dates else ""
-        risk = _supplier_risk(items, global_avg)
+        risk = _supplier_risk(rows, global_avg)
         suppliers.append(
             {
                 "name": name,
@@ -156,18 +176,31 @@ def get_suppliers(tenant_id: int, sort_by: str = "volumen") -> List[Dict[str, An
 
 
 def get_supplier_detail(tenant_id: int, supplier: str) -> Dict[str, Any]:
-    """Detailansicht eines Lieferanten inkl. Rechnungshistorie."""
-    invoices = [i for i in _fetch_invoices(tenant_id) if i["supplier"] == supplier]
+    """Detailansicht eines Lieferanten inkl. Rechnungshistorie.
+
+    Matcht kanonisch (case-/interpunktions-unabhängig), damit ein in der
+    Übersicht zusammengeführter Lieferant auch im Detail alle seine Rechnungen
+    zeigt – inkl. bereinigter Dateinamen/Platzhalter unter 'Unbekannt'.
+    """
+    key = canonical_key(_clean_supplier(supplier))
+    all_invoices = _fetch_invoices(tenant_id)
+    invoices = [i for i in all_invoices if canonical_key(_clean_supplier(i.get("supplier"))) == key]
     invoices.sort(key=lambda i: (i.get("invoice_date") or i.get("created_at") or ""), reverse=True)
 
-    all_amounts = [float(i["amount"] or 0) for i in _fetch_invoices(tenant_id)]
+    all_amounts = [float(i["amount"] or 0) for i in all_invoices]
     global_avg = statistics.mean(all_amounts) if all_amounts else 0.0
 
     amounts = [float(i["amount"] or 0) for i in invoices]
     total = round(sum(amounts), 2)
     count = len(invoices)
+    # sauberster Anzeigename der Gruppe (Fallback: übergebener Name)
+    name_counts: Dict[str, int] = {}
+    for i in invoices:
+        disp = _clean_supplier(i.get("supplier"))
+        name_counts[disp] = name_counts.get(disp, 0) + 1
+    display_name = best_display_name(name_counts.items()) if name_counts else (supplier or UNKNOWN)
     summary = {
-        "name": supplier,
+        "name": display_name,
         "count": count,
         "total": total,
         "avg": round(total / count, 2) if count else 0.0,

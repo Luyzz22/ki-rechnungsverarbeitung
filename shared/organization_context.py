@@ -78,16 +78,17 @@ def resolve_trusted_organization_context(
     """Resolve organization context only from trusted server-side sources."""
     _reject_client_context_override(client_input)
 
+    session_user_id = _session_user_id(session)
+    user_id = authenticated_user_id if authenticated_user_id is not None else session_user_id
+
     if authenticated_tenant_id:
+        _require_authenticated_principal(user_id)
         return TrustedOrganizationContext(
             organization_id=str(authenticated_tenant_id),
             tenant_id=str(authenticated_tenant_id),
-            user_id=authenticated_user_id,
+            user_id=user_id,
             source="authenticated_tenant",
         )
-
-    session_user_id = _session_user_id(session)
-    user_id = authenticated_user_id if authenticated_user_id is not None else session_user_id
 
     owns_connection = connection is None
     if connection is None and any(value is not None for value in (user_id, invoice_id, job_id, trusted_organization_id)):
@@ -229,12 +230,13 @@ def _session_user_id(session: Mapping[str, Any] | None) -> int | str | None:
 
 def _resolve_from_user(connection: sqlite3.Connection, user_id: int | str) -> TrustedOrganizationContext | None:
     cursor = connection.cursor()
+    current_org_id = None
     try:
         cursor.execute("SELECT current_org_id FROM users WHERE id = ?", (user_id,))
         row = cursor.fetchone()
         current_org_id = _row_value(row, "current_org_id", 0) if row else None
     except sqlite3.Error:
-        current_org_id = None
+        row = None
     if current_org_id and _is_member(connection, user_id, current_org_id):
         return TrustedOrganizationContext(organization_id=current_org_id, user_id=user_id, source="user_current_org")
 
@@ -248,6 +250,22 @@ def _resolve_from_user(connection: sqlite3.Connection, user_id: int | str) -> Tr
         member_row = None
     if member_row:
         return TrustedOrganizationContext(organization_id=_row_value(member_row, "org_id", 0), user_id=user_id, source="org_membership")
+
+    # Legacy FlowCheck is a verified single-user tenant model. Preserve that
+    # server-side ownership domain for existing users that have not yet been
+    # assigned to an organization; client-provided tenant IDs are never used.
+    try:
+        cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
+        legacy_user = cursor.fetchone()
+    except sqlite3.Error:
+        legacy_user = None
+    if legacy_user:
+        return TrustedOrganizationContext(
+            organization_id=None,
+            tenant_id=str(user_id),
+            user_id=user_id,
+            source="legacy_user_tenant",
+        )
     return None
 
 
@@ -256,7 +274,8 @@ def _resolve_from_trusted_org_id(
     organization_id: int | str,
     user_id: int | str | None,
 ) -> TrustedOrganizationContext:
-    if user_id is not None and not _is_member(connection, user_id, organization_id):
+    _require_authenticated_principal(user_id)
+    if not _is_member(connection, user_id, organization_id):
         raise OrganizationContextError("organization_membership_required")
     return TrustedOrganizationContext(organization_id=organization_id, user_id=user_id, source="trusted_server_org")
 
@@ -266,6 +285,7 @@ def _resolve_from_job(
     job_id: str,
     user_id: int | str | None,
 ) -> TrustedOrganizationContext:
+    _require_authenticated_principal(user_id)
     cursor = connection.cursor()
     cursor.execute("SELECT user_id FROM jobs WHERE job_id = ?", (job_id,))
     row = cursor.fetchone()
@@ -275,9 +295,13 @@ def _resolve_from_job(
     owner_context = _resolve_from_user(connection, owner_user_id)
     if owner_context is None:
         raise OrganizationContextError("organization_context_missing")
-    if user_id is not None and not _is_member(connection, user_id, owner_context.organization_id):
-        raise OrganizationContextError("organization_membership_required")
-    return TrustedOrganizationContext(organization_id=owner_context.organization_id, user_id=user_id or owner_user_id, source="job_owner")
+    _assert_owner_context_access(connection, user_id, owner_user_id, owner_context)
+    return TrustedOrganizationContext(
+        organization_id=owner_context.organization_id,
+        tenant_id=owner_context.tenant_id,
+        user_id=user_id or owner_user_id,
+        source="job_owner",
+    )
 
 
 def _resolve_from_invoice(
@@ -285,10 +309,11 @@ def _resolve_from_invoice(
     invoice_id: int | str,
     user_id: int | str | None,
 ) -> TrustedOrganizationContext:
+    _require_authenticated_principal(user_id)
     cursor = connection.cursor()
     cursor.execute(
         """
-        SELECT j.user_id
+        SELECT i.tenant_id, j.user_id
         FROM invoices i
         JOIN jobs j ON i.job_id = j.job_id
         WHERE i.id = ?
@@ -298,13 +323,40 @@ def _resolve_from_invoice(
     row = cursor.fetchone()
     if not row:
         raise OrganizationContextError("organization_context_missing")
-    owner_user_id = _row_value(row, "user_id", 0)
+    invoice_tenant_id = _row_value(row, "tenant_id", 0)
+    owner_user_id = _row_value(row, "user_id", 1)
+    if invoice_tenant_id is not None and str(invoice_tenant_id) != str(owner_user_id):
+        raise OrganizationContextError("invoice_tenant_owner_mismatch")
     owner_context = _resolve_from_user(connection, owner_user_id)
     if owner_context is None:
         raise OrganizationContextError("organization_context_missing")
-    if user_id is not None and not _is_member(connection, user_id, owner_context.organization_id):
+    _assert_owner_context_access(connection, user_id, owner_user_id, owner_context)
+    return TrustedOrganizationContext(
+        organization_id=owner_context.organization_id,
+        tenant_id=owner_context.tenant_id,
+        user_id=user_id or owner_user_id,
+        source="invoice_owner",
+    )
+
+
+def _assert_owner_context_access(
+    connection: sqlite3.Connection,
+    user_id: int | str | None,
+    owner_user_id: int | str,
+    owner_context: TrustedOrganizationContext,
+) -> None:
+    _require_authenticated_principal(user_id)
+    if owner_context.organization_id is None:
+        if str(user_id) != str(owner_user_id):
+            raise OrganizationContextError("organization_membership_required")
+        return
+    if not _is_member(connection, user_id, owner_context.organization_id):
         raise OrganizationContextError("organization_membership_required")
-    return TrustedOrganizationContext(organization_id=owner_context.organization_id, user_id=user_id or owner_user_id, source="invoice_owner")
+
+
+def _require_authenticated_principal(user_id: int | str | None) -> None:
+    if user_id is None:
+        raise OrganizationContextError("authenticated_principal_required")
 
 
 def _is_member(connection: sqlite3.Connection, user_id: int | str, organization_id: int | str | None) -> bool:

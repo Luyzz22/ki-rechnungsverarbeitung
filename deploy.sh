@@ -4,8 +4,8 @@
 #
 #   sudo bash /var/www/invoice-app/deploy.sh [BRANCH]
 #
-# Aktualisiert Code, installiert Deps, migriert Schema (idempotent) und startet
-# den Dienst neu. Siehe DEPLOY.md für Details (nginx/systemd-Erststeinrichtung).
+# Aktualisiert Code, installiert Deps ins venv des Dienstes, migriert das Schema
+# (idempotent) und startet den Dienst neu. Siehe DEPLOY.md für Details.
 # =============================================================================
 set -euo pipefail
 
@@ -13,25 +13,55 @@ APP_DIR="${APP_DIR:-/var/www/invoice-app}"
 BRANCH="${1:-main}"
 SERVICE="${SERVICE:-invoice-app}"
 DB_PATH="${INVOICE_DB_PATH:-$APP_DIR/invoices.db}"
+VENV="${VENV:-$APP_DIR/venv}"
 
-echo "==> App-Verzeichnis: $APP_DIR | Branch: $BRANCH"
 cd "$APP_DIR"
 
-echo "==> Remote prüfen"
-git remote -v | grep -q "Luyzz22/ki-rechnungsverarbeitung" \
-  || echo "WARN: origin zeigt nicht auf Luyzz22 – ggf. 'git remote set-url origin ...'"
+# --- Phase 1: Code deterministisch auf origin/$BRANCH bringen, dann re-exec ---
+# Wichtig: deploy.sh aktualisiert sich im Update selbst. Läuft danach dieselbe
+# bash-Instanz weiter, führt sie u. U. VERALTETE Bytes dieses Scripts aus – das
+# ließ zuvor weiter System-pip/-python statt des venv laufen. Deshalb nach dem
+# Update EINMAL die frische Fassung neu ausführen (Guard verhindert Endlosschleife).
+if [ "${DEPLOY_REEXEC:-0}" != "1" ]; then
+  echo "==> App-Verzeichnis: $APP_DIR | Branch: $BRANCH"
+  git remote -v | grep -q "Luyzz22/ki-rechnungsverarbeitung" \
+    || echo "WARN: origin zeigt nicht auf Luyzz22 – ggf. 'git remote set-url origin ...'"
 
-echo "==> Code aktualisieren ($BRANCH)"
-git stash --include-untracked || true
-git fetch origin
-git checkout "$BRANCH"
-git pull origin "$BRANCH"
+  echo "==> Code aktualisieren – harter Reset auf origin/$BRANCH (kein Stash)"
+  git fetch origin "$BRANCH"
+  git checkout "$BRANCH" 2>/dev/null || git checkout -B "$BRANCH" "origin/$BRANCH"
+  # Server-Handedits an versionierten Dateien werden bewusst verworfen (das Repo
+  # ist die Quelle der Wahrheit). venv/.env/invoices.db sind untracked/ignored
+  # und bleiben durch reset --hard unangetastet.
+  git reset --hard "origin/$BRANCH"
 
-echo "==> Abhängigkeiten installieren"
-pip3 install -r requirements.txt --break-system-packages || {
-  echo "WARN: pip-Konflikt – versuche PDF-Stack ohne Deps"
-  pip3 install --no-deps pdfplumber pdfminer.six pypdfium2 --break-system-packages || true
-}
+  echo "==> Frische deploy.sh-Fassung übernehmen (re-exec)"
+  DEPLOY_REEXEC=1 exec bash "$APP_DIR/deploy.sh" "$BRANCH"
+fi
+
+# --- Ab hier läuft GARANTIERT die frisch gezogene Script-Fassung -------------
+echo "==> Python-venv sicherstellen ($VENV)"
+if [ ! -x "$VENV/bin/python" ]; then
+  echo "    venv fehlt – erstelle es"
+  python3 -m venv "$VENV"
+fi
+PY="$VENV/bin/python"
+
+echo "==> Abhängigkeiten installieren (venv: $PY)"
+# Immer 'python -m pip' des venv verwenden – nie system pip3.
+"$PY" -m pip install --upgrade pip >/dev/null 2>&1 || true
+if ! "$PY" -m pip install -r requirements.txt; then
+  echo "WARN: pip-Konflikt bei requirements.txt – versuche PDF-Stack ohne Deps"
+  "$PY" -m pip install --no-deps pdfplumber pdfminer.six pypdfium2 || true
+fi
+
+# Harte Vorbedingung: ohne fastapi startet der Dienst nicht. Klar abbrechen,
+# statt später mit ModuleNotFoundError im Migrationsschritt zu scheitern.
+if ! "$PY" -c "import fastapi" 2>/dev/null; then
+  echo "ABBRUCH: 'fastapi' ist im venv nicht installiert."
+  echo "         Prüfe: $PY -m pip install -r requirements.txt"
+  exit 1
+fi
 
 echo "==> .env Pflichtwerte prüfen"
 miss=0
@@ -41,14 +71,32 @@ done
 [ "$miss" = "1" ] && { echo "ABBRUCH: Pflicht-ENV fehlen (App startet sonst nicht)."; exit 1; }
 
 echo "==> Schema migrieren (idempotent, legt fehlende Tabellen/Spalten an)"
-INVOICE_DB_PATH="$DB_PATH" python3 -c "import web.app; print('schema ok')"
+INVOICE_DB_PATH="$DB_PATH" "$PY" -c "import web.app; print('schema ok')"
 
+# --- Zum Schluss: Dienst neu starten und Health prüfen -----------------------
 echo "==> Dienst neu starten"
 systemctl restart "$SERVICE"
 sleep 2
 systemctl --no-pager --lines=0 status "$SERVICE" || true
 
-echo "==> Smoke-Test"
-code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/api/health || echo "000")
-echo "    /api/health -> $code"
-[ "$code" = "200" ] && echo "==> Deploy OK" || { echo "==> WARN: Health != 200, journalctl prüfen"; exit 1; }
+# Health-Check MIT Retry: der Startup dauert einige Sekunden (sonst false
+# negative 000). /api/health ist der dokumentierte Monitoring-Endpoint und MUSS
+# 200 liefern – ein Login-Redirect auf '/' wäre KEIN gültiger Ersatz und würde
+# einen kaputten Health-Endpoint verschleiern (deshalb hart fehlschlagen).
+echo "==> Smoke-Test /api/health (mit Retry – Startup dauert einige Sekunden)"
+code="000"
+i=0
+for i in $(seq 1 15); do
+  code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/api/health || echo "000")
+  [ "$code" = "200" ] && break
+  sleep 1
+done
+echo "    /api/health -> $code (nach $i Versuch(en))"
+
+if [ "$code" = "200" ]; then
+  echo "==> Deploy OK"
+else
+  echo "==> FEHLER: /api/health != 200 nach $i Versuchen."
+  echo "    Logs prüfen: journalctl -u $SERVICE -n 50 --no-pager"
+  exit 1
+fi

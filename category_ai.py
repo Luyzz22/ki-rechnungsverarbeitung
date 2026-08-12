@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple
 from anthropic import Anthropic
 import os
 from database import get_all_categories, get_learned_category, save_category_learning
+from invoice_extraction import get_anthropic_extraction_model
 from shared.data_classification import classify_invoice_data, resolve_inference_profile
 from shared.inference_policy import (
     InferencePolicyDeniedError,
@@ -53,6 +54,7 @@ def predict_category(
         return learned['category_id'], confidence, "Gelernt aus vorherigen Rechnungen"
     
     # Schritt 2: KI-basierte Kategorisierung
+    model: str | None = None
     try:
         categories = get_all_categories(user_id)
         category_list = "\n".join([
@@ -95,9 +97,10 @@ Antworte NUR mit diesem JSON-Format (kein Markdown, keine Backticks):
             purpose="invoice_category_prediction",
         )
 
+        model = get_anthropic_extraction_model()
         client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=model,
             max_tokens=500,
             messages=[{"role": "user", "content": prompt}]
         )
@@ -120,7 +123,7 @@ Antworte NUR mit diesem JSON-Format (kein Markdown, keine Backticks):
             logger,
             event="category_prediction_completed",
             provider=InferenceProvider.ANTHROPIC_DIRECT.value,
-            model="claude-sonnet-4-20250514",
+            model=model,
             data_class=decision.data_class,
             inference_profile=decision.inference_profile,
             policy_decision=decision.policy_decision,
@@ -135,7 +138,7 @@ Antworte NUR mit diesem JSON-Format (kein Markdown, keine Backticks):
             logger,
             event="category_prediction_policy_denied",
             provider=InferenceProvider.ANTHROPIC_DIRECT.value,
-            model="claude-sonnet-4-20250514",
+            model=model or "unresolved",
             policy_decision="denied",
             error_code=e.error_code,
             level=logging.WARNING,

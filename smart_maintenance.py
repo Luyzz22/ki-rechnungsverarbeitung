@@ -18,8 +18,6 @@ import httpx
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from google import genai
-from google.genai import types
 from dotenv import load_dotenv
 from shared.inference_policy import (
     DataClass,
@@ -36,6 +34,10 @@ from shared.organization_context import (
 from shared.secure_logging import log_inference_event, safe_log
 load_dotenv()
 
+# Zentrale DB-Verbindung (routet auf Postgres via DATABASE_URL bzw. die
+# konfigurierte SQLite-DB) – ersetzt hartkodierte /var/www/...-Pfade.
+from database import get_connection
+
 logger = logging.getLogger(__name__)
 
 # Gemini Configuration
@@ -44,6 +46,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 def get_gemini_client():
     """Get Gemini API client (new google-genai SDK)"""
     if GEMINI_API_KEY:
+        from google import genai
+
         return genai.Client(api_key=GEMINI_API_KEY)
     return None
 
@@ -72,10 +76,9 @@ async def recognize_part_from_image(
             "raw_response": "..."
         }
     """
-    client = get_gemini_client()
-    if not client:
+    if not GEMINI_API_KEY:
         return {"error": "Gemini API not configured", "part_number": None}
-    
+
     try:
         resolved_data_class = data_class or DataClass.INTERNAL
         requested_profile = resolve_inference_profile(inference_profile)
@@ -91,7 +94,9 @@ async def recognize_part_from_image(
             provider=InferenceProvider.GEMINI_DIRECT,
             purpose="smart_maintenance_part_recognition",
         )
-        # Using google-genai client (model specified in generate_content call)
+        # Optional SDK import and client construction happen only after policy.
+        client = get_gemini_client()
+        from google.genai import types
         
         prompt = f"""Du bist ein Experte für industrielle Ersatzteile im deutschen Maschinenbau.
 Analysiere dieses Bild eines Ersatzteils oder einer Komponente.
@@ -176,7 +181,7 @@ def search_invoices_by_part(search_terms: List[str], user_id: int = None) -> Lis
     Sucht in Rechnungen nach Teilen basierend auf Suchbegriffen.
     Gibt Lieferanten, Preise und letzte Bestelldaten zurück.
     """
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -242,7 +247,7 @@ def get_supplier_statistics(supplier_name: str, user_id: int = None) -> Dict:
     """
     Statistiken zu einem Lieferanten: Bestellvolumen, Häufigkeit, Durchschnittspreise
     """
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     
     query = """
@@ -597,7 +602,7 @@ async def process_maintenance_request(
 
 def init_maintenance_db():
     """Initialisiert Maintenance-Requests Tabelle"""
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -633,7 +638,8 @@ def init_maintenance_db():
 
 def save_maintenance_request(result: Dict, user_id: int = None) -> int:
     """Speichert Maintenance Request in DB"""
-    conn = sqlite3.connect('/var/www/invoice-app/invoices.db')
+    init_maintenance_db()  # lazy, idempotent (CREATE TABLE IF NOT EXISTS)
+    conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -660,8 +666,9 @@ def save_maintenance_request(result: Dict, user_id: int = None) -> int:
     return request_id
 
 
-# Init DB on import
-init_maintenance_db()
+# Hinweis: init_maintenance_db() wird NICHT beim Import ausgeführt (das schlug
+# außerhalb der Prod-Umgebung fehl und riss den gesamten Nexus-Router mit).
+# Die Tabelle wird stattdessen lazy in save_maintenance_request() angelegt.
 
 
 # ============================================================================
@@ -707,18 +714,6 @@ async def analyze_part_with_hydraulikdoc(
     - Technische Dokumentations-Suche
     - Hydraulik-spezifisches Wissen
     """
-    analyzer = get_hydraulikdoc_analyzer()
-    
-    if not analyzer:
-        # Fallback auf standard recognize_part_from_image
-        return await recognize_part_from_image(
-            image_base64,
-            context,
-            data_class=data_class,
-            inference_profile=inference_profile,
-            organization_context=organization_context,
-        )
-    
     try:
         resolved_data_class = data_class or DataClass.INTERNAL
         requested_profile = resolve_inference_profile(inference_profile)
@@ -734,6 +729,18 @@ async def analyze_part_with_hydraulikdoc(
             provider=InferenceProvider.GEMINI_DIRECT,
             purpose="hydraulikdoc_part_analysis",
         )
+        # HydraulikDoc may construct a provider client; do not touch it until
+        # both tenant and central inference policy have allowed the request.
+        analyzer = get_hydraulikdoc_analyzer()
+        if not analyzer:
+            return await recognize_part_from_image(
+                image_base64,
+                context,
+                data_class=data_class,
+                inference_profile=inference_profile,
+                organization_context=organization_context,
+            )
+
         # HydraulikDoc-spezifischer Prompt
         prompt = f"""Du bist ein Experte für industrielle Hydraulik- und Maschinenkomponenten.
         
@@ -828,6 +835,7 @@ Antworte NUR als JSON:
             context,
             data_class=data_class,
             inference_profile=inference_profile,
+            organization_context=organization_context,
         )
 
 

@@ -9,6 +9,12 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Unit/regression discovery must never inherit an application DATABASE_URL:
+# importing database initializes legacy schemas. Real PostgreSQL tests opt in
+# separately through TEST_DATABASE_URL and set DATABASE_URL only in their
+# isolated test scope/subprocess.
+os.environ.pop("DATABASE_URL", None)
+
 import database  # noqa: E402
 import enterprise_db  # noqa: E402
 
@@ -96,10 +102,10 @@ def _add_invoice(supplier, amount, days_ago=0, tenant=1, manual=0, invoice_no=No
     cur.execute(
         """
         INSERT INTO invoices
-            (job_id, rechnungsnummer, datum, rechnungsaussteller, betrag_brutto, created_at, manual_correction)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+            (job_id, rechnungsnummer, datum, rechnungsaussteller, betrag_brutto, created_at, manual_correction, tenant_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (job_id, invoice_no or "R-1", created[:10], supplier, amount, created, manual),
+        (job_id, invoice_no or "R-1", created[:10], supplier, amount, created, manual, tenant),
     )
     invoice_id = cur.lastrowid
     conn.commit()

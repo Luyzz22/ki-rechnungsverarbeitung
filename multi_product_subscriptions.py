@@ -36,7 +36,16 @@ def _resolve_db_path() -> Path:
         return DB_PATH
 
 
-def _get_connection() -> sqlite3.Connection:
+def _get_connection():
+    # Auf PostgreSQL (DATABASE_URL) über die Kompatibilitätsschicht routen, damit
+    # Subscriptions in DERSELBEN DB (Neon) liegen wie der Rest; sonst lokales SQLite.
+    try:
+        from db_compat import is_postgres
+        if is_postgres():
+            from database import get_connection
+            return get_connection()
+    except Exception:  # pragma: no cover - defensiver Fallback auf SQLite
+        pass
     return sqlite3.connect(str(_resolve_db_path()))
 
 

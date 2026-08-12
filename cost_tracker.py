@@ -5,6 +5,46 @@ import sqlite3
 from datetime import datetime
 from typing import Dict, List, Optional
 
+from database import get_connection
+
+
+def _costs_conn():
+    """Verbindung zur EINEN Datenquelle (Neon bzw. SQLite) inkl. Tabellen-Setup.
+
+    api_costs hatte bisher keinen Ersteller (lebte nur ad-hoc im lokalen SQLite);
+    hier idempotent anlegen, damit Reads/Writes auf derselben DB wie der Rest laufen.
+    """
+    conn = get_connection()
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS api_costs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            job_id TEXT,
+            invoice_id INTEGER,
+            model TEXT,
+            input_tokens INTEGER,
+            output_tokens INTEGER,
+            cost_usd REAL,
+            processing_time REAL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS performance_metrics (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            job_id TEXT,
+            metric_name TEXT,
+            metric_value REAL,
+            unit TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.commit()
+    return conn
+
 # Pricing per 1M tokens (as of 2024)
 PRICING = {
     'gpt-4o': {'input': 2.50, 'output': 10.00},
@@ -35,7 +75,7 @@ def track_api_cost(
     """Speichere API-Kosten"""
     cost = calculate_cost(model, input_tokens, output_tokens)
     
-    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn = _costs_conn()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -49,7 +89,7 @@ def track_api_cost(
 
 def get_job_costs(job_id: str) -> Dict:
     """Hole Kosten für einen Job"""
-    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn = _costs_conn()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -83,7 +123,7 @@ def get_job_costs(job_id: str) -> Dict:
 
 def get_monthly_costs() -> List[Dict]:
     """Hole monatliche Kosten"""
-    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn = _costs_conn()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -107,7 +147,7 @@ def get_monthly_costs() -> List[Dict]:
 
 def track_performance_metric(job_id: str, metric_name: str, value: float, unit: str):
     """Speichere Performance-Metrik"""
-    conn = sqlite3.connect('invoices.db', check_same_thread=False)
+    conn = _costs_conn()
     cursor = conn.cursor()
     
     cursor.execute('''

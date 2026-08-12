@@ -78,6 +78,49 @@ def test_supplier_detail(db, add_invoice):
     assert len(detail["invoices"]) == 2
 
 
+def test_supplier_merges_case_and_punctuation_variants(db, add_invoice):
+    """Enterprise: Schreibweisen-Varianten desselben Lieferanten werden zu EINER
+    Zeile konsolidiert; angezeigt wird die sauberste (gemischte Schreibweise)."""
+    add_invoice("SBS Deutschland GmbH & Co.KG", 1880.20, invoice_no="A")
+    add_invoice("SBS DEUTSCHLAND GMBH & CO.KG", 1880.20, invoice_no="B")
+    add_invoice("AS-Technik / Dipl. Inf. A. Schenk", 809.20, invoice_no="C")
+    add_invoice("AS-Technik * Dipl. Inf. A.Schenk", 809.20, invoice_no="D")
+
+    suppliers = get_suppliers(1, sort_by="volumen")
+    names = [s["name"] for s in suppliers]
+    # genau zwei Lieferanten (nicht vier)
+    assert len(suppliers) == 2, names
+    sbs = next(s for s in suppliers if s["name"].lower().startswith("sbs"))
+    assert sbs["count"] == 2 and sbs["total"] == 3760.40
+    assert sbs["name"] == "SBS Deutschland GmbH & Co.KG"  # gemischte Schreibweise gewinnt
+
+
+def test_supplier_filenames_and_placeholders_become_unknown(db, add_invoice):
+    """Enterprise: Dateinamen/Platzhalter als Aussteller werden NICHT als eigener
+    Lieferant geführt, sondern unter 'Unbekannt' konsolidiert."""
+    add_invoice("test.pdf", 0.0, invoice_no="A")
+    add_invoice("Testrechnung_Mueller_Brandt_2026-001.pdf", 0.0, invoice_no="B")
+    add_invoice("Reale Firma GmbH", 100.0, invoice_no="C")
+
+    suppliers = get_suppliers(1, sort_by="volumen")
+    names = [s["name"] for s in suppliers]
+    assert "test.pdf" not in names
+    assert "Testrechnung_Mueller_Brandt_2026-001.pdf" not in names
+    assert "Reale Firma GmbH" in names
+    unknown = next(s for s in suppliers if s["name"] == "Unbekannt")
+    assert unknown["count"] == 2  # beide Datei-Aussteller zusammengeführt
+
+
+def test_supplier_detail_matches_canonically(db, add_invoice):
+    """Detail eines konsolidierten Lieferanten zeigt ALLE Varianten-Rechnungen."""
+    add_invoice("Böttcher AG", 262.54, invoice_no="A")
+    add_invoice("BÖTTCHER AG", 262.54, invoice_no="B")
+    detail = get_supplier_detail(1, "böttcher ag")  # beliebige Schreibweise
+    assert detail["summary"]["count"] == 2
+    assert len(detail["invoices"]) == 2
+    assert detail["summary"]["name"] == "Böttcher AG"
+
+
 # ---------------------------------------------------------------------------
 # Phase 4a – Dashboard KPIs
 # ---------------------------------------------------------------------------
@@ -92,6 +135,79 @@ def test_kpis_counts_and_automation(db, add_invoice):
     # 2 von 3 ohne manuelle Korrektur
     assert kpis["automation_rate"] == pytest.approx(66.7, abs=0.2)
     assert len(kpis["trend"]) == 30
+
+
+def test_kpis_status_breakdown_matches_list(db, add_invoice):
+    """B4: Status-Kacheln (status_breakdown) = Summe der Rechnungsliste."""
+    add_invoice("A", 100.0)  # ohne Status → 'neu'
+    add_invoice("B", 100.0)
+    conn = database.get_connection(); cur = conn.cursor()
+    for supplier, status in (("C", "verarbeitet"), ("D", "pruefen"), ("E", "verarbeitet")):
+        cur.execute(
+            "INSERT INTO invoices (rechnungsaussteller, betrag_brutto, status, tenant_id, created_at) "
+            "VALUES (?,?,?,?,?)",
+            (supplier, 50.0, status, 1, datetime.now().isoformat()))
+    conn.commit(); conn.close()
+
+    kpis = enterprise_dashboard.get_kpis(1)
+    sb = kpis["status_breakdown"]
+    assert sb.get("neu") == 2
+    assert sb.get("verarbeitet") == 2
+    assert sb.get("pruefen") == 1
+    # Kacheln = Summe der Liste
+    assert sum(sb.values()) == kpis["total_invoices"] == 5
+
+
+def test_kpis_count_month_uses_created_at_not_datum(db):
+    """B4: Volumen-KPIs zählen über created_at (Verarbeitungszeitpunkt), nicht
+    über das Rechnungsdatum."""
+    conn = database.get_connection(); cur = conn.cursor()
+    # Rechnungsdatum weit in der Vergangenheit, aber created_at = jetzt
+    cur.execute(
+        "INSERT INTO invoices (rechnungsaussteller, betrag_brutto, datum, created_at, tenant_id) "
+        "VALUES (?,?,?,?,?)",
+        ("X", 10.0, "2020-01-01", datetime.now().isoformat(), 1))
+    conn.commit(); conn.close()
+    kpis = enterprise_dashboard.get_kpis(1)
+    assert kpis["count_month"] >= 1  # via created_at gezählt, nicht datum=2020
+
+
+def test_get_statistics_counts_tenant_invoices(tmp_path, monkeypatch):
+    """B4/pg: get_statistics zählt Rechnungen tenant-sicher (LEFT JOIN + COALESCE),
+    nicht 0 durch INNER JOIN auf leere jobs; läuft ohne SQLite-only-Konstrukte
+    (Identifier-Quote/DATE('now'))."""
+    import sqlite3
+    from cache import invalidate_cache
+    db_file = tmp_path / "stats.db"
+    monkeypatch.setattr(database, "_ensure_db_path", lambda: db_file)
+    invalidate_cache("statistics")  # Cache-Leak zwischen Tests vermeiden
+    conn = sqlite3.connect(db_file)
+    conn.execute(
+        "CREATE TABLE jobs (job_id TEXT PRIMARY KEY, user_id INTEGER, status TEXT, "
+        "created_at TEXT, total_amount REAL, successful INTEGER, total_files INTEGER)")
+    conn.execute(
+        "CREATE TABLE invoices (id INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT, "
+        "rechnungsaussteller TEXT, betrag_brutto REAL, tenant_id INTEGER)")
+    conn.execute(
+        "INSERT INTO jobs (job_id,user_id,status,created_at,total_amount,successful,total_files) "
+        "VALUES ('j1',1,'completed',?,200.0,2,2)", (datetime.now().isoformat(),))
+    conn.execute("INSERT INTO invoices (job_id, rechnungsaussteller, betrag_brutto, tenant_id) "
+                 "VALUES ('j1','A',100.0,1)")
+    # Orphan-Rechnung: nur tenant_id, keine jobs-Zeile → INNER JOIN hätte sie verloren
+    conn.execute("INSERT INTO invoices (rechnungsaussteller, betrag_brutto, tenant_id) "
+                 "VALUES ('B',100.0,1)")
+    conn.commit(); conn.close()
+
+    stats = database.get_statistics(user_id=1)
+    assert stats["total_invoices"] == 2  # inkl. Orphan (LEFT JOIN + COALESCE)
+    assert stats["total_jobs"] == 1
+    # Gesamtsumme + Durchschnitt auf DEMSELBEN Rechnungssatz wie die Zählung
+    # (inkl. Orphan-Betrag) – nicht aus jobs.total_amount.
+    assert stats["total_amount"] == 200.0
+    assert stats["avg_per_invoice"] == 100.0
+    assert isinstance(stats["daily_data"], list)
+    assert isinstance(stats["top_aussteller"], list)
+    invalidate_cache("statistics")
 
 
 def test_render_trend_svg(db):
@@ -159,6 +275,24 @@ def test_escalation_after_48h(db, add_invoice):
     overdue = approval_workflow.get_open_approvals(1)[0]
     assert overdue["escalated"] == 1
     assert overdue["overdue"] is True
+
+
+def test_enrich_approval_handles_hybridrow():
+    """Prod-Regression: unter PostgreSQL liefert get_connection() HybridRow-Objekte
+    (kein item-assignment). _enrich_approval darf die Row NICHT mutieren – sonst
+    'HybridRow' object does not support item assignment → 500 auf /api/app/freigaben."""
+    from db_compat import HybridRow
+    cols = ["request_id", "invoice_id", "amount", "status", "created_at"]
+    old = (datetime.now() - timedelta(hours=72)).isoformat(timespec="seconds")
+    row = HybridRow(cols, [9, 33, 500.0, "offen", old])
+    out = approval_workflow._enrich_approval(row, datetime.now())
+    assert out["request_id"] == 9 and out["invoice_id"] == 33
+    assert out["age_hours"] is not None and out["age_hours"] >= 72
+    assert out["overdue"] is True
+    # datetime-Wert (statt ISO-String) darf ebenfalls nicht crashen
+    row2 = HybridRow(cols, [10, 34, 10.0, "offen", datetime.now() - timedelta(hours=1)])
+    out2 = approval_workflow._enrich_approval(row2, datetime.now())
+    assert out2["overdue"] is False
 
 
 # ---------------------------------------------------------------------------

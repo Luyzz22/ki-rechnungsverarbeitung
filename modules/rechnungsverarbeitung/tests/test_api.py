@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 import sys
 import os
+import re
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -29,7 +30,9 @@ except ImportError as _legacy_app_import_err:  # pragma: no cover - environment-
 @pytest.fixture
 def client():
     """Test-Client für FastAPI"""
-    return TestClient(app)
+    # Session cookies are intentionally scoped to .sbsdeutschland.com; use the
+    # canonical HTTPS app host so the CSRF session survives GET -> POST.
+    return TestClient(app, base_url="https://app.sbsdeutschland.com")
 
 
 class TestHealthEndpoint:
@@ -107,9 +110,16 @@ class TestLoginEndpoint:
     
     def test_login_invalid_credentials(self, client):
         """Ungültige Credentials werden abgelehnt"""
+        login_page = client.get("/login")
+        match = re.search(
+            r'name=["\']csrf_token["\']\s+value=["\']([^"\']+)',
+            login_page.text,
+        )
+        assert match is not None
         response = client.post("/login", data={
             "email": "invalid@test.com",
-            "password": "wrongpassword"
+            "password": "wrongpassword",
+            "csrf_token": match.group(1),
         })
         # Sollte nicht erfolgreich einloggen (redirect oder error)
         assert response.status_code in [200, 302, 303, 400, 401]

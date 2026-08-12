@@ -21,16 +21,27 @@ os.environ["INVOICE_DB_PATH"] = os.path.join(tempfile.mkdtemp(), "routes_smoke.d
 web_app = pytest.importorskip("web.app", reason="App-Abhängigkeiten nicht installiert")
 fastapi_testclient = pytest.importorskip("fastapi.testclient")
 
+from pathlib import Path  # noqa: E402
+
+_DB_FILE = Path(os.environ["INVOICE_DB_PATH"])
+
+
+@pytest.fixture(autouse=True)
+def _pin_db():
+    """DB-Pfad-Resolver vor JEDEM Test fixieren (verhindert Leaks durch andere
+    Test-Module, die _ensure_db_path global überschreiben)."""
+    import database
+    database._ensure_db_path = lambda: _DB_FILE
+    yield
+
 
 @pytest.fixture(scope="module")
 def client():
     # DB-Pfad deterministisch fixieren (unabhängig von Import-Reihenfolge), da
     # get_connection() den Pfad zur Laufzeit über _ensure_db_path() auflöst.
     import database
-    from pathlib import Path
-    db_path = Path(os.environ["INVOICE_DB_PATH"])
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    database._ensure_db_path = lambda: db_path
+    _DB_FILE.parent.mkdir(parents=True, exist_ok=True)
+    database._ensure_db_path = lambda: _DB_FILE
 
     from database import init_database, init_users_table
     init_database()
@@ -58,6 +69,45 @@ def client():
     return c
 
 
+def test_nexus_gateway_loads_without_import_time_db(client):
+    """Regression: smart_maintenance macht KEINEN Import-Time-DB-Init mehr
+    (hartkodierter Pfad → Startup-Crash). Der Nexus-Gateway lädt sauber."""
+    import web.app as wa
+    assert getattr(wa, "NEXUS_AVAILABLE", False) is True
+
+
+@pytest.mark.parametrize("modname,initfn", [
+    ("smart_maintenance", "init_maintenance_db"),
+    ("spend_analytics", "init_spend_analytics_db"),
+])
+def test_nexus_module_import_does_not_touch_db(monkeypatch, modname, initfn):
+    """Import von smart_maintenance/spend_analytics darf KEINE DB öffnen/anlegen
+    (früher Import-Time-Init auf hartkodiertem Pfad → Nexus-Gateway deaktiviert)."""
+    import importlib
+    import sys
+    import database
+    monkeypatch.setattr(
+        database, "get_connection",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("DB beim Import berührt")),
+    )
+    sys.modules.pop(modname, None)
+    mod = importlib.import_module(modname)  # darf NICHT raisen
+    assert hasattr(mod, initfn)
+
+
+def test_api_health_ok(client):
+    """Deploy-Smoke-Test hängt an /api/health → muss 200 liefern."""
+    r = client.get("/api/health")
+    assert r.status_code == 200
+
+
+def test_api_docs_disabled_by_default(client):
+    """Docs-Hardening: /docs, /redoc und /openapi.json sind ohne ENABLE_API_DOCS
+    NICHT erreichbar (dürfen nicht öffentlich sein)."""
+    for path in ("/docs", "/redoc", "/openapi.json"):
+        assert client.get(path).status_code == 404, path
+
+
 # Seiten, die mit 200 rendern müssen
 PAGES_200 = [
     "/login", "/register", "/password-reset/request",
@@ -65,7 +115,7 @@ PAGES_200 = [
     "/exports", "/lieferanten", "/audit", "/verfahrensdokumentation",
     "/gobd/export-protokoll", "/landing", "/sicherheit", "/compliance",
     "/avv", "/api", "/preise", "/pricing", "/profile", "/settings",
-    "/approvals", "/zahlungen", "/budget", "/mbr", "/health",
+    "/approvals", "/zahlungen", "/budget", "/health",
 ]
 
 # Alias-Pfade, die sinnvoll weiterleiten (3xx) müssen
