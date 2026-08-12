@@ -22,9 +22,19 @@ from __future__ import annotations
 
 import argparse
 import os
+from pathlib import Path
 import re
 import sqlite3
 import sys
+
+# Direkter Script-Aufruf setzt sys.path[0] auf scripts/. Für den gemeinsamen,
+# produktiven Schema-Guard explizit das Repository-Root verfügbar machen.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from postgres_schema_guard import (
+    PostgresSchemaCompatibilityError,
+    validate_postgres_schema,
+)
 
 # Reihenfolge: Eltern vor Kindern (FK-frei genug für IF-NOT-EXISTS Inserts)
 PREFERRED_ORDER = [
@@ -113,6 +123,17 @@ def main() -> int:
 
     pg = psycopg.connect(args.target)
     try:
+        # Metadata-only, fail-closed gate.  A fresh target without users is
+        # allowed; an existing mixed/text user-id domain is rejected before
+        # any CREATE/INSERT is attempted.
+        try:
+            assessment = validate_postgres_schema(pg)
+        except PostgresSchemaCompatibilityError as exc:
+            pg.rollback()
+            print(f"BLOCKIERT: {exc}", file=sys.stderr)
+            return 3
+        print(f"Schema-Guard: {assessment['status']}")
+
         with pg.cursor() as cur:
             if args.create_schema:
                 print("Schema anlegen (best-effort)…")
