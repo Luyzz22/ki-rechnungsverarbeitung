@@ -3,11 +3,12 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import Column, String, DateTime, Text
+from sqlalchemy import String, DateTime, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shared.db.session import Base
+
 
 class InvoiceEvent(Base):
     __tablename__ = "invoice_events"
@@ -29,9 +30,8 @@ class InvoiceEvent(Base):
     )
 
     # Freies JSON-Feld für zusätzliche Infos (Scores, Source-System, etc.)
-    details: Mapped[dict[str, Any] | None] = mapped_column(
-        JSONB, nullable=True
-    )
+    details: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+
 
 class Invoice(Base):
     __tablename__ = "invoices"
@@ -45,12 +45,17 @@ class Invoice(Base):
     uploaded_by: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False)
     processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=False), nullable=True)
-    source_system: Mapped[str] = mapped_column(String(128), nullable=False, default="ki-rechnungsverarbeitung")
+    source_system: Mapped[str] = mapped_column(
+        String(128), nullable=False, default="ki-rechnungsverarbeitung"
+    )
     supplier: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
     total_amount: Mapped[Optional[float]] = mapped_column(nullable=True)
-    currency: Mapped[Optional[str]] = mapped_column(String(8), nullable=True, default='EUR')
+    currency: Mapped[Optional[str]] = mapped_column(String(8), nullable=True, default="EUR")
     tax_amount: Mapped[Optional[float]] = mapped_column(nullable=True)
     invoice_number: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     invoice_date: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     due_date: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    # The extraction pipeline serializes the structured provider result before
+    # persistence. Keep this as text until a versioned JSONB contract is adopted.
+    extracted_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, index=True, default="uploaded")
