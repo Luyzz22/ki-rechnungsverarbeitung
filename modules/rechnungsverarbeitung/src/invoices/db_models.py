@@ -8,13 +8,22 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shared.db.session import Base
+from shared.tenant.context import TenantContext
 
 
 class InvoiceEvent(Base):
     __tablename__ = "invoice_events"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    tenant_id: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    # Some existing transition paths construct InvoiceEvent without an explicit
+    # tenant_id. Resolve it from the request-scoped TenantContext at INSERT time.
+    # TenantContext fails closed outside dev/test/ci when no tenant is active.
+    tenant_id: Mapped[str] = mapped_column(
+        String,
+        index=True,
+        nullable=False,
+        default=TenantContext.get_current_tenant,
+    )
     document_id: Mapped[str] = mapped_column(String, index=True, nullable=False)
 
     event_type: Mapped[str] = mapped_column(String, nullable=False)
@@ -22,6 +31,9 @@ class InvoiceEvent(Base):
     status_to: Mapped[str | None] = mapped_column(String, nullable=True)
 
     actor: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Transitional audit metadata used by existing API routes. This is not an
+    # authorization source; tenant_id remains the isolation boundary.
+    uploaded_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
