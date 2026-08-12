@@ -17,6 +17,15 @@ from collections import Counter
 
 from fastapi.routing import iter_route_contexts
 
+from postgres_schema_guard import validate_configured_postgres_schema
+
+# Validate an already-existing PostgreSQL identity schema before importing the
+# legacy application graph.  Some legacy imports initialize database tables;
+# running the metadata-only gate first prevents partial DDL against a target
+# whose users.id domain is incompatible with the canonical INTEGER/SERIAL
+# user/tenant references.
+validate_configured_postgres_schema()
+
 from modules.rechnungsverarbeitung.src.api.main import app, v1 as legacy_v1_router
 from modules.rechnungsverarbeitung.src.api.secure_auth_router import router as secure_auth_router
 
