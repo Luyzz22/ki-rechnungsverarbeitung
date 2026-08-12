@@ -9,6 +9,18 @@ import logging
 import os
 from typing import Dict, List, Optional, Tuple
 from database import get_connection
+from shared.data_classification import classify_invoice_data, resolve_inference_profile
+from shared.inference_policy import (
+    InferencePolicyDeniedError,
+    InferenceProvider,
+    assert_inference_allowed,
+)
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
+from shared.secure_logging import log_inference_event, safe_log
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +159,13 @@ def suggest_account(invoice_data: Dict, skr: str = "SKR03") -> Dict:
     }
 
 
-def suggest_account_with_llm(invoice_data: Dict, skr: str = "SKR03") -> Dict:
+def suggest_account_with_llm(
+    invoice_data: Dict,
+    skr: str = "SKR03",
+    data_class: str | None = None,
+    inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
+) -> Dict:
     """
     KI-basierte Kontenvorschlag mit GPT.
     Nutzt LLM für komplexere Fälle.
@@ -164,6 +182,21 @@ def suggest_account_with_llm(invoice_data: Dict, skr: str = "SKR03") -> Dict:
     try:
         from openai import OpenAI
         
+        resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.OPENAI_DIRECT,
+        )
+        decision = assert_inference_allowed(
+            data_class=resolved_data_class,
+            inference_profile=resolved_profile,
+            provider=InferenceProvider.OPENAI_DIRECT,
+            purpose="invoice_account_suggestion",
+        )
+
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         
         prompt = f"""Du bist ein deutscher Buchhalter. Schlage das passende SKR03-Konto vor.
@@ -191,6 +224,15 @@ Antworte NUR im JSON-Format:
         json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
         if json_match:
             llm_result = json.loads(json_match.group())
+            log_inference_event(
+                logger,
+                event="account_suggestion_completed",
+                provider=InferenceProvider.OPENAI_DIRECT.value,
+                model="gpt-4o-mini",
+                data_class=decision.data_class,
+                inference_profile=decision.inference_profile,
+                policy_decision=decision.policy_decision,
+            )
             
             return {
                 "suggested": {
@@ -204,8 +246,19 @@ Antworte NUR im JSON-Format:
                 "method": "llm"
             }
     
+    except (InferencePolicyDeniedError, OrganizationContextError) as e:
+        log_inference_event(
+            logger,
+            event="account_suggestion_policy_denied",
+            provider=InferenceProvider.OPENAI_DIRECT.value,
+            model="gpt-4o-mini",
+            policy_decision="denied",
+            error_code=e.error_code,
+            level=logging.WARNING,
+        )
+        raise
     except Exception as e:
-        logger.warning(f"LLM-Kontierung fehlgeschlagen: {e}")
+        safe_log(logger, logging.WARNING, "account_suggestion_failed", error_code=type(e).__name__)
     
     # Fallback zu regelbasiert
     rule_based["method"] = "rule_based_fallback"
@@ -233,7 +286,7 @@ def learn_from_correction(user_id: int, invoice_data: Dict, selected_account: st
     conn.commit()
     conn.close()
     
-    logger.info(f"Kontierung gelernt: {supplier} -> {selected_account}")
+    safe_log(logger, logging.INFO, "account_learning_saved", supplier_name=supplier, account=selected_account)
 
 
 def get_learned_account(user_id: int, supplier: str) -> Optional[str]:
@@ -256,7 +309,12 @@ def get_learned_account(user_id: int, supplier: str) -> Optional[str]:
     return row[0] if row else None
 
 
-def batch_suggest_accounts(invoices: List[Dict], user_id: int = None, skr: str = "SKR03") -> List[Dict]:
+def batch_suggest_accounts(
+    invoices: List[Dict],
+    user_id: int = None,
+    skr: str = "SKR03",
+    organization_context: TrustedOrganizationContext | None = None,
+) -> List[Dict]:
     """
     Kontierung für mehrere Rechnungen.
     """
@@ -280,7 +338,7 @@ def batch_suggest_accounts(invoices: List[Dict], user_id: int = None, skr: str =
                 continue
         
         # Sonst KI-Vorschlag
-        suggestion = suggest_account_with_llm(inv, skr)
+        suggestion = suggest_account_with_llm(inv, skr, organization_context=organization_context)
         suggestion["invoice"] = inv.get("rechnungsnummer")
         results.append(suggestion)
     

@@ -173,7 +173,7 @@ def test_invoices_list_exposes_compact_validierung(client, monkeypatch):
     import invoice_extraction
     tok = client.post("/api/app/register", json={
         "email": "listval@test.de", "password": "Test1234", "name": "L", "company": "X"}).json()["token"]
-    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text: {
+    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text, **kwargs: {
         "rechnungsaussteller": "Acme GmbH", "rechnungsnummer": "LST-001",
         "datum": "2026-01-15", "betrag_brutto": "119,00", "betrag_netto": "100,00",
         "mwst_betrag": "19,00", "mwst_satz": "19.0", "steuernummer": "12/345/67890",
@@ -269,17 +269,25 @@ def _make_pdf(text="Rechnung Nr. 2026-001\nAcme GmbH\nGesamtbetrag: 119,00 EUR")
 
 def test_upload_runs_pipeline(client, token, monkeypatch):
     import invoice_extraction
+    seen = {}
+
     # KI-Aufruf mocken (kein API-Key nötig)
-    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text: {
-        "rechnungsaussteller": "Acme GmbH", "rechnungsnummer": "2026-001",
-        "datum": "2026-01-15", "betrag_brutto": "119,00", "betrag_netto": "100,00",
-        "mwst_betrag": "19,00", "mwst_satz": "19.0", "steuernummer": "12/345/67890",
-        "iban": "DE89370400440532013000", "waehrung": "EUR",
-    })
+    def _mock_llm(text, **kwargs):
+        seen.update(kwargs)
+        return {
+            "rechnungsaussteller": "Acme GmbH", "rechnungsnummer": "2026-001",
+            "datum": "2026-01-15", "betrag_brutto": "119,00", "betrag_netto": "100,00",
+            "mwst_betrag": "19,00", "mwst_satz": "19.0", "steuernummer": "12/345/67890",
+            "iban": "DE89370400440532013000", "waehrung": "EUR",
+        }
+
+    monkeypatch.setattr(invoice_extraction, "_call_llm", _mock_llm)
     files = {"files": ("rechnung.pdf", _make_pdf(), "application/pdf")}
     r = client.post("/api/app/upload", headers=_auth(token), files=files)
     assert r.status_code == 200, r.text
     body = r.json()
+    assert seen["organization_context"] is not None
+    assert seen["organization_context"].source == "invoice_owner"
     assert body["id"] == body["job_id"]
     assert body["status"] == "verarbeitet"
     inv = body["invoices"][0]
@@ -327,7 +335,7 @@ def test_upload_detects_duplicate_of_pre_migration_row(client, monkeypatch):
 
     # Neuer Upload derselben Rechnung – Extraktion liefert dieselben Werte,
     # aber Datum im normalisierten Neuformat und weiterhin OHNE Aussteller.
-    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text: {
+    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text, **kwargs: {
         "rechnungsnummer": "IT2025032", "datum": "2025-09-29", "betrag_brutto": "1880,20",
         "betrag_netto": "1580,00", "mwst_betrag": "300,20", "mwst_satz": "19.0",
         "steuernummer": "12/345/67890",  # rechnungsaussteller bewusst NULL
@@ -346,7 +354,7 @@ def test_upload_reupload_identical_file_flagged_duplicate(client, token, monkeyp
     """B6: derselbe Datei-Upload zweimal → zweiter wird als Duplikat markiert
     (layoutunabhängig, auch ohne Aussteller)."""
     import invoice_extraction
-    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text: {
+    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text, **kwargs: {
         "rechnungsnummer": "IT2025032", "datum": "2025-09-29", "betrag_brutto": "1880,20",
         "betrag_netto": "1580,00", "mwst_betrag": "300,20", "mwst_satz": "19.0",
         "steuernummer": "12/345/67890",  # rechnungsaussteller bewusst NULL (Briefkopf-Logo)
@@ -384,7 +392,7 @@ def test_upload_same_basename_distinct_hashes(client, token, monkeypatch):
     import database
     calls = {"n": 0}
 
-    def _mock(text):
+    def _mock(text, **kwargs):
         calls["n"] += 1
         n = calls["n"]
         return {"rechnungsnummer": f"R-{n}", "datum": "2026-01-01",
@@ -419,7 +427,7 @@ def test_upload_same_basename_distinct_hashes(client, token, monkeypatch):
 
 def test_upload_without_llm_sets_error(client, token, monkeypatch):
     import invoice_extraction
-    def _raise(text):
+    def _raise(text, **kwargs):
         raise invoice_extraction.NoLLMConfigured("kein key")
     monkeypatch.setattr(invoice_extraction, "_call_llm", _raise)
     files = {"files": ("r.pdf", _make_pdf(), "application/pdf")}
@@ -433,7 +441,7 @@ def test_upload_failed_extraction_not_marked_valid(client, token, monkeypatch):
     Duplikat vor, darf der Duplikat-Schritt nicht fälschlich validierung_ok=true
     setzen (kein grüner Prüfstatus für eine nie validierte Rechnung)."""
     import invoice_extraction
-    def _raise(text):
+    def _raise(text, **kwargs):
         raise invoice_extraction.NoLLMConfigured("kein key")
     monkeypatch.setattr(invoice_extraction, "_call_llm", _raise)
     r = client.post("/api/app/upload", headers=_auth(token),
@@ -500,7 +508,7 @@ def test_reject_with_grund(client, token):
 # ---------------------------------------------------------------------------
 def _mock_llm(monkeypatch, nr="PDF-1", brutto="119,00"):
     import invoice_extraction
-    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text: {
+    monkeypatch.setattr(invoice_extraction, "_call_llm", lambda text, **kwargs: {
         "rechnungsaussteller": "Acme GmbH", "rechnungsnummer": nr,
         "datum": "2026-01-15", "betrag_brutto": brutto, "mwst_satz": "19.0",
         "steuernummer": "12/345/67890",
@@ -720,7 +728,7 @@ def test_save_invoices_sets_tenant_id_from_job(tmp_path, monkeypatch):
     """P1-Folgefix: database.save_invoices (klassischer Flow) muss tenant_id direkt auf
     die Rechnung schreiben – abgeleitet aus jobs.user_id –, damit neue Rechnungen sauber
     zugeordnet sind und der tenant_id-NULL-Altbestand nicht weiterwächst. Eigene Voll-Schema-
-    DB, da die schlanke SPA-Test-DB die Migrations-Spalten (content_hash …) nicht führt."""
+    DB, die anschließend über den kanonischen Initializer migriert wird."""
     import sqlite3
     import database
     db_file = tmp_path / "save_invoices.db"
@@ -731,6 +739,11 @@ def test_save_invoices_sets_tenant_id_from_job(tmp_path, monkeypatch):
     conn.execute("INSERT INTO jobs (job_id, user_id, created_at) VALUES (?,?,?)",
                  ("save-inv-tenant-1", 4242, "2026-04-01T00:00:00"))
     conn.commit(); conn.close()
+
+    # Simuliert den normalen Startup einer vorhandenen Legacy-DB. Fehlende
+    # Policy-/Runtime-Spalten müssen durch die echte idempotente Migration
+    # entstehen, nicht durch eine testlokale Einmal-Reparatur.
+    database.init_database()
 
     database.save_invoices("save-inv-tenant-1", [{
         "rechnungsnummer": "SAVE-1", "rechnungsaussteller": "Neu GmbH",
@@ -745,15 +758,21 @@ def test_save_invoices_sets_tenant_id_from_job(tmp_path, monkeypatch):
     assert row is not None and row[0] is not None, "tenant_id muss beim Insert gesetzt sein"
     assert int(row[0]) == 4242
 
-    # Explizit übergebener tenant_id hat Vorrang vor jobs.user_id
+    # Ein expliziter tenant_id darf den kanonischen Job-Owner nicht überschreiben.
+    with pytest.raises(ValueError, match="INVOICE_TENANT_MISMATCH"):
+        database.save_invoices("save-inv-tenant-1", [{
+            "rechnungsnummer": "SAVE-2", "rechnungsaussteller": "Neu GmbH", "betrag_brutto": 10.0,
+        }], tenant_id=99)
+
+    # Derselbe serverseitig ermittelte Tenant bleibt zulässig.
     database.save_invoices("save-inv-tenant-1", [{
         "rechnungsnummer": "SAVE-2", "rechnungsaussteller": "Neu GmbH", "betrag_brutto": 10.0,
-    }], tenant_id=99)
+    }], tenant_id=4242)
     conn = sqlite3.connect(db_file)
     row = conn.execute(
         "SELECT tenant_id FROM invoices WHERE rechnungsnummer = ?", ("SAVE-2",)).fetchone()
     conn.close()
-    assert row is not None and int(row[0]) == 99
+    assert row is not None and int(row[0]) == 4242
 
 
 # ---------------------------------------------------------------------------

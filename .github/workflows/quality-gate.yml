@@ -1,0 +1,53 @@
+name: FlowCheck Quality Gate
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.13"
+  BICEP_VERSION: "0.44.1"
+
+jobs:
+  quality-gate:
+    name: Python, Governance, Preflight, and Bicep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Install Bicep CLI
+        run: |
+          curl -Lo bicep "https://github.com/Azure/bicep/releases/download/v${BICEP_VERSION}/bicep-linux-x64"
+          chmod +x ./bicep
+          sudo mv ./bicep /usr/local/bin/bicep
+          bicep --version
+
+      - name: Python tests
+        run: python -m pytest -q
+
+      - name: Provider governance preflight
+        run: python scripts/validate_provider_governance.py
+
+      - name: Azure non-production plan validator
+        run: python scripts/validate_azure_nonprod_plan.py
+
+      - name: Bicep build
+        run: bicep build infra/azure/nonprod/main.bicep
+
+      - name: Bicep build params
+        run: bicep build-params infra/azure/nonprod/nonprod.example.bicepparam
+
+      - name: Bicep lint
+        run: |
+          bicep lint infra/azure/nonprod/main.bicep
+          bicep lint infra/azure/nonprod/modules/ai-services.bicep
+          bicep lint infra/azure/nonprod/modules/network-transition.bicep
+          bicep lint infra/azure/nonprod/modules/rbac.bicep

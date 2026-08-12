@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +18,31 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://localhost:5432/sbs_nexus"
     openai_api_key: str = ""
     anthropic_api_key: str = ""
+    flowcheck_default_inference_profile: str = "standard"
+    flowcheck_policy_enforcement: str = "block"
+    flowcheck_runtime_env: str = ""
+    flowcheck_require_eu_regional_cloud_in_production: bool = False
+    flowcheck_provider_governance_enforcement: str = "block"
+    flowcheck_cloud_processing_region: str = "UNSET"
+    flowcheck_provider_deployment_config: str = ""
+    flowcheck_provider_endpoint_host_allowlist: str = ""
+    flowcheck_azure_adapters_enabled: bool = False
+    flowcheck_azure_auth_mode: str = "entra"
+    flowcheck_azure_identity_mode: str = "managed_identity"
+    flowcheck_azure_managed_identity_client_id: str = ""
+    flowcheck_azure_allow_developer_credentials: bool = False
+    flowcheck_azure_allowed_region: str = ""
+    flowcheck_azure_endpoint_host_allowlist: str = ""
+    azure_openai_endpoint: str = ""
+    azure_openai_deployment: str = ""
+    azure_openai_api_version: str = "2024-10-21"
+    azure_openai_scope: str = "https://cognitiveservices.azure.com/.default"
+    azure_document_intelligence_endpoint: str = ""
+    azure_document_intelligence_model: str = "prebuilt-invoice"
+    local_llm_base_url: str = ""
+    local_llm_api_key: str = ""
+    local_llm_model: str = ""
+    local_ocr_enabled: bool = False
     smtp_server: str = ""
     smtp_port: int = 587
     smtp_username: str = ""
@@ -31,6 +57,19 @@ class Settings(BaseSettings):
     kosit_validator_timeout: int = 30
     google_client_id: str = ""
     google_client_secret: str = ""
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_database_driver(cls, value: object) -> str:
+        url = str(value or "").strip()
+
+        if url.startswith("postgresql://"):
+            return "postgresql+psycopg://" + url[len("postgresql://"):]
+
+        if url.startswith("postgres://"):
+            return "postgresql+psycopg://" + url[len("postgres://"):]
+
+        return url
 
     @property
     def is_production(self) -> bool:

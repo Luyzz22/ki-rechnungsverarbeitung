@@ -18,6 +18,18 @@ from dataclasses import dataclass, asdict
 from typing import Any, Optional
 
 from dotenv import load_dotenv
+from shared.data_classification import classify_invoice_data, resolve_inference_profile
+from shared.inference_policy import (
+    InferencePolicyDeniedError,
+    InferenceProvider,
+    assert_inference_allowed,
+)
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
+from shared.secure_logging import log_inference_event, safe_log
 load_dotenv("/var/www/invoice-app/.env")
 
 logger = logging.getLogger(__name__)
@@ -83,37 +95,121 @@ class AIExtractionService:
         self.anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
         self.llamaindex_key = os.getenv("LLAMAINDEX_API_KEY", "")
 
-    def extract(self, file_content: bytes, file_name: str, mime_type: str) -> ExtractionResult:
+    def extract(
+        self,
+        file_content: bytes,
+        file_name: str,
+        mime_type: str,
+        data_class: str | None = None,
+        inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
+    ) -> ExtractionResult:
         """Extract invoice data from file content.
         
         Tries Gemini 2.5 Flash first (multimodal), falls back to Claude.
         """
+        resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+        requested_profile = resolve_inference_profile(inference_profile)
+
         # Try Gemini 2.5 Flash (best for multimodal — PDFs + images)
         if self.gemini_key:
             try:
-                result = self._extract_gemini(file_content, file_name, mime_type)
+                resolved_profile = assert_organization_inference_allowed(
+                    organization_context=organization_context,
+                    data_class=resolved_data_class,
+                    requested_inference_profile=requested_profile,
+                    provider=InferenceProvider.GEMINI_DIRECT,
+                )
+                result = self._extract_gemini(
+                    file_content,
+                    file_name,
+                    mime_type,
+                    data_class=resolved_data_class,
+                    inference_profile=resolved_profile,
+                    organization_context=organization_context,
+                )
                 if result.supplier or result.total_amount_gross:
-                    logger.info(f"extraction_success: gemini | {file_name} | {result.supplier} | {result.total_amount_gross}")
+                    log_inference_event(
+                        logger,
+                        event="invoice_ai_extraction_success",
+                        provider=InferenceProvider.GEMINI_DIRECT.value,
+                        model=result.model,
+                        data_class=getattr(resolved_data_class, "value", str(resolved_data_class)),
+                        inference_profile=getattr(resolved_profile, "value", str(resolved_profile)),
+                        policy_decision="allowed",
+                        document_id=file_name,
+                        confidence=result.confidence,
+                    )
                     return result
+            except (InferencePolicyDeniedError, OrganizationContextError):
+                raise
             except Exception as e:
-                logger.warning(f"gemini_extraction_failed: {e}")
+                safe_log(logger, logging.WARNING, "gemini_extraction_failed", error_code=type(e).__name__)
 
         # Fallback to Claude (strong at structured data extraction)
         if self.anthropic_key:
             try:
-                result = self._extract_claude(file_content, file_name, mime_type)
+                resolved_profile = assert_organization_inference_allowed(
+                    organization_context=organization_context,
+                    data_class=resolved_data_class,
+                    requested_inference_profile=requested_profile,
+                    provider=InferenceProvider.ANTHROPIC_DIRECT,
+                )
+                result = self._extract_claude(
+                    file_content,
+                    file_name,
+                    mime_type,
+                    data_class=resolved_data_class,
+                    inference_profile=resolved_profile,
+                    organization_context=organization_context,
+                )
                 if result.supplier or result.total_amount_gross:
-                    logger.info(f"extraction_success: claude | {file_name} | {result.supplier} | {result.total_amount_gross}")
+                    log_inference_event(
+                        logger,
+                        event="invoice_ai_extraction_success",
+                        provider=InferenceProvider.ANTHROPIC_DIRECT.value,
+                        model=result.model,
+                        data_class=getattr(resolved_data_class, "value", str(resolved_data_class)),
+                        inference_profile=getattr(resolved_profile, "value", str(resolved_profile)),
+                        policy_decision="allowed",
+                        document_id=file_name,
+                        confidence=result.confidence,
+                    )
                     return result
+            except (InferencePolicyDeniedError, OrganizationContextError):
+                raise
             except Exception as e:
-                logger.warning(f"claude_extraction_failed: {e}")
+                safe_log(logger, logging.WARNING, "claude_extraction_failed", error_code=type(e).__name__)
 
-        logger.warning(f"extraction_failed: no AI could extract data from {file_name}")
+        safe_log(logger, logging.WARNING, "invoice_ai_extraction_failed", document_id=file_name)
         return ExtractionResult(model="none", confidence=0.0)
 
-    def _extract_gemini(self, content: bytes, file_name: str, mime_type: str) -> ExtractionResult:
+    def _extract_gemini(
+        self,
+        content: bytes,
+        file_name: str,
+        mime_type: str,
+        data_class: str | None = None,
+        inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
+    ) -> ExtractionResult:
         """Use Google Gemini 2.5 Flash for multimodal extraction."""
         from google import genai
+
+        resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.GEMINI_DIRECT,
+        )
+        decision = assert_inference_allowed(
+            data_class=resolved_data_class,
+            inference_profile=resolved_profile,
+            provider=InferenceProvider.GEMINI_DIRECT,
+            purpose="invoice_multimodal_extraction",
+        )
 
         client = genai.Client(api_key=self.gemini_key)
 
@@ -121,7 +217,6 @@ class AIExtractionService:
         parts = []
 
         if mime_type.startswith("image/") or mime_type == "application/pdf":
-            b64 = base64.b64encode(content).decode("utf-8")
             parts.append(genai.types.Part.from_bytes(data=content, mime_type=mime_type))
 
         parts.append(genai.types.Part.from_text(text=EXTRACTION_PROMPT))
@@ -133,6 +228,17 @@ class AIExtractionService:
 
         raw = response.text.strip()
         parsed = self._parse_json(raw)
+        log_inference_event(
+            logger,
+            event="gemini_extraction_response_parsed",
+            provider=InferenceProvider.GEMINI_DIRECT.value,
+            model="gemini-2.5-flash",
+            data_class=decision.data_class,
+            inference_profile=decision.inference_profile,
+            policy_decision=decision.policy_decision,
+            document_id=file_name,
+            fields_present=sorted(parsed.keys()),
+        )
 
         return ExtractionResult(
             supplier=parsed.get("supplier"),
@@ -152,9 +258,32 @@ class AIExtractionService:
             raw_response=raw,
         )
 
-    def _extract_claude(self, content: bytes, file_name: str, mime_type: str) -> ExtractionResult:
+    def _extract_claude(
+        self,
+        content: bytes,
+        file_name: str,
+        mime_type: str,
+        data_class: str | None = None,
+        inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
+    ) -> ExtractionResult:
         """Use Anthropic Claude for extraction."""
         import anthropic
+
+        resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.ANTHROPIC_DIRECT,
+        )
+        decision = assert_inference_allowed(
+            data_class=resolved_data_class,
+            inference_profile=resolved_profile,
+            provider=InferenceProvider.ANTHROPIC_DIRECT,
+            purpose="invoice_multimodal_extraction",
+        )
 
         client = anthropic.Anthropic(api_key=self.anthropic_key)
 
@@ -184,6 +313,17 @@ class AIExtractionService:
 
         raw = response.content[0].text.strip()
         parsed = self._parse_json(raw)
+        log_inference_event(
+            logger,
+            event="claude_extraction_response_parsed",
+            provider=InferenceProvider.ANTHROPIC_DIRECT.value,
+            model="claude-sonnet-4-20250514",
+            data_class=decision.data_class,
+            inference_profile=decision.inference_profile,
+            policy_decision=decision.policy_decision,
+            document_id=file_name,
+            fields_present=sorted(parsed.keys()),
+        )
 
         return ExtractionResult(
             supplier=parsed.get("supplier"),

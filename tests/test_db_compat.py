@@ -3,6 +3,7 @@
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 # Für Endpoint-Boot (web.app) in den PG-Integrationstests benötigt:
 os.environ.setdefault("ENVIRONMENT", "development")
@@ -65,6 +66,49 @@ def test_is_postgres_off_without_url(monkeypatch):
 def test_is_postgres_on_with_url(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "postgresql://u:p@host/db")
     assert is_postgres() is True
+
+
+def test_normal_test_import_never_uses_inherited_database_url(tmp_path):
+    """Root conftest must isolate normal tests before importing database.
+
+    A local psycopg stub records attempted connects, so this regression test
+    cannot contact a network even when the protection is broken.
+    """
+    repo_root = Path(__file__).resolve().parents[1]
+    script = """
+import runpy
+import sys
+import types
+
+connect_attempts = []
+psycopg = types.ModuleType("psycopg")
+
+def blocked_connect(*args, **kwargs):
+    connect_attempts.append(True)
+    raise RuntimeError("blocked_test_connect")
+
+psycopg.connect = blocked_connect
+sys.modules["psycopg"] = psycopg
+runpy.run_path("tests/conftest.py", run_name="flowcheck_test_conftest")
+raise SystemExit(91 if connect_attempts else 0)
+"""
+    env = dict(os.environ)
+    env["DATABASE_URL"] = "postgresql://inherited.invalid/test"
+    env["INVOICE_DB_PATH"] = str(tmp_path / "isolated.sqlite")
+    env.pop("TEST_DATABASE_URL", None)
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=repo_root,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert "inherited.invalid" not in result.stdout
+    assert "inherited.invalid" not in result.stderr
 
 
 # ---------------------------------------------------------------------------

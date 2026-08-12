@@ -24,6 +24,23 @@ import re
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List, Optional
 
+from shared.data_classification import classify_invoice_data, resolve_inference_profile
+from shared.inference_policy import (
+    DataClass,
+    InferencePolicyDecision,
+    InferencePolicyDeniedError,
+    InferenceProfile,
+    InferenceProvider,
+    assert_inference_allowed,
+)
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
+from shared.secure_logging import log_inference_event, safe_log
+from shared.tenant_processing_policy import TenantProcessingPolicyError
+
 logger = logging.getLogger(__name__)
 
 LLM_TIMEOUT = int(os.getenv("EXTRACTION_LLM_TIMEOUT", "30"))
@@ -38,6 +55,8 @@ EXTRACTION_TEXT_LIMIT = int(os.getenv("EXTRACTION_TEXT_LIMIT", "100000"))
 # werden muss.
 DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6"
 DEFAULT_OPENAI_MODEL = "gpt-4o"
+INVOICE_EXTRACTION_PURPOSE = "invoice_extraction"
+LLM_PROVIDER_REQUEST_FAILED = "LLM_PROVIDER_REQUEST_FAILED"
 
 
 def get_anthropic_extraction_model() -> str:
@@ -93,36 +112,32 @@ class LLMResponseUnparseable(RuntimeError):
 
 
 class LLMProviderError(RuntimeError):
-    """Der LLM-Provider hat mit einem 4xx/5xx-Status geantwortet.
+    """PII-free failure returned by a direct LLM provider."""
 
-    Trägt Statuscode + Antworttext, damit beides in der Fehler-Zeile der
-    Rechnung landet (nicht nur im httpx-Log)."""
-
-    def __init__(self, status_code: Optional[int], detail: str):
+    def __init__(
+        self,
+        status_code: Optional[int],
+        detail: str = LLM_PROVIDER_REQUEST_FAILED,
+    ) -> None:
         self.status_code = status_code
-        self.detail = detail
-        super().__init__(f"Provider-Fehler {status_code}: {detail}")
+        # Keep the legacy attribute without retaining provider response bodies.
+        self.detail = LLM_PROVIDER_REQUEST_FAILED
+        self.error_code = LLM_PROVIDER_REQUEST_FAILED
+        status = str(status_code) if status_code is not None else "unavailable"
+        super().__init__(f"{self.error_code}: http_status_{status}")
 
 
 def _as_provider_error(exc: Exception) -> Optional["LLMProviderError"]:
     """Erkennt Provider-Statusfehler (Anthropic/OpenAI ``APIStatusError`` u. ä.)
-    und extrahiert Statuscode + Antworttext. Gibt ``None`` zurück, wenn ``exc``
-    kein HTTP-Statusfehler ist (z. B. Timeout/Netzwerk)."""
+    ohne den potenziell sensitiven Response-Body zu übernehmen. Gibt ``None``
+    zurück, wenn ``exc`` kein HTTP-Statusfehler ist (z. B. Timeout/Netzwerk)."""
     status = getattr(exc, "status_code", None)
     response = getattr(exc, "response", None)
     if status is None and response is not None:
         status = getattr(response, "status_code", None)
     if status is None:
         return None
-    detail = ""
-    if response is not None:
-        try:
-            detail = (response.text or "").strip()
-        except Exception:  # pragma: no cover - defensive
-            detail = ""
-    if not detail:
-        detail = str(getattr(exc, "message", "") or exc).strip()
-    return LLMProviderError(int(status), detail[:500])
+    return LLMProviderError(int(status))
 
 
 # ---------------------------------------------------------------------------
@@ -165,8 +180,13 @@ def _render_pdf_images(filepath: str, dpi: int = 300):
         pdf = pdfium.PdfDocument(filepath)
         scale = dpi / 72.0
         return [pdf[i].render(scale=scale).to_pil() for i in range(len(pdf))]
-    except Exception as exc:  # pragma: no cover - Fallback
-        logger.info("pypdfium2-Render nicht verfügbar (%s), versuche pdf2image", exc)
+    except Exception:  # pragma: no cover - Fallback
+        safe_log(
+            logger,
+            logging.INFO,
+            "invoice_pdf_render_fallback",
+            error_code="PDFIUM_RENDER_UNAVAILABLE",
+        )
         import pdf2image
         return pdf2image.convert_from_path(filepath, dpi=dpi)
 
@@ -180,8 +200,13 @@ def _ocr_pdf(filepath: str) -> str:
 
         images = _render_pdf_images(filepath)
         return "\n".join(pytesseract.image_to_string(img, lang="deu") for img in images)
-    except Exception as exc:  # pragma: no cover - poppler/tesseract optional
-        logger.info("OCR nicht verfügbar: %s", exc)
+    except Exception:  # pragma: no cover - poppler/tesseract optional
+        safe_log(
+            logger,
+            logging.INFO,
+            "invoice_local_ocr_unavailable",
+            error_code="LOCAL_OCR_UNAVAILABLE",
+        )
         return ""
 
 
@@ -212,7 +237,90 @@ def _parse_json(raw: str) -> Dict[str, Any]:
         raise
 
 
-def _call_llm(text: str) -> Dict[str, Any]:
+def _assert_llm_provider_allowed(
+    *,
+    provider: InferenceProvider,
+    model: str,
+    data_class: DataClass | str | None,
+    inference_profile: InferenceProfile | str | None,
+    organization_context: TrustedOrganizationContext | None,
+) -> InferencePolicyDecision:
+    """Apply tenant policy and the central inference policy before client creation."""
+    resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+    requested_profile = resolve_inference_profile(inference_profile)
+
+    try:
+        # Unknown enum values go directly to the central fail-closed evaluator;
+        # they must never be normalized to invoice_confidential/standard.
+        if not isinstance(resolved_data_class, DataClass) or not isinstance(
+            requested_profile, InferenceProfile
+        ):
+            return assert_inference_allowed(
+                data_class=resolved_data_class,
+                inference_profile=requested_profile,
+                provider=provider,
+                purpose=INVOICE_EXTRACTION_PURPOSE,
+                provider_configured=True,
+            )
+
+        effective_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=provider,
+        )
+        decision = assert_inference_allowed(
+            data_class=resolved_data_class,
+            inference_profile=effective_profile,
+            provider=provider,
+            purpose=INVOICE_EXTRACTION_PURPOSE,
+            provider_configured=True,
+        )
+    except (
+        InferencePolicyDeniedError,
+        OrganizationContextError,
+        TenantProcessingPolicyError,
+    ) as exc:
+        log_inference_event(
+            logger,
+            event="invoice_extraction_policy_denied",
+            provider=provider.value,
+            model=model,
+            data_class=(
+                resolved_data_class.value
+                if isinstance(resolved_data_class, DataClass)
+                else "unknown"
+            ),
+            inference_profile=(
+                requested_profile.value
+                if isinstance(requested_profile, InferenceProfile)
+                else "unknown"
+            ),
+            policy_decision="denied",
+            error_code=getattr(exc, "error_code", "INFERENCE_POLICY_DENIED"),
+            level=logging.WARNING,
+        )
+        raise
+
+    log_inference_event(
+        logger,
+        event="invoice_extraction_policy_allowed",
+        provider=provider.value,
+        model=model,
+        data_class=decision.data_class,
+        inference_profile=decision.inference_profile,
+        policy_decision=decision.policy_decision,
+    )
+    return decision
+
+
+def _call_llm(
+    text: str,
+    *,
+    data_class: DataClass | str | None = None,
+    inference_profile: InferenceProfile | str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
+) -> Dict[str, Any]:
     """Ruft das LLM auf und gibt das geparste JSON zurück (mockbar in Tests).
 
     Das geparste Dict enthält zusätzlich den privaten Schlüssel ``__raw__`` mit
@@ -236,29 +344,55 @@ def _call_llm(text: str) -> Dict[str, Any]:
         return parsed
 
     if os.getenv("ANTHROPIC_API_KEY"):
+        model = get_anthropic_extraction_model()
+        provider = InferenceProvider.ANTHROPIC_DIRECT
+        _assert_llm_provider_allowed(
+            provider=provider,
+            model=model,
+            data_class=data_class,
+            inference_profile=inference_profile,
+            organization_context=organization_context,
+        )
         from anthropic import Anthropic
 
         client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"), timeout=LLM_TIMEOUT)
-        model = get_anthropic_extraction_model()
         try:
             msg = client.messages.create(
                 model=model, max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}],
             )
         except Exception as exc:
-            provider_err = _as_provider_error(exc)
-            if provider_err is not None:
-                logger.warning("Anthropic %s (Modell %s): %s",
-                               provider_err.status_code, model, provider_err.detail)
-                raise provider_err from exc
-            raise
+            provider_err = _as_provider_error(exc) or LLMProviderError(None)
+            log_inference_event(
+                logger,
+                event="invoice_extraction_provider_failed",
+                provider=provider.value,
+                model=model,
+                policy_decision="allowed",
+                error_code=provider_err.error_code,
+                status=(
+                    f"http_{provider_err.status_code}"
+                    if provider_err.status_code is not None
+                    else "unavailable"
+                ),
+                level=logging.WARNING,
+            )
+            raise provider_err from None
         return _finish(msg.content[0].text)
 
     if os.getenv("OPENAI_API_KEY"):
+        model = get_openai_extraction_model()
+        provider = InferenceProvider.OPENAI_DIRECT
+        _assert_llm_provider_allowed(
+            provider=provider,
+            model=model,
+            data_class=data_class,
+            inference_profile=inference_profile,
+            organization_context=organization_context,
+        )
         from openai import OpenAI
 
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), timeout=LLM_TIMEOUT)
-        model = get_openai_extraction_model()
         try:
             resp = client.chat.completions.create(
                 model=model,
@@ -266,12 +400,22 @@ def _call_llm(text: str) -> Dict[str, Any]:
                 response_format={"type": "json_object"},
             )
         except Exception as exc:
-            provider_err = _as_provider_error(exc)
-            if provider_err is not None:
-                logger.warning("OpenAI %s (Modell %s): %s",
-                               provider_err.status_code, model, provider_err.detail)
-                raise provider_err from exc
-            raise
+            provider_err = _as_provider_error(exc) or LLMProviderError(None)
+            log_inference_event(
+                logger,
+                event="invoice_extraction_provider_failed",
+                provider=provider.value,
+                model=model,
+                policy_decision="allowed",
+                error_code=provider_err.error_code,
+                status=(
+                    f"http_{provider_err.status_code}"
+                    if provider_err.status_code is not None
+                    else "unavailable"
+                ),
+                level=logging.WARNING,
+            )
+            raise provider_err from None
         return _finish(resp.choices[0].message.content)
 
     raise NoLLMConfigured("Kein ANTHROPIC_API_KEY/OPENAI_API_KEY konfiguriert")
@@ -483,7 +627,13 @@ def _sanitize_issuer_name(fields: Dict[str, Any]) -> None:
         fields["rechnungsaussteller"] = sanitize_supplier(fields.get("rechnungsaussteller"))
 
 
-def process_pdf(filepath: str) -> Dict[str, Any]:
+def process_pdf(
+    filepath: str,
+    *,
+    organization_context: TrustedOrganizationContext | None = None,
+    data_class: DataClass | str | None = None,
+    inference_profile: InferenceProfile | str | None = None,
+) -> Dict[str, Any]:
     """Führt die komplette Pipeline für eine Datei aus.
 
     Returns dict mit: status, fields, validation, kontierung, error, raw_response.
@@ -511,9 +661,21 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
         result["error"] = "Kein Text extrahierbar (Scan ohne OCR)"
         return result
 
+    def _extract(invoice_text: str) -> Dict[str, Any]:
+        # Preserve the established one-argument test/service seam when no
+        # explicit trusted context was supplied.
+        if organization_context is None and data_class is None and inference_profile is None:
+            return _call_llm(invoice_text)
+        return _call_llm(
+            invoice_text,
+            organization_context=organization_context,
+            data_class=data_class,
+            inference_profile=inference_profile,
+        )
+
     # Schritt 3: KI
     try:
-        raw = _call_llm(text)
+        raw = _extract(text)
         # Roh-Antwort für die Diagnose sichern (nicht in die Felder mischen).
         if isinstance(raw, dict):
             result["raw_response"] = raw.pop("__raw__", None)
@@ -527,8 +689,8 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
         result["error"] = str(exc)
         return result
     except LLMProviderError as exc:
-        # Provider-4xx/5xx: Statuscode + Antworttext in die Fehler-Zeile.
-        result["error"] = f"KI-Provider HTTP {exc.status_code}: {exc.detail}"
+        status = str(exc.status_code) if exc.status_code is not None else "unavailable"
+        result["error"] = f"{exc.error_code}: http_status_{status}"
         return result
     except LLMResponseUnparseable as exc:
         # Roh-Antwort für die Diagnose sichern (extraktion_raw), auch wenn das
@@ -549,7 +711,7 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
         try:
             ocr_text = _ocr_pdf(filepath)
             if ocr_text and ocr_text.strip() and ocr_text.strip() != (text or "").strip():
-                raw2 = _call_llm(f"{text}\n\n[OCR Kopf-/Fußzeile]\n{ocr_text}")
+                raw2 = _extract(f"{text}\n\n[OCR Kopf-/Fußzeile]\n{ocr_text}")
                 if isinstance(raw2, dict):
                     raw2.pop("__raw__", None)
                 fields2 = normalize_fields(raw2)
@@ -561,8 +723,13 @@ def process_pdf(filepath: str) -> Dict[str, Any]:
                     # überschreiben ("erster Lauf gewinnt").
                     if fields.get(key) in (None, "") and val not in (None, ""):
                         fields[key] = val
-        except Exception as exc:  # pragma: no cover - Zusatzschritt darf nie sprengen
-            logger.info("OCR-Nachextraktion übersprungen: %s", exc)
+        except Exception:  # pragma: no cover - Zusatzschritt darf nie sprengen
+            safe_log(
+                logger,
+                logging.INFO,
+                "invoice_ocr_followup_skipped",
+                error_code="OCR_FOLLOWUP_FAILED",
+            )
 
     # Schritt 4+5
     validation = run_validation(fields)

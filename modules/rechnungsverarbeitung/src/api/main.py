@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import sentry_sdk
 import os
-from dotenv import load_dotenv
-load_dotenv("/var/www/invoice-app/.env")
 
 if os.getenv('SENTRY_DSN'):
     sentry_sdk.init(
@@ -26,9 +24,11 @@ from typing import Any
 
 from fastapi import FastAPI, UploadFile, File, Header, HTTPException, APIRouter, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from shared.settings import get_settings
+from shared.organization_context import OrganizationContextError, resolve_trusted_organization_context
 from shared.tenant.context import TenantContext
 from shared.db.session import get_session
 from modules.rechnungsverarbeitung.src.invoices.services.invoice_processing import (
@@ -181,6 +181,14 @@ def _resolve_tenant_for_authenticated_request(
     return canonical
 
 
+def _trusted_context_from_user(user: UserAuth, client_input: dict | None = None):
+    return resolve_trusted_organization_context(
+        authenticated_user_id=user.user_id,
+        authenticated_tenant_id=user.tenant_id,
+        client_input=client_input,
+    )
+
+
 def _get_invoice_or_404(session, document_id: str, tenant_id: str) -> Invoice:
     invoice: Invoice | None = (
         session.query(Invoice)
@@ -223,16 +231,19 @@ async def health():
         with get_session() as session:
             session.execute(__import__("sqlalchemy").text("SELECT 1"))
         checks["database"] = "ok"
-    except Exception as e:
-        checks["database"] = f"error: {type(e).__name__}"
+    except Exception:
+        checks["database"] = "error"
 
-    status = "healthy" if all(v == "ok" for v in checks.values()) else "degraded"
-    return {
-        "status": status,
-        "checks": checks,
-        "version": "1.0.0",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
+    healthy = all(value == "ok" for value in checks.values())
+    return JSONResponse(
+        status_code=200 if healthy else 503,
+        content={
+            "status": "healthy" if healthy else "degraded",
+            "checks": checks,
+            "version": "1.0.0",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        },
+    )
 
 
 # ── Upload ────────────────────────────────────────────────────────────
@@ -246,11 +257,13 @@ async def upload_invoice(
     file: UploadFile = File(...),
 ):
     _resolve_tenant_for_authenticated_request(x_tenant_id, user)
+    organization_context = _trusted_context_from_user(user)
     metadata = process_invoice_upload(
         file_stream=file.file,
         file_name=file.filename,
         mime_type=file.content_type or "application/octet-stream",
         uploaded_by=uploaded_by,
+        organization_context=organization_context,
     )
     return {
         "document_id": metadata.id,
@@ -475,6 +488,7 @@ async def upload_batch(
 ):
     """Upload multiple invoices at once (max 20 files)."""
     tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
+    organization_context = _trusted_context_from_user(user)
     form = await request.form()
     files = form.getlist("files")
     if not files:
@@ -491,6 +505,7 @@ async def upload_batch(
                 file_name=file_name,
                 mime_type=f.content_type or "application/pdf",
                 uploaded_by="batch-upload",
+                organization_context=organization_context,
             )
             results.append({"file_name": file_name, "document_id": metadata.id, "status": metadata.status, "success": True})
         except Exception as e:
@@ -1226,6 +1241,7 @@ async def validate_invoice(
 from modules.rechnungsverarbeitung.src.invoices.services.ai_kontierung import (
     AIKontierungService,
 )
+from shared.inference_policy import InferencePolicyDeniedError
 
 ai_kontierung = AIKontierungService()
 
@@ -1244,6 +1260,7 @@ async def suggest_kontierung(
 ):
     """AI-powered account assignment suggestion. Auto-loads from DB if no body."""
     tenant_id = _resolve_tenant_for_authenticated_request(x_tenant_id, user)
+    organization_context = _trusted_context_from_user(user, body.model_dump() if body else None)
 
     with get_session() as session:
         invoice = _get_invoice_or_404(session, document_id, tenant_id)
@@ -1271,10 +1288,16 @@ async def suggest_kontierung(
                     pass
             skr = "SKR03"
 
-        result = ai_kontierung.suggest(
-            invoice_data=inv_data,
-            skr=skr,
-        )
+        try:
+            result = ai_kontierung.suggest(
+                invoice_data=inv_data,
+                skr=skr,
+                organization_context=organization_context,
+            )
+        except InferencePolicyDeniedError as exc:
+            raise HTTPException(status_code=403, detail=exc.to_safe_dict()) from exc
+        except OrganizationContextError as exc:
+            raise HTTPException(status_code=403, detail=exc.to_safe_dict()) from exc
 
         current_status = invoice.status
 
@@ -1405,11 +1428,17 @@ async def copilot_chat(
     user: UserAuth = Depends(get_current_user),
 ):
     """AI Finance Copilot – ask questions about your invoices."""
-    result = copilot_service.chat(
-        question=body.question,
-        tenant_id=user.tenant_id,
-        conversation_history=body.conversation_history,
-    )
+    try:
+        result = copilot_service.chat(
+            question=body.question,
+            tenant_id=user.tenant_id,
+            conversation_history=body.conversation_history,
+            organization_context=_trusted_context_from_user(user),
+        )
+    except InferencePolicyDeniedError as exc:
+        raise HTTPException(status_code=403, detail=exc.to_safe_dict()) from exc
+    except OrganizationContextError as exc:
+        raise HTTPException(status_code=403, detail=exc.to_safe_dict()) from exc
     return result
 
 

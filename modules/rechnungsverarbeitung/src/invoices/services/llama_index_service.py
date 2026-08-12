@@ -12,6 +12,18 @@ import os
 from typing import Any, Optional
 
 from dotenv import load_dotenv
+from shared.data_classification import classify_invoice_data, resolve_inference_profile
+from shared.inference_policy import (
+    InferencePolicyDeniedError,
+    InferenceProvider,
+    assert_inference_allowed,
+)
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
+from shared.secure_logging import log_inference_event, safe_log
 load_dotenv("/var/www/invoice-app/.env")
 
 logger = logging.getLogger(__name__)
@@ -26,7 +38,13 @@ class LlamaIndexService:
         self.anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
         self._index = None
 
-    def build_invoice_index(self, tenant_id: str) -> int:
+    def build_invoice_index(
+        self,
+        tenant_id: str,
+        data_class: str | None = None,
+        inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
+    ) -> int:
         """Build/rebuild the invoice index for a tenant."""
         try:
             from llama_index.core import VectorStoreIndex, Document, Settings
@@ -34,6 +52,20 @@ class LlamaIndexService:
 
             # Configure LLM
             if self.gemini_key:
+                resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+                requested_profile = resolve_inference_profile(inference_profile)
+                resolved_profile = assert_organization_inference_allowed(
+                    organization_context=organization_context,
+                    data_class=resolved_data_class,
+                    requested_inference_profile=requested_profile,
+                    provider=InferenceProvider.GEMINI_DIRECT,
+                )
+                decision = assert_inference_allowed(
+                    data_class=resolved_data_class,
+                    inference_profile=resolved_profile,
+                    provider=InferenceProvider.GEMINI_DIRECT,
+                    purpose="invoice_rag_index",
+                )
                 Settings.llm = Gemini(model="models/gemini-2.5-flash", api_key=self.gemini_key)
 
             # Load invoice data from DB
@@ -48,7 +80,7 @@ class LlamaIndexService:
                 """), {"t": tenant_id}).fetchall()
 
             if not rows:
-                logger.info(f"No invoices for tenant {tenant_id}")
+                safe_log(logger, logging.INFO, "invoice_rag_no_invoices", tenant_id=tenant_id)
                 return 0
 
             # Create documents for indexing
@@ -85,25 +117,79 @@ Dateiname: {r[1] or 'Unbekannt'}
 
             # Build index
             self._index = VectorStoreIndex.from_documents(documents)
-            logger.info(f"LlamaIndex: indexed {len(documents)} invoices for {tenant_id}")
+            if self.gemini_key:
+                log_inference_event(
+                    logger,
+                    event="invoice_rag_index_built",
+                    provider=InferenceProvider.GEMINI_DIRECT.value,
+                    model="models/gemini-2.5-flash",
+                    data_class=decision.data_class,
+                    inference_profile=decision.inference_profile,
+                    policy_decision=decision.policy_decision,
+                    tenant_id=tenant_id,
+                    document_count=len(documents),
+                )
+            else:
+                safe_log(logger, logging.INFO, "invoice_rag_index_built", tenant_id=tenant_id, document_count=len(documents))
             return len(documents)
 
+        except (InferencePolicyDeniedError, OrganizationContextError):
+            raise
         except Exception as e:
-            logger.warning(f"LlamaIndex build failed: {e}")
+            safe_log(logger, logging.WARNING, "llama_index_build_failed", error_code=type(e).__name__)
             return 0
 
-    def query(self, question: str, tenant_id: str) -> Optional[dict]:
+    def query(
+        self,
+        question: str,
+        tenant_id: str,
+        data_class: str | None = None,
+        inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
+    ) -> Optional[dict]:
         """Query the invoice index with natural language."""
         try:
             if not self._index:
-                count = self.build_invoice_index(tenant_id)
+                count = self.build_invoice_index(
+                    tenant_id,
+                    data_class=data_class,
+                    inference_profile=inference_profile,
+                    organization_context=organization_context,
+                )
                 if count == 0:
                     return None
+
+            if self.gemini_key:
+                resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+                requested_profile = resolve_inference_profile(inference_profile)
+                resolved_profile = assert_organization_inference_allowed(
+                    organization_context=organization_context,
+                    data_class=resolved_data_class,
+                    requested_inference_profile=requested_profile,
+                    provider=InferenceProvider.GEMINI_DIRECT,
+                )
+                decision = assert_inference_allowed(
+                    data_class=resolved_data_class,
+                    inference_profile=resolved_profile,
+                    provider=InferenceProvider.GEMINI_DIRECT,
+                    purpose="invoice_rag_query",
+                )
 
             query_engine = self._index.as_query_engine(
                 similarity_top_k=5,
             )
             response = query_engine.query(question)
+            if self.gemini_key:
+                log_inference_event(
+                    logger,
+                    event="invoice_rag_query_completed",
+                    provider=InferenceProvider.GEMINI_DIRECT.value,
+                    model="models/gemini-2.5-flash",
+                    data_class=decision.data_class,
+                    inference_profile=decision.inference_profile,
+                    policy_decision=decision.policy_decision,
+                    tenant_id=tenant_id,
+                )
 
             return {
                 "answer": str(response),
@@ -111,6 +197,8 @@ Dateiname: {r[1] or 'Unbekannt'}
                 "sources": len(response.source_nodes) if hasattr(response, "source_nodes") else 0,
             }
 
+        except (InferencePolicyDeniedError, OrganizationContextError):
+            raise
         except Exception as e:
-            logger.warning(f"LlamaIndex query failed: {e}")
+            safe_log(logger, logging.WARNING, "llama_index_query_failed", error_code=type(e).__name__)
             return None

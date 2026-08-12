@@ -6,6 +6,19 @@ from typing import Any, Optional
 
 from openai import OpenAI
 
+from shared.data_classification import classify_invoice_data, resolve_inference_profile
+from shared.inference_policy import (
+    InferencePolicyDeniedError,
+    InferenceProvider,
+    assert_inference_allowed,
+)
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
+from shared.secure_logging import log_inference_event, safe_log
+
 from .data import MBRData
 from .types import MBRNarrative, SlideNarrative
 
@@ -78,12 +91,29 @@ def generate_narrative_via_llm(
     data: MBRData,
     model: str = "gpt-4o-2024-08-06",
     api_key: Optional[str] = None,
+    data_class: str | None = None,
+    inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
 ) -> MBRNarrative:
     """
     Generate MBR narrative using OpenAI Chat Completions API.
     Falls back to basic narrative on error.
     """
     try:
+        resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.OPENAI_DIRECT,
+        )
+        decision = assert_inference_allowed(
+            data_class=resolved_data_class,
+            inference_profile=resolved_profile,
+            provider=InferenceProvider.OPENAI_DIRECT,
+            purpose="mbr_narrative_generation",
+        )
         client = OpenAI(api_key=api_key) if api_key else OpenAI()
         
         payload = _mbr_payload(data)
@@ -100,6 +130,16 @@ def generate_narrative_via_llm(
             ],
             temperature=0.3,
             max_tokens=2000,
+        )
+        log_inference_event(
+            logger,
+            event="mbr_narrative_completed",
+            provider=InferenceProvider.OPENAI_DIRECT.value,
+            model=model,
+            data_class=decision.data_class,
+            inference_profile=decision.inference_profile,
+            policy_decision=decision.policy_decision,
+            invoice_count=data.invoice_count,
         )
         
         content = response.choices[0].message.content.strip()
@@ -135,8 +175,19 @@ def generate_narrative_via_llm(
             closing_statement=result.get("closing_statement", ""),
         )
         
+    except (InferencePolicyDeniedError, OrganizationContextError) as e:
+        log_inference_event(
+            logger,
+            event="mbr_narrative_policy_denied",
+            provider=InferenceProvider.OPENAI_DIRECT.value,
+            model=model,
+            policy_decision="denied",
+            error_code=e.error_code,
+            level=logging.WARNING,
+        )
+        raise
     except Exception as e:
-        logger.error(f"LLM generation failed: {e}")
+        safe_log(logger, logging.ERROR, "mbr_narrative_failed", error_code=type(e).__name__)
         # Fallback to data-driven narrative without LLM
         return _generate_fallback_narrative(data)
 

@@ -2,12 +2,12 @@
 # SBS Nexus Finance – Production Dockerfile
 # ============================================================================
 
-FROM python:3.13-slim AS builder
+FROM python:3.12-slim AS builder
 WORKDIR /build
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-FROM python:3.13-slim AS production
+FROM python:3.12-slim AS production
 RUN groupadd -r sbs && useradd -r -g sbs -d /app -s /sbin/nologin sbs
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2 libxslt1.1 libjpeg62-turbo libpng16-16 curl \
@@ -23,6 +23,6 @@ USER sbs
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:${APP_PORT:-8000}/api/v1/health || exit 1
 EXPOSE ${APP_PORT:-8000}
-CMD ["python", "-m", "uvicorn", "modules.rechnungsverarbeitung.src.api.main:app", \
+CMD ["python", "-m", "uvicorn", "modules.rechnungsverarbeitung.src.api.hardened_app:app", \
      "--host", "0.0.0.0", "--port", "8000", "--workers", "2", \
      "--log-level", "info", "--access-log"]

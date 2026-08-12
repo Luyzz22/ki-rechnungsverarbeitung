@@ -14,6 +14,13 @@ from typing import Optional
 from database import get_connection  # routet auf Postgres (DATABASE_URL) bzw. SQLite
 from fastapi import APIRouter, HTTPException, Header, Request
 from pydantic import BaseModel
+from shared.inference_policy import InferencePolicyDeniedError
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    resolve_trusted_organization_context,
+)
+from shared.secure_logging import safe_log
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/nexus", tags=["Nexus Gateway Integration"])
@@ -138,7 +145,22 @@ def verify_api_key(authorization: str = Header(None), request: Request = None):
     return {"id": 16, "email": "ki@sbsdeutschland.de", "is_admin": True}
 
 
-def extract_text_from_content(content: str, encoding: str, filename: str = None) -> str:
+def _organization_context_for_api_user(user: dict, client_input: dict | None = None) -> TrustedOrganizationContext:
+    context = resolve_trusted_organization_context(
+        authenticated_user_id=user.get("id"),
+        client_input=client_input,
+    )
+    if context is None:
+        raise OrganizationContextError("organization_context_missing")
+    return context
+
+
+def extract_text_from_content(
+    content: str,
+    encoding: str,
+    filename: str = None,
+    organization_context: TrustedOrganizationContext | None = None,
+) -> str:
     if encoding == "text":
         return content
     
@@ -152,7 +174,7 @@ def extract_text_from_content(content: str, encoding: str, filename: str = None)
             
             try:
                 from invoice_core import extract_text_from_pdf
-                text = extract_text_from_pdf(tmp_path)
+                text = extract_text_from_pdf(tmp_path, organization_context=organization_context)
             except ImportError:
                 import fitz
                 doc = fitz.open(tmp_path)
@@ -165,8 +187,8 @@ def extract_text_from_content(content: str, encoding: str, filename: str = None)
             return text
             
         except Exception as e:
-            logger.error(f"Dekodierungsfehler: {e}")
-            raise HTTPException(status_code=400, detail=f"Dekodierungsfehler: {str(e)}")
+            safe_log(logger, logging.ERROR, "nexus_decode_failed", error_code=type(e).__name__)
+            raise HTTPException(status_code=400, detail="Dekodierungsfehler")
     
     else:
         raise HTTPException(status_code=400, detail=f"Unbekanntes Encoding: {encoding}")
@@ -174,15 +196,21 @@ def extract_text_from_content(content: str, encoding: str, filename: str = None)
 
 @router.post("/process-invoice", response_model=InvoiceProcessResponse)
 async def process_invoice(request: InvoiceProcessRequest, x_api_key: str = Header(None)):
-    verify_api_key(x_api_key)
+    user = verify_api_key(x_api_key)
     
     try:
-        text = extract_text_from_content(request.content, request.encoding, request.filename)
+        organization_context = _organization_context_for_api_user(user, request.model_dump())
+        text = extract_text_from_content(
+            request.content,
+            request.encoding,
+            request.filename,
+            organization_context=organization_context,
+        )
         
         if not text or len(text.strip()) < 30:
             raise HTTPException(status_code=400, detail="Zu wenig Text extrahiert")
         
-        logger.info(f"Processing invoice: {len(text)} chars")
+        safe_log(logger, logging.INFO, "nexus_invoice_processing_started", char_count=len(text))
         
         try:
             from llm_router import extract_invoice_data, pick_provider_model
@@ -192,9 +220,14 @@ async def process_invoice(request: InvoiceProcessRequest, x_api_key: str = Heade
         complexity = min(100, len(text) // 50)
         provider, model = pick_provider_model(complexity)
         
-        logger.info(f"Selected: {provider}/{model}")
+        safe_log(logger, logging.INFO, "nexus_invoice_model_selected", provider=provider, model=model)
         
-        result = extract_invoice_data(text, provider, model)
+        result = extract_invoice_data(
+            text,
+            provider,
+            model,
+            organization_context=organization_context,
+        )
         
         if not result:
             raise HTTPException(status_code=422, detail="Extraktion fehlgeschlagen")
@@ -207,19 +240,29 @@ async def process_invoice(request: InvoiceProcessRequest, x_api_key: str = Heade
             message=f"Verarbeitet mit {provider.upper()}"
         )
         
+    except InferencePolicyDeniedError as e:
+        raise HTTPException(status_code=403, detail=e.to_safe_dict()) from e
+    except OrganizationContextError as e:
+        raise HTTPException(status_code=403, detail=e.to_safe_dict()) from e
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Fehler: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_log(logger, logging.ERROR, "nexus_invoice_processing_failed", error_code=type(e).__name__)
+        raise HTTPException(status_code=500, detail="processing_failed")
 
 
 @router.post("/classify-document", response_model=DocumentClassifyResponse)
 async def classify_document(request: DocumentClassifyRequest, x_api_key: str = Header(None)):
-    verify_api_key(x_api_key)
+    user = verify_api_key(x_api_key)
     
     try:
-        text = extract_text_from_content(request.content, request.encoding, request.filename)
+        organization_context = _organization_context_for_api_user(user, request.model_dump())
+        text = extract_text_from_content(
+            request.content,
+            request.encoding,
+            request.filename,
+            organization_context=organization_context,
+        )
         
         if not text or len(text.strip()) < 20:
             raise HTTPException(status_code=400, detail="Zu wenig Text")
@@ -255,11 +298,13 @@ async def classify_document(request: DocumentClassifyRequest, x_api_key: str = H
             details={"scores": scores}
         )
         
+    except OrganizationContextError as e:
+        raise HTTPException(status_code=403, detail=e.to_safe_dict()) from e
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Fehler: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_log(logger, logging.ERROR, "nexus_document_classification_failed", error_code=type(e).__name__)
+        raise HTTPException(status_code=500, detail="classification_failed")
 
 
 @router.get("/health")
@@ -1719,7 +1764,9 @@ async def analyze_maintenance_request(
     image_base64 = body.get("image_base64")
     if not image_base64:
         raise HTTPException(status_code=400, detail="image_base64 is required")
-    
+
+    organization_context = _organization_context_for_api_user(user, body)
+
     # Process request
     result = await process_maintenance_request_v2(
         image_base64=image_base64,
@@ -1728,7 +1775,8 @@ async def analyze_maintenance_request(
         location=body.get("location", ""),
         urgency=body.get("urgency", "normal"),
         machine_id=body.get("machine_id"),
-        use_hydraulikdoc=body.get("use_hydraulikdoc", True)
+        use_hydraulikdoc=body.get("use_hydraulikdoc", True),
+        organization_context=organization_context,
     )
     
     # Save to database

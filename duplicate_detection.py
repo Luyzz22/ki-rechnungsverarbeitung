@@ -8,6 +8,18 @@ import sqlite3
 import json
 from typing import Optional, Tuple, List, Dict
 import logging
+from shared.data_classification import classify_invoice_data, resolve_inference_profile
+from shared.inference_policy import (
+    InferencePolicyDeniedError,
+    InferenceProvider,
+    assert_inference_allowed,
+)
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
+from shared.secure_logging import log_inference_event, safe_log
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +78,7 @@ def check_duplicate_by_hash(invoice: dict, user_id: int = None, conn=None) -> Op
         conn.close()
     
     if result:
-        logger.info(f"🔍 Duplicate detected: {result['rechnungsaussteller']} - {result['betrag_brutto']}€")
+        safe_log(logger, logging.INFO, "duplicate_detected_by_hash", invoice_id=result["id"])
         return dict(result)
     
     return None
@@ -277,7 +289,15 @@ def save_duplicate_detection(invoice_id: int, duplicate_of_id: int, method: str 
     if should_close:
         conn.close()
     
-    logger.info(f"📝 Saved duplicate detection: {invoice_id} -> {duplicate_of_id}")
+    safe_log(
+        logger,
+        logging.INFO,
+        "duplicate_detection_saved",
+        invoice_id=invoice_id,
+        duplicate_of_id=duplicate_of_id,
+        method=method,
+        confidence=confidence,
+    )
 
 
 def get_duplicates_for_invoice(invoice_id: int) -> List[Dict]:
@@ -326,10 +346,16 @@ def mark_duplicate_reviewed(detection_id: int, user_id: int, is_duplicate: bool)
     conn.commit()
     conn.close()
     
-    logger.info(f"✅ Duplicate reviewed: {detection_id} -> {status}")
+    safe_log(logger, logging.INFO, "duplicate_reviewed", detection_id=detection_id, status=status)
 
 
-def check_similarity_ai(invoice: dict, user_id: int = None) -> List[Dict]:
+def check_similarity_ai(
+    invoice: dict,
+    user_id: int = None,
+    data_class: str | None = None,
+    inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
+) -> List[Dict]:
     """
     Use Claude to detect similar invoices
     Returns: list of similar invoices with confidence scores
@@ -338,6 +364,21 @@ def check_similarity_ai(invoice: dict, user_id: int = None) -> List[Dict]:
     from anthropic import Anthropic
     import os
     
+    resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+    requested_profile = resolve_inference_profile(inference_profile)
+    resolved_profile = assert_organization_inference_allowed(
+        organization_context=organization_context,
+        data_class=resolved_data_class,
+        requested_inference_profile=requested_profile,
+        provider=InferenceProvider.ANTHROPIC_DIRECT,
+    )
+    decision = assert_inference_allowed(
+        data_class=resolved_data_class,
+        inference_profile=resolved_profile,
+        provider=InferenceProvider.ANTHROPIC_DIRECT,
+        purpose="invoice_duplicate_similarity",
+    )
+
     client = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
     
     # Get recent invoices from same supplier
@@ -412,7 +453,17 @@ Antworte NUR mit JSON:
         result_text = result_text.replace('```json', '').replace('```', '').strip()
         result = json.loads(result_text)
         
-        logger.info(f"🤖 AI similarity check: {result['confidence']:.2f} - {result['reason']}")
+        log_inference_event(
+            logger,
+            event="duplicate_similarity_completed",
+            provider=InferenceProvider.ANTHROPIC_DIRECT.value,
+            model="claude-sonnet-4-20250514",
+            data_class=decision.data_class,
+            inference_profile=decision.inference_profile,
+            policy_decision=decision.policy_decision,
+            confidence=result.get("confidence", 0),
+            similar_count=len(result.get("similar_to", [])),
+        )
         
         similar = []
         if result.get('is_duplicate') or result.get('confidence', 0) > 0.7:
@@ -425,12 +476,29 @@ Antworte NUR mit JSON:
         
         return similar
         
+    except (InferencePolicyDeniedError, OrganizationContextError) as e:
+        log_inference_event(
+            logger,
+            event="duplicate_similarity_policy_denied",
+            provider=InferenceProvider.ANTHROPIC_DIRECT.value,
+            model="claude-sonnet-4-20250514",
+            policy_decision="denied",
+            error_code=e.error_code,
+            level=logging.WARNING,
+        )
+        raise
     except Exception as e:
-        logger.error(f"AI similarity check failed: {e}")
+        safe_log(logger, logging.ERROR, "duplicate_similarity_failed", error_code=type(e).__name__)
         return []
 
 
-def detect_all_duplicates(invoice: dict, user_id: int = None) -> Dict:
+def detect_all_duplicates(
+    invoice: dict,
+    user_id: int = None,
+    data_class: str | None = None,
+    inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
+) -> Dict:
     """
     Complete duplicate detection: hash + AI
     Returns: {'hash_duplicate': {...}, 'similar': [...]}
@@ -444,12 +512,18 @@ def detect_all_duplicates(invoice: dict, user_id: int = None) -> Dict:
     hash_dup = check_duplicate_by_hash(invoice, user_id)
     if hash_dup:
         results['hash_duplicate'] = hash_dup
-        logger.warning(f"🔴 Exact duplicate found: Invoice #{hash_dup['id']}")
+        safe_log(logger, logging.WARNING, "exact_duplicate_found", invoice_id=hash_dup["id"])
     
     # 2. AI-based similarity (slower, fuzzy)
-    similar = check_similarity_ai(invoice, user_id)
+    similar = check_similarity_ai(
+        invoice,
+        user_id,
+        data_class=data_class,
+        inference_profile=inference_profile,
+        organization_context=organization_context,
+    )
     if similar:
         results['similar'] = similar
-        logger.warning(f"🟡 {len(similar)} similar invoice(s) found")
+        safe_log(logger, logging.WARNING, "similar_invoices_found", similar_count=len(similar))
     
     return results

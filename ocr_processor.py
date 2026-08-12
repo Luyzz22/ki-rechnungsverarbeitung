@@ -9,6 +9,18 @@ from pathlib import Path
 from typing import Optional
 from PIL import Image
 import io
+from shared.data_classification import classify_invoice_data, resolve_inference_profile
+from shared.inference_policy import (
+    InferencePolicyDeniedError,
+    InferenceProvider,
+    assert_inference_allowed,
+)
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
+from shared.secure_logging import log_inference_event, safe_log
 
 try:
     import pytesseract
@@ -50,7 +62,13 @@ class OCRProcessor:
         except Exception as e:
             raise RuntimeError(f"Tesseract not found! Please install Tesseract OCR. Error: {e}")
     
-    def extract_text_from_scanned_pdf(self, pdf_path: Path) -> Optional[str]:
+    def extract_text_from_scanned_pdf(
+        self,
+        pdf_path: Path,
+        data_class: str | None = None,
+        inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
+    ) -> Optional[str]:
         """
         Extract text from scanned PDF using OCR
         
@@ -61,7 +79,31 @@ class OCRProcessor:
             Extracted text or None if failed
         """
         try:
-            logger.info(f"Starting OCR for: {pdf_path.name}")
+            resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+            requested_profile = resolve_inference_profile(inference_profile)
+            resolved_profile = assert_organization_inference_allowed(
+                organization_context=organization_context,
+                data_class=resolved_data_class,
+                requested_inference_profile=requested_profile,
+                provider=InferenceProvider.LOCAL_OCR,
+                local_provider_available=True,
+            )
+            decision = assert_inference_allowed(
+                data_class=resolved_data_class,
+                inference_profile=resolved_profile,
+                provider=InferenceProvider.LOCAL_OCR,
+                purpose="legacy_scanned_pdf_local_ocr",
+            )
+            log_inference_event(
+                logger,
+                event="legacy_ocr_started",
+                provider=InferenceProvider.LOCAL_OCR.value,
+                model="tesseract",
+                data_class=decision.data_class,
+                inference_profile=decision.inference_profile,
+                policy_decision=decision.policy_decision,
+                document_id=pdf_path.name,
+            )
             
             # Convert PDF to images
             images = convert_from_path(
@@ -71,12 +113,12 @@ class OCRProcessor:
                 thread_count=2
             )
             
-            logger.info(f"Converted PDF to {len(images)} images")
+            safe_log(logger, logging.INFO, "legacy_ocr_pdf_converted", page_count=len(images))
             
             # Process each page
             full_text = ""
             for i, image in enumerate(images, 1):
-                logger.info(f"Processing page {i}/{len(images)}")
+                safe_log(logger, logging.INFO, "legacy_ocr_page_started", page_number=i, page_count=len(images))
                 
                 # Preprocess image for better OCR
                 processed_image = self._preprocess_image(image)
@@ -91,14 +133,26 @@ class OCRProcessor:
                 full_text += page_text + "\n\n"
             
             if not full_text.strip():
-                logger.warning(f"No text extracted from {pdf_path.name}")
+                safe_log(logger, logging.WARNING, "legacy_ocr_no_text", document_id=pdf_path.name)
                 return None
             
-            logger.info(f"OCR completed: {len(full_text)} characters extracted")
+            log_inference_event(
+                logger,
+                event="legacy_ocr_completed",
+                provider=InferenceProvider.LOCAL_OCR.value,
+                model="tesseract",
+                data_class=decision.data_class,
+                inference_profile=decision.inference_profile,
+                policy_decision=decision.policy_decision,
+                document_id=pdf_path.name,
+                char_count=len(full_text),
+            )
             return full_text
-            
+
+        except (InferencePolicyDeniedError, OrganizationContextError):
+            raise
         except Exception as e:
-            logger.error(f"OCR failed for {pdf_path.name}: {e}")
+            safe_log(logger, logging.ERROR, "legacy_ocr_failed", document_id=pdf_path.name, error_code=type(e).__name__)
             return None
     
     def _preprocess_image(self, image: Image.Image) -> Image.Image:
@@ -145,16 +199,29 @@ class OCRProcessor:
                     
                     # If very little text extracted, likely scanned
                     if len(text.strip()) < 50:
-                        logger.info(f"{pdf_path.name} appears to be scanned (< 50 chars)")
+                        safe_log(
+                            logger,
+                            logging.INFO,
+                            "pdf_appears_scanned",
+                            document_id=pdf_path.name,
+                            extracted_char_count=len(text.strip()),
+                        )
                         return True
             
             return False
             
         except Exception as e:
-            logger.error(f"Could not check if PDF is scanned: {e}")
+            safe_log(logger, logging.ERROR, "pdf_scan_detection_failed", document_id=pdf_path.name, error_code=type(e).__name__)
             return False
     
-    def extract_with_fallback(self, pdf_path: Path, normal_text: Optional[str]) -> Optional[str]:
+    def extract_with_fallback(
+        self,
+        pdf_path: Path,
+        normal_text: Optional[str],
+        data_class: str | None = None,
+        inference_profile: str | None = None,
+        organization_context: TrustedOrganizationContext | None = None,
+    ) -> Optional[str]:
         """
         Try normal extraction first, fall back to OCR if needed
         
@@ -167,16 +234,21 @@ class OCRProcessor:
         """
         # If normal extraction worked and has substantial text, use it
         if normal_text and len(normal_text.strip()) > 100:
-            logger.info(f"Using normal text extraction for {pdf_path.name}")
+            safe_log(logger, logging.INFO, "normal_text_extraction_selected", document_id=pdf_path.name)
             return normal_text
         
         # Check if it's a scanned PDF
         if self.is_scanned_pdf(pdf_path):
-            logger.info(f"Falling back to OCR for {pdf_path.name}")
-            return self.extract_text_from_scanned_pdf(pdf_path)
+            safe_log(logger, logging.INFO, "legacy_ocr_fallback_selected", document_id=pdf_path.name)
+            return self.extract_text_from_scanned_pdf(
+                pdf_path,
+                data_class=data_class,
+                inference_profile=inference_profile,
+                organization_context=organization_context,
+            )
         
         # Not scanned, but extraction failed for other reasons
-        logger.warning(f"PDF is not scanned, but extraction failed: {pdf_path.name}")
+        safe_log(logger, logging.WARNING, "legacy_ocr_not_scanned_no_text", document_id=pdf_path.name)
         return normal_text
 
 
@@ -241,7 +313,13 @@ class OCRConfig:
         return status
 
 
-def extract_text_with_ocr_fallback(pdf_path: Path, normal_text: Optional[str] = None) -> Optional[str]:
+def extract_text_with_ocr_fallback(
+    pdf_path: Path,
+    normal_text: Optional[str] = None,
+    data_class: str | None = None,
+    inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
+) -> Optional[str]:
     """
     Convenience function for OCR fallback
     
@@ -257,14 +335,22 @@ def extract_text_with_ocr_fallback(pdf_path: Path, normal_text: Optional[str] = 
         Extracted text or None
     """
     if not OCR_AVAILABLE:
-        logger.warning("OCR not available - returning normal text")
+        safe_log(logger, logging.WARNING, "ocr_not_available")
         return normal_text
     
     try:
         processor = OCRProcessor()
-        return processor.extract_with_fallback(pdf_path, normal_text)
+        return processor.extract_with_fallback(
+            pdf_path,
+            normal_text,
+            data_class=data_class,
+            inference_profile=inference_profile,
+            organization_context=organization_context,
+        )
+    except (InferencePolicyDeniedError, OrganizationContextError):
+        raise
     except Exception as e:
-        logger.error(f"OCR processing failed: {e}")
+        safe_log(logger, logging.ERROR, "ocr_processing_failed", error_code=type(e).__name__)
         return normal_text
 
 

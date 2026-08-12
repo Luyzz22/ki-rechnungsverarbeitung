@@ -69,6 +69,23 @@ Diese erfordern eine echte Neon-Instanz und sind **noch nicht** verifiziert:
    bzw. `jsonb` – die neue `api_frontend.py` ist datentyp-tolerant, ältere
    Module sind zu prüfen.
 
+### Bekannter Schema-Blocker: User-ID-Domain
+
+Das kanonische Legacy-Schema in `database.py` definiert `users.id` als
+`INTEGER PRIMARY KEY AUTOINCREMENT`; die PostgreSQL-Übersetzung macht daraus
+`SERIAL`. `subscriptions.user_id`, `jobs.user_id` und die zugehörigen
+Legacy-Tenant-Spalten verwenden ebenfalls `INTEGER`. Ein bereits vorhandenes
+PostgreSQL-Schema mit `users.id TEXT` stammt daher nicht aus diesem kanonischen
+DDL-Pfad und ist mit dem aktuellen Foreign-Key-Vertrag nicht kompatibel.
+
+Vor einem PostgreSQL-Cutover muss anhand eines offline exportierten und
+freigegebenen Schemas entschieden werden, ob die Ziel-ID-Domain durchgängig
+numerisch oder textbasiert sein soll. Danach sind alle Primär-/Fremdschlüssel
+in einer expliziten, getesteten Migration gemeinsam umzustellen. Der
+Best-effort-Migrator nimmt diese potenziell destruktive Entscheidung bewusst
+nicht automatisch vor; ein Schema mit gemischten ID-Typen bleibt ein
+Fail-Closed-Cutover-Blocker.
+
 ## Empfehlung
 Die `/api/app`-API (Frontend) und die neuen Enterprise-Module verwenden
 `?`-Platzhalter und sind über `db_compat` PG-kompatibel. Für einen sauberen

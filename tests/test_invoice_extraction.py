@@ -7,6 +7,12 @@ import tempfile
 import pytest
 
 import invoice_extraction as ie
+from shared.inference_policy import (
+    DataClass,
+    InferencePolicyDeniedError,
+    InferenceProfile,
+)
+from shared.organization_context import OrganizationContextError
 
 
 def _pdf_bytes(text):
@@ -609,11 +615,12 @@ class _FakeStatusError(Exception):
         super().__init__(text)
 
 
-def test_as_provider_error_extracts_status_and_text():
+def test_as_provider_error_extracts_status_without_response_body():
     err = ie._as_provider_error(_FakeStatusError(404, "not_found_error: model unknown"))
     assert isinstance(err, ie.LLMProviderError)
     assert err.status_code == 404
-    assert "not_found_error" in err.detail
+    assert err.detail == ie.LLM_PROVIDER_REQUEST_FAILED
+    assert "not_found_error" not in str(err)
 
 
 def test_as_provider_error_ignores_non_status():
@@ -631,7 +638,8 @@ def test_process_pdf_provider_4xx_in_error_line(monkeypatch):
     res = ie.process_pdf(path)
     assert res["status"] == "fehler"
     assert "404" in (res["error"] or "")
-    assert "not_found_error" in (res["error"] or "")
+    assert ie.LLM_PROVIDER_REQUEST_FAILED in (res["error"] or "")
+    assert "model claude-x" not in (res["error"] or "")
 
 
 def test_call_llm_wraps_anthropic_status_error(monkeypatch):
@@ -653,4 +661,145 @@ def test_call_llm_wraps_anthropic_status_error(monkeypatch):
     with pytest.raises(ie.LLMProviderError) as exc_info:
         ie._call_llm("irgendein Rechnungstext")
     assert exc_info.value.status_code == 404
-    assert "not found" in exc_info.value.detail
+    assert exc_info.value.detail == ie.LLM_PROVIDER_REQUEST_FAILED
+    assert "not found" not in str(exc_info.value)
+
+
+def test_anthropic_policy_denial_happens_before_client_creation(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    created = {"value": False}
+
+    class _FakeAnthropic:
+        def __init__(self, **kwargs):
+            created["value"] = True
+
+    import anthropic
+
+    monkeypatch.setattr(anthropic, "Anthropic", _FakeAnthropic)
+    with pytest.raises(InferencePolicyDeniedError):
+        ie._call_llm(
+            "sensitive invoice text",
+            data_class=DataClass.PROFESSIONAL_SECRET,
+            inference_profile=InferenceProfile.PROFESSIONAL_SECRECY,
+        )
+
+    assert created["value"] is False
+
+
+def test_openai_policy_denial_happens_before_client_creation(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    created = {"value": False}
+
+    class _FakeOpenAI:
+        def __init__(self, **kwargs):
+            created["value"] = True
+
+    import openai
+
+    monkeypatch.setattr(openai, "OpenAI", _FakeOpenAI)
+    with pytest.raises(InferencePolicyDeniedError):
+        ie._call_llm(
+            "sensitive invoice text",
+            data_class=DataClass.PROFESSIONAL_SECRET,
+            inference_profile=InferenceProfile.PROFESSIONAL_SECRECY,
+        )
+
+    assert created["value"] is False
+
+
+def test_production_missing_organization_context_denies_before_client_creation(monkeypatch):
+    monkeypatch.setenv("FLOWCHECK_RUNTIME_ENV", "production")
+    monkeypatch.setenv("FLOWCHECK_REQUIRE_EU_REGIONAL_CLOUD_IN_PRODUCTION", "true")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    created = {"value": False}
+
+    class _FakeAnthropic:
+        def __init__(self, **kwargs):
+            created["value"] = True
+
+    import anthropic
+
+    monkeypatch.setattr(anthropic, "Anthropic", _FakeAnthropic)
+    with pytest.raises(OrganizationContextError) as exc_info:
+        ie._call_llm(
+            "sensitive invoice text",
+            data_class=DataClass.INVOICE_CONFIDENTIAL,
+            inference_profile=InferenceProfile.STANDARD,
+            organization_context=None,
+        )
+
+    assert exc_info.value.error_code == "ORG_CONTEXT_REQUIRED"
+    assert created["value"] is False
+
+
+def test_openai_standard_policy_allows_mocked_provider_call(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    called = {"value": False}
+
+    class _Completions:
+        def create(self, **kwargs):
+            called["value"] = True
+
+            class _Message:
+                content = '{"rechnungsaussteller": "Example GmbH"}'
+
+            class _Choice:
+                message = _Message()
+
+            class _Response:
+                choices = [_Choice()]
+
+            return _Response()
+
+    class _FakeOpenAI:
+        def __init__(self, **kwargs):
+            self.chat = type("Chat", (), {"completions": _Completions()})()
+
+    import openai
+
+    monkeypatch.setattr(openai, "OpenAI", _FakeOpenAI)
+    result = ie._call_llm(
+        "invoice text",
+        data_class=DataClass.INVOICE_CONFIDENTIAL,
+        inference_profile=InferenceProfile.STANDARD,
+    )
+
+    assert called["value"] is True
+    assert result["rechnungsaussteller"] == "Example GmbH"
+
+
+def test_provider_failure_log_and_exception_do_not_expose_invoice_data(monkeypatch, caplog):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    sensitive = (
+        "invoice RE-SECRET-991 IBAN DE89370400440532013000 "
+        "owner@example.test sk-ant-1234567890abcdefghijkl"
+    )
+
+    class _FakeMessages:
+        def create(self, **kwargs):
+            raise _FakeStatusError(500, sensitive)
+
+    class _FakeAnthropic:
+        def __init__(self, **kwargs):
+            self.messages = _FakeMessages()
+
+    import anthropic
+
+    monkeypatch.setattr(anthropic, "Anthropic", _FakeAnthropic)
+    caplog.set_level("INFO")
+    with pytest.raises(ie.LLMProviderError) as exc_info:
+        ie._call_llm(sensitive)
+
+    emitted = caplog.text + str(exc_info.value)
+    for value in (
+        "RE-SECRET-991",
+        "DE89370400440532013000",
+        "owner@example.test",
+        "sk-ant-1234567890abcdefghijkl",
+    ):
+        assert value not in emitted

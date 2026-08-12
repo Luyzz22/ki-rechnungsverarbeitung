@@ -13,6 +13,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
+from shared.inference_policy import POLICY_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,58 @@ def get_db_path() -> str:
     """Public helper: kanonischer Pfad zur SQLite-DB (für Module mit eigener
     Connection wie approval.py / zahlungs_service.py)."""
     return str(_ensure_db_path())
+
+
+def _ensure_inference_policy_columns(cursor: sqlite3.Cursor) -> None:
+    """Add phase-1 inference policy metadata columns idempotently."""
+    defaults = {
+        "data_class": "'invoice_confidential'",
+        "inference_profile": "'standard'",
+        "provider_selected": "''",
+        "policy_version": "''",
+        "policy_decision": "'not_evaluated'",
+    }
+
+    for table in ("jobs", "invoices"):
+        cursor.execute(f"PRAGMA table_info({table})")
+        existing = {col[1] for col in cursor.fetchall()}
+        for column, default in defaults.items():
+            if column not in existing:
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} TEXT DEFAULT {default}")
+
+
+def _ensure_invoice_storage_columns(cursor: sqlite3.Cursor) -> None:
+    """Add legacy invoice columns expected by save_invoices idempotently."""
+    definitions = {
+        # The legacy FlowCheck schema uses INTEGER user/tenant keys
+        # (users.id and jobs.user_id); keep the invoice ownership column in the
+        # same domain so COALESCE(i.tenant_id, jobs.user_id) stays type-safe.
+        "tenant_id": "INTEGER",
+        # These columns are consumed by the primary list/dashboard paths and
+        # therefore belong to the base invoice contract, not only Enterprise.
+        "status": "TEXT",
+        "created_at": "TEXT",
+        "content_hash": "TEXT DEFAULT ''",
+        "source_format": "TEXT DEFAULT 'pdf'",
+        "einvoice_raw_xml": "TEXT DEFAULT ''",
+        "einvoice_profile": "TEXT DEFAULT ''",
+        "einvoice_valid": "INTEGER DEFAULT 0",
+        "einvoice_validation_message": "TEXT DEFAULT ''",
+        "confidence": "REAL DEFAULT 0",
+    }
+
+    cursor.execute("PRAGMA table_info(invoices)")
+    existing = {col[1] for col in cursor.fetchall()}
+    for column, definition in definitions.items():
+        if column not in existing:
+            cursor.execute(f"ALTER TABLE invoices ADD COLUMN {column} {definition}")
+
+
+def _ensure_organization_processing_policy_schema(conn: sqlite3.Connection) -> None:
+    """Ensure the legacy organization table can store server-side processing policy."""
+    from shared.tenant_processing_policy import ensure_organization_processing_policy_schema
+
+    ensure_organization_processing_policy_schema(conn)
 
 
 def _is_bcrypt_hash(value: str | None) -> bool:
@@ -168,9 +221,21 @@ def init_database():
             zahlungsbedingungen TEXT,
             artikel TEXT,
             verwendungszweck TEXT,
+            status TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (job_id) REFERENCES jobs(job_id)
         )
     ''')
+    _ensure_invoice_storage_columns(cursor)
+    _ensure_inference_policy_columns(cursor)
+    _ensure_organization_processing_policy_schema(conn)
+
+    # On explicit re-initialization these late-defined helpers are available.
+    # Reuse this connection so all schema work stays on one backend target.
+    for initializer_name in ("init_users_table", "init_subscriptions_table"):
+        initializer = globals().get(initializer_name)
+        if callable(initializer):
+            initializer(connection=conn)
     
     conn.commit()
 
@@ -214,8 +279,10 @@ def save_job(job_id: str, job_data: Dict, user_id: int = None):
         INSERT OR REPLACE INTO jobs (
             job_id, created_at, completed_at, status, total_files,
             successful, failed_count, total_amount, total_netto, total_mwst,
-            average_amount, exported_files, upload_path, failed_list, user_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            average_amount, exported_files, upload_path, failed_list, user_id,
+            data_class, inference_profile, provider_selected, policy_version,
+            policy_decision
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         job_id,
         job_data.get('created_at', datetime.now().isoformat()),
@@ -231,7 +298,12 @@ def save_job(job_id: str, job_data: Dict, user_id: int = None):
         exported_files,
         job_data.get('path', ''),
         failed_list,
-        user_id
+        user_id,
+        job_data.get("data_class", "invoice_confidential"),
+        job_data.get("inference_profile", "standard"),
+        job_data.get("provider_selected", ""),
+        job_data.get("policy_version", POLICY_VERSION),
+        job_data.get("policy_decision", "not_evaluated"),
     ))
     
     conn.commit()
@@ -264,21 +336,31 @@ def save_invoices(job_id: str, results: List[Dict], tenant_id: Optional[int] = N
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Tenant-Zuordnung ableiten (invoices.tenant_id ist INTEGER). Fällt der
-    # Job-Owner nicht auf einen int (z. B. "demo_user"), bleibt tenant_id NULL
-    # und der Read-Pfad greift weiterhin auf den jobs.user_id-Fallback zurück.
-    if tenant_id is None:
-        try:
-            cursor.execute("SELECT user_id FROM jobs WHERE job_id = ?", (job_id,))
-            jrow = cursor.fetchone()
-            if jrow is not None and jrow[0] is not None:
-                tenant_id = jrow[0]
-        except Exception:  # pragma: no cover - jobs evtl. nicht vorhanden
-            tenant_id = None
+    # jobs.user_id is the canonical owner. Legacy unowned/non-numeric jobs may
+    # remain NULL, but an explicit tenant must never override that contract.
+    cursor.execute("SELECT user_id FROM jobs WHERE job_id = ?", (job_id,))
+    jrow = cursor.fetchone()
+    if jrow is None:
+        conn.close()
+        raise ValueError("INVOICE_JOB_OWNER_REQUIRED")
+    job_owner_id = jrow[0]
     try:
-        tenant_id_val: Optional[int] = int(tenant_id) if tenant_id is not None else None
+        canonical_tenant_id: Optional[int] = int(job_owner_id) if job_owner_id is not None else None
     except (TypeError, ValueError):
-        tenant_id_val = None
+        canonical_tenant_id = None
+
+    if tenant_id is not None:
+        try:
+            requested_tenant_id = int(tenant_id)
+        except (TypeError, ValueError) as exc:
+            conn.close()
+            raise ValueError("INVOICE_TENANT_INVALID") from exc
+        if canonical_tenant_id is None or requested_tenant_id != canonical_tenant_id:
+            conn.close()
+            raise ValueError("INVOICE_TENANT_MISMATCH")
+        tenant_id_val = requested_tenant_id
+    else:
+        tenant_id_val = canonical_tenant_id
 
     # Bestehende Rechnungen dieses Jobs löschen (Re-Processing)
     cursor.execute("DELETE FROM invoices WHERE job_id = ?", (job_id,))
@@ -320,10 +402,11 @@ def save_invoices(job_id: str, results: List[Dict], tenant_id: Optional[int] = N
                 zahlungsbedingungen, artikel, verwendungszweck, content_hash,
                 source_format, einvoice_raw_xml, einvoice_profile,
                 einvoice_valid, einvoice_validation_message, confidence,
-                tenant_id
+                data_class, inference_profile, provider_selected, policy_version,
+                policy_decision, tenant_id
             ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
             """,
             (
@@ -359,6 +442,11 @@ def save_invoices(job_id: str, results: List[Dict], tenant_id: Optional[int] = N
                 einvoice_valid,
                 einvoice_validation_message,
                 invoice.get("confidence", 0.0),
+                invoice.get("data_class", "invoice_confidential"),
+                invoice.get("inference_profile", "standard"),
+                invoice.get("provider_selected", invoice.get("ai_model_used", "")),
+                invoice.get("policy_version", POLICY_VERSION),
+                invoice.get("policy_decision", "not_evaluated"),
                 tenant_id_val,
             ),
         )
@@ -1102,9 +1190,10 @@ def is_email_processed(message_id: str) -> bool:
     conn.close()
     return exists
 
-def init_users_table():
+def init_users_table(connection=None):
     """Initialize users table"""
-    conn = get_connection()
+    owns_connection = connection is None
+    conn = connection if connection is not None else get_connection()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -1129,6 +1218,8 @@ def init_users_table():
         cursor.execute('ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0')
     if 'approval_limit' not in user_cols:
         cursor.execute('ALTER TABLE users ADD COLUMN approval_limit REAL')
+    if 'current_org_id' not in user_cols:
+        cursor.execute('ALTER TABLE users ADD COLUMN current_org_id INTEGER')
 
     # Export-Historie (von /exports und Export-Funktionen genutzt)
     cursor.execute('''
@@ -1151,11 +1242,11 @@ def init_users_table():
     if 'user_id' not in columns:
         cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
 
-    conn.commit()
-    # Cache invalidieren nach neuen Invoices
-    invalidate_cache("statistics")
-    invalidate_cache("monthly_summary")
-    conn.close()
+    if owns_connection:
+        conn.commit()
+        invalidate_cache("statistics")
+        invalidate_cache("monthly_summary")
+        conn.close()
 
 init_users_table()
 
@@ -1246,9 +1337,10 @@ def email_exists(email: str) -> bool:
     conn.close()
     return exists
 
-def init_users_table():
+def init_users_table(connection=None):
     """Initialize users table"""
-    conn = get_connection()
+    owns_connection = connection is None
+    conn = connection if connection is not None else get_connection()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -1273,6 +1365,8 @@ def init_users_table():
         cursor.execute('ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0')
     if 'approval_limit' not in user_cols:
         cursor.execute('ALTER TABLE users ADD COLUMN approval_limit REAL')
+    if 'current_org_id' not in user_cols:
+        cursor.execute('ALTER TABLE users ADD COLUMN current_org_id INTEGER')
 
     # Export-Historie (von /exports und Export-Funktionen genutzt)
     cursor.execute('''
@@ -1295,11 +1389,11 @@ def init_users_table():
     if 'user_id' not in columns:
         cursor.execute('ALTER TABLE jobs ADD COLUMN user_id INTEGER')
 
-    conn.commit()
-    # Cache invalidieren nach neuen Invoices
-    invalidate_cache("statistics")
-    invalidate_cache("monthly_summary")
-    conn.close()
+    if owns_connection:
+        conn.commit()
+        invalidate_cache("statistics")
+        invalidate_cache("monthly_summary")
+        conn.close()
 
 init_users_table()
 
@@ -1390,9 +1484,10 @@ def email_exists(email: str) -> bool:
     conn.close()
     return exists
 
-def init_subscriptions_table():
+def init_subscriptions_table(connection=None):
     """Initialize subscriptions table"""
-    conn = get_connection()
+    owns_connection = connection is None
+    conn = connection if connection is not None else get_connection()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -1412,11 +1507,11 @@ def init_subscriptions_table():
         )
     ''')
     
-    conn.commit()
-    # Cache invalidieren nach neuen Invoices
-    invalidate_cache("statistics")
-    invalidate_cache("monthly_summary")
-    conn.close()
+    if owns_connection:
+        conn.commit()
+        invalidate_cache("statistics")
+        invalidate_cache("monthly_summary")
+        conn.close()
 
 init_subscriptions_table()
 
@@ -2120,6 +2215,10 @@ def reset_password(token: str, new_password: str) -> bool:
 # =============================================================================
 # REPOSITORY FUNKTIONEN (neu hinzugefügt)
 # =============================================================================
+# Legacy compatibility API for the separate English-column fixture under
+# modules/rechnungsverarbeitung/tests. Active FlowCheck runtime paths use the
+# canonical German invoice columns above; do not add duplicate alias columns
+# to the primary schema. A static contract test prevents production imports.
 
 def find_potential_duplicates(
     invoice_number: str,

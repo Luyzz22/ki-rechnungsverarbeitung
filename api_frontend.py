@@ -666,7 +666,16 @@ async def api_upload(request: Request, files: List[UploadFile] = File(...)):
 
         # Pipeline synchron ausführen (crasht nie – Status spiegelt Fehler)
         try:
-            outcome = invoice_extraction.process_pdf(path)
+            from shared.organization_context import resolve_trusted_organization_context
+
+            organization_context = resolve_trusted_organization_context(
+                authenticated_user_id=tid,
+                invoice_id=invoice_id,
+            )
+            outcome = invoice_extraction.process_pdf(
+                path,
+                organization_context=organization_context,
+            )
         except Exception as exc:  # pragma: no cover - defensive
             outcome = {"status": "fehler", "error": str(exc), "fields": {},
                        "validation": None, "kontierung": None}

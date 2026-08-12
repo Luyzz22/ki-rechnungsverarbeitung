@@ -23,6 +23,10 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
+class UnmappedEmailSenderError(RuntimeError):
+    """Fail-closed tenant resolution failure without sender PII."""
+
+
 class EmailIngestionService:
     """Polls IMAP inbox for invoice attachments, processes and uploads them."""
 
@@ -38,9 +42,9 @@ class EmailIngestionService:
         self.password = os.getenv("IMAP_PASSWORD", "")
         self.folder = os.getenv("IMAP_FOLDER", "INBOX")
         self.processed_folder = os.getenv("IMAP_PROCESSED_FOLDER", "Processed")
+        self.quarantine_folder = os.getenv("IMAP_QUARANTINE_FOLDER", "Quarantine")
         self.slack_webhook = os.getenv("SLACK_WEBHOOK_URL", "")
         self.upload_dir = os.getenv("UPLOAD_DIR", "/var/www/invoice-app/uploads")
-        self.default_tenant = os.getenv("DEFAULT_TENANT_ID", "tenant-97931dfa")
 
     def poll(self) -> list[dict[str, Any]]:
         """Poll IMAP inbox for new invoice emails. Returns list of processed items."""
@@ -85,9 +89,17 @@ class EmailIngestionService:
 
         sender = self._decode_header(msg.get("From", ""))
         subject = self._decode_header(msg.get("Subject", ""))
-        date_str = msg.get("Date", "")
 
         logger.info(f"email_processing: uid={uid} from={sender} subject={subject}")
+
+        # Tenant resolution must succeed before any customer file is persisted.
+        # Unknown senders are quarantined instead of being assigned to a fallback tenant.
+        try:
+            tenant_id = self._resolve_tenant(sender)
+        except UnmappedEmailSenderError:
+            logger.warning("email_tenant_resolution_failed uid=%s reason=unmapped_sender", uid)
+            self._move_message(client, uid, self.quarantine_folder)
+            return []
 
         attachments = []
         for part in msg.walk():
@@ -127,7 +139,7 @@ class EmailIngestionService:
                 mime_type=content_type,
                 sender=sender,
                 subject=subject,
-                tenant_id=self._resolve_tenant(sender),
+                tenant_id=tenant_id,
             )
 
             attachments.append({
@@ -141,12 +153,7 @@ class EmailIngestionService:
 
         # Mark as seen / move to processed
         if attachments:
-            try:
-                if self.processed_folder:
-                    client.create_folder(self.processed_folder)
-                    client.move([uid], self.processed_folder)
-            except Exception:
-                pass  # Folder might already exist or move not supported
+            self._move_message(client, uid, self.processed_folder)
 
         return attachments
 
@@ -180,10 +187,10 @@ class EmailIngestionService:
             s.commit()
 
     def _resolve_tenant(self, sender: str) -> str:
-        """Resolve sender email to tenant. Falls back to default."""
+        """Resolve sender email to an explicit tenant mapping; fail closed if absent."""
         email_addr = re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", sender or "")
         if not email_addr:
-            return self.default_tenant
+            raise UnmappedEmailSenderError("sender_address_missing")
 
         addr = email_addr.group().lower()
         with get_session() as s:
@@ -191,9 +198,27 @@ class EmailIngestionService:
                 text("SELECT tenant_id FROM users WHERE email = :e"), {"e": addr}
             ).fetchone()
 
-        if row:
-            return row[0]
-        return self.default_tenant
+        if row and row[0] and str(row[0]).strip():
+            return str(row[0]).strip()
+        raise UnmappedEmailSenderError("sender_tenant_mapping_missing")
+
+    def _move_message(self, client: imapclient.IMAPClient, uid: int, folder: str) -> None:
+        """Move a message to a controlled folder without exposing message contents."""
+        if not folder:
+            return
+        try:
+            try:
+                client.create_folder(folder)
+            except Exception:
+                pass  # Folder may already exist.
+            client.move([uid], folder)
+        except Exception as exc:
+            logger.warning(
+                "email_move_failed uid=%s target=%s error=%s",
+                uid,
+                folder,
+                type(exc).__name__,
+            )
 
     def _decode_header(self, value: str) -> str:
         """Decode email header value."""

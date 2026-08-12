@@ -10,6 +10,18 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import pytesseract
 from PIL import Image, ImageEnhance, ImageFilter
+from shared.data_classification import classify_invoice_data, resolve_inference_profile
+from shared.inference_policy import (
+    InferencePolicyDeniedError,
+    InferenceProvider,
+    assert_inference_allowed,
+)
+from shared.organization_context import (
+    OrganizationContextError,
+    TrustedOrganizationContext,
+    assert_organization_inference_allowed,
+)
+from shared.secure_logging import log_inference_event, safe_log
 
 logger = logging.getLogger(__name__)
 
@@ -105,17 +117,37 @@ def extract_text_with_confidence(image: Image.Image, config: str = 'default') ->
         return text, avg_confidence / 100  # Normalisiert auf 0-1
         
     except Exception as e:
-        logger.error(f"OCR-Fehler: {e}")
+        safe_log(logger, logging.ERROR, "ocr_image_data_failed", error_code=type(e).__name__)
         return "", 0.0
 
 
-def ocr_with_fallback(image: Image.Image) -> Dict:
+def ocr_with_fallback(
+    image: Image.Image,
+    data_class: str | None = None,
+    inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
+) -> Dict:
     """
     Führt OCR mit mehreren Methoden durch und wählt das beste Ergebnis.
     
     Returns:
         Dict mit text, confidence, method
     """
+    resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+    requested_profile = resolve_inference_profile(inference_profile)
+    resolved_profile = assert_organization_inference_allowed(
+        organization_context=organization_context,
+        data_class=resolved_data_class,
+        requested_inference_profile=requested_profile,
+        provider=InferenceProvider.LOCAL_OCR,
+        local_provider_available=True,
+    )
+    decision = assert_inference_allowed(
+        data_class=resolved_data_class,
+        inference_profile=resolved_profile,
+        provider=InferenceProvider.LOCAL_OCR,
+        purpose="optimized_local_ocr",
+    )
     results = []
     
     # Verschiedene Vorverarbeitungen durchprobieren
@@ -141,6 +173,17 @@ def ocr_with_fallback(image: Image.Image) -> Dict:
         # Letzter Versuch: Binarisierung
         processed = preprocess_image(image.copy(), 'binarize')
         text, confidence = extract_text_with_confidence(processed, 'default')
+        log_inference_event(
+            logger,
+            event="optimized_ocr_completed",
+            provider=InferenceProvider.LOCAL_OCR.value,
+            model="tesseract",
+            data_class=decision.data_class,
+            inference_profile=decision.inference_profile,
+            policy_decision=decision.policy_decision,
+            method="binarize_fallback",
+            confidence=round(confidence, 3),
+        )
         return {
             'text': text,
             'confidence': confidence,
@@ -155,6 +198,17 @@ def ocr_with_fallback(image: Image.Image) -> Dict:
         return r['confidence'] * 0.7 + len_score * 0.3
     
     best = max(results, key=score)
+    log_inference_event(
+        logger,
+        event="optimized_ocr_completed",
+        provider=InferenceProvider.LOCAL_OCR.value,
+        model="tesseract",
+        data_class=decision.data_class,
+        inference_profile=decision.inference_profile,
+        policy_decision=decision.policy_decision,
+        method=f"{best['preprocess']}_{best['config']}",
+        confidence=round(best["confidence"], 3),
+    )
     
     return {
         'text': best['text'],
@@ -163,7 +217,13 @@ def ocr_with_fallback(image: Image.Image) -> Dict:
     }
 
 
-def extract_from_pdf_optimized(pdf_path: str, dpi: int = 200) -> Dict:
+def extract_from_pdf_optimized(
+    pdf_path: str,
+    dpi: int = 200,
+    data_class: str | None = None,
+    inference_profile: str | None = None,
+    organization_context: TrustedOrganizationContext | None = None,
+) -> Dict:
     """
     Optimierte OCR-Extraktion aus PDF.
     
@@ -181,6 +241,21 @@ def extract_from_pdf_optimized(pdf_path: str, dpi: int = 200) -> Dict:
         return {'text': '', 'confidence': 0, 'error': 'pdf2image missing'}
     
     try:
+        resolved_data_class = classify_invoice_data(explicit_data_class=data_class)
+        requested_profile = resolve_inference_profile(inference_profile)
+        resolved_profile = assert_organization_inference_allowed(
+            organization_context=organization_context,
+            data_class=resolved_data_class,
+            requested_inference_profile=requested_profile,
+            provider=InferenceProvider.LOCAL_OCR,
+            local_provider_available=True,
+        )
+        decision = assert_inference_allowed(
+            data_class=resolved_data_class,
+            inference_profile=resolved_profile,
+            provider=InferenceProvider.LOCAL_OCR,
+            purpose="optimized_pdf_local_ocr",
+        )
         # PDF zu Bildern konvertieren
         images = convert_from_path(pdf_path, dpi=dpi, fmt='png')
         
@@ -189,9 +264,14 @@ def extract_from_pdf_optimized(pdf_path: str, dpi: int = 200) -> Dict:
         methods_used = set()
         
         for i, image in enumerate(images):
-            logger.info(f"OCR Seite {i+1}/{len(images)}")
+            safe_log(logger, logging.INFO, "optimized_ocr_page_started", page_number=i + 1, page_count=len(images))
             
-            result = ocr_with_fallback(image)
+            result = ocr_with_fallback(
+                image,
+                data_class=resolved_data_class,
+                inference_profile=resolved_profile,
+                organization_context=organization_context,
+            )
             
             if result['text']:
                 all_text.append(f"--- Seite {i+1} ---\n{result['text']}")
@@ -201,6 +281,17 @@ def extract_from_pdf_optimized(pdf_path: str, dpi: int = 200) -> Dict:
         combined_text = '\n\n'.join(all_text)
         avg_confidence = total_confidence / len(images) if images else 0
         
+        log_inference_event(
+            logger,
+            event="optimized_pdf_ocr_completed",
+            provider=InferenceProvider.LOCAL_OCR.value,
+            model="tesseract",
+            data_class=decision.data_class,
+            inference_profile=decision.inference_profile,
+            policy_decision=decision.policy_decision,
+            page_count=len(images),
+            char_count=len(combined_text),
+        )
         return {
             'text': combined_text,
             'confidence': round(avg_confidence, 3),
@@ -209,9 +300,11 @@ def extract_from_pdf_optimized(pdf_path: str, dpi: int = 200) -> Dict:
             'char_count': len(combined_text)
         }
         
+    except (InferencePolicyDeniedError, OrganizationContextError):
+        raise
     except Exception as e:
-        logger.error(f"PDF OCR-Fehler: {e}")
-        return {'text': '', 'confidence': 0, 'error': str(e)}
+        safe_log(logger, logging.ERROR, "optimized_pdf_ocr_failed", error_code=type(e).__name__)
+        return {'text': '', 'confidence': 0, 'error': type(e).__name__}
 
 
 def detect_scan_quality(image: Image.Image) -> Dict:
@@ -288,7 +381,7 @@ def enhance_for_ocr(image_path: str, output_path: str = None) -> str:
         output_path = str(p.parent / f"{p.stem}_enhanced{p.suffix}")
     
     processed.save(output_path)
-    logger.info(f"Bild verbessert: {output_path} (Methode: {method})")
+    safe_log(logger, logging.INFO, "ocr_image_enhanced", method=method)
     
     return output_path
 
@@ -303,5 +396,4 @@ if __name__ == '__main__':
         result = extract_from_pdf_optimized(pdf_path)
         print(f"Konfidenz: {result['confidence']*100:.1f}%")
         print(f"Methoden: {result.get('methods', [])}")
-        print(f"Text ({result.get('char_count', 0)} Zeichen):")
-        print(result['text'][:1000] + "..." if len(result['text']) > 1000 else result['text'])
+        print(f"Textzeichen: {result.get('char_count', 0)}")

@@ -1,0 +1,80 @@
+# --- Version control / developer tooling ---
+.git
+.gitignore
+.github
+.cursor
+.codex
+.vscode
+.idea
+
+# --- Secrets / environment configuration ---
+.env
+.env.*
+*.env
+config.yaml
+cookies.txt
+
+# --- Azure local deployment artifacts ---
+.azure-build
+infra/azure/nonprod/nonprod.local.bicepparam
+
+# --- Python environments / caches ---
+venv
+env
+ENV
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.coverage
+htmlcov
+
+# --- Local databases ---
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# --- Customer / processing data ---
+uploads
+web/uploads
+exports
+evidence
+output
+outputs
+batch_*
+temp_*
+tmp_*
+
+# --- Documents that may contain customer data ---
+*.pdf
+*.xlsx
+*.xls
+*.csv
+*.docx
+*.doc
+
+# --- Logs / backups / archives ---
+logs
+*.log
+*.log.*
+*.bak
+*.bak-*
+*.backup
+backups
+backup_*
+_archive
+_archive_*
+_old_code
+
+# --- OS / editor artifacts ---
+.DS_Store
+._*
+*.swp
+*.swo
+*~

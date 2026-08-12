@@ -9,6 +9,12 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Unit/regression discovery must never inherit an application DATABASE_URL:
+# importing database initializes legacy schemas. Real PostgreSQL tests opt in
+# separately through TEST_DATABASE_URL and set DATABASE_URL only in their
+# isolated test scope/subprocess.
+os.environ.pop("DATABASE_URL", None)
+
 import database  # noqa: E402
 import enterprise_db  # noqa: E402
 
