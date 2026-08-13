@@ -6,12 +6,16 @@ composition therefore verifies effective routes via ``iter_route_contexts()``.
 
 The oversized legacy API module still contains historical auth handlers and a
 few transitional audit-identity call shapes. Until those are physically removed
-from ``main.py``, this module performs two explicit production cutovers:
+from ``main.py``, this module performs explicit production cutovers:
 
 1. unregister the three security-sensitive legacy auth routes and mount the
    audited secure auth router;
-2. install authenticated audit-actor binding so human/service identity derives
-   from ``UserAuth.user_id`` rather than client-supplied headers/body fields.
+2. unregister upload/batch/transition routes whose legacy call shapes accept or
+   persist client-controlled audit attribution, then mount the authenticated
+   audit router;
+3. install compatibility hardening for remaining legacy service calls so
+   technical actors stay distinguishable while human/service attribution comes
+   from the authenticated principal.
 
 Production containers must target this module, not ``main:app``.
 """
@@ -26,60 +30,69 @@ from modules.rechnungsverarbeitung.src.api.audit_actor_hardening import (
     install_audit_actor_hardening,
 )
 from modules.rechnungsverarbeitung.src.api.main import app, v1 as legacy_v1_router
+from modules.rechnungsverarbeitung.src.api.secure_audit_router import (
+    router as secure_audit_router,
+)
 from modules.rechnungsverarbeitung.src.api.secure_auth_router import router as secure_auth_router
 
-_REPLACED_POST_PATHS = frozenset(
+_AUTH_REPLACED_POST_PATHS = frozenset(
     {
         "/api/v1/auth/token",
         "/api/v1/auth/forgot-password",
         "/api/v1/users/invite",
     }
 )
-_SECURE_POST_PATHS = frozenset(
+_SECURE_AUTH_POST_PATHS = frozenset(
     {
-        *_REPLACED_POST_PATHS,
+        *_AUTH_REPLACED_POST_PATHS,
         "/api/v1/auth/reset-password",
         "/api/v1/auth/accept-invite",
     }
 )
+_AUDIT_REPLACED_POST_PATHS = frozenset(
+    {
+        "/api/v1/invoices/upload",
+        "/api/v1/invoices/upload-batch",
+        "/api/v1/invoices/{document_id}/transition",
+    }
+)
 _SECURE_AUTH_MODULE = "modules.rechnungsverarbeitung.src.api.secure_auth_router"
-_LEGACY_AUTH_MODULE = "modules.rechnungsverarbeitung.src.api.main"
+_SECURE_AUDIT_MODULE = "modules.rechnungsverarbeitung.src.api.secure_audit_router"
+_LEGACY_API_MODULE = "modules.rechnungsverarbeitung.src.api.main"
 
 
 def _route_module(route: object) -> str | None:
     return getattr(getattr(route, "endpoint", None), "__module__", None)
 
 
-def _is_sensitive_legacy_post_route(route: object) -> bool:
+def _is_legacy_post_route(route: object, paths: frozenset[str]) -> bool:
     path = getattr(route, "path", None)
     methods = getattr(route, "methods", set()) or set()
-    return (
-        path in _REPLACED_POST_PATHS
-        and "POST" in methods
-        and _route_module(route) == _LEGACY_AUTH_MODULE
-    )
+    return path in paths and "POST" in methods and _route_module(route) == _LEGACY_API_MODULE
 
 
-def _effective_secure_post_routes() -> list[object]:
-    """Return effective sensitive auth routes including nested router prefixes."""
+def _effective_post_routes(paths: frozenset[str]) -> list[object]:
     return [
         route
         for route in iter_route_contexts(app.router.routes)
-        if getattr(route, "path", None) in _SECURE_POST_PATHS
+        if getattr(route, "path", None) in paths
         and "POST" in (getattr(route, "methods", set()) or set())
     ]
 
 
-def _assert_exact_secure_routes(routes: list[object]) -> bool:
+def _assert_exact_routes(
+    routes: list[object],
+    *,
+    paths: frozenset[str],
+    expected_module: str,
+) -> bool:
     counts = Counter(getattr(route, "path", "") for route in routes)
-    expected = Counter({path: 1 for path in _SECURE_POST_PATHS})
-    return counts == expected and all(
-        _route_module(route) == _SECURE_AUTH_MODULE for route in routes
-    )
+    expected = Counter({path: 1 for path in paths})
+    return counts == expected and all(_route_module(route) == expected_module for route in routes)
 
 
-def _retire_legacy_sensitive_routes() -> None:
-    """Remove only the known legacy handlers from the canonical v1 router.
+def _retire_legacy_post_routes(paths: frozenset[str], *, label: str) -> None:
+    """Remove only an explicit allowlist of legacy POST handlers.
 
     FastAPI 0.137+ keeps router inclusion live and caches effective route
     candidates by a router version counter. Direct route removal therefore has
@@ -90,7 +103,7 @@ def _retire_legacy_sensitive_routes() -> None:
     remaining_routes = [
         route
         for route in legacy_v1_router.routes
-        if not _is_sensitive_legacy_post_route(route)
+        if not _is_legacy_post_route(route, paths)
     ]
     removed = len(legacy_v1_router.routes) - len(remaining_routes)
 
@@ -106,35 +119,68 @@ def _retire_legacy_sensitive_routes() -> None:
     surviving_legacy = [
         route
         for route in legacy_v1_router.routes
-        if _is_sensitive_legacy_post_route(route)
+        if _is_legacy_post_route(route, paths)
     ]
     if surviving_legacy:
-        raise RuntimeError("SECURITY: legacy auth routes survived hardened cutover")
+        raise RuntimeError(f"SECURITY: legacy {label} routes survived hardened cutover")
 
 
 def _cut_over_secure_auth_routes() -> None:
-    """Retire legacy handlers and verify the secure effective route tree."""
-    _retire_legacy_sensitive_routes()
+    """Retire legacy auth handlers and verify the secure effective route tree."""
+    _retire_legacy_post_routes(_AUTH_REPLACED_POST_PATHS, label="auth")
 
-    existing_routes = _effective_secure_post_routes()
+    existing_routes = _effective_post_routes(_SECURE_AUTH_POST_PATHS)
     if existing_routes:
-        # Idempotent re-application is allowed only when the complete secure
-        # route set already exists exactly once and no foreign handler shares
-        # a sensitive path.
-        if _assert_exact_secure_routes(existing_routes):
+        if _assert_exact_routes(
+            existing_routes,
+            paths=_SECURE_AUTH_POST_PATHS,
+            expected_module=_SECURE_AUTH_MODULE,
+        ):
             return
-        raise RuntimeError(
-            "SECURITY: secure auth route cutover precondition is ambiguous"
-        )
+        raise RuntimeError("SECURITY: secure auth route cutover precondition is ambiguous")
 
     app.include_router(secure_auth_router, prefix="/api/v1")
 
-    active_secure_routes = _effective_secure_post_routes()
-    if not _assert_exact_secure_routes(active_secure_routes):
+    active_routes = _effective_post_routes(_SECURE_AUTH_POST_PATHS)
+    if not _assert_exact_routes(
+        active_routes,
+        paths=_SECURE_AUTH_POST_PATHS,
+        expected_module=_SECURE_AUTH_MODULE,
+    ):
         raise RuntimeError(
             "SECURITY: secure auth route cutover is incomplete, duplicated, or misrouted"
         )
 
 
+def _cut_over_secure_audit_routes() -> None:
+    """Replace client-spoofable audit attribution with authenticated routes."""
+    _retire_legacy_post_routes(_AUDIT_REPLACED_POST_PATHS, label="audit-identity")
+
+    existing_routes = _effective_post_routes(_AUDIT_REPLACED_POST_PATHS)
+    if existing_routes:
+        if _assert_exact_routes(
+            existing_routes,
+            paths=_AUDIT_REPLACED_POST_PATHS,
+            expected_module=_SECURE_AUDIT_MODULE,
+        ):
+            return
+        raise RuntimeError(
+            "SECURITY: secure audit route cutover precondition is ambiguous"
+        )
+
+    app.include_router(secure_audit_router, prefix="/api/v1")
+
+    active_routes = _effective_post_routes(_AUDIT_REPLACED_POST_PATHS)
+    if not _assert_exact_routes(
+        active_routes,
+        paths=_AUDIT_REPLACED_POST_PATHS,
+        expected_module=_SECURE_AUDIT_MODULE,
+    ):
+        raise RuntimeError(
+            "SECURITY: secure audit route cutover is incomplete, duplicated, or misrouted"
+        )
+
+
 _cut_over_secure_auth_routes()
 install_audit_actor_hardening(legacy_api)
+_cut_over_secure_audit_routes()
