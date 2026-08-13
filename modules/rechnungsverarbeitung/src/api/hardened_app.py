@@ -1,15 +1,19 @@
-"""Production app composition with fail-closed replacement of legacy auth routes.
+"""Production app composition with fail-closed security cutovers.
 
 FastAPI >=0.137 preserves included routers as a route tree instead of flattening
 all included ``APIRoute`` objects into ``app.router.routes``. The production
 composition therefore verifies effective routes via ``iter_route_contexts()``.
 
-The oversized legacy API module still contains historical auth handlers. Until
-those handlers are physically removed from ``main.py``, this module unregisters
-only the three security-sensitive legacy routes from the canonical ``v1`` router,
-invalidates FastAPI's live included-router cache, mounts the audited secure auth
-router, and then verifies the effective final route tree. Production containers
-must target this module, not ``main:app``.
+The oversized legacy API module still contains historical auth handlers and a
+few transitional audit-identity call shapes. Until those are physically removed
+from ``main.py``, this module performs two explicit production cutovers:
+
+1. unregister the three security-sensitive legacy auth routes and mount the
+   audited secure auth router;
+2. install authenticated audit-actor binding so human/service identity derives
+   from ``UserAuth.user_id`` rather than client-supplied headers/body fields.
+
+Production containers must target this module, not ``main:app``.
 """
 from __future__ import annotations
 
@@ -17,6 +21,10 @@ from collections import Counter
 
 from fastapi.routing import iter_route_contexts
 
+from modules.rechnungsverarbeitung.src.api import main as legacy_api
+from modules.rechnungsverarbeitung.src.api.audit_actor_hardening import (
+    install_audit_actor_hardening,
+)
 from modules.rechnungsverarbeitung.src.api.main import app, v1 as legacy_v1_router
 from modules.rechnungsverarbeitung.src.api.secure_auth_router import router as secure_auth_router
 
@@ -129,3 +137,4 @@ def _cut_over_secure_auth_routes() -> None:
 
 
 _cut_over_secure_auth_routes()
+install_audit_actor_hardening(legacy_api)
