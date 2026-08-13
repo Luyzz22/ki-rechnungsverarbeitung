@@ -4,8 +4,8 @@ from __future__ import annotations
 import logging
 import os
 import uuid
-from datetime import datetime
-from typing import Any, Optional
+from datetime import datetime, timezone
+from typing import Any
 
 import stripe
 from dotenv import load_dotenv
@@ -53,6 +53,13 @@ PLANS = {
         "stripe_price_id": os.getenv("STRIPE_PRICE_ENTERPRISE", ""),
     },
 }
+
+
+def _plan_limit(plan_id: str) -> int:
+    plan = PLANS.get(plan_id)
+    if not plan:
+        raise ValueError("Unsupported subscription plan metadata")
+    return int(plan["invoices_per_month"])
 
 
 class SubscriptionService:
@@ -104,7 +111,7 @@ class SubscriptionService:
     def create_checkout_session(self, tenant_id: str, plan_id: str,
                                  user_email: str, success_url: str,
                                  cancel_url: str) -> dict[str, Any]:
-        """Create a Stripe Checkout session for subscription."""
+        """Create Stripe Checkout session for subscription."""
         if not stripe.api_key:
             raise ValueError("Stripe not configured")
 
@@ -154,7 +161,7 @@ class SubscriptionService:
 
         event_type = event["type"]
         data = event["data"]["object"]
-        logger.info(f"stripe_webhook: {event_type}")
+        logger.info("stripe_webhook: %s", event_type)
 
         if event_type == "checkout.session.completed":
             self._handle_checkout_completed(data)
@@ -209,35 +216,98 @@ class SubscriptionService:
 
         if not tenant_id:
             return
+        if not isinstance(plan_id, str) or plan_id not in PLANS:
+            raise ValueError("Unsupported subscription plan metadata")
 
+        invoices_limit = _plan_limit(plan_id)
+        now = datetime.now(timezone.utc)
         with get_session() as s:
-            existing = s.execute(text("SELECT id FROM subscriptions WHERE tenant_id = :t"), {"t": tenant_id}).fetchone()
+            existing = s.execute(
+                text("SELECT id FROM subscriptions WHERE tenant_id = :t"),
+                {"t": tenant_id},
+            ).fetchone()
             if existing:
                 s.execute(text("""
                     UPDATE subscriptions SET plan = :plan, status = 'active',
-                        stripe_customer_id = :cid, stripe_subscription_id = :sid, updated_at = :now
+                        stripe_customer_id = :cid, stripe_subscription_id = :sid,
+                        invoices_limit = :limit, updated_at = :now
                     WHERE tenant_id = :t
-                """), {"plan": plan_id, "cid": customer_id, "sid": subscription_id, "t": tenant_id, "now": datetime.utcnow()})
+                """), {
+                    "plan": plan_id,
+                    "cid": customer_id,
+                    "sid": subscription_id,
+                    "limit": invoices_limit,
+                    "t": tenant_id,
+                    "now": now,
+                })
             else:
                 s.execute(text("""
-                    INSERT INTO subscriptions (id, tenant_id, plan, status, stripe_customer_id,
-                        stripe_subscription_id, invoices_used, created_at)
-                    VALUES (:id, :t, :plan, 'active', :cid, :sid, 0, :now)
-                """), {"id": str(uuid.uuid4()), "t": tenant_id, "plan": plan_id, "cid": customer_id, "sid": subscription_id, "now": datetime.utcnow()})
+                    INSERT INTO subscriptions (
+                        id, tenant_id, plan, status, stripe_customer_id,
+                        stripe_subscription_id, invoices_limit, invoices_used, created_at
+                    ) VALUES (:id, :t, :plan, 'active', :cid, :sid, :limit, 0, :now)
+                """), {
+                    "id": str(uuid.uuid4()),
+                    "t": tenant_id,
+                    "plan": plan_id,
+                    "cid": customer_id,
+                    "sid": subscription_id,
+                    "limit": invoices_limit,
+                    "now": now,
+                })
             s.commit()
-        logger.info(f"subscription_activated: tenant={tenant_id} plan={plan_id}")
+        logger.info("subscription_activated: tenant=%s plan=%s", tenant_id, plan_id)
 
     def _handle_subscription_updated(self, subscription: dict) -> None:
         tenant_id = subscription.get("metadata", {}).get("tenant_id")
         if not tenant_id:
             return
+
         status = subscription.get("status")
-        period_end = datetime.fromtimestamp(subscription.get("current_period_end", 0))
+        period_start_raw = subscription.get("current_period_start")
+        period_end_raw = subscription.get("current_period_end")
+        period_start = (
+            datetime.fromtimestamp(period_start_raw, tz=timezone.utc)
+            if period_start_raw
+            else None
+        )
+        period_end = (
+            datetime.fromtimestamp(period_end_raw, tz=timezone.utc)
+            if period_end_raw
+            else None
+        )
+        plan_id = subscription.get("metadata", {}).get("plan_id")
+        plan_limit = _plan_limit(plan_id) if isinstance(plan_id, str) and plan_id in PLANS else None
+        now = datetime.now(timezone.utc)
+
         with get_session() as s:
-            s.execute(text("""
-                UPDATE subscriptions SET status = :s, current_period_end = :pe, invoices_used = 0, updated_at = :now
-                WHERE tenant_id = :t
-            """), {"s": status, "pe": period_end, "t": tenant_id, "now": datetime.utcnow()})
+            if plan_limit is None:
+                s.execute(text("""
+                    UPDATE subscriptions SET status = :s, current_period_start = :ps,
+                        current_period_end = :pe, invoices_used = 0, updated_at = :now
+                    WHERE tenant_id = :t
+                """), {
+                    "s": status,
+                    "ps": period_start,
+                    "pe": period_end,
+                    "t": tenant_id,
+                    "now": now,
+                })
+            else:
+                s.execute(text("""
+                    UPDATE subscriptions SET plan = :plan, status = :s,
+                        invoices_limit = :limit, current_period_start = :ps,
+                        current_period_end = :pe, invoices_used = 0, updated_at = :now
+                    WHERE tenant_id = :t
+                """), {
+                    "plan": plan_id,
+                    "limit": plan_limit,
+                    "s": status,
+                    "ps": period_start,
+                    "pe": period_end,
+                    "t": tenant_id,
+                    "now": now,
+                })
             s.commit()
 
     def _handle_subscription_deleted(self, subscription: dict) -> None:
@@ -245,28 +315,26 @@ class SubscriptionService:
         if not tenant_id:
             return
         with get_session() as s:
-            s.execute(text("UPDATE subscriptions SET status = 'canceled', plan = 'starter', updated_at = :now WHERE tenant_id = :t"),
-                      {"t": tenant_id, "now": datetime.utcnow()})
+            s.execute(text("""
+                UPDATE subscriptions
+                SET status = 'canceled', plan = 'starter', invoices_limit = 50,
+                    updated_at = :now
+                WHERE tenant_id = :t
+            """), {"t": tenant_id, "now": datetime.now(timezone.utc)})
             s.commit()
-        logger.info(f"subscription_canceled: tenant={tenant_id}")
+        logger.info("subscription_canceled: tenant=%s", tenant_id)
 
     def _handle_payment_failed(self, invoice: dict) -> None:
         customer_id = invoice.get("customer")
-        logger.warning(f"payment_failed: customer={customer_id}")
-
+        logger.warning("payment_failed: customer=%s", customer_id)
 
     def get_usage(self, tenant_id: str) -> dict:
-        """Get billing usage for tenant."""
-        with get_session() as s:
-            row = s.execute(
-                text("SELECT plan, status, invoices_used, invoices_limit FROM subscriptions WHERE tenant_id = :t"),
-                {"t": tenant_id},
-            ).fetchone()
-            if not row:
-                return {"plan": "none", "status": "inactive", "used": 0, "limit": 0}
-            return {
-                "plan": row[0],
-                "status": row[1],
-                "used": row[2] or 0,
-                "limit": row[3] if row[3] else "unlimited",
-            }
+        """Get billing usage using the same plan source as enforcement."""
+        subscription = self.get_tenant_subscription(tenant_id)
+        limit = subscription["invoices_limit"]
+        return {
+            "plan": subscription["plan"],
+            "status": subscription["status"],
+            "used": subscription["invoices_used"],
+            "limit": "unlimited" if limit == -1 else limit,
+        }
