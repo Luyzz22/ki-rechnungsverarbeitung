@@ -1,0 +1,193 @@
+/* ==========================================================================
+   SBS Deutschland — Design Tokens
+   Semantic tokens only. Division themes re-map the accent + signal ramp;
+   surface, text and border roles stay identical across all three sites so
+   corporate / industry / legal read as one company.
+   ========================================================================== */
+
+:root {
+  /* ---- Brand constants (SBS corporate identity) ------------------------ */
+  --sbs-navy: #003856;
+  --sbs-navy-deep: #00293f;
+  --sbs-navy-ink: #001a29;
+  --sbs-gold: #ffb900;
+  --sbs-gold-deep: #d99b00;
+
+  /* ---- Surfaces -------------------------------------------------------- */
+  --sbs-bg-page: #ffffff;
+  --sbs-bg-sunken: #f6f8fa;
+  --sbs-bg-elevated: #ffffff;
+  --sbs-bg-emphasis: #eef2f6;
+  --sbs-bg-inverse: #001a29;
+  --sbs-bg-inverse-elevated: #04293e;
+  --sbs-bg-inverse-sunken: #001320;
+
+  /* ---- Text ------------------------------------------------------------ */
+  --sbs-text-primary: #0b1f2c;
+  --sbs-text-secondary: #46606f;
+  --sbs-text-muted: #6b8493;
+  --sbs-text-inverse: #f2f7fa;
+  --sbs-text-inverse-secondary: #a9c3d1;
+  --sbs-text-inverse-muted: #7897a8;
+
+  /* ---- Borders --------------------------------------------------------- */
+  --sbs-border-subtle: #e6ecf1;
+  --sbs-border: #d3dee6;
+  --sbs-border-strong: #b3c5d1;
+  --sbs-border-inverse: rgba(169, 195, 209, 0.22);
+  --sbs-border-inverse-strong: rgba(169, 195, 209, 0.4);
+
+  /* ---- Accent (corporate default) -------------------------------------- */
+  --sbs-accent: #0b6ea8;
+  --sbs-accent-strong: #05537f;
+  --sbs-accent-bright: #38a3dc;
+  --sbs-accent-soft: #e8f2f9;
+  --sbs-accent-contrast: #ffffff;
+  --sbs-accent-on-inverse: #6cc6f2;
+
+  /* ---- Signal rail ramp (the ownable motif) ---------------------------- */
+  --sbs-signal-1: #0b6ea8;
+  --sbs-signal-2: #2f95c9;
+  --sbs-signal-3: #56bde0;
+  --sbs-signal-line: rgba(11, 110, 168, 0.28);
+  --sbs-signal-line-inverse: rgba(108, 198, 242, 0.3);
+
+  /* ---- Status (never colour-only; always paired with text/shape) ------- */
+  --sbs-ok: #0f7a52;
+  --sbs-ok-soft: #e5f4ee;
+  --sbs-warn: #9a6400;
+  --sbs-warn-soft: #fdf3e0;
+  --sbs-risk: #a52834;
+  --sbs-risk-soft: #fcecee;
+  --sbs-neutral: #5a7383;
+  --sbs-neutral-soft: #eef2f5;
+
+  /* ---- Spacing scale --------------------------------------------------- */
+  --sbs-space-1: 0.25rem;
+  --sbs-space-2: 0.5rem;
+  --sbs-space-3: 0.75rem;
+  --sbs-space-4: 1rem;
+  --sbs-space-5: 1.5rem;
+  --sbs-space-6: 2rem;
+  --sbs-space-7: 2.5rem;
+  --sbs-space-8: 3.5rem;
+  --sbs-space-9: 4.5rem;
+  --sbs-space-10: 6rem;
+  --sbs-space-11: 8rem;
+  --sbs-space-12: 10rem;
+
+  /* ---- Layout ---------------------------------------------------------- */
+  --sbs-container: 1280px;
+  --sbs-container-narrow: 940px;
+  --sbs-container-prose: 68ch;
+  --sbs-gutter: 1.25rem;
+  --sbs-header-height: 4.25rem;
+
+  /* ---- Radii ----------------------------------------------------------- */
+  --sbs-radius-sm: 6px;
+  --sbs-radius-md: 10px;
+  --sbs-radius-lg: 16px;
+  --sbs-radius-xl: 24px;
+  --sbs-radius-pill: 999px;
+
+  /* ---- Elevation ------------------------------------------------------- */
+  --sbs-shadow-sm: 0 1px 2px rgba(11, 31, 44, 0.06), 0 1px 1px rgba(11, 31, 44, 0.04);
+  --sbs-shadow-md: 0 4px 12px rgba(11, 31, 44, 0.07), 0 1px 3px rgba(11, 31, 44, 0.05);
+  --sbs-shadow-lg: 0 18px 44px rgba(11, 31, 44, 0.1), 0 3px 10px rgba(11, 31, 44, 0.05);
+  --sbs-shadow-inverse: 0 20px 50px rgba(0, 10, 18, 0.55);
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --sbs-motion-fast: 140ms;
+  --sbs-motion-normal: 240ms;
+  --sbs-motion-slow: 460ms;
+  --sbs-motion-rail: 11s;
+  --sbs-ease-standard: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --sbs-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --sbs-ease-linear: linear;
+
+  /* ---- Typography ------------------------------------------------------ */
+  --sbs-font-sans:
+    var(--font-sbs-sans), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --sbs-font-mono:
+    var(--font-sbs-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Consolas, monospace;
+}
+
+/* ==========================================================================
+   Division themes
+   Only accent + signal ramp change. Surfaces, text and borders are shared,
+   which is what makes the three sites read as one company (§99) while the
+   accent + product content make them distinguishable in 3 seconds (§100).
+   ========================================================================== */
+
+[data-division="industry"] {
+  --sbs-accent: #0a7f96;
+  --sbs-accent-strong: #045f72;
+  --sbs-accent-bright: #22b3c9;
+  --sbs-accent-soft: #e4f4f6;
+  --sbs-accent-contrast: #ffffff;
+  --sbs-accent-on-inverse: #4fd4e6;
+
+  --sbs-signal-1: #0a7f96;
+  --sbs-signal-2: #22b3c9;
+  --sbs-signal-3: #c98a12;
+  --sbs-signal-line: rgba(10, 127, 150, 0.3);
+  --sbs-signal-line-inverse: rgba(79, 212, 230, 0.32);
+
+  --sbs-bg-inverse: #041c26;
+  --sbs-bg-inverse-elevated: #0a2f3c;
+  --sbs-bg-inverse-sunken: #02141c;
+}
+
+[data-division="legal"] {
+  --sbs-accent: #4a45b8;
+  --sbs-accent-strong: #332f92;
+  --sbs-accent-bright: #7a74e8;
+  --sbs-accent-soft: #ecebfa;
+  --sbs-accent-contrast: #ffffff;
+  --sbs-accent-on-inverse: #a49ef7;
+
+  --sbs-signal-1: #4a45b8;
+  --sbs-signal-2: #7a74e8;
+  --sbs-signal-3: #3d86cc;
+  --sbs-signal-line: rgba(74, 69, 184, 0.3);
+  --sbs-signal-line-inverse: rgba(164, 158, 247, 0.32);
+
+  --sbs-bg-inverse: #0d1030;
+  --sbs-bg-inverse-elevated: #1a1e4d;
+  --sbs-bg-inverse-sunken: #080a22;
+}
+
+[data-division="academy"] {
+  --sbs-accent: #0d7a5f;
+  --sbs-accent-strong: #075c47;
+  --sbs-accent-bright: #23b48c;
+  --sbs-accent-soft: #e3f5ef;
+  --sbs-accent-contrast: #ffffff;
+  --sbs-accent-on-inverse: #4fd9ae;
+
+  --sbs-signal-1: #0d7a5f;
+  --sbs-signal-2: #23b48c;
+  --sbs-signal-3: #2f95c9;
+  --sbs-signal-line: rgba(13, 122, 95, 0.3);
+  --sbs-signal-line-inverse: rgba(79, 217, 174, 0.32);
+
+  --sbs-bg-inverse: #08201b;
+  --sbs-bg-inverse-elevated: #0f362d;
+  --sbs-bg-inverse-sunken: #051612;
+}
+
+/* Wider gutters as the viewport opens up (§8). */
+@media (min-width: 48rem) {
+  :root {
+    --sbs-gutter: 2rem;
+    --sbs-header-height: 4.75rem;
+  }
+}
+
+@media (min-width: 80rem) {
+  :root {
+    --sbs-gutter: 2.5rem;
+  }
+}

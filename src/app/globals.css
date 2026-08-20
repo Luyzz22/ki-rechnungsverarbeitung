@@ -1,0 +1,352 @@
+@import "tailwindcss";
+@import "../design-system/tokens.css";
+
+/* Expose semantic tokens to Tailwind utilities. `inline` keeps the var()
+   reference in the generated CSS so [data-division] re-theming works. */
+@theme inline {
+  --color-page: var(--sbs-bg-page);
+  --color-sunken: var(--sbs-bg-sunken);
+  --color-elevated: var(--sbs-bg-elevated);
+  --color-emphasis: var(--sbs-bg-emphasis);
+  --color-inverse: var(--sbs-bg-inverse);
+  --color-inverse-elevated: var(--sbs-bg-inverse-elevated);
+  --color-inverse-sunken: var(--sbs-bg-inverse-sunken);
+
+  --color-ink: var(--sbs-text-primary);
+  --color-ink-secondary: var(--sbs-text-secondary);
+  --color-ink-muted: var(--sbs-text-muted);
+  --color-ink-inverse: var(--sbs-text-inverse);
+  --color-ink-inverse-secondary: var(--sbs-text-inverse-secondary);
+  --color-ink-inverse-muted: var(--sbs-text-inverse-muted);
+
+  --color-line-subtle: var(--sbs-border-subtle);
+  --color-line: var(--sbs-border);
+  --color-line-strong: var(--sbs-border-strong);
+  --color-line-inverse: var(--sbs-border-inverse);
+  --color-line-inverse-strong: var(--sbs-border-inverse-strong);
+
+  --color-accent: var(--sbs-accent);
+  --color-accent-strong: var(--sbs-accent-strong);
+  --color-accent-bright: var(--sbs-accent-bright);
+  --color-accent-soft: var(--sbs-accent-soft);
+  --color-accent-contrast: var(--sbs-accent-contrast);
+  --color-accent-on-inverse: var(--sbs-accent-on-inverse);
+
+  --color-gold: var(--sbs-gold);
+  --color-ok: var(--sbs-ok);
+  --color-warn: var(--sbs-warn);
+  --color-risk: var(--sbs-risk);
+
+  --radius-sm: var(--sbs-radius-sm);
+  --radius-md: var(--sbs-radius-md);
+  --radius-lg: var(--sbs-radius-lg);
+  --radius-xl: var(--sbs-radius-xl);
+
+  --font-sans: var(--sbs-font-sans);
+  --font-mono: var(--sbs-font-mono);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--sbs-header-height) + 1rem);
+}
+
+body {
+  margin: 0;
+  background: var(--sbs-bg-page);
+  color: var(--sbs-text-primary);
+  font-family: var(--sbs-font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+h1, h2, h3, h4, h5, h6 { margin: 0; font-weight: 620; }
+p { margin: 0; }
+ul, ol { margin: 0; padding: 0; }
+img, svg, video { max-width: 100%; }
+img, video { height: auto; }
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button { font: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--sbs-accent);
+  outline-offset: 3px;
+  border-radius: var(--sbs-radius-sm);
+}
+
+.sbs-inverse :focus-visible,
+[data-surface="inverse"] :focus-visible {
+  outline-color: var(--sbs-accent-on-inverse);
+}
+
+::selection {
+  background: var(--sbs-accent);
+  color: var(--sbs-accent-contrast);
+}
+
+/* ==========================================================================
+   Layout primitives
+   ========================================================================== */
+
+.sbs-container {
+  width: 100%;
+  max-width: var(--sbs-container);
+  margin-inline: auto;
+  padding-inline: var(--sbs-gutter);
+}
+
+.sbs-container--narrow { max-width: var(--sbs-container-narrow); }
+
+.sbs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sbs-space-5);
+}
+
+@media (min-width: 48rem) {
+  .sbs-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+}
+
+@media (min-width: 64rem) {
+  .sbs-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--sbs-space-6); }
+}
+
+/* Section rhythm — deliberately not uniform (§8). */
+.sbs-section { padding-block: var(--sbs-space-9); }
+.sbs-section--tight { padding-block: var(--sbs-space-7); }
+.sbs-section--wide { padding-block: var(--sbs-space-10); }
+.sbs-section--hero { padding-block: var(--sbs-space-9) var(--sbs-space-9); }
+
+@media (min-width: 64rem) {
+  .sbs-section { padding-block: var(--sbs-space-10); }
+  .sbs-section--tight { padding-block: var(--sbs-space-8); }
+  .sbs-section--wide { padding-block: var(--sbs-space-11); }
+  .sbs-section--hero { padding-block: var(--sbs-space-10) var(--sbs-space-11); }
+}
+
+/* ==========================================================================
+   Typography scale
+   ========================================================================== */
+
+/* German compound headlines need a tighter ceiling than an English display
+   scale would take; 72px keeps a three-line hero from swallowing the fold. */
+.sbs-display {
+  font-size: clamp(2.375rem, 1.35rem + 3.6vw, 4.5rem);
+  line-height: 1.04;
+  letter-spacing: -0.032em;
+  font-weight: 655;
+  text-wrap: balance;
+}
+
+/* For headlines built from several short sentences. */
+.sbs-display--triplet {
+  font-size: clamp(2.125rem, 1.3rem + 2.9vw, 3.5rem);
+  line-height: 1.08;
+  letter-spacing: -0.028em;
+  font-weight: 650;
+  text-wrap: pretty;
+}
+
+.sbs-display--sm {
+  font-size: clamp(2rem, 1.25rem + 2.6vw, 3.25rem);
+  line-height: 1.06;
+  letter-spacing: -0.032em;
+  font-weight: 650;
+  text-wrap: balance;
+}
+
+.sbs-h2 {
+  font-size: clamp(1.75rem, 1.15rem + 2.3vw, 2.875rem);
+  line-height: 1.1;
+  letter-spacing: -0.028em;
+  font-weight: 640;
+  text-wrap: balance;
+}
+
+.sbs-h3 {
+  font-size: clamp(1.3125rem, 1.05rem + 1vw, 1.75rem);
+  line-height: 1.2;
+  letter-spacing: -0.021em;
+  font-weight: 630;
+  text-wrap: balance;
+}
+
+.sbs-h4 {
+  font-size: 1.0625rem;
+  line-height: 1.35;
+  letter-spacing: -0.012em;
+  font-weight: 640;
+}
+
+/* German compound nouns regularly exceed a 375px line box at display sizes.
+   `hyphens: auto` needs the document lang, which is set to "de" in the layout. */
+.sbs-display,
+.sbs-display--sm,
+.sbs-display--triplet,
+.sbs-h2,
+.sbs-h3,
+.sbs-h4 {
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 47.99rem) {
+  .sbs-display,
+  .sbs-display--sm,
+  .sbs-display--triplet,
+  .sbs-h2 {
+    hyphens: auto;
+  }
+}
+
+.sbs-lead {
+  font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+  line-height: 1.55;
+  color: var(--sbs-text-secondary);
+  max-width: 44rem;
+  text-wrap: pretty;
+}
+
+.sbs-body { font-size: 1rem; line-height: 1.65; color: var(--sbs-text-secondary); text-wrap: pretty; }
+.sbs-body-sm { font-size: 0.9375rem; line-height: 1.6; color: var(--sbs-text-secondary); text-wrap: pretty; }
+
+.sbs-eyebrow {
+  font-family: var(--sbs-font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--sbs-accent);
+}
+
+.sbs-mono {
+  font-family: var(--sbs-font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: -0.005em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hero copy stays inside a readable measure (§7). */
+.sbs-measure-hero { max-width: 39rem; }
+
+/* ==========================================================================
+   Inverse surface
+   ========================================================================== */
+
+.sbs-inverse {
+  background: var(--sbs-bg-inverse);
+  color: var(--sbs-text-inverse);
+}
+
+.sbs-inverse .sbs-lead,
+.sbs-inverse .sbs-body,
+.sbs-inverse .sbs-body-sm { color: var(--sbs-text-inverse-secondary); }
+
+.sbs-inverse .sbs-eyebrow { color: var(--sbs-accent-on-inverse); }
+
+/* ==========================================================================
+   Motion — every keyframe below is referenced by a component with a stated
+   purpose. `prefers-reduced-motion` neutralises all of them (§41).
+   ========================================================================== */
+
+@keyframes sbs-rail-flow {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+
+@keyframes sbs-dash-flow {
+  to { stroke-dashoffset: -100; }
+}
+
+@keyframes sbs-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes sbs-node-pulse {
+  0%, 100% { opacity: 0.35; r: 3; }
+  50% { opacity: 1; r: 4.4; }
+}
+
+@keyframes sbs-menu-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes sbs-scan {
+  0% { transform: translateY(0); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { transform: translateY(var(--sbs-scan-distance, 120px)); opacity: 0; }
+}
+
+.sbs-reveal {
+  animation: sbs-fade-up var(--sbs-motion-slow) var(--sbs-ease-standard) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .sbs-reveal { animation: none; opacity: 1; transform: none; }
+}
+
+/* ==========================================================================
+   Utility: skip link
+   ========================================================================== */
+
+.sbs-skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 200;
+  padding: 0.625rem 1rem;
+  border-radius: var(--sbs-radius-md);
+  background: var(--sbs-bg-inverse);
+  color: var(--sbs-text-inverse);
+  font-size: 0.875rem;
+  font-weight: 560;
+  transform: translateY(-160%);
+  transition: transform var(--sbs-motion-fast) var(--sbs-ease-standard);
+}
+
+.sbs-skip-link:focus { transform: none; }
+
+/* Wide content escapes horizontally inside its own scroller, never the body.
+   `min-width: 0` is the part that matters: without it a flex or grid parent is
+   sized by the scroller's content and pushes the page sideways. */
+.sbs-scroll-x {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  min-width: 0;
+  max-width: 100%;
+}
