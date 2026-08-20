@@ -1,6 +1,6 @@
 [Unit]
 Description=SBS Deutschland marketing web layer (Next.js)
-Documentation=https://github.com/Luyzz22/ki-rechnungsverarbeitung/tree/main/sbs-web
+Documentation=https://github.com/SBS-Nexus/sbs-web
 After=network-online.target
 Wants=network-online.target
 

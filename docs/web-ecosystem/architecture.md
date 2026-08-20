@@ -22,28 +22,23 @@ releaseproof.com                ReleaseProof
 pythonpfad.de / sqlpfad.de      SBS Academy
 ```
 
-## Where it lives, and where it should live
+## Where it lives
 
-The application is a self-contained workspace at `sbs-web/` inside
-`Luyzz22/ki-rechnungsverarbeitung`. It has its own `package.json`, its own
-build, its own systemd unit and its own nginx configuration; nothing in it
-imports from the invoice application, and nothing in the invoice application
-imports from it. The only coupling is the git repository.
+`SBS-Nexus/sbs-web`, private. The repository root is the Next.js application.
 
-That coupling is transitional. The brief asks for a dedicated `sbs-web`
-repository, and no such repository exists in this session's scope. Creating a
-new GitHub repository is an outward-facing action that was not part of the
-branch mandate, so the code was placed where it is guaranteed to be reviewable
-today, with a one-command extraction path:
+It was extracted from `Luyzz22/ki-rechnungsverarbeitung` with
+`git subtree split --prefix=sbs-web`, which preserved the twelve original
+commits and produced a tree byte-identical to the source directory. The branch
+`claude/sbs-deutschland-ecosystem-rebuild-824fi4` in that repository remains as
+the recovery source and is not maintained further.
 
-```bash
-# From a clone of ki-rechnungsverarbeitung
-git subtree split --prefix=sbs-web -b sbs-web-extract
-git push git@github.com:Luyzz22/sbs-web.git sbs-web-extract:main
-```
+Nothing in this repository imports from the invoice application, and nothing in
+the invoice application imports from here. The relationship is limited to two
+things, both of them one-directional and both of them documented:
 
-After extraction the only change needed is the `Documentation=` line in
-`infra/systemd/sbs-web.service`. Nothing else references the parent repository.
+- the marketing site links out to `app.sbsdeutschland.com`;
+- the nginx redirect matrix forwards legacy URLs that used to be served by the
+  invoice application.
 
 ## Stack
 

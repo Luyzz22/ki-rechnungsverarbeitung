@@ -1,14 +1,19 @@
+# Dependencies
 node_modules/
+
+# Next.js build output
 .next/
 out/
-build/
-.env*.local
-*.tsbuildinfo
 next-env.d.ts
-.DS_Store
+*.tsbuildinfo
 
-# The repository root ignores *.svg for the invoice application's build output.
-# Every SVG in sbs-web is hand-written source (icons, social cards), so opt back in.
-!*.svg
-!public/**/*.svg
-!src/**/*.svg
+# Release artifacts produced by scripts/build-artifact.sh
+dist/
+*.tar.gz
+*.tar.gz.sha256
+
+# Local environment
+.env*.local
+
+# OS
+.DS_Store

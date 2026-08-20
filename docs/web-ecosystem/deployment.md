@@ -44,9 +44,7 @@ dig +short sbsdeutschland.com www.sbsdeutschland.com app.sbsdeutschland.com
 ## 1. Deploy the application
 
 ```bash
-cd /opt/src && git clone https://github.com/Luyzz22/ki-rechnungsverarbeitung.git
-cd ki-rechnungsverarbeitung
-git checkout claude/sbs-deutschland-ecosystem-rebuild-824fi4
+cd /opt/src && git clone https://github.com/SBS-Nexus/sbs-web.git
 cd sbs-web
 ./infra/scripts/deploy.sh
 ```
@@ -81,7 +79,7 @@ See `domain-routing.md`. Two `A` records at STRATO, nothing else changed.
 ## 3. Certificates
 
 ```bash
-sbs-web/infra/scripts/issue-certs.sh
+infra/scripts/issue-certs.sh
 ```
 
 Refuses to run until both hostnames resolve. Expands the existing certificate to
@@ -90,7 +88,7 @@ four names and finishes with a renewal dry run.
 ## 4. nginx
 
 ```bash
-sbs-web/infra/scripts/enable-nginx.sh
+infra/scripts/enable-nginx.sh
 ```
 
 What it does:

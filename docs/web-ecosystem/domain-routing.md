@@ -53,7 +53,7 @@ The server already uses Let's Encrypt via certbot for `sbsdeutschland.com`.
 second one, so renewal stays a single job:
 
 ```bash
-sbs-web/infra/scripts/issue-certs.sh
+infra/scripts/issue-certs.sh
 ```
 
 The script refuses to run until both new hostnames resolve, then runs

@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# The marketing layer holds no secrets and needs no write access.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Start the built site
+        run: |
+          npm start &
+          for _ in $(seq 1 40); do
+            if curl -fsS -o /dev/null http://127.0.0.1:3100/; then exit 0; fi
+            sleep 1
+          done
+          echo "server did not start"; exit 1
+
+      # Crawls all three hostnames and verifies every external product URL.
+      - name: Link check
+        run: npm run check:links -- http://127.0.0.1:3100
+
+      # Truth gate: unverifiable claims, marketing filler, superseded naming.
+      - name: Content check
+        run: npm run check:content -- http://127.0.0.1:3100
+
+      - name: Build release artifact
+        run: ./scripts/build-artifact.sh dist
+
+      - name: Artifact digest
+        run: cat dist/*.manifest.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbs-web-release
+          path: |
+            dist/*.tar.gz
+            dist/*.tar.gz.sha256
+            dist/*.manifest.json
+          retention-days: 30
+          if-no-files-found: error

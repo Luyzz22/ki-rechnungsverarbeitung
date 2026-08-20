@@ -1,5 +1,7 @@
 # sbs-web
 
+[![CI](https://github.com/SBS-Nexus/sbs-web/actions/workflows/ci.yml/badge.svg)](https://github.com/SBS-Nexus/sbs-web/actions/workflows/ci.yml)
+
 Public web ecosystem for SBS Deutschland: three hostnames, one design system,
 one build.
 
@@ -35,7 +37,8 @@ served without the prefix under their own hostnames — see
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
 | `npm run check:links` | Crawls all three hostnames, verifies external product URLs |
-| `npm run check:content` | Fails on unverifiable claims, marketing filler, emoji in page text |
+| `npm run check:content` | Fails on unverifiable claims, marketing filler, superseded naming, emoji in page text |
+| `npm run artifact` | Builds the verifiable release tarball into `dist/` |
 
 The two check scripts run against a live server:
 
@@ -73,6 +76,14 @@ These are enforced, not aspirational:
 - **Gold marks one thing.** `--sbs-gold` is used for the step where a human
   decides, and for nothing else, on any site.
 - **No animation library, no icon library, no third-party script.**
+- **Never build on the production host.** See `CLAUDE.md` section 7.
+
+## Agent and contributor instructions
+
+[`CLAUDE.md`](CLAUDE.md) is the full instruction set for this repository —
+what it must never do, the enforced content-truth rules, product naming,
+design-system rules and the definition of done. [`AGENTS.md`](AGENTS.md) is the
+short form for tools that read that filename.
 
 ## Documentation
 
@@ -89,6 +100,19 @@ These are enforced, not aspirational:
 
 ## Deployment
 
-Not yet deployed. The configuration is repository-managed and health-gated; see
-[`deployment.md`](docs/web-ecosystem/deployment.md) for the order of operations
-and the rollback for each step.
+Not yet deployed — no DNS record, no certificate and no public nginx routing
+exists for the two division hostnames.
+
+Deployment is **artifact-based**. The production host has 1 vCPU and 2 GB RAM and
+runs a live application, so it never installs dependencies and never compiles:
+
+```
+CI  ->  npm ci -> typecheck -> lint -> build -> checks -> tarball + SHA256
+                                                              |
+host  ->  verify SHA256 -> atomic release swap -> systemctl restart -> health check
+```
+
+Build an artifact locally with `npm run artifact`; it writes
+`dist/sbs-web-<sha>.tar.gz`, a `.sha256` in `sha256sum -c` format and a
+provenance manifest. See [`deployment.md`](docs/web-ecosystem/deployment.md) for
+the order of operations and the rollback for each step.

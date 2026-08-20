@@ -7,7 +7,7 @@
 # invoice application on port 8000 is never touched.
 #
 # Run from a checkout of this repository on the target host, as root:
-#   sbs-web/infra/scripts/deploy.sh
+#   infra/scripts/deploy.sh
 # =============================================================================
 set -euo pipefail
 
