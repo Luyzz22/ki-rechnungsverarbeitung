@@ -70,12 +70,24 @@ export function breadcrumbSchema(trail: { name: string; path: string }[]) {
   };
 }
 
+/**
+ * Escapes the characters that would let a string inside the payload terminate
+ * the surrounding <script> element. The data comes from typed literals rather
+ * than user input, but a product description containing "</script>" would
+ * otherwise be an injection primitive.
+ */
+function serialiseJsonLd(data: object): string {
+  return JSON.stringify(data)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026");
+}
+
 export function JsonLd({ data }: { data: object }) {
   return (
     <script
       type="application/ld+json"
-      // Schema payloads are built from typed literals above, never user input.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: serialiseJsonLd(data) }}
     />
   );
 }

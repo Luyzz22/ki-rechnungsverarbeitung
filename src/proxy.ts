@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /**
- * Host-based routing for the three public sites (§14).
+ * Host-based routing for the three public sites.
  *
  * One build, one deployment, three hostnames. Internally every page keeps a
  * stable path (`/industrie/produkte/normpilot`); publicly a division page lives
@@ -12,10 +12,14 @@ import type { NextRequest } from "next/server";
  *  - on a division host the clean path is rewritten to the internal one, and
  *    the internal form permanently redirects to the clean one;
  *  - on the corporate host the internal form permanently redirects to the
- *    division host, so the corporate origin never serves division content.
+ *    division host, so the corporate origin never serves division content;
+ *  - on any other hostname the internal prefixes return 404, so the internal
+ *    URL space is never publicly reachable — for instance by addressing the
+ *    server directly by IP. nginx rejects unmatched hosts at the edge as well;
+ *    this is the second layer.
  *
- * Unknown hosts (localhost, preview deployments, health checks) fall through
- * untouched, which keeps the whole ecosystem testable at a single origin.
+ * Loopback hostnames are exempt so the whole ecosystem stays testable at a
+ * single origin during development and in CI.
  */
 
 const DIVISION_HOSTS: Record<string, { prefix: "/industrie" | "/legal" }> = {
@@ -26,10 +30,22 @@ const DIVISION_HOSTS: Record<string, { prefix: "/industrie" | "/legal" }> = {
 
 const CORPORATE_HOSTS = new Set(["sbsdeutschland.com", "www.sbsdeutschland.com"]);
 
+/** Development and CI addressing, where path prefixes select the site. */
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1", "0.0.0.0"]);
+
 const DIVISION_ORIGINS: Record<"/industrie" | "/legal", string> = {
   "/industrie": "https://industrie.sbsdeutschland.com",
   "/legal": "https://legal.sbsdeutschland.com",
 };
+
+const PREFIXES = ["/industrie", "/legal"] as const;
+
+function prefixOf(pathname: string): (typeof PREFIXES)[number] | null {
+  for (const prefix of PREFIXES) {
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return prefix;
+  }
+  return null;
+}
 
 export default function proxy(request: NextRequest) {
   const host = (request.headers.get("host") ?? "").split(":")[0].toLowerCase();
@@ -40,10 +56,15 @@ export default function proxy(request: NextRequest) {
     const { prefix } = division;
 
     // The internal prefix is an implementation detail on a division host.
-    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
+    if (prefixOf(pathname) === prefix) {
       const url = request.nextUrl.clone();
       url.pathname = pathname.slice(prefix.length) || "/";
       return NextResponse.redirect(url, 308);
+    }
+
+    // A division host must not serve the other division's internal space.
+    if (prefixOf(pathname)) {
+      return new NextResponse(null, { status: 404 });
     }
 
     const url = request.nextUrl.clone();
@@ -53,12 +74,24 @@ export default function proxy(request: NextRequest) {
   }
 
   if (CORPORATE_HOSTS.has(host)) {
-    for (const prefix of ["/industrie", "/legal"] as const) {
-      if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
-        const target = `${DIVISION_ORIGINS[prefix]}${pathname.slice(prefix.length) || "/"}${search}`;
-        return NextResponse.redirect(target, 308);
-      }
+    const prefix = prefixOf(pathname);
+    if (prefix) {
+      // Built through the URL parser rather than by concatenation, so a path
+      // can never influence the origin of the redirect target.
+      const target = new URL(pathname.slice(prefix.length) || "/", DIVISION_ORIGINS[prefix]);
+      target.search = search;
+      return NextResponse.redirect(target.toString(), 308);
     }
+    return NextResponse.next();
+  }
+
+  if (LOOPBACK_HOSTS.has(host)) {
+    return NextResponse.next();
+  }
+
+  // Unrecognised hostname: never expose the internal URL space.
+  if (prefixOf(pathname)) {
+    return new NextResponse(null, { status: 404 });
   }
 
   return NextResponse.next();

@@ -8,12 +8,17 @@ Wants=network-online.target
 Type=simple
 User=www-data
 Group=www-data
+# /var/www/sbs-web is a symlink to the active release under
+# /var/www/sbs-web-releases/. systemd resolves it on every start, so activating
+# a release is a symlink move plus a restart.
 WorkingDirectory=/var/www/sbs-web
 Environment=NODE_ENV=production
 Environment=PORT=3100
 Environment=HOSTNAME=127.0.0.1
-# Built with `next build` (output: standalone); the server bundle is self-contained.
-ExecStart=/usr/bin/node /var/www/sbs-web/server.js
+Environment=NEXT_TELEMETRY_DISABLED=1
+# The artifact is a self-contained Next.js standalone bundle: no npm install and
+# no compilation happen on this host.
+ExecStart=/usr/bin/env node /var/www/sbs-web/server.js
 Restart=on-failure
 RestartSec=3
 KillSignal=SIGINT
@@ -29,7 +34,20 @@ ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true
 RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+# Bounded so a runaway process cannot starve the invoice application. Measured
+# steady-state RSS is ~120 MB.
 MemoryMax=512M
+MemoryHigh=384M
+CPUWeight=50
+TasksMax=256
 
 [Install]
 WantedBy=multi-user.target

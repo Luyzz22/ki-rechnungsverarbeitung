@@ -120,13 +120,36 @@ https://industrie.sbsdeutschland.com/governance         404  (legal-only route, 
 
 ## www
 
-`www.sbsdeutschland.com` is served by the same server block as the apex and
-renders identical content, with canonicals pointing at the apex. If a permanent
-redirect to the apex is preferred, add it to the corporate server block:
+`www.sbsdeutschland.com` has its own server block that returns
+`301 https://sbsdeutschland.com$request_uri`. Two hostnames serving identical
+content with only a canonical tag to separate them is a weaker arrangement than
+a redirect, and the launch is the natural moment to settle it.
 
-```nginx
-if ($host = www.sbsdeutschland.com) { return 301 https://sbsdeutschland.com$request_uri; }
+Verified through real nginx:
+
+```
+Host: www.sbsdeutschland.com  /             -> 301 https://sbsdeutschland.com/
+Host: www.sbsdeutschland.com  /unternehmen  -> 301 https://sbsdeutschland.com/unternehmen
 ```
 
-This is left out by default because the existing site currently answers on both
-and a redirect is a behaviour change that should be a deliberate decision.
+## Unmatched hostnames
+
+Two layers reject them:
+
+1. **nginx** — a `default_server` block on port 80 answers `444` (close without
+   response) for any Host that matches no `server_name`. `enable-nginx.sh`
+   detects an existing `default_server` elsewhere in the configuration and
+   strips its own rather than causing a conflict.
+2. **The application** — `src/proxy.ts` returns 404 for the internal `/industrie`
+   and `/legal` prefixes under any hostname it does not recognise, so the
+   internal URL space is not reachable even if a request bypasses nginx or the
+   catch-all is disabled. Loopback hostnames are exempt so development and CI
+   can still address the three sites by path prefix at one origin.
+
+Verified:
+
+```
+Host: evil.example.com   /industrie/produkte  -> 404
+Host: 207.154.200.239    /industrie/produkte  -> 404
+Host: industrie.sbs...   /legal/produkte      -> 404   (cross-division isolation)
+```

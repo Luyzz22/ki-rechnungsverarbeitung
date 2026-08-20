@@ -38,6 +38,21 @@ one of each between them.
 | --- | --- | --- |
 | `/static/landing/` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
 | `/static/landing/index.html` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
+| `/static/landing/preise.html` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
+| `/static/landing/integrationen.html` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
+| `/static/landing/loesungen.html` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
+| `/static/landing/loesungen-finanzleitung.html` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
+| `/static/landing/loesungen-steuerberater.html` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
+| `/static/landing/loesungen-handel-filialnetz.html` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
+| `/static/landing/support.html` | `https://sbsdeutschland.com/kontakt` | 301 |
+| `/static/landing/ressourcen.html` | `https://sbsdeutschland.com/ressourcen` | 301 |
+| `/static/landing/kunden.html` | `https://sbsdeutschland.com/unternehmen` | 301 |
+| `/static/landing/referenzen.html` | `https://sbsdeutschland.com/unternehmen` | 301 |
+| `/static/landing/service-knowledge-os.html` | `https://industrie.sbsdeutschland.com/produkte/hydraulikdoc` | 301 |
+| `/static/landing/*` (anything else) | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
+| `/landing`, `/landing/` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
+| `/preise`, `/preise/` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
+| `/loesungen`, `/loesungen/` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
 | `/static/preise/` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
 | `/static/landing/hydraulikdoc.html` | `https://industrie.sbsdeutschland.com/produkte/hydraulikdoc` | 301 |
 | `/static/landing/hydraulikdoc-enterprise.html` | `…/produkte/hydraulikdoc#architektur` | 301 |
@@ -49,7 +64,7 @@ one of each between them.
 
 | Old URL | New URL | Status |
 | --- | --- | --- |
-| `/static/landing/sicherheit.html` | `https://sbsdeutschland.com/sicherheit` | 301 |
+| `/static/landing/security.html` | `https://sbsdeutschland.com/sicherheit` | 301 |
 | `/static/landing/compliance.html` | `https://sbsdeutschland.com/sicherheit` | 301 |
 | `/static/landing/avv.html` | `https://sbsdeutschland.com/sicherheit` | 301 |
 | `/static/landing/impressum.html` | `https://sbsdeutschland.com/impressum` | 301 |
@@ -78,9 +93,25 @@ sits in front of an authenticated flow.
 | `/demo` | `https://app.sbsdeutschland.com/demo` | 301 |
 | `/copilot` | `https://app.sbsdeutschland.com/copilot` | 301 |
 | `/mbr/*` | `https://app.sbsdeutschland.com/mbr/*` | 301 |
+| `/docs` | `https://app.sbsdeutschland.com/docs` | 301 |
+| `/openapi.json` | `https://app.sbsdeutschland.com/openapi.json` | 301 |
 
 `app.sbsdeutschland.com` itself is untouched: it keeps its own server block, its
 own certificate entry and its own upstream on port 8000.
+
+## How the inventory was established
+
+The list was taken from the **live site**, not from the repository. Every path
+was requested before it was mapped, and the two catch-alls (`^~ /sbshomepage/`
+and `^~ /static/landing/`) guarantee that nothing under either prefix can 404.
+
+The first draft of this matrix was written from the files on disk and missed
+twelve pages that were reachable in production — `integrationen`, `kunden`,
+`loesungen`, `loesungen-finanzleitung`, `loesungen-handel-filialnetz`,
+`loesungen-steuerberater`, `preise`, `referenzen`, `ressourcen`, `security`,
+`service-knowledge-os` and `support` — plus the three top-level entry points
+`/landing`, `/preise` and `/loesungen`. It also mapped `sicherheit.html`, which
+never existed; the real page is `security.html`.
 
 ## Verification after the switch
 
