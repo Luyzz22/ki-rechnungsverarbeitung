@@ -261,7 +261,7 @@ different company.
 
 Screenshots captured at 1440×900 and 375×812 for: corporate, industrie, legal,
 NormPilot, HydraulikDoc, KanzleiAI, ComplianceHub, Academy, Plattform,
-BelegFlow. They live in the session scratch directory rather than in the
+FlowCheck AI+. They live in the session scratch directory rather than in the
 repository, because committing 20 full-page PNGs would add several megabytes to
 a repository that ships no raster assets by design. Regenerate them with:
 

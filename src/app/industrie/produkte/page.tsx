@@ -9,12 +9,12 @@ export const metadata: Metadata = pageMetadata({
   path: "/industrie/produkte",
   title: "Produkte",
   description:
-    "Die Produkte von SBS Industrie: NormPilot für Audit-Evidence, HydraulikDoc für quellengebundene technische Antworten — sowie BelegFlow als geschäftsübergreifende Backoffice-Automatisierung.",
+    "Die Produkte von SBS Industrie: NormPilot für Audit-Evidence, HydraulikDoc für quellengebundene technische Antworten — sowie FlowCheck AI+ als geschäftsübergreifende Backoffice-Automatisierung.",
 });
 
 export default function IndustryProducts() {
   const products = productsByDivision("industry");
-  const belegflow = productBySlug("belegflow")!;
+  const flowcheck = productBySlug("flowcheck")!;
 
   return (
     <SiteChrome siteKey="industry" path="/industrie/produkte">
@@ -45,11 +45,11 @@ export default function IndustryProducts() {
           id="shared"
           eyebrow="Geschäftsübergreifend"
           title="Backoffice-Automatisierung im industriellen Umfeld"
-          lead="BelegFlow wird auf Unternehmensebene geführt und hier verlinkt, weil Belegverarbeitung im produzierenden Mittelstand regelmäßig dazugehört — ohne die Kernidentität dieses Geschäftsbereichs zu sein."
+          lead="FlowCheck AI+ wird auf Unternehmensebene geführt und hier verlinkt, weil Belegverarbeitung im produzierenden Mittelstand regelmäßig dazugehört — ohne die Kernidentität dieses Geschäftsbereichs zu sein."
           className="mb-8"
         />
         <div className="max-w-[38rem]">
-          <ProductCard product={belegflow} currentPath="/industrie/produkte" />
+          <ProductCard product={flowcheck} currentPath="/industrie/produkte" />
         </div>
       </Section>
     </SiteChrome>

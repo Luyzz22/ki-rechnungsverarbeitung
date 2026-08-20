@@ -8,7 +8,7 @@
 | `www.sbsdeutschland.com` | Corporate site (same content, canonical points at the apex) | same |
 | `industrie.sbsdeutschland.com` | SBS Industrie | same |
 | `legal.sbsdeutschland.com` | SBS Legal | same |
-| `app.sbsdeutschland.com` | BelegFlow application — **unchanged** | invoice-app on 127.0.0.1:8000 |
+| `app.sbsdeutschland.com` | FlowCheck AI+ application — **unchanged** | invoice-app on 127.0.0.1:8000 |
 
 ## DNS
 

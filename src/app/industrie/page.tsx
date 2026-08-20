@@ -30,7 +30,7 @@ const audiences = [
 ];
 
 export default function IndustryHome() {
-  const belegflow = productBySlug("belegflow")!;
+  const flowcheck = productBySlug("flowcheck")!;
   const products = productsByDivision("industry");
   const solutions = solutionsByDivision("industry");
 
@@ -85,14 +85,14 @@ export default function IndustryHome() {
           <p className="sbs-eyebrow mb-2 text-[var(--sbs-text-muted)]">Geschäftsübergreifend</p>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-[36rem]">
-              <h3 className="sbs-h4">{belegflow.name}</h3>
+              <h3 className="sbs-h4">{flowcheck.name}</h3>
               <p className="mt-1.5 text-[0.875rem] leading-[1.55] text-[var(--sbs-text-secondary)]">
-                {belegflow.tagline} Geführt wird BelegFlow auf Unternehmensebene, weil es weder zur
+                {flowcheck.tagline} Geführt wird FlowCheck AI+ auf Unternehmensebene, weil es weder zur
                 Industrie noch zum Recht allein gehört.
               </p>
             </div>
-            <Button href={linkFor(PAGE_PATH, belegflow.href)} variant="secondary">
-              BelegFlow ansehen
+            <Button href={linkFor(PAGE_PATH, flowcheck.href)} variant="secondary">
+              FlowCheck AI+ ansehen
             </Button>
           </div>
         </div>

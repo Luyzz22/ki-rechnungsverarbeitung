@@ -134,9 +134,9 @@ exist.
 
 ## Cross-vertical
 
-### BelegFlow
+### FlowCheck AI+
 
-- **Route** `sbsdeutschland.com/plattform/belegflow`
+- **Route** `sbsdeutschland.com/plattform/flowcheck`
 - **Repositories** `Luyzz22/ki-rechnungsverarbeitung`, `Luyzz22/belegflow-ai-site`
 - **Application** `https://app.sbsdeutschland.com`
 - **Graphic** `InvoiceAutomationGraphic`

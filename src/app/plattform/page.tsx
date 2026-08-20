@@ -43,7 +43,7 @@ const decisions = [
 ];
 
 export default function PlatformPage() {
-  const belegflow = productBySlug("belegflow")!;
+  const flowcheck = productBySlug("flowcheck")!;
   const releaseproof = productBySlug("releaseproof")!;
 
   return (
@@ -98,7 +98,7 @@ export default function PlatformPage() {
           className="mb-8"
         />
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">
-          <ProductCard product={belegflow} currentPath="/plattform" />
+          <ProductCard product={flowcheck} currentPath="/plattform" />
           <ProductCard product={releaseproof} currentPath="/plattform" />
         </div>
       </Section>

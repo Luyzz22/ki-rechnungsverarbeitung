@@ -37,7 +37,7 @@ export function SiteFooter({ site, currentPath }: { site: SiteConfig; currentPat
       title: "Plattform",
       links: [
         { label: "Technische Grundlage", href: "/plattform" },
-        { label: "BelegFlow", href: "/plattform/belegflow" },
+        { label: "FlowCheck AI+", href: "/plattform/flowcheck" },
         { label: "Sicherheit & Datenwege", href: "/sicherheit" },
         { label: "ReleaseProof", href: "/labs/releaseproof" },
       ],

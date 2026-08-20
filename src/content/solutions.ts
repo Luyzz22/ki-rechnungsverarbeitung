@@ -76,7 +76,7 @@ export const solutions: Solution[] = [
       "Kontierung nach SKR03/SKR04 vorschlagen und änderbar halten.",
       "Freigabe rollenbasiert erteilen und erst danach exportieren.",
     ],
-    productSlugs: ["belegflow", "normpilot"],
+    productSlugs: ["flowcheck", "normpilot"],
     href: "/industrie/loesungen/operations",
   },
   {
@@ -94,7 +94,7 @@ export const solutions: Solution[] = [
       "Menschliche Prüfung als festen Zustand im Ablauf verankern, nicht als optionalen Schritt.",
       "Provenienz – Quelle, Modell, Prompt-Version, Zeitpunkt, Prüfer – mit dem Ergebnis speichern.",
     ],
-    productSlugs: ["normpilot", "hydraulikdoc", "belegflow"],
+    productSlugs: ["normpilot", "hydraulikdoc", "flowcheck"],
     href: "/industrie/loesungen/document-intelligence",
   },
 

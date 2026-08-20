@@ -21,8 +21,8 @@ Legend for **Role**: `product`, `frontend`, `backend`, `platform`,
 | `Luyzz22/sbs-hydraulikdoc` | HydraulikDoc (predecessor) | industry | legacy | no — superseded | — | Not marketed separately; documented as the earlier generation |
 | `Luyzz22/kanzlei-ai` | KanzleiAI | legal | product | yes | `www.kanzlei-ai.com` (200) | `legal.sbsdeutschland.com/produkte/kanzleiai`, primary CTA links to the app |
 | `Luyzz22/Compliance-Hub` | ComplianceHub | legal | product | yes | no public domain resolved | `legal.sbsdeutschland.com/produkte/compliancehub` |
-| `Luyzz22/ki-rechnungsverarbeitung` | BelegFlow | cross_vertical | product + backend | yes | `app.sbsdeutschland.com` (200) | `sbsdeutschland.com/plattform/belegflow`, linked from Industrie |
-| `Luyzz22/belegflow-ai-site` | BelegFlow (website generation) | cross_vertical | marketing_site | no — not deployed | `belegflow-ai.de` did not respond | Naming input only — see the open decision below |
+| `Luyzz22/ki-rechnungsverarbeitung` | FlowCheck AI+ | cross_vertical | product + backend | yes | `app.sbsdeutschland.com` (200) | `sbsdeutschland.com/plattform/flowcheck`, linked from Industrie |
+| `Luyzz22/belegflow-ai-site` | FlowCheck AI+ (website generation) | cross_vertical | marketing_site | no — not deployed | `belegflow-ai.de` did not respond | Naming input only — see the open decision below |
 | `Luyzz22/releaseproof-web` | ReleaseProof | independent | marketing_site | yes | `releaseproof.com` (200) | `sbsdeutschland.com/labs/releaseproof` |
 | `Luyzz22/releaseproof-jira` | ReleaseProof (Forge app) | independent | product | yes (app side) | Atlassian Forge | Same page; the Forge trust boundary is described there |
 
@@ -72,18 +72,31 @@ in `list_repos`, so they can be added and audited in a follow-up without
 changing any decision above — none of them is the deployment target of a live
 domain we found.
 
-## Open decision for the owner
+## Product naming decision (owner, 2026-08-20)
 
-`belegflow-ai-site` publishes itself as **"FlowCheck AI+"**
-(`src/app/layout.tsx`, `metadataBase: https://belegflow-ai.de`), while the
-running application at `app.sbsdeutschland.com` calls itself **"SBS
-KI-Rechnungsverarbeitung"**. Neither `belegflow.de` nor `belegflow-ai.de`
-responded during the audit.
+The public product name for invoice processing is **FlowCheck AI+**.
 
-The new web layer uses **BelegFlow**, because that is the name the brief itself
-uses and the repository name of the marketing generation. Changing it is a
-one-line edit in `src/content/products.ts` (`name`, `shortName`) — every
-navigation entry, card, footer link and cross-sell follows automatically.
+The name was open during the first audit: `belegflow-ai-site` publishes itself as
+"FlowCheck AI+" (`src/app/layout.tsx`, `metadataBase: https://belegflow-ai.de`),
+while the running application at `app.sbsdeutschland.com` calls itself "SBS
+KI-Rechnungsverarbeitung". Neither `belegflow.de` nor `belegflow-ai.de` responded
+during that audit.
+
+The owner resolved it in favour of the name the marketing repository already
+uses as its metadata title, OpenGraph site name and product branding. What this
+does and does not change:
+
+| | |
+| --- | --- |
+| Public product name across all SBS sites | **FlowCheck AI+** |
+| Route in this web layer | `/plattform/flowcheck` |
+| Domain `belegflow-ai.de` | unchanged — stays as it is |
+| Repository `Luyzz22/belegflow-ai-site` | unchanged |
+| Repository `Luyzz22/ki-rechnungsverarbeitung` | unchanged |
+| Internal names `invoice-app`, "SBS KI-Rechnungsverarbeitung" | unchanged — renaming them would create backend and deployment risk for no public benefit |
+
+`npm run check:content` fails the build if the old name reappears on any page,
+so mixed usage cannot regress silently.
 
 ## Live status recorded during the audit (2026-08-20)
 

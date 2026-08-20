@@ -17,7 +17,7 @@ const inputs = [
 const outputs = [
   { label: "Evidence", product: "NormPilot", href: "/industrie/produkte/normpilot" },
   { label: "Technische Antwort", product: "HydraulikDoc", href: "/industrie/produkte/hydraulikdoc" },
-  { label: "Backoffice", product: "BelegFlow", href: "/plattform/belegflow" },
+  { label: "Backoffice", product: "FlowCheck AI+", href: "/plattform/flowcheck" },
 ];
 
 export function IndustryHeroGraphic({ currentPath }: { currentPath: string }) {

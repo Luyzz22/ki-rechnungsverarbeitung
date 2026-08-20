@@ -15,7 +15,7 @@ It is deliberately **not** part of any product. The product applications keep
 their own repositories, their own deployments and their own domains:
 
 ```
-app.sbsdeutschland.com          BelegFlow (FastAPI, port 8000)  — untouched
+app.sbsdeutschland.com          FlowCheck AI+ (FastAPI, port 8000)  — untouched
 app.normpilot-industrie.de      NormPilot
 www.kanzlei-ai.com              KanzleiAI
 releaseproof.com                ReleaseProof
@@ -68,7 +68,7 @@ One build, three hostnames, one public URL per page.
 ```
 Internal route                              Public URL
 /                                        →  sbsdeutschland.com/
-/plattform/belegflow                     →  sbsdeutschland.com/plattform/belegflow
+/plattform/flowcheck                     →  sbsdeutschland.com/plattform/flowcheck
 /industrie/produkte/normpilot            →  industrie.sbsdeutschland.com/produkte/normpilot
 /legal/produkte/kanzleiai                →  legal.sbsdeutschland.com/produkte/kanzleiai
 ```

@@ -5,13 +5,13 @@ import { Section, SectionHeader } from "@/components/ui/Section";
 import { productBySlug } from "@/content/products";
 import { pageMetadata, breadcrumbSchema, JsonLd } from "@/lib/seo";
 
-const product = productBySlug("belegflow")!;
+const product = productBySlug("flowcheck")!;
 
 export const metadata: Metadata = pageMetadata({
-  path: "/plattform/belegflow",
-  title: "BelegFlow",
+  path: "/plattform/flowcheck",
+  title: "FlowCheck AI+",
   description:
-    "BelegFlow erfasst Eingangsrechnungen, prüft auf Dubletten und Plausibilität, schlägt eine Kontierung nach SKR03/SKR04 vor und exportiert nach menschlicher Freigabe DATEV-kompatibel.",
+    "FlowCheck AI+ erfasst Eingangsrechnungen, prüft auf Dubletten und Plausibilität, schlägt eine Kontierung nach SKR03/SKR04 vor und exportiert nach menschlicher Freigabe DATEV-kompatibel.",
 });
 
 const roles = [
@@ -22,18 +22,18 @@ const roles = [
   { role: "viewer", scope: "Nur lesender Zugriff auf zugewiesene Daten" },
 ];
 
-export default function BelegFlowPage() {
+export default function FlowCheckPage() {
   return (
-    <SiteChrome siteKey="corporate" path="/plattform/belegflow">
+    <SiteChrome siteKey="corporate" path="/plattform/flowcheck">
       <JsonLd
         data={breadcrumbSchema([
           { name: "Plattform", path: "/plattform" },
-          { name: "BelegFlow", path: "/plattform/belegflow" },
+          { name: "FlowCheck AI+", path: "/plattform/flowcheck" },
         ])}
       />
       <ProductPage
         product={product}
-        currentPath="/plattform/belegflow"
+        currentPath="/plattform/flowcheck"
         divisionLabel="Plattform"
         divisionHref="/plattform"
         extraSections={
@@ -47,7 +47,7 @@ export default function BelegFlowPage() {
               />
               <div className="sbs-scroll-x">
                 <table className="w-full min-w-[26rem] border-collapse text-left">
-                  <caption className="sr-only">Rollen und ihr Berechtigungsumfang in BelegFlow</caption>
+                  <caption className="sr-only">Rollen und ihr Berechtigungsumfang in FlowCheck AI+</caption>
                   <thead>
                     <tr className="border-b border-[var(--sbs-border)]">
                       <th scope="col" className="sbs-mono pb-2 pr-6 text-[0.6875rem] font-[500] uppercase tracking-[0.1em] text-[var(--sbs-text-muted)]">

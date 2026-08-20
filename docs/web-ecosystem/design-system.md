@@ -151,7 +151,7 @@ mechanism:
 | `ContractAnalysisGraphic` | KanzleiAI | A finding that is still `offen` because nobody has reviewed it |
 | `HybridProcessingGraphic` | KanzleiAI | Ten stations, nine local, one at the cloud boundary |
 | `RiskGovernanceGraphic` | ComplianceHub | The Art. 6 decision path and the violation it produced, with an owner |
-| `InvoiceAutomationGraphic` | BelegFlow | Two of four invoices **blocked** from export |
+| `InvoiceAutomationGraphic` | FlowCheck AI+ | Two of four invoices **blocked** from export |
 | `ReleaseEvidenceGraphic` | ReleaseProof | Seven rules per issue, two issues failing |
 
 The test from §80 — *would this graphic work for any other AI SaaS?* — is failed

@@ -25,7 +25,7 @@ type Node = {
 const industry: Node[] = [
   { id: "normpilot", name: "NormPilot", capability: "Evidence Matrix und Gap Findings aus Bestandsdokumenten.", href: "/industrie/produkte/normpilot" },
   { id: "hydraulikdoc", name: "HydraulikDoc", capability: "Quellengebundene Antworten aus technischer Dokumentation.", href: "/industrie/produkte/hydraulikdoc" },
-  { id: "belegflow", name: "BelegFlow", capability: "Belegprüfung, Freigabe und Export im kaufmännischen Backoffice.", href: "/plattform/belegflow" },
+  { id: "flowcheck", name: "FlowCheck AI+", capability: "Belegprüfung, Freigabe und Export im kaufmännischen Backoffice.", href: "/plattform/flowcheck" },
 ];
 
 const legal: Node[] = [

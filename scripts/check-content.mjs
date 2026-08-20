@@ -27,13 +27,16 @@ const FORBIDDEN = [
   { pattern: /\b(revolutionier|bahnbrechend|game[- ]?chang|next[- ]generation|unvergleichlich|weltweit führend|Marktführer)/i, why: "Superlativ ohne Beleg" },
   // Public status downgrades the owner explicitly ruled out for marketing.
   { pattern: /\b(Coming Soon|Demnächst verfügbar|Pre-Production|Vorschau-Version)\b/i, why: "Öffentliches Status-Downgrade" },
+  // Superseded product name. The canonical public name is "FlowCheck AI+";
+  // the domain belegflow-ai.de and the repository name are unaffected.
+  { pattern: /\bBelegFlow\b/i, why: "Abgelöster Produktname — kanonisch ist FlowCheck AI+" },
 ];
 
 // Emoji used as interface chrome (§5). Product text may still contain none.
 const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
 
 const routes = [
-  "/", "/plattform", "/plattform/belegflow", "/academy", "/labs/releaseproof",
+  "/", "/plattform", "/plattform/flowcheck", "/academy", "/labs/releaseproof",
   "/unternehmen", "/sicherheit", "/ressourcen", "/kontakt",
   "/industrie", "/industrie/produkte", "/industrie/produkte/normpilot",
   "/industrie/produkte/hydraulikdoc", "/industrie/loesungen", "/industrie/plattform", "/industrie/kontakt",

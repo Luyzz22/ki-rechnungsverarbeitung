@@ -36,9 +36,9 @@ one of each between them.
 
 | Old URL | New URL | Status |
 | --- | --- | --- |
-| `/static/landing/` | `https://sbsdeutschland.com/plattform/belegflow` | 301 |
-| `/static/landing/index.html` | `https://sbsdeutschland.com/plattform/belegflow` | 301 |
-| `/static/preise/` | `https://sbsdeutschland.com/plattform/belegflow` | 301 |
+| `/static/landing/` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
+| `/static/landing/index.html` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
+| `/static/preise/` | `https://sbsdeutschland.com/plattform/flowcheck` | 301 |
 | `/static/landing/hydraulikdoc.html` | `https://industrie.sbsdeutschland.com/produkte/hydraulikdoc` | 301 |
 | `/static/landing/hydraulikdoc-enterprise.html` | `…/produkte/hydraulikdoc#architektur` | 301 |
 | `/static/landing/hydraulikdoc-docs.html` | `…/produkte/hydraulikdoc` | 301 |

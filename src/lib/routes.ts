@@ -11,7 +11,7 @@ export const routesBySite: Record<SiteKey, { path: string; priority: number; cha
   corporate: [
     { path: "/", priority: 1, changeFrequency: "weekly" },
     { path: "/plattform", priority: 0.8, changeFrequency: "monthly" },
-    { path: "/plattform/belegflow", priority: 0.8, changeFrequency: "monthly" },
+    { path: "/plattform/flowcheck", priority: 0.8, changeFrequency: "monthly" },
     { path: "/academy", priority: 0.7, changeFrequency: "monthly" },
     { path: "/labs/releaseproof", priority: 0.6, changeFrequency: "monthly" },
     { path: "/unternehmen", priority: 0.6, changeFrequency: "monthly" },

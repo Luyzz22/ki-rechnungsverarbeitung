@@ -92,9 +92,9 @@ export const products: Product[] = [
     primaryAction: { label: "NormPilot öffnen", href: "https://app.normpilot-industrie.de", external: true },
     secondaryAction: { label: "Pilot besprechen", href: "/industrie/kontakt?product=normpilot" },
     repositories: ["Luyzz22/normpilot-industrie"],
-    relatedSlugs: ["hydraulikdoc", "belegflow"],
+    relatedSlugs: ["hydraulikdoc", "flowcheck"],
     relatedReason:
-      "Weitere Lösungen für technische Nachweis- und Dokumentenprozesse: HydraulikDoc liefert die quellengebundene Antwort am Asset, BelegFlow die belegseitige Nachweiskette.",
+      "Weitere Lösungen für technische Nachweis- und Dokumentenprozesse: HydraulikDoc liefert die quellengebundene Antwort am Asset, FlowCheck AI+ die belegseitige Nachweiskette.",
     href: "/industrie/produkte/normpilot",
   },
   {
@@ -177,9 +177,9 @@ export const products: Product[] = [
     primaryAction: { label: "Produktarchitektur ansehen", href: "/industrie/produkte/hydraulikdoc#architektur" },
     secondaryAction: { label: "Zugang anfragen", href: "/industrie/kontakt?product=hydraulikdoc" },
     repositories: ["Luyzz22/sbs-service-knowledge-os", "Luyzz22/sbs-hydraulikdoc (Vorgänger)"],
-    relatedSlugs: ["normpilot", "belegflow"],
+    relatedSlugs: ["normpilot", "flowcheck"],
     relatedReason:
-      "Weitere Lösungen für technische Nachweis- und Dokumentenprozesse: NormPilot bündelt die Auditsicht, BelegFlow die kaufmännische Nachweiskette dahinter.",
+      "Weitere Lösungen für technische Nachweis- und Dokumentenprozesse: NormPilot bündelt die Auditsicht, FlowCheck AI+ die kaufmännische Nachweiskette dahinter.",
     href: "/industrie/produkte/hydraulikdoc",
   },
 
@@ -361,13 +361,13 @@ export const products: Product[] = [
   /*  CROSS-VERTICAL                                                        */
   /* ====================================================================== */
   {
-    slug: "belegflow",
-    name: "BelegFlow",
-    shortName: "BelegFlow",
+    slug: "flowcheck",
+    name: "FlowCheck AI+",
+    shortName: "FlowCheck AI+",
     division: "cross_vertical",
     tagline: "Eingangsrechnungen von der Erfassung bis zum DATEV-Export – mit Freigabe dazwischen.",
     description:
-      "BelegFlow erfasst Eingangsrechnungen, extrahiert die Pflichtangaben, prüft auf Dubletten und Plausibilität, schlägt eine Kontierung nach SKR03/SKR04 vor und übergibt nach menschlicher Freigabe an den Export. Prozess- und Exportereignisse landen im Audit-Trail.",
+      "FlowCheck AI+ erfasst Eingangsrechnungen, extrahiert die Pflichtangaben, prüft auf Dubletten und Plausibilität, schlägt eine Kontierung nach SKR03/SKR04 vor und übergibt nach menschlicher Freigabe an den Export. Prozess- und Exportereignisse landen im Audit-Trail.",
     outcome: "Belegverarbeitung, die vor dem Export durch eine Freigabe geht.",
     audience: [
       "Finanzbuchhaltung und Rechnungswesen",
@@ -436,13 +436,13 @@ export const products: Product[] = [
     ],
     integrations: ["DATEV-kompatibler Export", "Excel / CSV", "Google Workspace SSO", "E-Mail-Benachrichtigung"],
     graphic: "invoice-automation",
-    primaryAction: { label: "BelegFlow App öffnen", href: "https://app.sbsdeutschland.com", external: true },
-    secondaryAction: { label: "Gespräch vereinbaren", href: "/kontakt?product=belegflow" },
+    primaryAction: { label: "FlowCheck AI+ App öffnen", href: "https://app.sbsdeutschland.com", external: true },
+    secondaryAction: { label: "Gespräch vereinbaren", href: "/kontakt?product=flowcheck" },
     repositories: ["Luyzz22/ki-rechnungsverarbeitung", "Luyzz22/belegflow-ai-site"],
     relatedSlugs: ["normpilot", "kanzleiai"],
     relatedReason:
       "Belege sind selten das Ende der Kette: NormPilot verknüpft sie mit Auditanforderungen, KanzleiAI mit dem zugrunde liegenden Vertrag.",
-    href: "/plattform/belegflow",
+    href: "/plattform/flowcheck",
   },
 
   /* ====================================================================== */

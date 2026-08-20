@@ -115,7 +115,7 @@ export const corporateNav: NavItem[] = [
       },
       {
         title: "Geschäftsübergreifend",
-        links: [productLink("belegflow")],
+        links: [productLink("flowcheck")],
       },
       {
         title: "SBS Labs",
@@ -175,7 +175,7 @@ export const industryNav: NavItem[] = [
       { title: "Produkte", links: industryProductLinks },
       {
         title: "Geschäftsübergreifend",
-        links: [productLink("belegflow")],
+        links: [productLink("flowcheck")],
       },
     ],
     featured: {

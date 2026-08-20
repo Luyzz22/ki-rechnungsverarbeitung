@@ -68,7 +68,7 @@ const trust = [
 ];
 
 export default function CorporateHome() {
-  const belegflow = productBySlug("belegflow")!;
+  const flowcheck = productBySlug("flowcheck")!;
   const releaseproof = productBySlug("releaseproof")!;
   const industryProducts = productsByDivision("industry");
   const legalProducts = productsByDivision("legal");
@@ -192,25 +192,25 @@ export default function CorporateHome() {
             id="shared"
             eyebrow="Geschäftsübergreifend"
             title="Finance & Backoffice Automation"
-            lead="Belegverarbeitung gehört weder ausschließlich zur Industrie noch zum Recht. BelegFlow läuft deshalb auf Unternehmensebene und wird dort verlinkt, wo es fachlich gebraucht wird."
+            lead="Belegverarbeitung gehört weder ausschließlich zur Industrie noch zum Recht. FlowCheck AI+ läuft deshalb auf Unternehmensebene und wird dort verlinkt, wo es fachlich gebraucht wird."
           />
           <div className="flex flex-col gap-5">
             <div className="rounded-[var(--sbs-radius-lg)] border border-[var(--sbs-border-subtle)] bg-[var(--sbs-bg-elevated)] p-6">
-              <h3 className="sbs-h4">{belegflow.name}</h3>
+              <h3 className="sbs-h4">{flowcheck.name}</h3>
               <p className="mt-2 text-[0.9375rem] leading-[1.6] text-[var(--sbs-text-secondary)]">
-                {belegflow.description}
+                {flowcheck.description}
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
-                <Button href={linkFor(PAGE_PATH, belegflow.href)} variant="secondary">
-                  BelegFlow entdecken
+                <Button href={linkFor(PAGE_PATH, flowcheck.href)} variant="secondary">
+                  FlowCheck AI+ entdecken
                 </Button>
-                <Button href={linkFor(PAGE_PATH, belegflow.primaryAction.href)} variant="quiet" external>
-                  {belegflow.primaryAction.label}
+                <Button href={linkFor(PAGE_PATH, flowcheck.primaryAction.href)} variant="quiet" external>
+                  {flowcheck.primaryAction.label}
                 </Button>
               </div>
             </div>
             <p className="text-[0.8125rem] leading-[1.6] text-[var(--sbs-text-muted)]">
-              Innerhalb von SBS Industrie ist BelegFlow als Backoffice-Baustein verlinkt – es ist
+              Innerhalb von SBS Industrie ist FlowCheck AI+ als Backoffice-Baustein verlinkt – es ist
               nicht die Kernidentität des Geschäftsbereichs.
             </p>
           </div>

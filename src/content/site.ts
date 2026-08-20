@@ -41,7 +41,7 @@ export const sites: Record<SiteKey, SiteConfig> = {
     titleTemplate: "%s | SBS Industrie",
     defaultTitle: "SBS Industrie — Aus technischen Dokumenten werden Entscheidungen",
     defaultDescription:
-      "Dokumentintelligenz, Audit Evidence und KI-Workflows für Qualität, Service und industrielle Prozesse: NormPilot, HydraulikDoc und BelegFlow von SBS Deutschland.",
+      "Dokumentintelligenz, Audit Evidence und KI-Workflows für Qualität, Service und industrielle Prozesse: NormPilot, HydraulikDoc und FlowCheck AI+ von SBS Deutschland.",
   },
   legal: {
     key: "legal",

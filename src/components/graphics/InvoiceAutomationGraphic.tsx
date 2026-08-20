@@ -1,7 +1,7 @@
 import { GraphicFrame, StatusPill, DemoNote } from "./primitives";
 
 /**
- * BelegFlow: the invoice run. The graphic shows what actually blocks an export —
+ * FlowCheck AI+: the invoice run. The graphic shows what actually blocks an export —
  * a duplicate and an implausible total — rather than a clean happy path.
  */
 const invoices = [
@@ -15,7 +15,7 @@ export function InvoiceAutomationGraphic({ tone = "light" }: { tone?: "light" | 
   const exportable = invoices.filter((invoice) => invoice.state === "ready").length;
   return (
     <GraphicFrame
-      label="BelegFlow · Prüflauf"
+      label="FlowCheck AI+ · Prüflauf"
       tone={tone}
       caption="Auffällige Belege gehen in die Klärung, nicht in den Export. Erst die rollenbasierte Freigabe erzeugt einen Exportdatensatz."
     >
