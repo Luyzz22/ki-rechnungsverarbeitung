@@ -1,10 +1,15 @@
 # QA Report
 
-Date: 2026-08-20
+Date: 2026-08-20 (second pass, after extraction, rename and hardening)
 Build: `next build` (Next.js 16.3.1), 38 routes, all statically rendered except
 `/robots.txt` and `/sitemap.xml`, which read the `Host` header.
 Environment: local production build (`output: standalone`) on 127.0.0.1:3100,
-Chromium 1194 via Playwright.
+Chromium 1194 via Playwright, and — new in this pass — real nginx 1.24.0 in
+front of the build on all three hostnames.
+
+Findings from the independent review are in
+[`pre-production-review.md`](pre-production-review.md). All BLOCKER and HIGH
+findings were fixed before these gates were re-run.
 
 ---
 
@@ -23,6 +28,9 @@ Chromium 1194 via Playwright.
 | Build | **PASS** | `next build` clean; `tsc --noEmit` clean; `eslint .` 0 errors, 0 warnings |
 | Link Check | **PASS** | 55 pages across 3 hostnames, 0 dead internal links, 6/6 external product URLs 200 |
 | Content Check | **PASS** | 23 routes, no unverifiable claims, no marketing filler, no emoji in page text |
+| Security | **PASS** | 0 dependency vulnerabilities; headers verified through nginx; no secrets; no open redirect |
+| nginx configuration | **PASS** | `nginx -t` against real nginx 1.24.0; routing, headers and 29 legacy redirects verified live |
+| Release artifact | **PASS** | Deterministic tarball, runs standalone on a read-only tree, 12/12 deploy health checks |
 | Production Deployment | **NOT RUN** | No shell on the target host in this session — see below |
 | DNS | **NOT RUN** | The two `A` records do not exist yet — see below |
 | TLS | **NOT RUN** | Certificate cannot be expanded before DNS resolves — see below |
@@ -32,9 +40,12 @@ Chromium 1194 via Playwright.
 ## 1. Repository gates
 
 ```
-tsc --noEmit      0 errors
-eslint .          0 errors, 0 warnings
-next build        38 routes, compiled in 554ms, static generation in 781ms
+tsc --noEmit          0 errors
+eslint .              0 errors, 0 warnings
+next build            38 routes
+nginx -t              syntax ok, test successful (nginx 1.24.0)
+systemd-analyze verify  no findings
+build-artifact.sh     deterministic tarball + SHA256 + manifest
 ```
 
 There is no test runner in this project; the automated gates are the three
@@ -188,7 +199,7 @@ reduced-motion fallback. Verified:
 production build over loopback; they are not real-user data and should not be
 presented as such.
 
-Corporate homepage, first load, gzip:
+Corporate homepage, first load, gzip — re-measured on this HEAD:
 
 ```
 HTML                27 KB
@@ -196,6 +207,9 @@ JS + CSS           189 KB   (10 requests)
 Fonts               66 KB   (3 woff2, self-hosted by next/font)
 Total              283 KB
 ```
+
+Server process: ~159 MB RSS under load in this environment, against
+`MemoryHigh=384M` / `MemoryMax=512M` in the unit.
 
 Uncompressed, per page: 564 KB JS, 56 KB CSS, 67 KB fonts, 0 KB images. The JS
 is the Next.js App Router and React 19 baseline — the application adds two small

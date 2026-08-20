@@ -163,4 +163,5 @@ strength of a successful compile.
 | `domain-routing.md` | hostnames, DNS, TLS or canonicals change |
 | `redirects.md` | a legacy URL is added or retargeted |
 | `deployment.md` | the release or rollback procedure changes |
+| `pre-production-review.md` | after every independent review |
 | `qa-report.md` | after every full verification pass |
