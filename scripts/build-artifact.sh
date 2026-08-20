@@ -63,21 +63,22 @@ if find "$RELEASE" -maxdepth 3 \( -name '.env' -o -name '.env.*' -o -name '*.pem
 fi
 
 # ---- 4. Provenance ---------------------------------------------------------
+# Only commit-derived facts go inside the tarball. Build time and the node
+# version live in the sidecar manifest instead, so that the same commit always
+# produces the same digest and a CI artifact can be reproduced and compared
+# byte for byte on another machine.
 NODE_VERSION="$(node --version)"
 BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-FILE_COUNT="$(find "$RELEASE" -type f | wc -l | tr -d ' ')"
-TREE_BYTES="$(du -sb "$RELEASE" | cut -f1)"
 
 cat > "$RELEASE/RELEASE.json" <<JSON
 {
   "repository": "SBS-Nexus/sbs-web",
-  "commit": "$COMMIT",
-  "builtAt": "$BUILT_AT",
-  "node": "$NODE_VERSION",
-  "files": $FILE_COUNT,
-  "bytes": $TREE_BYTES
+  "commit": "$COMMIT"
 }
 JSON
+
+FILE_COUNT="$(find "$RELEASE" -type f | wc -l | tr -d ' ')"
+TREE_BYTES="$(du -sb "$RELEASE" | cut -f1)"
 
 # ---- 5. Pack deterministically ---------------------------------------------
 # Fixed mtime, owner and sort order so the same commit yields the same digest.
