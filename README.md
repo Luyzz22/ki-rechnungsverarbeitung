@@ -97,6 +97,7 @@ short form for tools that read that filename.
 | [`redirects.md`](docs/web-ecosystem/redirects.md) | The full legacy URL matrix |
 | [`deployment.md`](docs/web-ecosystem/deployment.md) | Runbook, rollback, operating notes |
 | [`pre-production-review.md`](docs/web-ecosystem/pre-production-review.md) | Independent review findings by severity, and what was done about each |
+| [`release-candidate.md`](docs/web-ecosystem/release-candidate.md) | The current release candidate: HEAD, artifact digest, gate results, limitations |
 | [`qa-report.md`](docs/web-ecosystem/qa-report.md) | What was verified, what was measured, what was not |
 
 ## Deployment
