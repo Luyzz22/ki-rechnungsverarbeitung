@@ -6,3 +6,9 @@ build/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# The repository root ignores *.svg for the invoice application's build output.
+# Every SVG in sbs-web is hand-written source (icons, social cards), so opt back in.
+!*.svg
+!public/**/*.svg
+!src/**/*.svg
