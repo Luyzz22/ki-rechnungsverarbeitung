@@ -77,7 +77,12 @@ const slides: Slide[] = [
 
 export function HeroSlider({ currentPath }: { currentPath: string }) {
   const [active, setActive] = useState(0);
-  const [manual, setManual] = useState(false);
+  // `stopped` is a deliberate decision by the reader — either navigating a
+  // slide or pressing pause. Only an explicit resume clears it, so autoplay can
+  // never restart on its own once someone has taken control.
+  const [stopped, setStopped] = useState(false);
+  // `paused` is transient and automatic: pointer over the region, focus inside
+  // it, or the tab hidden. It resolves itself and never overrides `stopped`.
   const [paused, setPaused] = useState(false);
   const motionCapable = useMotionCapable();
   const regionRef = useRef<HTMLDivElement>(null);
@@ -90,7 +95,7 @@ export function HeroSlider({ currentPath }: { currentPath: string }) {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
 
-  const playing = motionCapable && !manual && !paused;
+  const playing = motionCapable && !stopped && !paused;
 
   useEffect(() => {
     if (!playing) return;
@@ -102,7 +107,7 @@ export function HeroSlider({ currentPath }: { currentPath: string }) {
   }, [playing, active]);
 
   const go = useCallback((next: number) => {
-    setManual(true);
+    setStopped(true);
     setActive((next + slides.length) % slides.length);
   }, []);
 
@@ -138,7 +143,7 @@ export function HeroSlider({ currentPath }: { currentPath: string }) {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <div className="sbs-hero-slider__viewport" aria-live={manual ? "polite" : "off"}>
+      <div className="sbs-hero-slider__viewport" aria-live={stopped ? "polite" : "off"}>
         {slides.map((slide, index) => {
           const isActive = index === active;
           return (
@@ -214,6 +219,25 @@ export function HeroSlider({ currentPath }: { currentPath: string }) {
         >
           <span aria-hidden="true">→</span>
         </button>
+
+        {/* Rendered only when autoplay can actually run. Under reduced motion
+            nothing rotates, so a pause button would be a control that claims to
+            stop something already stopped. */}
+        {motionCapable ? (
+          <button
+            type="button"
+            className="sbs-hero-slider__toggle"
+            onClick={() => setStopped((value) => !value)}
+            aria-label={stopped ? "Rotation fortsetzen" : "Rotation pausieren"}
+          >
+            <span aria-hidden="true" className="sbs-hero-slider__toggle-icon">
+              {stopped ? "▶" : "❚❚"}
+            </span>
+            <span className="sbs-hero-slider__toggle-text">
+              {stopped ? "Rotation fortsetzen" : "Rotation pausieren"}
+            </span>
+          </button>
+        ) : null}
       </div>
     </div>
   );

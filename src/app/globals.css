@@ -749,3 +749,57 @@ button { font: inherit; }
   font-size: 0.8125rem;
   color: var(--sbs-text-inverse-secondary);
 }
+
+/* Slider play/pause. An auto-rotating region needs a way to stop it that is
+   not "move the pointer here and keep it there" — WCAG 2.2.2. */
+.sbs-hero-slider__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sbs-space-2);
+  min-height: 2.75rem;
+  padding-inline: var(--sbs-space-3);
+  flex: none;
+  border-radius: var(--sbs-radius-md);
+  border: 1px solid var(--sbs-border-inverse);
+  font-size: 0.8125rem;
+  color: var(--sbs-text-inverse-secondary);
+  transition:
+    color var(--sbs-motion-fast) var(--sbs-ease-standard),
+    border-color var(--sbs-motion-fast) var(--sbs-ease-standard);
+}
+
+.sbs-hero-slider__toggle:hover {
+  color: var(--sbs-text-inverse);
+  border-color: var(--sbs-text-inverse-secondary);
+}
+
+.sbs-hero-slider__toggle-icon {
+  font-size: 0.6875rem;
+  line-height: 1;
+}
+
+/* The label is visible from the medium breakpoint up; below that the icon
+   carries it and the aria-label supplies the accessible name either way. */
+.sbs-hero-slider__toggle-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (min-width: 48rem) {
+  .sbs-hero-slider__toggle-text {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+}

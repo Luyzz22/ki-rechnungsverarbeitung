@@ -15,7 +15,8 @@
     "check:links": "node scripts/check-links.mjs",
     "check:content": "node scripts/check-content.mjs",
     "artifact": "./scripts/build-artifact.sh",
-    "check:ui": "node scripts/check-ui.mjs"
+    "check:ui": "node scripts/check-ui.mjs",
+    "check:slider": "node scripts/check-slider.mjs"
   },
   "dependencies": {
     "next": "16.3.1",

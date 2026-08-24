@@ -19,7 +19,11 @@ import { sites, linkFor } from "@/content/site";
 
 const PAGE_PATH = "/";
 
-/** Counted from the registry, so the figure cannot drift from what is listed. */
+/**
+ * Counted from the registry, so the figure cannot drift from what is listed.
+ * It evidences the size of the portfolio, not the production status of each
+ * entry — which is why the label reads "im Portfolio", not "im Betrieb".
+ */
 const productCount = products.length;
 
 export const metadata: Metadata = pageMetadata({
@@ -107,7 +111,7 @@ export default function CorporateHome() {
                 <strong>
                   <CountUp value={productCount} />
                 </strong>
-                <span>Produkte im Betrieb</span>
+                <span>Produkte im Portfolio</span>
               </li>
               <li>
                 <strong>
