@@ -16,14 +16,20 @@ type Props = {
   "aria-label"?: string;
 };
 
+// `whitespace-nowrap` used to live here. On a 320px screen a label like
+// "Sicherheit und Datenwege ansehen" is wider than the viewport, so the button
+// pushed the whole page sideways — the single cause of every horizontal
+// overflow the 320px sweep found. The label wraps now, and `max-w-full` stops
+// the flex item from refusing to shrink below its content width.
 const base =
-  "group inline-flex items-center justify-center gap-2 rounded-[var(--sbs-radius-md)] font-[560] " +
+  "group inline-flex max-w-full items-center justify-center gap-2 rounded-[var(--sbs-radius-md)] font-[560] " +
+  "text-center text-balance " +
   "transition-[background-color,color,border-color,box-shadow,transform] duration-[var(--sbs-motion-fast)] " +
-  "ease-[var(--sbs-ease-standard)] whitespace-nowrap";
+  "ease-[var(--sbs-ease-standard)]";
 
 const sizes: Record<Size, string> = {
-  md: "min-h-11 px-[1.125rem] text-[0.9375rem]",
-  lg: "min-h-12 px-6 text-[1rem]",
+  md: "min-h-11 px-[1.125rem] py-2 text-[0.9375rem]",
+  lg: "min-h-12 px-6 py-2.5 text-[1rem]",
 };
 
 const variants: Record<Variant, string> = {
@@ -82,7 +88,7 @@ function Arrow() {
       height="14"
       viewBox="0 0 14 14"
       fill="none"
-      className="translate-x-0 transition-transform duration-[var(--sbs-motion-fast)] ease-[var(--sbs-ease-standard)] group-hover:translate-x-[3px] motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+      className="shrink-0 translate-x-0 transition-transform duration-[var(--sbs-motion-fast)] ease-[var(--sbs-ease-standard)] group-hover:translate-x-[3px] motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
     >
       <path
         d="M2.5 7h9M8 3.5 11.5 7 8 10.5"

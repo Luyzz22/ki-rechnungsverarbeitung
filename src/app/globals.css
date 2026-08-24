@@ -350,3 +350,402 @@ button { font: inherit; }
   min-width: 0;
   max-width: 100%;
 }
+
+/* ==========================================================================
+   Hero slider — purpose: orient. Three things to say, one at a time.
+   Reduced motion is handled by the global neutraliser above plus an explicit
+   static state: the first slide, fully readable, controls still working.
+   ========================================================================== */
+
+@keyframes sbs-slide-in {
+  from { opacity: 0; transform: translateY(var(--sbs-space-4)); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes sbs-dot-fill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+.sbs-hero-slider {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sbs-space-6);
+}
+
+.sbs-hero-slider__viewport {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Every slide occupies the same cell, so the hero does not resize as it
+   advances. Inactive slides stay in flow for height, but are not painted,
+   not hit-testable and not reachable by keyboard (`inert` on the element). */
+.sbs-hero-slider__slide {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sbs-space-8);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.sbs-hero-slider__slide[data-active="true"] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  animation: sbs-slide-in var(--sbs-motion-slow) var(--sbs-ease-standard) both;
+}
+
+@media (min-width: 64rem) {
+  .sbs-hero-slider__slide {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  }
+}
+
+.sbs-hero-slider__copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sbs-space-4);
+  min-width: 0;
+}
+
+.sbs-hero-slider__title {
+  color: var(--sbs-text-inverse);
+  text-wrap: balance;
+}
+
+/* The division graphics are wide by design. `.sbs-scroll-x` is the house rule
+   for that (§ CLAUDE.md 5): let them scroll inside their column rather than
+   clip at its edge or widen the page. */
+.sbs-hero-slider__media {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.sbs-hero-slider__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sbs-space-2);
+  align-self: flex-start;
+  min-height: 2.75rem;
+  color: var(--sbs-accent-on-inverse);
+  font-weight: 580;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--sbs-motion-fast) var(--sbs-ease-standard);
+}
+
+.sbs-hero-slider__cta:hover { border-bottom-color: currentColor; }
+
+.sbs-hero-slider__cta-arrow {
+  transition: transform var(--sbs-motion-fast) var(--sbs-ease-standard);
+}
+
+.sbs-hero-slider__cta:hover .sbs-hero-slider__cta-arrow {
+  transform: translateX(var(--sbs-space-1));
+}
+
+.sbs-hero-slider__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sbs-space-3);
+  flex-wrap: wrap;
+}
+
+.sbs-hero-slider__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  border-radius: var(--sbs-radius-md);
+  border: 1px solid var(--sbs-border-inverse);
+  color: var(--sbs-text-inverse-secondary);
+  transition:
+    color var(--sbs-motion-fast) var(--sbs-ease-standard),
+    border-color var(--sbs-motion-fast) var(--sbs-ease-standard);
+}
+
+.sbs-hero-slider__arrow:hover {
+  color: var(--sbs-text-inverse);
+  border-color: var(--sbs-text-inverse-secondary);
+}
+
+.sbs-hero-slider__dots {
+  display: flex;
+  align-items: center;
+  gap: var(--sbs-space-2);
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.sbs-hero-slider__dot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sbs-space-2);
+  justify-content: center;
+  min-height: 2.75rem;
+  padding-block: var(--sbs-space-2);
+  min-width: 5.5rem;
+  text-align: left;
+}
+
+.sbs-hero-slider__dot-track {
+  display: block;
+  height: 2px;
+  background: var(--sbs-border-inverse);
+  overflow: hidden;
+}
+
+.sbs-hero-slider__dot-fill {
+  display: block;
+  height: 100%;
+  background: var(--sbs-accent-on-inverse);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.sbs-hero-slider__dot[data-active="true"] .sbs-hero-slider__dot-fill { transform: scaleX(1); }
+
+.sbs-hero-slider__dot-fill[data-running="true"] {
+  animation: sbs-dot-fill linear both;
+}
+
+.sbs-hero-slider__dot-label {
+  font-size: 0.8125rem;
+  color: var(--sbs-text-inverse-secondary);
+  transition: color var(--sbs-motion-fast) var(--sbs-ease-standard);
+}
+
+.sbs-hero-slider__dot[data-active="true"] .sbs-hero-slider__dot-label {
+  color: var(--sbs-text-inverse);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sbs-hero-slider__slide[data-active="true"] { animation: none; }
+  .sbs-hero-slider__dot-fill[data-running="true"] { animation: none; }
+}
+
+/* ==========================================================================
+   Trust band — purpose: reveal. Facts arrive in reading order rather than all
+   at once, which is the difference between a claim wall and an argument.
+   ========================================================================== */
+
+.sbs-trust-band {
+  background: var(--sbs-bg-sunken);
+  border-block: 1px solid var(--sbs-border-subtle);
+  padding-block: var(--sbs-space-10);
+}
+
+.sbs-trust-band__heading {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  font-weight: 580;
+  letter-spacing: -0.01em;
+  color: var(--sbs-text-primary);
+}
+
+.sbs-trust-band__lead {
+  margin-top: var(--sbs-space-2);
+  max-width: 44rem;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--sbs-text-secondary);
+  text-wrap: pretty;
+}
+
+.sbs-trust-band__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sbs-space-5);
+  margin-top: var(--sbs-space-7);
+}
+
+@media (min-width: 40rem) {
+  .sbs-trust-band__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 68rem) {
+  .sbs-trust-band__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.sbs-trust-band__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sbs-space-2);
+  min-width: 0;
+  padding: var(--sbs-space-5);
+  border: 1px solid var(--sbs-border-subtle);
+  border-radius: var(--sbs-radius-lg);
+  background: var(--sbs-bg-page);
+  transition:
+    border-color var(--sbs-motion-normal) var(--sbs-ease-standard),
+    transform var(--sbs-motion-normal) var(--sbs-ease-standard);
+}
+
+.sbs-trust-band__item:hover {
+  border-color: var(--sbs-border-strong);
+  transform: translateY(-2px);
+}
+
+/* The band sits inside a .sbs-reveal wrapper; the stagger makes the four
+   facts land in sequence rather than as one block. */
+.sbs-reveal[data-revealed="true"] .sbs-trust-band__item {
+  animation: sbs-fade-up var(--sbs-motion-slow) var(--sbs-ease-standard) both;
+  animation-delay: var(--sbs-stagger, 0ms);
+}
+
+.sbs-trust-band__item-headline {
+  font-size: 1.0625rem;
+  line-height: 1.35;
+  font-weight: 580;
+  color: var(--sbs-text-primary);
+  text-wrap: balance;
+}
+
+.sbs-trust-band__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sbs-space-2);
+  min-height: 2.75rem;
+  margin-top: auto;
+  font-size: 0.9375rem;
+  font-weight: 540;
+  color: var(--sbs-accent-strong);
+}
+
+.sbs-trust-band__link:hover { text-decoration: underline; }
+
+.sbs-trust-band__link-arrow {
+  transition: transform var(--sbs-motion-fast) var(--sbs-ease-standard);
+}
+
+.sbs-trust-band__link:hover .sbs-trust-band__link-arrow {
+  transform: translateX(var(--sbs-space-1));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sbs-trust-band__item,
+  .sbs-reveal[data-revealed="true"] .sbs-trust-band__item {
+    animation: none;
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   Scroll reveal, reading progress, count-up
+   ========================================================================== */
+
+.sbs-reveal-wrap[data-revealed="false"] {
+  opacity: 0;
+  transform: translateY(var(--sbs-space-4));
+}
+
+.sbs-reveal-wrap[data-revealed="true"] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--sbs-motion-slow) var(--sbs-ease-standard),
+    transform var(--sbs-motion-slow) var(--sbs-ease-standard);
+}
+
+.sbs-scroll-progress {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 2px;
+  z-index: 120;
+  pointer-events: none;
+}
+
+.sbs-scroll-progress__bar {
+  height: 100%;
+  transform-origin: left center;
+  background: linear-gradient(
+    90deg,
+    var(--sbs-signal-1),
+    var(--sbs-signal-2),
+    var(--sbs-signal-3)
+  );
+}
+
+.sbs-countup {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sbs-reveal-wrap[data-revealed="false"],
+  .sbs-reveal-wrap[data-revealed="true"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .sbs-scroll-progress { display: none; }
+}
+
+/* Hero facts — three checkable numbers directly under the lead. */
+.sbs-hero-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sbs-space-8);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .sbs-hero-top {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+    gap: var(--sbs-space-10);
+  }
+}
+
+.sbs-hero-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sbs-space-6);
+  margin-top: var(--sbs-space-2);
+  padding-top: var(--sbs-space-5);
+  border-top: 1px solid var(--sbs-border-inverse);
+}
+
+/* On a wide screen the facts become a column beside the headline, so the hero
+   does not leave half its width empty. */
+@media (min-width: 64rem) {
+  .sbs-hero-facts {
+    flex-direction: column;
+    gap: var(--sbs-space-5);
+    margin-top: 0;
+    padding-top: 0;
+    padding-left: var(--sbs-space-6);
+    border-top: 0;
+    border-left: 1px solid var(--sbs-border-inverse);
+  }
+}
+
+.sbs-hero-facts li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.sbs-hero-facts strong {
+  font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--sbs-text-inverse);
+}
+
+/* Direct child only: the count-up renders its own <span> inside <strong>, and
+   a descendant selector shrank the number to label size. */
+.sbs-hero-facts > li > span {
+  font-size: 0.8125rem;
+  color: var(--sbs-text-inverse-secondary);
+}

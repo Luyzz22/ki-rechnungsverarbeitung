@@ -3,17 +3,24 @@ import type { Metadata } from "next";
 import { SiteChrome } from "@/components/navigation/SiteChrome";
 import { Section, SectionHeader, Eyebrow } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
-import { SbsNetworkGraphic } from "@/components/graphics/SbsNetworkGraphic";
+import { HeroSlider } from "@/components/sections/HeroSlider";
+import { TrustBand } from "@/components/sections/TrustBand";
+import { Reveal } from "@/components/ui/Reveal";
+import { ScrollProgress } from "@/components/ui/ScrollProgress";
+import { CountUp } from "@/components/ui/CountUp";
 import { DivisionSplit } from "@/components/sections/DivisionSplit";
 import { FoundationGrid } from "@/components/sections/FoundationGrid";
 import { ArchitectureFlow } from "@/components/graphics/ArchitectureFlow";
 import { ProductCard } from "@/components/product/ProductCard";
-import { productBySlug, productsByDivision } from "@/content/products";
+import { products, productBySlug, productsByDivision } from "@/content/products";
 import { academyCourses } from "@/content/academy";
 import { pageMetadata, organizationSchema, JsonLd } from "@/lib/seo";
 import { sites, linkFor } from "@/content/site";
 
 const PAGE_PATH = "/";
+
+/** Counted from the registry, so the figure cannot drift from what is listed. */
+const productCount = products.length;
 
 export const metadata: Metadata = pageMetadata({
   path: "/",
@@ -76,11 +83,12 @@ export default function CorporateHome() {
   return (
     <SiteChrome siteKey="corporate" path="/">
       <JsonLd data={organizationSchema()} />
+      <ScrollProgress />
 
       {/* 1 — Hero */}
       <section className="sbs-inverse relative overflow-hidden" data-surface="inverse">
         <div className="sbs-container sbs-section--hero sbs-section">
-          <div className="grid grid-cols-[minmax(0,1fr)] items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16">
+          <div className="sbs-hero-top">
             <div className="sbs-measure-hero flex flex-col gap-6">
               <Eyebrow>SBS Deutschland · Industrie und Legal</Eyebrow>
               <h1 className="sbs-display text-[var(--sbs-text-inverse)]">
@@ -92,19 +100,30 @@ export default function CorporateHome() {
                 Vertrags- und Governance-Arbeit im Recht. Jedes Ergebnis führt Quelle, Modell,
                 Prüfschritt und Zeitpunkt mit sich.
               </p>
-              <div className="flex flex-wrap gap-3 pt-1">
-                <Button href={linkFor(PAGE_PATH, "/industrie")} size="lg">
-                  SBS Industrie ansehen
-                </Button>
-                <Button href={linkFor(PAGE_PATH, "/legal")} variant="inverse" size="lg">
-                  SBS Legal ansehen
-                </Button>
-              </div>
             </div>
 
-            <div className="lg:pl-4">
-              <SbsNetworkGraphic currentPath="/" />
-            </div>
+            <ul className="sbs-hero-facts">
+              <li>
+                <strong>
+                  <CountUp value={productCount} />
+                </strong>
+                <span>Produkte im Betrieb</span>
+              </li>
+              <li>
+                <strong>
+                  <CountUp value={2} />
+                </strong>
+                <span>Geschäftsbereiche</span>
+              </li>
+              <li>
+                <strong>Weinheim</strong>
+                <span>Sitz in Deutschland</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="mt-12 lg:mt-14">
+            <HeroSlider currentPath="/" />
           </div>
         </div>
       </section>
@@ -120,6 +139,10 @@ export default function CorporateHome() {
         />
         <DivisionSplit currentPath="/" />
       </Section>
+
+      <Reveal>
+        <TrustBand />
+      </Reveal>
 
       {/* 3 — One technical foundation */}
       <Section tone="sunken" labelledBy="grundlage">
