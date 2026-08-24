@@ -5,7 +5,10 @@ Build: `next build` (Next.js 16.3.1), 38 routes, all statically rendered except
 `/robots.txt` and `/sitemap.xml`, which read the `Host` header.
 Environment: local production build (`output: standalone`) on 127.0.0.1:3100,
 Chromium 1194 via Playwright, and — new in this pass — real nginx 1.24.0 in
-front of the build on all three hostnames.
+front of the build on all three hostnames. (1.24.0 was the version assumed for
+the host at the time. The host was later measured as nginx 1.26.3; see the
+third pass at the end of this document. The evidence below is accurate for what
+it tested.)
 
 Findings from the independent review are in
 [`pre-production-review.md`](pre-production-review.md). All BLOCKER and HIGH
@@ -29,7 +32,7 @@ findings were fixed before these gates were re-run.
 | Link Check | **PASS** | 55 pages across 3 hostnames, 0 dead internal links, 6/6 external product URLs 200 |
 | Content Check | **PASS** | 23 routes, no unverifiable claims, no marketing filler, no emoji in page text |
 | Security | **PASS** | 0 dependency vulnerabilities; headers verified through nginx; no secrets; no open redirect |
-| nginx configuration | **PASS** | `nginx -t` against real nginx 1.24.0; routing, headers and 29 legacy redirects verified live |
+| nginx configuration | **PASS** | `nginx -t` against real nginx 1.24.0; routing, headers and 29 legacy redirects verified live. Re-validated in the third pass against nginx 1.26.3, the host's actual version |
 | Release artifact | **PASS** | Deterministic tarball, runs standalone on a read-only tree, 12/12 deploy health checks |
 | Production Deployment | **NOT RUN** | No shell on the target host in this session — see below |
 | DNS | **NOT RUN** | The two `A` records do not exist yet — see below |
@@ -283,3 +286,72 @@ a repository that ships no raster assets by design. Regenerate them with:
 npm run build && npm start &
 node scripts/... # or any headless browser against http://127.0.0.1:3100
 ```
+
+---
+
+# Third pass — production-host hardening
+
+Date: 2026-08-24. Branch `claude/production-host-hardening`. Run against the
+**unpacked release artifact** on 127.0.0.1:3100 and, for the nginx gates,
+through real nginx 1.26.3 — the production host's actual version.
+
+Scope: infrastructure and deployment only. No application design or content was
+changed. The one application-code change is `generateBuildId` in
+`next.config.mjs`, which affects the build's identity, not its output.
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| `npm ci` | **PASS** | 0 vulnerabilities |
+| Typecheck | **PASS** | `tsc --noEmit`, 0 errors |
+| Lint | **PASS** | `eslint .`, 0 errors, 0 warnings |
+| Build | **PASS** | 38 routes |
+| Artifact reproducibility | **PASS** | `scripts/verify-reproducible.sh` — two clean builds, identical except three per-build key files |
+| Links | **PASS** | 0 dead internal links, external product URLs 200 |
+| Content / claim guard | **PASS** | 23 routes, 0 findings |
+| Responsive | **PASS at 375+** | `npm run check:ui` — 150 page checks; see the 320px note below |
+| Accessibility | **PASS** | 50 page checks; landmarks, lang, alt, svg labels, link names, heading order, visible focus |
+| Reduced motion | **PASS** | no animation or transition over 100ms under `prefers-reduced-motion: reduce` |
+| Security headers | **PASS** | `infra/tests/nginx-gates.sh` — six headers, exactly one value each, through real nginx; version not advertised |
+| Legacy redirects | **PASS** | 41 paths, all 301; 35 destinations verified live, 6 point at `app.sbsdeutschland.com` and are deliberately not probed |
+| Unknown Host | **PASS** | internal URL space unreachable |
+| `--check` immutability | **PASS** | `infra/tests/check-only-immutability.sh`, plus a self-test proving the detector catches a mutating `--check` |
+| nginx HTTP/2 syntax | **PASS** | `infra/tests/nginx-syntax-matrix.sh` against real 1.26.3 and 1.24.0 |
+| Deployment scenarios B–F | **PASS** | `infra/tests/deploy-invoice-gate.sh` against the real artifact |
+
+## Open finding: horizontal overflow at 320px
+
+Five routes overflow horizontally at a 320px viewport:
+
+```
+sbsdeutschland.com/                                  14px
+industrie.sbsdeutschland.com/                        52px
+industrie.sbsdeutschland.com/produkte/hydraulikdoc   13px
+legal.sbsdeutschland.com/                            31px
+legal.sbsdeutschland.com/produkte/compliancehub      31px
+```
+
+**Not a regression.** The declared floor has always been 375px — the second
+pass swept 375, 430, 768, 1024, 1440 and 1920, and all six still pass. 320px was
+added to the sweep in this pass and had never been claimed.
+
+Not fixed here: this hardening pass was scoped to the production host, and
+changing five page layouts is a design change outside it. 320px is a real device
+class (iPhone SE first generation and small Android phones), so this is worth
+scheduling — it is recorded as open, not closed.
+
+## Two sweeps that were ad-hoc are now scripts
+
+The responsive, accessibility, header and redirect sweeps used to be written by
+hand each pass. Re-writing them this time produced three findings that turned
+out to be defects in the sweep, not the site:
+
+- a route that does not exist (`/loesungen` on the corporate host — solutions
+  live per division),
+- `sr-only` radio inputs reported as 1×1 tap targets, when the 44px `<label>`
+  around them is what a finger actually hits,
+- every redirect destination re-requested on the corporate host, so the ones
+  pointing at a division host or at `app.sbsdeutschland.com` looked dead.
+
+They are now `scripts/check-ui.mjs` (`npm run check:ui`) and
+`infra/tests/nginx-gates.sh`, so the numbers above can be reproduced rather than
+taken on trust.

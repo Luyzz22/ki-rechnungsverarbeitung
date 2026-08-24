@@ -3,8 +3,9 @@
 Date: 2026-08-20
 Reviewed: the extracted `sbs-web` repository at commit `0c82436`, read-only.
 Method: source reading plus live probing — the build running behind real
-nginx 1.24.0, the release artifact running standalone, and the previous public
-site probed to establish the legacy URL inventory.
+nginx 1.24.0 — the version assumed at the time, see the correction under B1 —
+the release artifact running standalone, and the previous public site probed to
+establish the legacy URL inventory.
 
 All BLOCKER and HIGH findings were fixed in `d6c9c94`. Every gate was re-run on
 the resulting HEAD.
@@ -32,8 +33,8 @@ needed nginx to actually run, the second needed the live site to be probed.
 ### B1 — `nginx -t` fails on the target host
 
 `infra/nginx/sbs-web.conf` used `http2 on;`, introduced in nginx 1.25.1.
-Ubuntu 24.04 — the production host — ships nginx 1.24.0, where the directive
-does not exist:
+The production host was believed at the time to be Ubuntu 24.04, which ships
+nginx 1.24.0, where the directive does not exist:
 
 ```
 [emerg] unknown directive "http2" in sbs-web.conf:62
@@ -46,6 +47,18 @@ written could not be applied.
 **Fixed.** `listen ... ssl http2`, which is valid on 1.24 and only deprecated on
 1.25+. `enable-nginx.sh` now reports the nginx version and warns on 1.25+.
 Verified: `nginx -t` passes against real nginx 1.24.0.
+
+> **Correction, 2026-08-20 (host inspection).** The premise of this finding was
+> wrong. The production host is **Ubuntu 25.04 with nginx 1.26.3**, not 24.04
+> with 1.24.0 — the version had been inferred from the OS rather than measured,
+> and this review's own "not verified" table flagged that. On 1.26.3
+> `listen ... ssl http2` is accepted but deprecated, so the repository now ships
+> the modern `listen 443 ssl;` + `http2 on;` pair and `enable-nginx.sh` rewrites
+> its **staged** copy back to the old form when it detects an nginx below
+> 1.25.1. Compatibility is therefore kept deliberately rather than dropped, and
+> `infra/tests/nginx-syntax-matrix.sh` proves both paths against real 1.26.3 and
+> 1.24.0 binaries. The 1.24.0 evidence above remains accurate for what it
+> tested.
 
 ### B2 — Fifteen live URLs would have returned 404
 
@@ -64,7 +77,7 @@ paths checked, all 301 to a live destination.
 
 ### B3 — Deployment built on the production host
 
-`infra/scripts/deploy.sh` ran `npm ci` and `next build` on a 1 vCPU / 2 GB host
+`infra/scripts/deploy.sh` ran `npm ci` and `next build` on a 1 vCPU / 1.9 GiB host
 that also runs the live invoice application. A Next.js build peaks well above a
 gigabyte; an out-of-memory kill would have taken `invoice-app` with it.
 
@@ -143,9 +156,9 @@ recorded in the snippet: every subdomain confirmed to serve valid TLS.
 | M2 | Cross-origin redirect target built by string concatenation. Not exploitable — `pathname` always begins with `/` — but the class of bug is avoidable. | **Fixed** — built with `new URL()`. |
 | M3 | `www` and the apex both returned 200, separated only by a canonical tag. | **Fixed** — `www` now 301s to the apex. Verified through nginx. |
 | M4 | CSP lacked `frame-src`, `worker-src`, `manifest-src`, `media-src` and `upgrade-insecure-requests`; `frame-ancestors` was `'self'` although the site is never framed. | **Fixed** — all added, `frame-ancestors 'none'`. |
-| M5 | No rate limiting on a 2 GB host shared with a live application. | **Fixed** — `limit_req` 20 r/s with burst 40, `limit_conn` 24. Verified that 30 rapid requests all pass. |
+| M5 | No rate limiting on a 1.9 GiB host shared with a live application. | **Fixed** — `limit_req` 20 r/s with burst 40, `limit_conn` 24. Verified that 30 rapid requests all pass. |
 | M6 | `gzip_types` omitted XML, so `sitemap.xml` was served uncompressed. | **Fixed** — verified `content-encoding: gzip` on the sitemap. |
-| M7 | `ExecStart=/usr/bin/node` hardcodes the interpreter path. | **Fixed** — `/usr/bin/env node`, and `deploy-artifact.sh` verifies node ≥ 20 before deploying. |
+| M7 | `ExecStart=/usr/bin/node` hardcodes the interpreter path. | **Fixed** — `/usr/bin/env node`, and `deploy-artifact.sh` verifies node ≥ 20 before deploying. Extended 2026-08-20: `env node` resolves against *systemd's* PATH, so the script now resolves and checks that interpreter too, and runs the staging health check with it rather than with root's node. |
 | M8 | `'unsafe-inline'` in `script-src`. | **Accepted.** Next.js App Router inlines its bootstrap; a nonce policy would force per-request rendering and give up static rendering entirely. Exposure is bounded: no user-generated content, no third-party script, no remote font, no inline event handler, and the one `dangerouslySetInnerHTML` now escapes. Recorded in the snippet. |
 | M9 | The application trusts the `Host` header to select a site. | **Accepted** — that is the design, and it is now defended on both layers (H1). nginx sets `Host $host` from `server_name`-matched requests; unmatched hosts never reach the upstream. |
 
@@ -221,8 +234,8 @@ artifact has no dependency on the source repository.
 
 | | Why |
 | --- | --- |
-| Behaviour under the host's own nginx configuration | No shell on the host. `enable-nginx.sh --check` must be run there before applying; it detects a `default_server` conflict and IPv6 availability, the two host-specific unknowns. |
-| Whether the host's nginx is really 1.24.0 | Inferred from Ubuntu 24.04. The script prints the version and warns if the assumption is wrong. |
+| Behaviour under the host's own nginx configuration | No shell on the host. `enable-nginx.sh --check` must be run there before applying; it detects a `default_server` conflict and IPv6 availability, the two host-specific unknowns. It is genuinely read-only — it stages a complete candidate in a temporary prefix and validates it there — and `infra/tests/check-only-immutability.sh` hashes the whole tree before and after to prove it. |
+| ~~Whether the host's nginx is really 1.24.0~~ | **Resolved 2026-08-20** — measured on the host: Ubuntu 25.04, nginx 1.26.3. The inference was wrong; see the correction under B1. |
 | Lighthouse scores | Not available in this environment. |
 | Automated colour-contrast measurement | Palette designed against WCAG 2.2 AA ratios but not machine-verified. |
 | Real-user performance | Only lab measurements exist. |

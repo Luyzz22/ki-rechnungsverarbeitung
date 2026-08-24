@@ -25,7 +25,7 @@ repository with its own deployment.
 | Never | Why |
 | --- | --- |
 | Touch `app.sbsdeutschland.com` or the `invoice-app` service | It is a live application on the same host, on port 8000, with its own nginx server block. This layer runs on port 3100 and is independent. |
-| Run `npm ci` or `next build` on the production host | The host has 1 vCPU and 2 GB RAM and runs a live application. Builds happen in CI; the host receives a verified artifact. See §7. |
+| Run `npm ci` or `next build` on the production host | The host (Ubuntu 25.04, nginx 1.26.3) has 1 vCPU and 1.9 GiB of RAM (about 1.0 GiB actually available) and runs a live application. Builds happen in CI; the host receives a verified artifact. See §7. |
 | Add a secret, token, API key or `.env` value | The site is fully static and needs none. If a feature appears to need one, that feature belongs in a product repository. |
 | Introduce a third-party script, tracker, font CDN or chat widget | The CSP forbids it and the pages are designed without it. |
 | Publish a form without a working backend | The contact flow composes a pre-filled mail and says so. Do not replace it with a form that silently drops submissions. |

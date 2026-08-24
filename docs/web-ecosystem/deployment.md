@@ -1,19 +1,35 @@
 # Deployment
 
-Target host: `207.154.200.239`, Ubuntu 24.04, Frankfurt, 1 vCPU / 2 GB RAM.
+Target host: `207.154.200.239`, Frankfurt.
+
+```
+OS         Ubuntu 25.04 (Plucky)
+nginx      1.26.3
+Memory     1.9 GiB total, ~1.0 GiB available
+Disk       ~34 GB free on /
+Live       invoice-app.service active, 127.0.0.1:8000 answers 303
+Free ports 3100 (sbs-web), 3199 (staging health check)
+```
+
+Read from the host on 2026-08-20 in a read-only inspection. Earlier revisions of
+this document assumed Ubuntu 24.04 with nginx 1.24 — that assumption was wrong
+and has been corrected everywhere it affected a decision. Test evidence gathered
+on 1.24 is still quoted where it is accurate, and labelled as such.
+
 The invoice application on port 8000 must keep running throughout.
 
-> **Not yet executed.** No shell on the target host was available to the session
-> that wrote this. Every step below is prepared as repository-managed
-> configuration, validated locally against real nginx 1.24 and a real release
-> artifact, and paired with a rollback.
+> **Not yet executed.** Every step below is prepared as repository-managed
+> configuration, validated against real nginx 1.26.3 (and 1.24.0, to keep the
+> compatibility path honest) and a real release artifact, and paired with a
+> rollback.
 
 ## The rule that shapes everything else
 
-**Nothing is built on the production host.** It has one core, two gigabytes of
-memory and a live application on it. A Next.js build peaks well above a
-gigabyte; running it there would compete with `invoice-app` for both CPU and
-RAM, and an out-of-memory kill would take the live application with it.
+**Nothing is built on the production host.** It has 1.9 GiB of memory, of which
+roughly 1.0 GiB is actually available, and a live application on it. A Next.js
+build peaks well above a gigabyte; running it there would compete with
+`invoice-app` for both CPU and RAM, and an out-of-memory kill would take the
+live application with it.
 
 ```
 CI / trusted build machine                  Production host
@@ -156,9 +172,12 @@ sudo ./infra/scripts/enable-nginx.sh            # apply
 
 Preconditions it enforces before touching anything:
 
-- nginx present; the version is reported, and a warning is printed on 1.25+
-  where `listen ... http2` is deprecated. The config targets 1.24 on Ubuntu
-  24.04, where `http2 on;` does not exist and would fail `nginx -t`.
+- nginx present, and its version is detected. `infra/nginx/sbs-web.conf` ships
+  the modern `listen 443 ssl;` + `http2 on;` pair, which is what 1.26.3 on the
+  host wants. Below 1.25.1 that directive does not exist, so the **staged copy**
+  is rewritten to the older `listen ... ssl http2` form. The repository keeps one
+  file and stays valid on both; `infra/tests/nginx-syntax-matrix.sh` proves it
+  against real 1.26.3 and 1.24.0 binaries.
 - sbs-web already answering on 127.0.0.1:3100.
 - IPv6 availability — if `/proc/net/if_inet6` is absent the `listen [::]:...`
   lines are removed from the staged copy, because they would otherwise fail
@@ -247,7 +266,7 @@ answers), and no secrets.
 
 | | |
 | --- | --- |
-| nginx configuration parses | **Yes** — `nginx -t` against real nginx 1.24.0 |
+| nginx configuration parses | **Yes** — `nginx -t` against real nginx 1.26.3, the host's version (and 1.24.0 via the compatibility rewrite) |
 | Routing, headers, redirects through nginx | **Yes** — nginx in front of the real build, all three hostnames |
 | Release artifact runs standalone | **Yes** — unpacked, started, all routes and host routing verified |
 | Artifact survives a read-only filesystem | **Yes** — matches `ProtectSystem=strict` |
@@ -256,4 +275,4 @@ answers), and no secrets.
 | Deployment on the target host | **No** — no shell available |
 | DNS records | **No** — not created |
 | TLS certificates | **No** — cannot be issued before DNS resolves |
-| Behaviour under the host's real nginx configuration | **No** — run `enable-nginx.sh --check` there first |
+| Behaviour under the host's real nginx configuration | **No** — run `enable-nginx.sh --check` there first. It is genuinely read-only; `infra/tests/check-only-immutability.sh` hashes the whole tree before and after to prove it |

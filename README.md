@@ -105,7 +105,7 @@ short form for tools that read that filename.
 Not yet deployed — no DNS record, no certificate and no public nginx routing
 exists for the two division hostnames.
 
-Deployment is **artifact-based**. The production host has 1 vCPU and 2 GB RAM and
+Deployment is **artifact-based**. The production host has 1 vCPU and 1.9 GiB of RAM (about 1.0 GiB actually available) and
 runs a live application, so it never installs dependencies and never compiles:
 
 ```

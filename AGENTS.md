@@ -40,7 +40,7 @@ claim — do not relax the pattern.
 ## Hard rules
 
 1. Never touch the `invoice-app` service or `app.sbsdeutschland.com`.
-2. Never run `npm ci` or `next build` on the production host — it has 2 GB RAM
+2. Never run `npm ci` or `next build` on the production host — it has 1.9 GiB RAM
    and runs a live application. Build in CI, ship a verified artifact.
 3. Never add a secret, tracker, third-party script or font CDN.
 4. Never invent customers, logos, certifications, KPIs or accuracy figures.

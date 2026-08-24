@@ -2,7 +2,7 @@
 # =============================================================================
 # Build a self-contained, verifiable release artifact.
 #
-# The production host has 1 vCPU and 2 GB RAM and runs a live application, so it
+# The production host has 1 vCPU and 1.9 GiB of RAM and runs a live application, so it
 # must never install dependencies or compile. This script runs in CI (or any
 # trusted build machine) and produces a tarball that the host only has to verify
 # and unpack.
