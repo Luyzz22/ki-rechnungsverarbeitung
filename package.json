@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "check:links": "node scripts/check-links.mjs",
     "check:content": "node scripts/check-content.mjs",
-    "artifact": "./scripts/build-artifact.sh"
+    "artifact": "./scripts/build-artifact.sh",
+    "check:ui": "node scripts/check-ui.mjs"
   },
   "dependencies": {
     "next": "16.3.1",
