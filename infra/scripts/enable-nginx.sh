@@ -132,6 +132,50 @@ if [ -s "$DEFAULT_HITS" ]; then
   STRIP_DEFAULT=1
 fi
 
+# A second server block claiming one of our hostnames is worse than a
+# default_server clash, because nginx does not fail on it: it warns
+# "conflicting server name ... ignored" and silently keeps whichever block it
+# parsed first. The cutover would then either not take effect or replace the
+# existing site depending on include order — a coin flip, discovered in
+# production. sbsdeutschland.com already answers today (301 to /sbshomepage/),
+# so a block for it exists on the host and must be retired deliberately.
+#
+# Our own installed copy is excluded: re-running apply must not flag itself.
+SBS_HOSTS="sbsdeutschland.com www.sbsdeutschland.com industrie.sbsdeutschland.com legal.sbsdeutschland.com"
+NAME_HITS="$STAGE/server-name-conflicts.txt"
+: > "$NAME_HITS"
+if [ -r "$NGINX_ETC/nginx.conf" ]; then
+  expand_config "$NGINX_ETC/nginx.conf" \
+    | awk -F: -v hosts="$SBS_HOSTS" -v self1="$NGINX_ETC/sites-available/sbs-web.conf" \
+                                    -v self2="$NGINX_ETC/sites-enabled/sbs-web.conf" '
+        $1 == self1 || $1 == self2 { next }
+        {
+          content = substr($0, length($1) + length($2) + 3)
+          if (content !~ /^[[:space:]]*server_name[[:space:]]/) next
+          names = content
+          sub(/^[[:space:]]*server_name[[:space:]]+/, "", names)
+          sub(/;.*$/, "", names)
+          n = split(hosts, want, " ")
+          m = split(names, got, /[[:space:]]+/)
+          for (i = 1; i <= m; i++)
+            for (j = 1; j <= n; j++)
+              if (got[i] == want[j]) print $1 ":" $2 "  " got[i]
+        }' | sort -u > "$NAME_HITS" || true
+fi
+
+if [ -s "$NAME_HITS" ]; then
+  warn "another server block already claims a hostname this configuration serves:"
+  sed 's/^/      /' "$NAME_HITS" >&2
+  warn "nginx would keep whichever block it parses first and ignore the other."
+  if [ "$CHECK_ONLY" = 1 ]; then
+    warn "retire those server blocks before applying, or set ALLOW_SERVER_NAME_CONFLICT=1"
+  elif [ "${ALLOW_SERVER_NAME_CONFLICT:-0}" = 1 ]; then
+    warn "ALLOW_SERVER_NAME_CONFLICT=1 — continuing anyway"
+  else
+    fail "refusing to install a duplicate server_name; retire the blocks above first (ALLOW_SERVER_NAME_CONFLICT=1 overrides)"
+  fi
+fi
+
 # ---- 1. Stage the candidate configuration -----------------------------------
 # Everything below writes only inside $STAGE.
 log "Staging candidate configuration"

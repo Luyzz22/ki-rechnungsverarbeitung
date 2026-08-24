@@ -62,6 +62,7 @@ Activation is a symlink move, so a rollback is also a symlink move.
 Nothing user-visible changes until step 5.
 
 ```
+0. Retire the existing apex server block   -> prerequisite, see below
 1. Build the artifact in CI                -> nothing on the host changes
 2. Transfer and deploy it                  -> runs on 127.0.0.1:3100, not public
 3. Create the two DNS records              -> hostnames resolve, no TLS yet
@@ -69,6 +70,41 @@ Nothing user-visible changes until step 5.
 5. Enable the nginx configuration          -> the switch
 6. Verify redirects and both applications
 ```
+
+### Measured state before the cutover (2026-08-24)
+
+```
+sbsdeutschland.com          A 207.154.200.239   301 -> /sbshomepage/
+www.sbsdeutschland.com      A 207.154.200.239   301 -> www…/sbshomepage/
+app.sbsdeutschland.com      A 207.154.200.239   303 -> /login   (must not change)
+industrie.sbsdeutschland.com   does not resolve
+legal.sbsdeutschland.com       does not resolve
+Server header               nginx/1.26.3 (Ubuntu)
+```
+
+## 0. Retire the existing apex server block
+
+**The apex and `www` already answer**, so a server block claiming those names
+exists on the host. nginx does not fail on a duplicate `server_name` — it warns
+`conflicting server name … ignored` and keeps whichever block it parsed first.
+Installing on top of it would therefore either do nothing or replace the old
+site depending on include order, discovered in production either way.
+
+`enable-nginx.sh --check` now reports those blocks with file and line, and
+apply **refuses** until they are retired (`ALLOW_SERVER_NAME_CONFLICT=1`
+overrides once the decision is made deliberately).
+
+Retiring them is a decision about the old site, not a mechanical step: the
+`/sbshomepage/` tree is what the apex serves today, and `sbs-web-redirects.conf`
+maps every one of its URLs to the new structure — including `/sbshomepage/`
+itself, which will 301 to `/`. Once the new configuration is live the old block
+is redundant, but the old document root should stay on disk until the redirects
+have been verified against real traffic.
+
+`app.sbsdeutschland.com` has its own server block and is not touched. Note that
+`server_tokens off` is set inside the marketing server blocks rather than at
+http level, precisely so the invoice application's responses are unchanged — it
+will keep advertising its version until its owner decides otherwise.
 
 ## 1. Build the artifact
 
@@ -92,8 +128,10 @@ dist/sbs-web-<sha>.tar.gz.sha256    checksum in `sha256sum -c` format
 dist/sbs-web-<sha>.manifest.json    commit, digest, build time, node version
 ```
 
-The tarball is packed deterministically — fixed mtime, owner and sort order — so
-the same commit produces the same digest. The script refuses to pack a tree
+The tarball is packed deterministically — fixed mtime, owner and sort order, and
+a `BUILD_ID` derived from the commit — so the same commit produces the same
+digest apart from three per-build key files (`scripts/verify-reproducible.sh`
+enforces exactly that; see `release-candidate.md`). The script refuses to pack a tree
 containing `.env`, `*.pem` or key material, and marks the artifact `-dirty` if
 the working tree was not clean.
 
@@ -110,8 +148,10 @@ sudo ./infra/scripts/deploy-artifact.sh /tmp/sbs-web-<sha>.tar.gz
 
 What the script does, and where it stops:
 
-1. **Preconditions** — root, node >= 20, the `www-data` user, >= 500 MB free on
-   `/var/www`, >= 200 MB available memory, staging port free. Any failure aborts
+1. **Preconditions** — root, node >= 20 both on PATH and on systemd's PATH (the
+   unit starts the server with `env node`), the `www-data` user, >= 500 MB free
+   on `/var/www`, >= 200 MB available memory, staging port free, and a healthy
+   invoice application. Any failure aborts
    before anything is touched.
 2. **Integrity** — verifies the SHA256 against the sidecar or the argument.
 3. **State record** — writes the previous release, service states, memory and
@@ -126,9 +166,11 @@ What the script does, and where it stops:
 6. **Activate** — symlink move, unit install, `systemctl restart`, then wait for
    port 3100 to answer. If it does not, the previous symlink is restored and the
    service restarted automatically.
-7. **Verify the invoice application** — `systemctl is-active invoice-app` and a
-   request to port 8000. If the service is not active, the deployment **rolls
-   itself back**.
+7. **Verify the invoice application** — the unit must be `active` **and** the
+   endpoint must answer 2xx or 3xx. It answers 303 today. A 4xx, a 5xx or a
+   failed connection rolls the new release back and records the exact code.
+   The same check runs *before* anything is unpacked, so an already-unhealthy
+   application aborts the deployment instead of being blamed on it.
 8. **Prune** — keeps the newest three releases plus the previous one.
 
 nginx is **not** reloaded by this script. When it finishes, the new site runs on
@@ -152,7 +194,22 @@ deployment script's.
 
 ## 3. DNS
 
-See `domain-routing.md`. Two `A` records at STRATO, nothing else changed.
+Two `A` records, nothing else touched — no MX, SPF, DKIM, DMARC or mail
+routing, and no change to the three names that already resolve:
+
+```
+industrie.sbsdeutschland.com.   A   207.154.200.239
+legal.sbsdeutschland.com.       A   207.154.200.239
+```
+
+Confirm both resolve before step 4; certbot's HTTP-01 challenge cannot succeed
+otherwise:
+
+```bash
+getent hosts industrie.sbsdeutschland.com legal.sbsdeutschland.com
+```
+
+See `domain-routing.md` for the registrar details.
 
 ## 4. Certificates
 
