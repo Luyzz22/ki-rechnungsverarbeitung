@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
-import PyPDF2
+import pypdf
 import pdfplumber
 import pytesseract
 from ocr_optimizer import ocr_with_fallback, extract_from_pdf_optimized, detect_scan_quality
@@ -97,7 +97,7 @@ class ComplexityAnalyzer:
         # 1. MEHRERE SEITEN (+10)
         try:
             with open(pdf_path, 'rb') as f:
-                pdf = PyPDF2.PdfReader(f)
+                pdf = pypdf.PdfReader(f)
                 pages = len(pdf.pages)
                 if pages > 1:
                     complexity_score += 10
@@ -420,16 +420,16 @@ def extract_text_from_pdf(
     except Exception as e:
         safe_log(logger, logging.ERROR, "ocr_failed", error_code=type(e).__name__)
     
-    # Fallback: PyPDF2
+    # Fallback: pypdf
     if not text.strip():
-        safe_log(logger, logging.WARNING, "pdf_text_fallback_started", extractor="pypdf2")
+        safe_log(logger, logging.WARNING, "pdf_text_fallback_started", extractor="pypdf")
         try:
             with open(pdf_path, 'rb') as f:
-                pdf_reader = PyPDF2.PdfReader(f)
+                pdf_reader = pypdf.PdfReader(f)
                 for page in pdf_reader.pages:
                     text += page.extract_text() or ""
         except Exception as e:
-            safe_log(logger, logging.ERROR, "pdf_text_extraction_failed", extractor="pypdf2", error_code=type(e).__name__)
+            safe_log(logger, logging.ERROR, "pdf_text_extraction_failed", extractor="pypdf", error_code=type(e).__name__)
     
     return text
 

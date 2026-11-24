@@ -114,8 +114,8 @@ async def dashboard_enterprise(request: Request):
     kpis = get_kpis(tid)
     trend_svg = render_trend_svg(kpis["trend"])
     return templates.TemplateResponse(
-        "enterprise/dashboard_kpis.html",
-        _ctx(request, "dashboard", kpis=kpis, trend_svg=trend_svg),
+        request=request, name="enterprise/dashboard_kpis.html",
+        context=_ctx(request, "dashboard", kpis=kpis, trend_svg=trend_svg),
     )
 
 
@@ -139,8 +139,8 @@ async def freigaben_page(request: Request):
     open_approvals = approval_workflow.get_open_approvals(tid)
     rules = approval_workflow.get_rules(tid)
     return templates.TemplateResponse(
-        "enterprise/freigaben.html",
-        _ctx(request, "approvals", open_approvals=open_approvals, rules=rules),
+        request=request, name="enterprise/freigaben.html",
+        context=_ctx(request, "approvals", open_approvals=open_approvals, rules=rules),
     )
 
 
@@ -220,8 +220,8 @@ async def lieferanten_page(request: Request, sort: str = "volumen"):
     tid = _tenant_id(request)
     suppliers = get_suppliers(tid, sort_by=sort)
     return templates.TemplateResponse(
-        "enterprise/lieferanten.html",
-        _ctx(request, "suppliers", suppliers=suppliers, sort=sort),
+        request=request, name="enterprise/lieferanten.html",
+        context=_ctx(request, "suppliers", suppliers=suppliers, sort=sort),
     )
 
 
@@ -233,8 +233,8 @@ async def lieferant_detail(request: Request, supplier: str):
     tid = _tenant_id(request)
     detail = get_supplier_detail(tid, supplier)
     return templates.TemplateResponse(
-        "enterprise/lieferant_detail.html",
-        _ctx(request, "suppliers", detail=detail),
+        request=request, name="enterprise/lieferant_detail.html",
+        context=_ctx(request, "suppliers", detail=detail),
     )
 
 
@@ -252,8 +252,8 @@ async def api_lieferanten(request: Request, sort: str = "volumen"):
 async def verfahrensdokumentation(request: Request):
     # Statische Seite – auch ohne Login zugänglich (Compliance-Dokument)
     return templates.TemplateResponse(
-        "enterprise/verfahrensdokumentation.html",
-        {"request": request, "user": _get_user(request), "active_nav": "compliance"},
+        request=request, name="enterprise/verfahrensdokumentation.html",
+        context={"request": request, "user": _get_user(request), "active_nav": "compliance"},
     )
 
 
@@ -265,8 +265,8 @@ async def export_protokoll(request: Request):
     tid = _tenant_id(request)
     entries = gobd.get_export_protocol(tid)
     return templates.TemplateResponse(
-        "enterprise/export_protokoll.html",
-        _ctx(request, "compliance", entries=entries),
+        request=request, name="enterprise/export_protokoll.html",
+        context=_ctx(request, "compliance", entries=entries),
     )
 
 
@@ -320,8 +320,8 @@ async def audit_page(request: Request, action: str = "", user: str = "",
     events = audit_events.query_events(tid, limit=per_page, offset=(page - 1) * per_page, **filters)
     total_pages = max(1, (total + per_page - 1) // per_page)
     return templates.TemplateResponse(
-        "enterprise/audit.html",
-        _ctx(request, "compliance", events=events, total=total, page=page,
+        request=request, name="enterprise/audit.html",
+        context=_ctx(request, "compliance", events=events, total=total, page=page,
              total_pages=total_pages, actions=audit_events.KNOWN_ACTIONS,
              f_action=action, f_user=user, f_from=date_from, f_to=date_to),
     )
@@ -380,8 +380,8 @@ async def dsgvo_settings(request: Request):
         return redirect
     tid = _tenant_id(request)
     return templates.TemplateResponse(
-        "enterprise/dsgvo_einstellungen.html",
-        _ctx(request, "compliance", retention_years=get_retention_years(tid)),
+        request=request, name="enterprise/dsgvo_einstellungen.html",
+        context=_ctx(request, "compliance", retention_years=get_retention_years(tid)),
     )
 
 
