@@ -65,7 +65,7 @@ async def budget_dashboard(request: Request, jahr: int = Query(default=None), mo
     
     user_id = request.session.get("user_id")
     user_info = get_user_info(user_id)
-    return templates.TemplateResponse("budget.html", {
+    return templates.TemplateResponse(request=request, name="budget.html", context={
         "request": request, "jahr": jahr, "monat": monat,
         "monat_namen": MONAT_NAMEN, "summary": summary,
         "trend_data": trend_data, "pie_data": pie_data, "user": user_info
@@ -78,7 +78,7 @@ async def budget_jahresansicht(request: Request, jahr: int = Query(default=None)
     if jahr is None:
         jahr = datetime.now().year
     jahresbudget = budget_service.get_jahresbudget(jahr)
-    return templates.TemplateResponse("budget_jahr.html", {
+    return templates.TemplateResponse(request=request, name="budget_jahr.html", context={
         "request": request, "jahr": jahr, "monat_namen": MONAT_NAMEN, "jahresbudget": jahresbudget, "user": user_info
     })
 
